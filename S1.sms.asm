@@ -2,9 +2,11 @@
  ;created by Kroc Camen <kroc@camendesign.com>
  ;for MaSS1VE: The Master System Sonic 1 Visual Editor <github.com/Kroc/MaSS1VE>
 ;======================================================================================
+;please use tab stops at 8 and a line width of 88 chars, thanks
+;--------------------------------------------------------------------------------------
 
 ;This source code is given to the public domain
- ;whilst "SEGA" and "Sonic" are registered trademarks of Sega Enterprises, Ltd.
+ ;whilst "SEGA" and "Sonic" are registered trademarks of Sega Enterprises, Ltd.,
  ;this is not their source code (I haven't broken into SEGA's offices ¬__¬), so not
  ;their copyright. Neither does this contain any byte-for-byte data of the original
  ;ROM (this is all ASCII codes, even the hex data parts). the fact that this text file
