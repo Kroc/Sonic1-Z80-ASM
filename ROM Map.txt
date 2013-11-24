@@ -1,0 +1,381 @@
+ROM Map
+=============================================================================
+Based Upon:
+	http://info.sonicretro.org/SCHG:Sonic_the_Hedgehog_%288-bit%29
+	http://sonicology.fateback.com/hacks/s1smsrom.htm
+	My own findings reading the ROM
+
+BANKS:
+=============================================================================
+$00000 - $03FFF		BANK 0
+$04000 - $07FFF		BANK 1	Palettes
+$08000 - $0BFFF		BANK 2
+$0C000 - $0FFFF		BANK 3
+$10000 - $13FFF		BANK 4	Block Mappings
+$14000 - $17FFF		BANK 5	Block Mappings, Object Layout, Floor Layout
+$18000 - $1BFFF		BANK 6	Floor Layout
+$1C000 - $1FFFF		BANK 7 	Floor Layout
+$20000 - $23FFF		BANK 8  Sonic Sprites
+$24000 - $27FFF		BANK 9  Sonic Sprites
+$28000 - $2BFFF		BANK A	Misc. Tile / Sprite Sets
+$2C000 - $2FFFF		BANK B	Misc. Tile / Sprite Sets (inc. Ring)
+$30000 - $33FFF		BANK C	Misc. Tile / Sprite Sets (Map Screen), Level Art
+$34000 - $37FFF		BANK D  Level Art
+$38000 - $3BFFF		BANK E  Level Art
+$3C000 - $3FFFF		BANK F  Level Art
+=============================================================================
+
+$00000 - ?		Main Game Code
+$0024B - $0026A		Labyrinth Act 1-2 Underwater Palette
+$0026B - $0028A		Labyrinth Act 3 Underwater Palette
+$00F0E - $00F2D		Map Screen 1 Palette
+$00F2E - $00F4D		Map Screen 2 Palette
+$01209 - $0122C		Zone Title Pointers:
+-----------------------------------------------------------------------------
+$01209-0A		Green Hill Act 1 (=$122D)
+$0120B-0C		Green Hill Act 2 (=$122D)
+$0120D-0E		Green Hill Act 3 (=$122D)
+$0120F-10		Bridge Act 1 (=$123C)
+$01211-12		Bridge Act 2 (=$123C)
+$01213-14		Bridge Act 3 (=$123C)
+$01215-16		Jungle Act 1 (=$124B)
+$01217-18		Jungle Act 2 (=$124B)
+$01219-1A		Jungle Act 3 (=$124B)
+$0121B-1C		Labyrinth Act 1 (=$125A)
+$0121D-1E		Labyrinth Act 2 (=$125A)
+$0121F-20		Labyrinth Act 3 (=$125A)
+$01221-22		Scrap Brain Act 1 (=$1269)
+$01223-24		Scrap Brain Act 2 (=$1269)
+$01225-26		Scrap Brain Act 3 (=$1269)
+$01227-28		Sky Base Act 1 (=$1278)
+$01229-2A		Sky Base Act 2 (=$1278)
+$0122B-2C		Sky Base Act 3 (=$1278)
+-----------------------------------------------------------------------------
+$0122D - $01286		Zone Titles:
+-----------------------------------------------------------------------------
+$0122D-3B		"GREEN HILL"
+$0123C-4A		"BRIDGE"
+$0124B-59		"JUNGLE"
+$0125A-68		"LABYRINTH"
+$01269-77		"SCRAP BRAIN"
+$01278-86		"SKY BASE"
+-----------------------------------------------------------------------------
+$013E1 - $01400		Title Screen Palette
+$0197E - $019AD		Final Score Titles:
+-----------------------------------------------------------------------------
+$0197E-8D		"CHAOS EMERALD"
+$0198E-9D		"SONIC LEFT"
+$0199E-AD		"SPECIAL BONUS"
+-----------------------------------------------------------------------------
+$01F9D - $01FA8		Lightning Palette Control
+$01B8D - $01BAC		"Sonic Has Passed" Screen Palette
+$02905 - $02AD5		Credits Text
+$02AD6 - $02AF5		Credits screen Palette
+$02AF6 - $02BA1		Object pointers
+$02BA2 - $03A64		??? UNKNOWN ???
+$03A65 - $03A74		Solidity pointer table
+$03A75 - $03FFF?	Solidity data
+
+////////////////////////////////////////////////////////////////// BANK 1 ///
+
+$04000 - $0626B		??? UNKNOWN ???
+$0626C - $0627B		End sign sprite palette
+$0627C - $0628B		Palette Pointers:
+-----------------------------------------------------------------------------
+$0627C-D		0: Green Hill (=$629E)
+$0627E-F		1: Bridge (=$62EE)
+$06280-1		2: Jungle (=$633E)
+$06282-3		3: Labyrinth (=$638E)
+$06284-5		4: Scrap Brain (=$63DE)
+$06286-7		5: Sky Base 1/2A (=$643E)
+$06288-9		6: Sky Base 2B/3 (=$658E)
+$0628A-B		7: Special Stage (=$655E)
+-----------------------------------------------------------------------------
+$0628C - $0629D		Palette Cycle Pointers:
+-----------------------------------------------------------------------------
+$0628C-D		0: Green Hill (=$62BE)
+$0628E-F		1: Bridge (=$630E)
+$06290-1		2: Jungle (=$635E)
+$06292-3		3: Labyrinth (=$63AE)
+$06294-5		4: Scrap Brain (=$63FE)
+$06296-7		5: Sky Base 1 (=$645E)
+$06298-9		6: Sky Base 2-Interior / 3 (=$65AE)
+$0629A-B		7: Special Stage (=$657E)
+$0629C-D		8: Sky Base 2 (=$651E)
+-----------------------------------------------------------------------------
+$0629E - $065ED		Palettes:
+-----------------------------------------------------------------------------
+$0629E-2BD		Green Hill Palette
+$062BE-2ED		Green Hill Cycle Palettes x3
+$062EE-30D		Bridge Palette
+$0630E-33D		Bridge Cycle Palettes x3
+$0633E-35D		Jungle Palette
+$0635E-38D		Jungle Cycle Palettes x3
+$0638E-3AD		Labyrinth Palette
+$063AE-3DD		Labyrinth Cycle Palettes x3
+$063DE-3FD		Scrap Brain Palette
+$063FE-43D		Scrap Brain Cycle Palettes x4
+$0643E-45D		Sky Base 1/2A Palette
+$0645E-49D		Sky Base 1 Cycle Palettes x4
+$0649E-4DD		Sky Base 1 Lightning Cycle Palettes Part-1 x4
+$064DE-51D		Sky Base 1 Lightning Cycle Palettes Part-2 x4
+$0651E-55D		Sky Base 2 Cycle Palettes x4
+$0655E-57D		Special Stage Palette
+$0657E-58D		Special Stage Cycle Palettes x1
+$0658E-5AD		Sky Base 2B/3 Palette
+$065AE-5ED		Sky Base 2B/3 Cycle Palettes x4
+-----------------------------------------------------------------------------
+$065EE - $0731B		??? UNKNOWN ???
+$0731C - $0732B		Boss Sprite Palette (including end capsule)
+$0732C - $07FFF		??? UNKNOWN ???
+
+////////////////////////////////////////////////////////////////// BANK 2 ///
+
+?08000 - $0BFFF		??? UNKNOWN ???
+
+////////////////////////////////////////////////////////////////// BANK 3 ///
+
+$0C000 - $0C715   	!!! CODE !!!
+$0C716 - $0FFB0		??? UNKNOWN ???
+$0FFB1 - $0FFFF		***  EMPTY SPACE ***
+
+////////////////////////////////////////////////////////////////// BANK 4 ///
+
+$10000 - $14C9F		Block Mappings:
+-----------------------------------------------------------------------------
+$10000 - $10B7F		Green Hill (184 tiles)
+$10B80 - $1147F		Bridge (144 tiles)
+$11480 - $11E7F		Jungle (160 tiles)
+$11E80 - $1297F		Labyrinth (176 tiles)
+$12980 - $1357F		Scrap Brain (192 tiles)
+$13580 - $142FF		Sky Base 1-2 (216 tiles)
+/// $14000 /////////////////////////////////////////////////////// BANK 5 ///
+$14300 - $1497F		Sky Base 3 (104 tiles)
+$14980 - $1517F		Bonus Stage (128 tiles)
+-----------------------------------------------------------------------------
+$15180 - $1557F		Blinking Items Art (Box, etc...)
+$15580 - $155C9		Level Headers Pointers:
+-----------------------------------------------------------------------------
+$15580-81		Green Hill Act 1
+$15582-83		Green Hill Act 2
+$15584-85		Green Hill Act 3
+$15586-87		Bridge Act 1
+$15588-89		Bridge Act 2
+$1558A-8B		Bridge Act 3
+$1558C-8D		Jungle Act 1
+$1558E-8F		Jungle Act 2
+$15590-91		Jungle Act 3
+$15592-93		Labyrinth Act 1
+$15594-95		Labyrinth Act 2
+$15596-97		Labyrinth Act 3
+$15598-99		Scrap Brain Act 1
+$1559A-9B		Scrap Brain Act 2
+$1559C-9D		Scrap Brain Act 3
+$1559E-9F		Sky Base Act 1
+$155A0-A1		Sky Base Act 2
+$155A2-A3		Sky Base Act 3
+$155A4-A5		End Sequence
+$155A6-A7		*** UNUSED *** (invalid data)
+$155A8-A9		Scrap Brain Act 2 (Emerald Maze), from corridor
+$155AA-AB		Scrap Brain Act 2 (Ballhog Area)
+$155AC-AD		Scrap Brain Act 2, from transporter
+$155AE-AF		Scrap Brain Act 2 (Emerald Maze), from transporter
+$155B0-B1		Scrap Brain Act 2, from Emerald Maze
+$155B2-B3		Scrap Brain Act 2, from Ballhog Area
+$155B4-B5		Sky Base Act 2 (Interior)
+$155B6-B7		Sky Base Act 2 (Interior), this one is identical 
+$155B8-B9		Special Stage 1
+$155BA-BB		Special Stage 2
+$155BC-BD		Special Stage 3
+$155BE-BF		Special Stage 4
+$155C0-C1		Special Stage 5
+$155C2-C3		Special Stage 6
+$155C4-C5		Special Stage 7
+$155C6-C7		Special Stage 8
+$155C8-C9		*** UNUSED *** (invalid data)
+-----------------------------------------------------------------------------
+$155CA - $15AB3		Level Headers:
+-----------------------------------------------------------------------------
+$155CA - $155EE      	Green Hill Act 1
+$155EF - $15613      	Green Hill Act 2
+$15614 - $15638      	Green Hill Act 3
+$15639 - $1565D      	End Sequence
+$1565E - $15682      	Bridge Act 1
+$15683 - $156A7      	Bridge Act 2
+$156A8 - $156CC      	Bridge Act 3
+$156CD - $156F1      	Jungle Act 1
+$156F2 - $15716      	Jungle Act 2
+$15717 - $1573B      	Jungle Act 3
+$1573C - $15760      	Labyrinth Act 1
+$15761 - $15785      	Labyrinth Act 2
+$15786 - $157AA      	Labyrinth Act 3
+$157AB - $157CF      	Scrap Brain Act 1
+$157D0 - $157F4      	Scrap Brain Act 2
+$157F5 - $15819      	Scrap Brain Act 2 (Emerald Maze), From Corridor
+$1581A - $1583E      	Scrap Brain Act 2 (Ballhog Area)
+$1583F - $15863      	Scrap Brain Act 3
+$15864 - $15888      	Scrap Brain Act 2, From Emerald Maze
+$15889 - $158AD      	Scrap Brain Act 2, From Ballhog Area
+$158AE - $158D2      	Scrap Brain Act 2, From Transporter
+$158D3 - $158F7      	Scrap Brain Act 2 (Emerald Maze), From Transporter
+$158F8 - $1591C      	Sky Base Act 1
+$1591D - $15941      	Sky Base Act 2
+$15942 - $15966      	Sky Base Act 3
+$15967 - $1598B      	Sky Base Act 2 (Interior)
+$1598C - $159B0      	Special Stage 1
+$159B1 - $159D5      	Special Stage 2
+$159D6 - $159FA      	Special Stage 3
+$159FB - $15A1F      	Special Stage 4
+$15A20 - $15A44      	Special Stage 5
+$15A45 - $15A69      	Special Stage 6
+$15A6A - $15A8E      	Special Stage 7
+$15A8F - $15AB3      	Special Stage 8
+-----------------------------------------------------------------------------
+$15AB4 - $15FFF		Object Layout:
+-----------------------------------------------------------------------------
+$15AB4 - $15AFF		Green Hill Act 1 (26 Objects)
+$15B00 - $15B42		Green Hill Act 2 (23 Objects)
+$15B43 - $15B55		Green Hill Act 3 (7 Objects)
+$15B56 - $15B9B		Bridge Act 1 (24 Objects)
+$15B9C - $15BD5		Bridge Act 2 (20 Objects)
+$15BD6 - $15BEB        	Bridge Act 3 (8 Objects)
+$15BEC - $15C43		Jungle Act 1 (30 Objects)
+$15C44 - $15C8C		Jungle Act 2 (25 Objects)
+$15C8D - $15CA2		Jungle Act 3 (8 Objects)
+$15CA3 - $15CF1		Labyrinth Act 1 (27 Objects)
+$15CF2 - $15D49		Labyrinth Act 2 (30 Objects)
+$15D4A - $14D68		Labyrinth Act 3 (11 Objects)
+$15D69 - $15DAB		Scrap Brain Act 1 (23 Objects)
+$15DAC - $15DE8		Scrap Brain Act 2 (21 Objects)
+$15DE9 - $15E34		Scrap Brain Act 2, Emerald Maze (26 Objects)
+$15E35 - $15E4D		Scrap Brain Act 2, Ballhog Area (9 Objects)
+$15E4E - $15E99		Scrap Brain Act 3 (26 Objects)
+$15E9A - $15ED3		Sky Base Act 1 (20 Objects)
+$15ED4 - $15F20		Sky Base Act 2 (23 Objects)
+$15F21 - $15F16		Sky Base Act 2, Interior (2 Objects)
+$15F17 - $15F25		Sky Base Act 3 (4 Objects)
+$15F26 - $15F2B		Special Stage 1 (3 Objects)
+$15F2C - $15F35		Special Stage 2 (4 Objects)
+$15F36 - $15F3F		Special Stage 3 (4 Objects)
+$15F40 - $15F52		Special Stage 4 (7 Objects)
+$15F53 - $15F65		Special Stage 5 (7 Objects)
+$15F66 - $15F7E		Special Stage 6 (9 Objects)
+$15F7F - $15F94		Special Stage 7 (8 Objects)
+$15F95 - $15FB9		Special Stage 8 (13 Objects)
+$15FBA - $15FC3		End Sequence, Green Hill (4 Objects)
+$15FC4 - $15FFF		*** EMPTY SPACE ***
+-----------------------------------------------------------------------------
+$16000 - $16DE9		Misc Mappings:
+-----------------------------------------------------------------------------
+$16000 - $1612D?	Title Screen
+$1612E - $161E8?
+$161E9 - $1627D?	
+$1627E - $163F5		Map 1 Background
+$163F6 - $1653A		Map 1 Foreground
+$1653B - $166AA		Map 2 Background (zoom on Robotnik's 'fortress')
+$166AB - $167FD?	Map 2 Foreground (zoom on Robotnik's 'fortress')
+$167FE - $1682F?	Level Complete Background
+$16830 - $169A8?	Map 3 (when the game is finished)
+$169A9 - $16C60?	
+$16C61 - $16DE9		Credits Screen
+-----------------------------------------------------------------------------
+$16DEA - $1FFFF		Level Layout:
+-----------------------------------------------------------------------------
+$16DEA - $17627         Green Hill Act 1 / End Sequence
+$17628 - $17C88         Green Hill Act 2
+$17C89 - $17FB5         Green Hill Act 3
+$17FB6 - $18A61         Jungle Act 1
+////////////////////////////////////////////////////////////////// BANK 6 ///
+$18A62 - $1933C         Jungle Act 2 / Special Stage 4 / 8
+$1933D - $199D6         Scrap Brain Act 1
+$199D7 - $1A2DA         Scrap Brain Act 2
+$1A2DB - $1ABD2         Scrap Brain Act 2 (Emerald Maze)
+$1ABD3 - $1B281         Scrap Brain Act 2 (Ballhog Area)
+$1B282 - $1BB33         Scrap Brain Act 3
+$1BB34 - $1BED0         Sky Base Act 2
+$1BED1 - $1C564         Bridge Act 1
+////////////////////////////////////////////////////////////////// BANK 7 ///
+$1C565 - $1CE26         Labyrinth Act 1
+$1CE27 - $1DB39         Labyrinth Act 2
+$1DB3A - $1E2A7         Sky Base Act 1
+$1E2A8 - $1E740         Bridge Act 2
+$1E741 - $1EC00         Sky Base Act 2 (Interior) / Sky Base Act 3
+$1EC01 - $1EFF5         Jungle Act 3
+$1EFF6 - $1F300         Labyrinth Act 3
+$1F301 - $1F440         Bridge Act 3
+$1F441 - $1FBA0         Special Stage 1 / 2 / 3 / 5 / 6 / 7
+$1FBA1 - $1FFFF		*** EMPTY SPACE ***
+
+/// $20000 /////////////////////////////////////////////////////// BANK 8 ///
+
+$20000 - $25FFF		Sonic Player Sprites (512 Tiles)
+/// $24000 /////////////////////////////////////////////////////// BANK 9 ///
+$26000 – $32FE5		Tile and Sprite Sets:
+-----------------------------------------------------------------------------
+$26000 - $2751E		Title Screen Tile Set (256 Tiles)
+$2751F - $28293		"Sonic Has Passed" Screen Tile Set (256 Tiles)
+///////////////////////////////////////////////////////////////// BANK 10 ///
+$28294 - $28B09		End Sign Sprite Set (128 Tiles)
+$28B0A - $2926A		Title Screen Animated Finger Sprite Set (128 Tiles)
+$2926B - $29941		Map Screen 1 Sprite Set (128 Tiles)
+$29942 - $2A129		Map Screen 2 Sprite Set (128 Tiles)
+$2A12A - $2AC3C		Green Hill Sprites (128 Tiles)
+$2AC3D - $2B7CC		Bridge Sprites (128 Tiles)
+$2B7CD - $2C3B5		Jungle Sprites (128 Tiles)
+///////////////////////////////////////////////////////////////// BANK 11 ///
+$2C3B6 - $2CF74		Labyrinth Sprites (128 Tiles)
+$2CF75 - $2D9DF		Scrap Brain Sprites (128 Tiles)
+$2D9E0 - $2E510		Sky Base Sprites (128 Tiles)
+$2E511 - $2EEB0		Special Stage Sprites (128 Tiles)
+$2EEB1 - $2F92D		Boss Sprites (128 Tiles)
+$2F92E - $2FD6F		HUD Sprite Set (128 Tiles)
+$2FD70 - $2FFEF		Ring Animation (20 Tiles), UNCOMPRESSED
+$2FFF0 - $2FFFF		*** EMPTY SPACE ***
+
+/// $30000 ////////////////////////////////////////////////////// BANK 12 ///
+
+$30000 - $31800		Map Screen 1 Tile Set (256 Tiles)
+$31801 - $32FE5		Map Screen 2 / Credits Screen Tile Set (256 Tiles)
+-----------------------------------------------------------------------------
+$32FE6 – $3DA27		Level Art:
+-----------------------------------------------------------------------------
+$32FE6 - $32FED		Header for Green Hill Art
+$32FEE – $330ED		Unique row list for Green Hill
+$330EE – $337A7		Duplicate row list for Green Hill
+$337A8 – $34577		Green Hill Art Data
+///////////////////////////////////////////////////////////////// BANK 13 ///
+$34578 - $3457F         Header For Bridge Art
+$34580 - $3467F         Unique row list For Bridge
+$34680 - $34C7F         Duplicate row list For Bridge
+$34C80 - $35AFF        	Art Data For Bridge
+$35B00 - $35B07         Header For Jungle Art
+$35B08 - $35C07         Unique row list For Jungle
+$35C08 - $36176         Duplicate row list For Jungle
+$36177 - $371BE         Art Data For Jungle
+$371BF - $371C6         Header For Labyrinth Art
+$371C7 - $372C6         Unique row list For Labyrinth
+$372C7 - $37866         Duplicate row list For Labyrinth
+$37867 - $3884A         Art Data For Labyrinth
+///////////////////////////////////////////////////////////////// BANK 14 ///
+$3884B - $38852         Header For Scrap Brain Art
+$38853 - $38952         Unique row list For Scrap Brain
+$38953 - $38FF1         Duplicate row list For Scrap Brain
+$38FF2 - $39CED         Art Data For Scrap Brain
+$39CEE - $39CF5         Header For Sky Base 1 / 2 Art
+$39CF6 - $39DF5         Unique row list For Sky Base 1 / 2
+$39DF6 - $3A3C8         Duplicate row list For Sky Base 1 / 2
+$3A3C9 - $3B3B4         Art Data For Sky Base 1 / 2
+$3B3B5 - $3B3BC         Header For Sky Base 3
+$3B3BD - $3B4BC         Unique row list For Sky Base 3
+$3B4BD - $3BBB5         Duplicate row list For Sky Base 3
+$3BBB6 - $3C7FD         Art Data For Sky Base 3
+///////////////////////////////////////////////////////////////// BANK 15 ///
+$3C7FE - $3C805         Header For Special Stages Art
+$3C806 - $3C905         Unique row list For Special Stages
+$3C906 - $3CF53         Duplicate row list For Special Stages
+$3CF54 - $3DA27         Art Data For Special Stages
+-----------------------------------------------------------------------------
+$3DA28 – $3FF20		!!! UNKNOWN ART !!!
+$3E508?- $3EF3E?	!!! UNKNOWN ART !!!
+$3EF3F?- $3FF20		!!! UNKNOWN ART !!!
+$3FF21 - $40000		*** EMPTY SPACE ***

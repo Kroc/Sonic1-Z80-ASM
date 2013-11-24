@@ -1,0 +1,13 @@
+*
+!.gitignore
+!.gitattributes
+
+!VBinDiff
+!WLADX
+
+!Compile.bat
+!S1.sms.asm
+!link.txt
+
+!RAM Map.txt
+!ROM Map.txt

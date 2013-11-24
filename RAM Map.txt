@@ -1,0 +1,196 @@
+RAM MAP:
+
+c000-cfff?	Floor Layout
+
+d000-d0c0	Sprite table? (X:Y:I)
+
+d200-d20e						set to 0 during initialisation
+d20e/f		absolute address to the art data in `decompressArt`,
+		set with A prior to calling `decompressScreen`
+
+d210/1		remaining row count in `decompressArt`
+		solidity data address
+d212/3		absolute address to where the data begins in `decompressArt`
+d214/5		where the UniqueRows list begins in `decompressArt`
+d216/7		Address for the list of banks in use by the current level (e.g. 5 & 6)
+d218-d229	VDP register cache
+d223/4							Counts down from $1000? when starting a level
+d225/6							set in _323
+d227/8							set in _323
+d229/a							set in _323
+d22b/c		
+d22f		
+d22b/e		Palette address to load on IRQ		Set to the address of the Initial Palette
+d22f		Palette flag to load on IRQ		Set to 3 when loading the Initial Palette from the level header
+
+d230/1		Address of current tile palette
+d232/3		Address of current sprite palette
+d235		Page 1
+d236		Page 2
+d238/9		LevelHeader: Floor Width
+d23a/b		LevelHeader: Floor Height
+d23c/d							Set to $D024 in _329b
+d23e		Current level
+d23f							initialised to 1c
+
+d246							initialised to 3
+d247		Counter for controlling the rasterline	set to 0 during level load
+d248		Raster line for the water line		set to 0 during level load
+d24f/50		Current level's Block Mapping address
+d251		horizontal scroll?			set to 0 during level load
+d252		vertical scroll?			set to 0 during level load
+d257		
+2258		
+d25a/b		
+de5d/e		
+d25f/60							Set to $0060 after level load
+d261/2							Set to $0088 after level load
+d263/4							Set to $0060 after level load
+d265/6							Set to $0070 after level load
+d26f/70
+d271/2
+d273		LevelHeader: Crop Left
+d274		LevelHeader: Level X Offset
+d275		LevelHeader: Unknown
+d276		LevelHeader: Level Width
+d277		LevelHeader: Crop Top
+d278		LevelHeader: Level Y Offset
+d279		LevelHeader: Extend Height
+d27a		LevelHeader: Level Height
+d27b/c							set to 0 during level load
+d27d/e							set to 0 during level load
+d27f-d287						set to 0 during initialisation
+d287							$D287-$D2A4 set to 0 during level load
+d288
+d289
+d28f/90
+d291/2
+d293/4
+d297							Read at _239c
+d298/a
+d29f							Set to $FFFE during level load
+d2a4		LevelHeader: Cycle Speed
+d2a5		Set to above
+d2a6		Set to 0 after doing above
+d2a7		LevelHeader: Colour Cycles
+d2a8/9		Address of the cycle palette for the current level
+d2aa							set to 0 during level load
+d2ab							set to $FF during level load
+d2ac							set to $FF after IRQ (_LABEL_F7_25)
+d2ba/b/c/d						Initialised to 0
+d2b1
+d2b2
+d2b3
+d2b4		number of unused sprites?
+d2b5
+d2b7							set to 0 during level load
+d2be-c2							Set to $A0 $A2 $A4 $00 $FF in _2e5a
+d2ce/d/f						Set to $01, $30, $00 loading level
+d2d2		Current music number?
+d2d4		LevelHeader: Solidity Pointer
+d2d7/8
+d2db		water line height on the screen - copied into $D248 to do the raster split
+d2dc							Set to $0800 or $0020 depending on level
+d2de
+d2e9/a
+d2f2		Number of objects in the level
+d2fc		music number to load (via RST 18?)
+d2fd							initialised to 5
+
+d302
+d305-d31d						initialised to 0
+d311-d316						1 bit per level
+d317/8
+d31d/e
+d31f/20
+d32e+							Level number lookup table
+d354-d37c	Level header
+
+d37e-d39e	current on-screen objects?		16 16-bit numbers, checked in _329b
+
+d3bc
+d3fc-d8f7?	Object data (ID, X*32, Y*32)
+
+d403-d416						Set to 0 in _235e
+
+dc04							bit 3 is masked out in _412d
+dc06							bit 1 is masked out in _412d
+dc0a/b
+dc14/5							set to DC26 in _423A (IRQ)
+dc1c/d							set to value of DC1C/D as above
+dc1e/f
+dc4e							 bit 1 is masked out in _412d
+dc53/4
+dc7b							 bit 1 is masked out in _412d
+dca8							 bit 1 is masked out in _412d
+dcd5							 bit 1 is masked out in _412d
+
+dd02							 bit 1 is masked out in _412d
+
+de00?-dfef	Stack?
+
+-------------------------------------------------------------------------------------
+
+iy+0
+ 0							wait bit
+ 1		- ?					Set after level load
+ 3		- Flag to load palette on IRQ?		set when reading byte 9 of header
+ 5		- ?
+ 6		- ?					Reset after loading level
+
+iy+1		Comparison byte during floor layout RLE decompression ($0A10)
+
+iy+2
+ 0		- ?					Set after loading level
+ 1 		- ?					Set after loading level
+ 2		- ?					Checked after loading level
+
+iy+3		Joypad value
+ 4		- Button A
+ 5		- Button B				Simple reset at $00f2
+
+iy+5		LevelHeader: Scrolling/Ring HUD		copied to iy+11 during level load
+ 0		- ?
+ 1		- Demo data
+ 2		- Show rings
+ 3		- Auto scroll right
+ 4		- Auto scroll up
+ 5		- Smooth scroll
+ 6		- Wave scroll	
+ 7		- No scroll down
+
+iy+6		LevelHeader: Underwater flag		copied to iy+12 during level load
+ 0
+ 1		- ?
+ 3		- ?					Set after loading level
+ 4		- ?					
+ 5		- ?					set after loading level
+ 6		- ?					Reset after loading level
+ 7		- Underwater flag
+
+iy+7		LevelHeader: Time HUD / Lightning	Used in the pause handler, could be the pause flag
+ 0		-
+ 1		- Lightning
+ 2		- 
+ 3		- Pause bit				Reset after level load
+ 4		- underwater boss palette
+ 5		- Time
+ 6		- Scroll lock
+ 7		- ?					Tested in _LABEL_F7_25
+
+iy+8		LevelHeader: 00, unknown byte
+ 0		- ?					Reset after level load
+
+iy+9
+ 0		- ?					Reset after level load
+ 1							interrupts dis/enabled in `decompressArt`
+iy+10/a		Number of sprites?			Set to $40 in _LABEL_5E2_64
+
+iy+11/b		Copy of IY+5 (Scrolling/RingHUD) during level load
+
+iy+12/c		Copy of IY+6 (Underwater flag) during level load
+ 4		- ?
+ 5		- ?					Checked after loading level
+
+iy+13/d		
+ 5
