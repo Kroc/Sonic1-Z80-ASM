@@ -68,13 +68,13 @@ d291/2
 d293/4
 d297							Read at _239c
 d298/a
-d29f							Set to $FFFE during level load
+d29f/a0		Time					Set to $FFFE during level load
 d2a4		LevelHeader: Cycle Speed
 d2a5		Set to above
 d2a6		Set to 0 after doing above
 d2a7		LevelHeader: Colour Cycles
 d2a8/9		Address of the cycle palette for the current level
-d2aa							set to 0 during level load
+d2aa		Ring count				set to 0 during level load
 d2ab							set to $FF during level load
 d2ac							set to $FF after IRQ (_LABEL_F7_25)
 d2ba/b/c/d						Initialised to 0

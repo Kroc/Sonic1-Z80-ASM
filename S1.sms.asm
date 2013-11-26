@@ -33,7 +33,7 @@
  ;some struggling to learn it -- that WLA DX will do an excellent job
 
 ;this disassembly was made possible by earlier documentation provided by
- ;David Declerk, ValleyBell and Penta Penguin
+ ;David Declerk, ValleyBell, Penta Penguin and Ravenfreak
 
 ;======================================================================================
 
@@ -110,6 +110,10 @@
 
 .DEF S1_RASTERSPLIT_STEP	$D247
 .DEF S1_RASTERSPLIT_LINE	$D248
+
+.DEF S1_RINGS			$D2AA	;player's ring count
+.DEF S1_LIVES			$D246	;player's lives count
+.DEF S1_TIME			$D29F	;the level's time
 
 ;======================================================================================
 
@@ -2770,7 +2774,7 @@ _LABEL_E86_110:				;[$0E86]
 	res  0, (iy+$00)
 	call wait
 	ld   (iy+$0a), $00
-	ld   a, ($D246)
+	ld   a, (S1_LIVES)
 	ld   l, a
 	ld   h, $00
 	ld   c, $0A
@@ -2782,7 +2786,7 @@ _LABEL_E86_110:				;[$0E86]
 	ld   c, $0A
 	call _LABEL_5FC_114
 	ex   de, hl
-	ld   a, ($D246)
+	ld   a, (S1_LIVES)
 	ld   l, a
 	ld   h, $00
 	and  a
@@ -3435,7 +3439,7 @@ _168e:
 _16b1:
 	ld      hl,($d212)
 	ld      de,($d214)
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	or      h
 	or      l
 	or      d
@@ -3491,7 +3495,7 @@ _1711:
 .db $14, $ad, $ae, $ff, $15, $bd, $be, $ff
 _1719:
 	xor     a
-	ld      ($d2aa),a
+	ld      (S1_RINGS),a
 	res     3,(iy+$09)
 	res     2,(iy+$09)
 	ret     
@@ -3603,11 +3607,11 @@ _17dd:
 _17f4:
 	ld      bc,$001e
 	call    _1860
-	ld      a,($d246)
+	ld      a,(S1_LIVES)
 	and     a
 	jr      z,_1812
 	dec     a
-	ld      ($d246),a
+	ld      (S1_LIVES),a
 	ld      de,$5000
 	ld      c,$00
 	call    _39d8
@@ -3762,7 +3766,7 @@ _19b1:
 .db $00, $50, $00
 
 _19b4:
-	ld      hl,$d2aa
+	ld      hl,S1_RINGS
 	ld      a,(hl)
 	and     a
 	ret     z
@@ -3839,7 +3843,7 @@ _1a18:
 	ld      b,$50
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ld      hl,$d2aa
+	ld      hl,S1_RINGS
 	ld      de,$d2be
 	ld      b,$01
 	call    _1b13
@@ -3903,7 +3907,7 @@ _1ab0:
 	ld      ($d23c),hl
 	ret     
 _1aca:
-	ld      a,($d246)
+	ld      a,(S1_LIVES)
 	ld      l,a
 	ld      h,$00
 	ld      c,$0a
@@ -3915,7 +3919,7 @@ _1aca:
 	ld      c,$0a
 	call    _LABEL_5FC_114
 	ex      de,hl
-	ld      a,($d246)
+	ld      a,(S1_LIVES)
 	ld      l,a
 	ld      h,$00
 	and     a
@@ -4037,7 +4041,7 @@ _LABEL_1C49_62:				;[$1C49]
 	ei				;enable interrupts
 _LABEL_1C4E_105:
 	ld   a, $03
-	ld   ($D246), a
+	ld   (S1_LIVES), a
 	
 	ld   a, $05
 	ld   ($D2FD), a
@@ -4564,7 +4568,7 @@ _2020:
 _2023:
 .db $00, $00, $2d, $20, $31, $20, $39, $20, $3f, $20, $3e, $0e, $ef, $c9
 _2031:
-	ld      hl,$d246
+	ld      hl,S1_LIVES
 	inc     (hl)
 	ld      a,$09
 	rst     $28
@@ -4593,7 +4597,7 @@ _2067:
 _207e:
 	bit     7,(iy+$06)
 	call    nz,_20a4
-	ld      a,($d246)
+	ld      a,(S1_LIVES)
 	and     a
 	ld      a,$02
 	ret     nz
@@ -4604,7 +4608,7 @@ _207e:
 	ld      a,$00
 	ret     nc
 	ld      a,$03
-	ld      ($d246),a
+	ld      (S1_LIVES),a
 	ld      a,$01
 	ret     
 _20a4:
@@ -4703,7 +4707,7 @@ loadLevel:
 
 ++	ld   ($D2DC), hl		;either $0800 or $0020
 	ld   hl, $FFFE
-	ld   ($D29F), hl
+	ld   (S1_TIME), hl
 	ld   hl, $23FF
 	
 	bit  4, (iy+$06)
@@ -4716,7 +4720,7 @@ loadLevel:
 	
 _LABEL_2155_139:
 	xor  a				;set A to 0
-	ld   ($D2AA), a
+	ld   (S1_RINGS), a
 	
 	;is this a special stage? (level number 28+)
 	ld   a, (S1_CURRENT_LEVEL)
@@ -5991,7 +5995,7 @@ _2e5a:
 	ld      bc,$0005
 	ldir    
 	
-	ld      a,($d246)
+	ld      a,(S1_LIVES)
 	cp      $09
 	jr      c,_2e72
 	ld      a,$09
@@ -6049,7 +6053,7 @@ _2ec3:
 	ret     
 
 _2ee6:
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	ld      c,a
 	rrca    
 	rrca    
@@ -6382,7 +6386,7 @@ _3162:
 
 _3164:
 	ld      hl,($d29d)
-	ld      de,($d29f)
+	ld      de,(S1_TIME)
 	add     hl,de
 	ld      bc,$0200
 	ld      a,h
@@ -6424,7 +6428,7 @@ _3193:
 	sbc     hl,bc
 	jr      nc,_31be
 	ld      hl,$0002
-	ld      ($d29f),hl
+	ld      (S1_TIME),hl
 	ret     
 _31be:
 	ld      hl,($d2a2)
@@ -6433,7 +6437,7 @@ _31be:
 	sbc     hl,bc
 	ret     c
 	ld      hl,$fffe
-	ld      ($d29f),hl
+	ld      (S1_TIME),hl
 	ret     
 
 _31cf:
@@ -7098,7 +7102,7 @@ _3607:
 _360c:
 	bit     5,(iy+$06)
 	jr      nz,_367e
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	and     a
 	jr      nz,_3644
 _3618:
@@ -7120,7 +7124,7 @@ _3618:
 	ret     
 _3644:
 	xor     a
-	ld      ($d2aa),a
+	ld      (S1_RINGS),a
 	call    _7c7b
 	jr      c,_367e
 	push    ix
@@ -7633,7 +7637,7 @@ _LABEL_3956_11:
 	ret
 _39ac:
 	ld      c,a
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	add     a,c
 	ld      c,a
 	and     $0f
@@ -7647,15 +7651,15 @@ _39bc:
 	cp      $a0
 	jr      c,_39d1
 	sub     $a0
-	ld      ($d2aa),a
-	ld      a,($d246)
+	ld      (S1_RINGS),a
+	ld      a,(S1_LIVES)
 	inc     a
-	ld      ($d246),a
+	ld      (S1_LIVES),a
 	ld      a,$09
 	rst     $28
 	ret     
 _39d1:
-	ld      ($d2aa),a
+	ld      (S1_RINGS),a
 	ld      a,$02
 	rst     $28
 	ret     
@@ -7690,7 +7694,7 @@ _39d8:
 	add     a,(hl)
 	daa     
 	ld      (hl),a
-	ld      hl,$d246
+	ld      hl,S1_LIVES
 	inc     (hl)
 	ld      a,$09
 	rst     $28
@@ -9512,7 +9516,7 @@ _543c:
 	jr      nz,_546c
 	ld      a,$01
 	ld      ($d283),a
-	ld      hl,$d246
+	ld      hl,S1_LIVES
 	dec     (hl)
 	set     2,(iy+$06)
 	jp      _54aa
@@ -10256,7 +10260,7 @@ _5c21:
 	jr      c,_5c5a
 	bit     2,(ix+$18)
 	jp      nz,_5b24
-	ld      hl,$d246
+	ld      hl,S1_LIVES
 	inc     (hl)
 	ld      hl,$d305
 	call    _LABEL_C02_135
@@ -10752,7 +10756,7 @@ _6030:
 _605a:
 	ld      de,$61a8
 	ld      c,$04
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	cp      $50
 	jr      nc,_6092
 _6066:
@@ -10763,7 +10767,7 @@ _6066:
 	and     $0f
 	jr      z,_6092
 _6073:
-	ld      a,($d2aa)
+	ld      a,(S1_RINGS)
 	srl     a
 	srl     a
 	srl     a
