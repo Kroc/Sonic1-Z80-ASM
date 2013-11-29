@@ -2,6 +2,7 @@
 !.gitignore
 !.gitattributes
 
+!includes
 !VBinDiff
 !WLADX
 

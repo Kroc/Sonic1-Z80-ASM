@@ -279,7 +279,7 @@ $16830 - $169A8?	Map 3 (when the game is finished)
 $169A9 - $16C60?	
 $16C61 - $16DE9		Credits Screen
 -----------------------------------------------------------------------------
-$16DEA - $1FFFF		Level Layout:
+$16DEA - $1FFFF		Floor Layout:
 -----------------------------------------------------------------------------
 $16DEA - $17627         Green Hill Act 1 / End Sequence
 $17628 - $17C88         Green Hill Act 2
