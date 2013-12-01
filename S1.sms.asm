@@ -18,17 +18,22 @@
  
 ;this disassembly was made by using these tools:
 
-;SMSExamine: <www.smspower.org/Development/SMSExamine>
+;SMSExamine: <smspower.org/Development/SMSExamine>
  ;this excellent tool disassembles much of the ROM by effectively 'running' the code
  ;to determine what parts are code and what parts are data. this saved a very large
  ;amount of effort, but due to the dynamic and complex nature of code, it didn't get
  ;all of it right, therefore I used:
  
-;dz80: <www.inkland.org.uk/dz80/>
+;dz80: <inkland.org.uk/dz80>
  ;to do a byte-for-byte disassembly to fill in the blanks
- ;(this had to all be manually labelled!)
-
-;WLA DX <www.villehelin.com/wla.html>
+ ;(this had to all be manually labelled!). that was largely wasted time as I later got
+ ;help from the author of:
+ 
+;emulicious: <emulicious.net>
+ ;which was able to provide a far superior disassembly that filled in all the gaps
+ ;through a specific configuration file provided kindle by the author to assist me
+ 
+;WLA DX <villehelin.com/wla.html>
  ;I was intending to write my own Z80 assembler (in VB6!), but I have found -- after
  ;some struggling to learn it -- that WLA DX will do an excellent job
 
@@ -5853,7 +5858,7 @@ _2ad6:					;credits screen palette
 
 ;____________________________________________________________________________[$2AF6]___
 
-_2af6:					;object table?
+_2af6:					;object table
 .dw _48c8				;#00: Sonic
 .dw _5b09				;#01: monitor - ring
 .dw _5bd9				;#02: monitor - speed shoes
@@ -5873,73 +5878,73 @@ _2af6:					;object table?
 .dw _6e0c				;#10: badnick - motobug
 .dw _6f08				;#11: badnick - newtron
 .dw _700c				;#12: boss (Green Hill)
-.db $75, $9B				;#13: UNKNOWN
-.db $E8, $9B				;#14: UNKNOWN
-.db $70, $9C				;#15: UNKNOWN
-.db $8E, $9C				;#16: flame thrower (Scrap Brain)
-.db $FA, $9D				;#17: door - one way left (Scrap Brain)
-.db $62, $9F				;#18: door - one way right (Scrap Brain)
-.db $25, $A0				;#19: door (Scrap Brain)
-.db $E8, $A0				;#1A: electric sphere (Scrap Brain)
-.db $AA, $A1				;#1B: badnick - ball hog (Scrap Brain)
-.db $3C, $A3				;#1C: UNKNOWN (ball from ball hog?)
-.db $F8, $A3				;#1D: switch
-.db $AB, $A4				;#1E: switch door
-.db $51, $A5				;#1F: badnick - caterkiller
-.db $F8, $96				;#20: UNKNOWN
-.db $FB, $9A				;#21: moving bumber (Scrap Brain)
-.db $ED, $A7				;#22: boss (Scrap Brain)
+.dw _9b75				;#13: UNKNOWN
+.dw _9be8				;#14: UNKNOWN
+.dw _9c70				;#15: UNKNOWN
+.dw _9c8e				;#16: flame thrower (Scrap Brain)
+.dw _9dfa				;#17: door - one way left (Scrap Brain)
+.dw _9f62				;#18: door - one way right (Scrap Brain)
+.dw _a025				;#19: door (Scrap Brain)
+.dw _a0e8				;#1A: electric sphere (Scrap Brain)
+.dw _a1aa				;#1B: badnick - ball hog (Scrap Brain)
+.dw _a33c				;#1C: UNKNOWN (ball from ball hog?)
+.dw _a3f8				;#1D: switch
+.dw _a4ab				;#1E: switch door
+.dw _a551				;#1F: badnick - caterkiller
+.dw _96f8				;#20: UNKNOWN
+.dw _9afb				;#21: moving bumper (Special Stage)
+.dw _a7ed				;#22: boss (Scrap Brain)
 .dw _7699				;#23: free animal - rabbit
 .dw _7594				;#24: free animal - bird
 .dw _732c				;#25: capsule
 .dw _7cf6				;#26: badnick - chopper
 .dw _7e02				;#27: log - vertical (Jungle)
 .dw _7e9b				;#28: log - horizontal (Jungle)
-.db $E6, $7E				;#29: log - floating (Jungle)
-.db $A8, $96				;#2A: UNKNOWN
-.db $18, $82				;#2B: UNKNOWN
-.db $53, $80				;#2C: boss (Jungle)
-.db $E6, $82				;#2D: badnick - yadrin (Bridge)
-.db $C1, $83				;#2E: UNKNOWN
-.db $A5, $94				;#2F: UNKNOWN
-.db $C7, $A9				;#30: meta - clouds (Sky Base)
-.db $6A, $AA				;#31: propeller (Sky Base)
-.db $21, $AB				;#32: badnick - bomb (Sky Base)
-.db $6C, $AD				;#33: canon (Sky Base)
-.db $35, $AE				;#34: UNKNOWN
-.db $88, $AE				;#35: badnick - unidos (Sky Base)
-.db $F4, $B0				;#36: UNKNOWN
-.db $6C, $B1				;#37: rotating turret (Sky Base)
-.db $97, $B2				;#38: flying platform (Sky Base)
-.db $98, $B3				;#39: moving spiked wall (Sky Base)
-.db $6D, $B4				;#3A: fixed turret (Sky Base)
-.db $0E, $B5				;#3B: flying platform - up/down (Sky Base)
-.db $37, $88				;#3C: badnick - jaws (Labyrinth)
-.db $FB, $88				;#3D: spike ball (Labyrinth)
-.db $F6, $8A				;#3E: spear (Labyrinth)
-.db $16, $8C				;#3F: fire ball head (Labyrinth)
-.db $48, $8D				;#40: meta - water line position
-.db $56, $8E				;#41: bubbles (Labyrinth)
-.db $CA, $8E				;#42: UNKNOWN
-.db $6C, $8F				;#43: UNKNOWN
-.db $6D, $8F				;#44: badnick - burrobot
-.db $C0, $90				;#45: platform - float up (Labyrinth)
-.db $84, $BB				;#46: boss - electric beam (Sky Base)
-.db $DF, $BC				;#47: UNKNOWN
-.db $96, $84				;#48: boss (Bridge)
-.db $67, $92				;#49: boss (Labyrinth)
-.db $34, $B6				;#4A: boss (Sky Base)
-.db $A7, $7A				;#4B: trip zone (Green Hill)
-.db $66, $98				;#4C: Flipper (Special Stage)
+.dw _7ee6				;#29: log - floating (Jungle)
+.dw _96a8				;#2A: UNKNOWN
+.dw _8218				;#2B: UNKNOWN
+.dw _8053				;#2C: boss (Jungle)
+.dw _82e6				;#2D: badnick - yadrin (Bridge)
+.dw _83c1				;#2E: UNKNOWN
+.dw _94a5				;#2F: UNKNOWN
+.dw _a9c7				;#30: meta - clouds (Sky Base)
+.dw _aa6a				;#31: propeller (Sky Base)
+.dw _ab21				;#32: badnick - bomb (Sky Base)
+.dw _ad6c				;#33: canon (Sky Base)
+.dw _ae35				;#34: UNKNOWN
+.dw _ae88				;#35: badnick - unidos (Sky Base)
+.dw _b0f4				;#36: UNKNOWN
+.dw _b16c				;#37: rotating turret (Sky Base)
+.dw _b297				;#38: flying platform (Sky Base)
+.dw _b398				;#39: moving spiked wall (Sky Base)
+.dw _b46d				;#3A: fixed turret (Sky Base)
+.dw _b50e				;#3B: flying platform - up/down (Sky Base)
+.dw _8837				;#3C: badnick - jaws (Labyrinth)
+.dw _88fb				;#3D: spike ball (Labyrinth)
+.dw _8af6				;#3E: spear (Labyrinth)
+.dw _8c16				;#3F: fire ball head (Labyrinth)
+.dw _8d48				;#40: meta - water line position
+.dw _8e56				;#41: bubbles (Labyrinth)
+.dw _8eca				;#42: UNKNOWN
+.dw _8f6c				;#43: NO-CODE
+.dw _8f6d				;#44: badnick - burrobot
+.dw _90c0				;#45: platform - float up (Labyrinth)
+.dw _bb84				;#46: boss - electric beam (Sky Base)
+.dw _bcdf				;#47: UNKNOWN
+.dw _8496				;#48: boss (Bridge)
+.dw _9267				;#49: boss (Labyrinth)
+.dw _b634				;#4A: boss (Sky Base)
+.dw _7aa7				;#4B: trip zone (Green Hill)
+.dw _9866				;#4C: Flipper (Special Stage)
 .dw $0000				;#4D: RESET!
-.db $6C, $86				;#4E: balance (Bridge)
+.dw _866c				;#4E: balance (Bridge)
 .dw $0000				;#4F: RESET!
-.db $ED, $7A				;#50: flower (Green Hill)
-.db $2F, $5D				;#51: monitor - checkpoint
-.db $80, $5D				;#52: monitor - continue
-.db $F9, $BD				;#53: final animation
-.db $4C, $BF				;#54: all emeralds animation
-.db $95, $7B				;#55: "make sonic blink"
+.dw _7aed				;#50: flower (Green Hill)
+.dw _5d2f				;#51: monitor - checkpoint
+.dw _5d80				;#52: monitor - continue
+.dw _bdf9				;#53: final animation
+.dw _bf4c				;#54: all emeralds animation
+.dw _7b95				;#55: "make sonic blink"
 
 ;____________________________________________________________________________[$2BA2]___
 
@@ -10382,6 +10387,11 @@ _5cff:
 _5d29:
 	ld      hl,$5380
 	jp      _5b34
+
+;____________________________________________________________________________[$5D2F]___
+;OBJECT: monitor - checkpoint
+
+_5d2f:
 	ld      (ix+$0d),$14
 	ld      (ix+$0e),$18
 	call    _5da8
@@ -10423,6 +10433,11 @@ _5d29:
 _5d7a:
 	ld      hl,$5480
 	jp      _5b34
+	
+;____________________________________________________________________________[$5D80]___
+;OBJECT: monitor - continue
+
+_5d80:
 	ld      (ix+$0d),$14
 	ld      (ix+$0e),$18
 	call    _5da8
@@ -11183,7 +11198,7 @@ _67f9:
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
 	jr      z,_6805
-	ld      hl,$6923
+	ld      hl,_6923
 _6805:
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
@@ -12791,6 +12806,11 @@ _7a3a:
 	ld      a,$01
 	rst     $28
 	ret     
+	
+;____________________________________________________________________________[$7AA7]___
+;OBJECT: trip zone (Green Hill)
+
+_7aa7:
 	set     5,(ix+$18)
 	ld      (ix+$0d),$40
 	ld      (ix+$0e),$40
@@ -12818,6 +12838,11 @@ _7a3a:
 	ld      a,$11
 	rst     $28
 	ret     
+
+;____________________________________________________________________________[$7AED]___
+;OBJECT: flower (Green Hill)
+
+_7aed:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
 	jr      nz,_7b03
@@ -12878,6 +12903,9 @@ _7b5d:
 .db $00, $00, $00, $00, $00, $00, $00, $00, $F0, $00, $F1, $00, $E2, $00, $F2, $00, $00, $00, $00, $00, $F0, $00, $F1, $00, $E2, $00, $F2, $00, $2E, $00, $2F, $00, $2E, $00, $2F, $00, $2E, $00, $2F, $00  
 _7b85:
 .db $00, $01, $08, $00, $02, $03, $78, $00, $01, $04, $08, $00, $02, $03, $78, $00
+
+;____________________________________________________________________________[$7B95]___
+;OBJECT: "make Sonic blink"
 
 _7b95  
 	set     5,(ix+$18)
@@ -13249,6 +13277,9 @@ _7e9b
 _7ed9:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6E, $48, $FF, $FF, $FF
 
+;____________________________________________________________________________[$7EE6]___
+;OBJECT: log - floating (Jungle)
+
 _7ee6:
 	set     5,(ix+$18)
 	ld      (ix+$0d),$0a
@@ -13402,2285 +13433,1885 @@ _8019:
 _8022:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $3A, $3C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $36, $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $4C, $4E, $FF, $FF, $FF, $FF, $FF
 
-.ENDASM
-_8053:
-8053 ddcb18ee  set     5,(ix+$18)
-8057 dd360d20  ld      (ix+$0d),$20
-805b dd360e1c  ld      (ix+$0e),$1c
-805f ddcb1846  bit     0,(ix+$18)
-8063 204b      jr      nz,_80b0
-8065 2a01d4    ld      hl,($d401)
-8068 11e000    ld      de,$00e0
-806b a7        and     a
-806c ed52      sbc     hl,de
-806e d0        ret     nc
-806f 3a14d4    ld      a,($d414)
-8072 07        rlca    
-8073 d0        ret     nc
-		;boss sprite set
-8074 21b1ae    ld      hl,$aeb1
-8077 110020    ld      de,$2000
-807a 3e09      ld      a,9
-807c cd0504    call    decompressArt
+;____________________________________________________________________________[$8053]___
+;OBJECT: boss (Jungle)
 
-807f 211c73    ld      hl,S1_BossPalette
-8082 3e02      ld      a,$02
-8084 cd3303    call    loadPaletteOnInterrupt
-8087 3e0b      ld      a,$0b
-8089 df        rst     $18
-808a af        xor     a
-808b 32ecd2    ld      ($d2ec),a
-808e 2a5ad2    ld      hl,($d25a)
-8091 2273d2    ld      (S1_LEVEL_CROPLEFT),hl
-8094 2275d2    ld      ($d275),hl
-8097 2a5dd2    ld      hl,($d25d)
-809a 2277d2    ld      (S1_LEVEL_CROPTOP),hl
-809d 2279d2    ld      (S1_LEVEL_EXTENDHEIGHT),hl
-80a0 21f001    ld      hl,$01f0
-80a3 227bd2    ld      ($d27b),hl
-80a6 214800    ld      hl,$0048
-80a9 227dd2    ld      ($d27d),hl
-80ac ddcb18c6  set     0,(ix+$18)
+_8053:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$20
+	ld      (ix+$0e),$1c
+	bit     0,(ix+$18)
+	jr      nz,_80b0
+	ld      hl,($d401)
+	ld      de,$00e0
+	and     a
+	sbc     hl,de
+	ret     nc
+	ld      a,($d414)
+	rlca    
+	ret     nc
+	;boss sprite set
+	ld      hl,$aeb1
+	ld      de,$2000
+	ld      a,9
+	call    decompressArt
+	
+	ld      hl,S1_BossPalette
+	ld      a,$02
+	call    loadPaletteOnInterrupt
+	ld      a,$0b
+	rst     $18
+	xor     a
+	ld      ($d2ec),a
+	ld      hl,($d25a)
+	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      ($d275),hl
+	ld      hl,($d25d)
+	ld      (S1_LEVEL_CROPTOP),hl
+	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      hl,$01f0
+	ld      ($d27b),hl
+	ld      hl,$0048
+	ld      ($d27d),hl
+	set     0,(ix+$18)
 _80b0:
-80b0 cda67c    call    _7ca6
-80b3 ddcb1146  bit     0,(ix+$11)
-80b7 202e      jr      nz,_80e7
-80b9 dd360ff4  ld      (ix+$0f),<_81f4
-80bd dd361081  ld      (ix+$10),>_81f4
-80c1 dd360a80  ld      (ix+$0a),$80
-80c5 dd360b00  ld      (ix+$0b),$00
-80c9 dd360c00  ld      (ix+$0c),$00
-80cd dd6e05    ld      l,(ix+$05)
-80d0 dd6606    ld      h,(ix+$06)
-80d3 115800    ld      de,$0058
-80d6 af        xor     a
-80d7 ed52      sbc     hl,de
-80d9 d8        ret     c
-80da dd770a    ld      (ix+$0a),a
-80dd dd770b    ld      (ix+$0b),a
-80e0 dd770c    ld      (ix+$0c),a
-80e3 ddcb11c6  set     0,(ix+$11)
+	call    _7ca6
+	bit     0,(ix+$11)
+	jr      nz,_80e7
+	ld      (ix+$0f),<_81f4
+	ld      (ix+$10),>_81f4
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0058
+	xor     a
+	sbc     hl,de
+	ret     c
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	set     0,(ix+$11)
 _80e7:
-80e7 dd7e12    ld      a,(ix+$12)
-80ea a7        and     a
-80eb c24a81    jp      nz,_814a
-80ee dd6e02    ld      l,(ix+$02)
-80f1 dd6603    ld      h,(ix+$03)
-80f4 ddcb114e  bit     1,(ix+$11)
-80f8 2028      jr      nz,_8122
-80fa dd360ff4  ld      (ix+$0f),$f4
-80fe dd361081  ld      (ix+$10),$81
-8102 ddcb188e  res     1,(ix+$18)
-8106 dd360700  ld      (ix+$07),$00
-810a dd3608ff  ld      (ix+$08),$ff
-810e dd3609ff  ld      (ix+$09),$ff
-8112 111c02    ld      de,$021c
-8115 a7        and     a
-8116 ed52      sbc     hl,de
-8118 d2e781    jp      nc,_81e7
-811b dd361267  ld      (ix+$12),$67
-811f c3e781    jp      _81e7
+	ld      a,(ix+$12)
+	and     a
+	jp      nz,_814a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	bit     1,(ix+$11)
+	jr      nz,_8122
+	ld      (ix+$0f),<_81f4
+	ld      (ix+$10),>_81f4
+	res     1,(ix+$18)
+	ld      (ix+$07),$00
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      de,$021c
+	and     a
+	sbc     hl,de
+	jp      nc,_81e7
+	ld      (ix+$12),$67
+	jp      _81e7
 _8122:
-8122 dd360f06  ld      (ix+$0f),$06
-8126 dd361082  ld      (ix+$10),$82
-812a ddcb18ce  set     1,(ix+$18)
-812e dd360700  ld      (ix+$07),$00
-8132 dd360801  ld      (ix+$08),$01
-8136 dd360900  ld      (ix+$09),$00
-813a 11aa02    ld      de,$02aa
-813d a7        and     a
-813e ed52      sbc     hl,de
-8140 dae781    jp      c,_81e7
-8143 dd361267  ld      (ix+$12),$67
-8147 c3e781    jp      _81e7
+	ld      (ix+$0f),<_8206
+	ld      (ix+$10),>_8206
+	set     1,(ix+$18)
+	ld      (ix+$07),$00
+	ld      (ix+$08),$01
+	ld      (ix+$09),$00
+	ld      de,$02aa
+	and     a
+	sbc     hl,de
+	jp      c,_81e7
+	ld      (ix+$12),$67
+	jp      _81e7
 _814a:
-814a af        xor     a
-814b dd7707    ld      (ix+$07),a
-814e dd7708    ld      (ix+$08),a
-8151 dd7709    ld      (ix+$09),a
-8154 210100    ld      hl,$0001
-8157 dd3512    dec     (ix+$12)
-815a 2812      jr      z,_816e
-815c dd7e12    ld      a,(ix+$12)
-815f fe40      cp      $40
-8161 300e      jr      nc,_8171
-8163 21ffff    ld      hl,$ffff
-8166 fe28      cp      $28
-8168 3807      jr      c,_8171
-816a fe34      cp      $34
-816c 280f      jr      z,_817d
+	xor     a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      hl,$0001
+	dec     (ix+$12)
+	jr      z,_816e
+	ld      a,(ix+$12)
+	cp      $40
+	jr      nc,_8171
+	ld      hl,$ffff
+	cp      $28
+	jr      c,_8171
+	cp      $34
+	jr      z,_817d
 _816e:
-816e 210000    ld      hl,$0000
+	ld      hl,$0000
 _8171:
-8171 dd360a00  ld      (ix+$0a),$00
-8175 dd750b    ld      (ix+$0b),l
-8178 dd740c    ld      (ix+$0c),h
-817b 186a      jr      _81e7
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),l
+	ld      (ix+$0c),h
+	jr      _81e7
 _817d:
-817d dd7e11    ld      a,(ix+$11)
-8180 ee02      xor     $02
-8182 dd7711    ld      (ix+$11),a
-8185 3aecd2    ld      a,($d2ec)
-8188 fe08      cp      $08
-818a 305b      jr      nc,_81e7
-818c cd7b7c    call    _7c7b
-818f d8        ret     c
-8190 dd5e02    ld      e,(ix+$02)
-8193 dd5603    ld      d,(ix+$03)
-8196 dd4e05    ld      c,(ix+$05)
-8199 dd4606    ld      b,(ix+$06)
-819c dde5      push    ix
-819e e5        push    hl
-819f dde1      pop     ix
-81a1 dd36002b  ld      (ix+$00),$2b
-81a5 af        xor     a
-81a6 dd7701    ld      (ix+$01),a
-81a9 210b00    ld      hl,$000b
-81ac 19        add     hl,de
-81ad dd7502    ld      (ix+$02),l
-81b0 dd7403    ld      (ix+$03),h
-81b3 dd7704    ld      (ix+$04),a
-81b6 213000    ld      hl,$0030
-81b9 09        add     hl,bc
-81ba dd7505    ld      (ix+$05),l
-81bd dd7406    ld      (ix+$06),h
-81c0 dd7707    ld      (ix+$07),a
-81c3 dd7708    ld      (ix+$08),a
-81c6 dd7709    ld      (ix+$09),a
-81c9 dd770a    ld      (ix+$0a),a
-81cc dd770b    ld      (ix+$0b),a
-81cf dd770c    ld      (ix+$0c),a
-81d2 dd7711    ld      (ix+$11),a
-81d5 dd7716    ld      (ix+$16),a
-81d8 dd7717    ld      (ix+$17),a
-81db cd2506    call    _LABEL_625_57
-81de e63f      and     $3f
-81e0 c664      add     a,$64
-81e2 dd7712    ld      (ix+$12),a
-81e5 dde1      pop     ix
+	ld      a,(ix+$11)
+	xor     $02
+	ld      (ix+$11),a
+	ld      a,($d2ec)
+	cp      $08
+	jr      nc,_81e7
+	call    _7c7b
+	ret     c
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	push    ix
+	push    hl
+	pop     ix
+	ld      (ix+$00),$2b
+	xor     a
+	ld      (ix+$01),a
+	ld      hl,$000b
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$04),a
+	ld      hl,$0030
+	add     hl,bc
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	ld      (ix+$11),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	call    _LABEL_625_57
+	and     $3f
+	add     a,$64
+	ld      (ix+$12),a
+	pop     ix
 _81e7:
-81e7 215a00    ld      hl,$005a
-81ea 2216d2    ld      ($d216),hl
-81ed cdbe77    call    _77be
-81f0 cdfa79    call    _79fa
-81f3 c9        ret     
+	ld      hl,$005a
+	ld      ($d216),hl
+	call    _77be
+	call    _79fa
+	ret     
 
 _81f4:
-81f4 2022      jr      nz,_8218
-81f6 24        inc     h
-81f7 2628      ld      h,$28
-81f9 ff        rst     $38
-81fa 40        ld      b,b
-81fb 42        ld      b,d
-81fc 44        ld      b,h
-81fd 46        ld      b,(hl)
-81fe 48        ld      c,b
-81ff ff        rst     $38
-8200 60        ld      h,b
-8201 54        ld      d,h
-8202 56        ld      d,(hl)
-8203 58        ld      e,b
-8204 68        ld      l,b
-8205 ff        rst     $38
-8206 2a2c2e    ld      hl,($2e2c)
-8209 3032      jr------nc,$823d
-820b ff        rst     $38
-820c 4a        ld      c,d
-820d 4c        ld      c,h
-820e 4e        ld      c,(hl)
-820f 50        ld      d,b
-8210 52        ld      d,d
-8211 ff        rst     $38
-8212 6a        ld      l,d
-8213 5a        ld      e,d
-8214 5c        ld      e,h
-8215 5e        ld      e,(hl)
-8216 72        ld      (hl),d
-8217 ff        rst     $38
+.db $20, $22, $24, $26, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $54, $56, $58, $68, $FF
+_8206:
+.db $2A, $2C, $2E, $30, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $5A, $5C, $5E, $72, $FF
+
+;____________________________________________________________________________[$8218]___
+;OBJECT: UNKNOWN
 
 _8218:
-8218 ddcb18ae  res     5,(ix+$18)
-821c dd360d0c  ld      (ix+$0d),$0c
-8220 dd360e10  ld      (ix+$0e),$10
-8224 210202    ld      hl,$0202
-8227 2214d2    ld      ($d214),hl
-822a cd5639    call    _LABEL_3956_11
-822d d4fd35    call    nc,_35fd
-8230 dd6e07    ld      l,(ix+$07)
-8233 dd6608    ld      h,(ix+$08)
-8236 dd7e09    ld      a,(ix+$09)
-8239 110200    ld      de,$0002
-823c 0e00      ld      c,$00
-823e a7        and     a
-823f fa4682    jp      m,_8246
-8242 0d        dec     c
-8243 11feff    ld      de,$fffe
+	res     5,(ix+$18)
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$10
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      l,(ix+$07)
+	ld      h,(ix+$08)
+	ld      a,(ix+$09)
+	ld      de,$0002
+	ld      c,$00
+	and     a
+	jp      m,_8246
+	dec     c
+	ld      de,$fffe
 _8246:
-8246 19        add     hl,de
-8247 89        adc     a,c
-8248 dd7507    ld      (ix+$07),l
-824b dd7408    ld      (ix+$08),h
-824e dd7709    ld      (ix+$09),a
-8251 dd6e0a    ld      l,(ix+$0a)
-8254 dd660b    ld      h,(ix+$0b)
-8257 dd7e0c    ld      a,(ix+$0c)
-825a 112000    ld      de,$0020
-825d 19        add     hl,de
-825e ce00      adc     a,$00
-8260 4f        ld      c,a
-8261 7c        ld      a,h
-8262 fe03      cp      $03
-8264 3805      jr      c,_826b
-8266 210003    ld      hl,$0300
-8269 0e00      ld      c,$00
+	add     hl,de
+	adc     a,c
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	ld      (ix+$09),a
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$0020
+	add     hl,de
+	adc     a,$00
+	ld      c,a
+	ld      a,h
+	cp      $03
+	jr      c,_826b
+	ld      hl,$0300
+	ld      c,$00
 _826b:
-826b dd750a    ld      (ix+$0a),l
-826e dd740b    ld      (ix+$0b),h
-8271 dd710c    ld      (ix+$0c),c
-8274 3a23d2    ld      a,($d223)
-8277 e601      and     $01
-8279 dd8611    add     a,(ix+$11)
-827c dd7711    ld      (ix+$11),a
-827f dd7e11    ld      a,(ix+$11)
-8282 ddbe12    cp      (ix+$12)
-8285 300a      jr      nc,_8291
-8287 01c182    ld      bc,$82c1
-828a 11cd82    ld      de,$82cd
-828d cd417c    call    _7c41
-8290 c9        ret     
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	ld      a,($d223)
+	and     $01
+	add     a,(ix+$11)
+	ld      (ix+$11),a
+	ld      a,(ix+$11)
+	cp      (ix+$12)
+	jr      nc,_8291
+	ld      bc,_82c1
+	ld      de,_82cd
+	call    _7c41
+	ret     
 _8291:
-8291 200d      jr      nz,_82a0
-8293 3a23d2    ld      a,($d223)
-8296 e601      and     $01
-8298 c8        ret     z
-8299 dd361600  ld      (ix+$16),$00
-829d 3e01      ld      a,$01
-829f ef        rst     $28
+	jr      nz,_82a0
+	ld      a,($d223)
+	and     $01
+	ret     z
+	ld      (ix+$16),$00
+	ld      a,$01
+	rst     $28
 _82a0:
-82a0 af        xor     a
-82a1 dd7707    ld      (ix+$07),a
-82a4 dd7708    ld      (ix+$08),a
-82a7 dd7709    ld      (ix+$09),a
-82aa 01c682    ld      bc,$82c6
-82ad 11bba3    ld      de,$a3bb
-82b0 cd417c    call    _7c41
-82b3 dd7e12    ld      a,(ix+$12)
-82b6 c612      add     a,$12
-82b8 ddbe11    cp      (ix+$11)
-82bb d0        ret     nc
-82bc dd3600ff  ld      (ix+$00),$ff
-82c0 c9        ret     
-82c1 00        nop     
-82c2 04        inc     b
-82c3 0104ff    ld      bc,$ff04
-82c6 010c02    ld      bc,$020c
-82c9 0c        inc     c
-82ca 03        inc     bc
-82cb 0c        inc     c
-82cc ff        rst     $38
-82cd 08        ex      af,af'
-82ce 0a        ld      a,(bc)
-82cf ff        rst     $38
-82d0 ff        rst     $38
-82d1 ff        rst     $38
-82d2 ff        rst     $38
-82d3 ff        rst     $38
-82d4 ff        rst     $38
-82d5 ff        rst     $38
-82d6 ff        rst     $38
-82d7 ff        rst     $38
-82d8 ff        rst     $38
-82d9 ff        rst     $38
-82da ff        rst     $38
-82db ff        rst     $38
-82dc ff        rst     $38
-82dd ff        rst     $38
-82de ff        rst     $38
-82df 0c        inc     c
-82e0 0eff      ld      c,$ff
-82e2 ff        rst     $38
-82e3 ff        rst     $38
-82e4 ff        rst     $38
-82e5 ff        rst     $38
-82e6 dd360d10  ld      (ix+$0d),$10
-82ea dd360e0f  ld      (ix+$0e),$0f
-82ee 210804    ld      hl,$0408
-82f1 2214d2    ld      ($d214),hl
-82f4 cd5639    call    _LABEL_3956_11
-82f7 d4fd35    call    nc,_35fd
-82fa dd360d14  ld      (ix+$0d),$14
-82fe dd360e20  ld      (ix+$0e),$20
-8302 210610    ld      hl,$1006
-8305 2214d2    ld      ($d214),hl
-8308 cd5639    call    _LABEL_3956_11
-830b 210404    ld      hl,$0404
-830e 220ed2    ld      ($d20e),hl
-8311 d4e535    call    nc,_35e5
-8314 dd6e0a    ld      l,(ix+$0a)
-8317 dd660b    ld      h,(ix+$0b)
-831a dd7e0c    ld      a,(ix+$0c)
-831d 112000    ld      de,$0020
-8320 19        add     hl,de
-8321 ce00      adc     a,$00
-8323 dd750a    ld      (ix+$0a),l
-8326 dd740b    ld      (ix+$0b),h
-8329 dd770c    ld      (ix+$0c),a
-832c dd7e11    ld      a,(ix+$11)
-832f fe50      cp      $50
-8331 3818      jr      c,_834b
-8333 dd360740  ld      (ix+$07),$40
-8337 dd360800  ld      (ix+$08),$00
-833b dd360900  ld      (ix+$09),$00
-833f 117e83    ld      de,$837e
-8342 017983    ld      bc,$8379
-8345 cd417c    call    _7c41
-8348 c36083    jp      _8360
+	xor     a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      bc,_82c6
+	ld      de,_a3bb
+	call    _7c41
+	ld      a,(ix+$12)
+	add     a,$12
+	cp      (ix+$11)
+	ret     nc
+	ld      (ix+$00),$ff
+	ret     
+
+_82c1:
+.db $00, $04, $01, $04, $FF
+_82c6:
+.db $01, $0C, $02, $0C, $03, $0C, $FF
+_82cd:
+.db $08, $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $0C, $0E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$82E6]___
+;OBJECT: badnick - Yadrin (Bridge)
+
+_82e6:
+	ld      (ix+$0d),$10
+	ld      (ix+$0e),$0f
+	ld      hl,$0408
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      (ix+$0d),$14
+	ld      (ix+$0e),$20
+	ld      hl,$1006
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0404
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$0020
+	add     hl,de
+	adc     a,$00
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	ld      a,(ix+$11)
+	cp      $50
+	jr      c,_834b
+	ld      (ix+$07),$40
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      de,_837e
+	ld      bc,_8379
+	call    _7c41
+	jp      _8360
 _834b:
-834b dd3607c0  ld      (ix+$07),$c0
-834f dd3608ff  ld      (ix+$08),$ff
-8353 dd3609ff  ld      (ix+$09),$ff
-8357 117e83    ld      de,$837e
-835a 017483    ld      bc,$8374
-835d cd417c    call    _7c41
+	ld      (ix+$07),$c0
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      de,_837e
+	ld      bc,_8374
+	call    _7c41
 _8360:
-8360 3a23d2    ld      a,($d223)
-8363 e607      and     $07
-8365 c0        ret     nz
-8366 dd3411    inc     (ix+$11)
-8369 dd7e11    ld      a,(ix+$11)
-836c fea0      cp      $a0
-836e d8        ret     c
-836f dd361100  ld      (ix+$11),$00
-8373 c9        ret     
-8374 00        nop     
-8375 0601      ld      b,$01
-8377 06ff      ld      b,$ff
-8379 02        ld      (bc),a
-837a 0603      ld      b,$03
-837c 06ff      ld      b,$ff
-837e fe00      cp      $00
-8380 02        ld      (bc),a
-8381 ff        rst     $38
-8382 ff        rst     $38
-8383 ff        rst     $38
-8384 2022      jr------nz,$83a8
-8386 24        inc     h
-8387 ff        rst     $38
-8388 ff        rst     $38
-8389 ff        rst     $38
-838a ff        rst     $38
-838b ff        rst     $38
-838c ff        rst     $38
-838d ff        rst     $38
-838e ff        rst     $38
-838f ff        rst     $38
-8390 fe00      cp      $00
-8392 02        ld      (bc),a
-8393 ff        rst     $38
-8394 ff        rst     $38
-8395 ff        rst     $38
-8396 2628      ld      h,$28
-8398 2affff    ld      hl,(SMS_PAGE_2)
-839b ff        rst     $38
-839c ff        rst     $38
-839d ff        rst     $38
-839e ff        rst     $38
-839f ff        rst     $38
-83a0 ff        rst     $38
-83a1 ff        rst     $38
-83a2 40        ld      b,b
-83a3 42        ld      b,d
-83a4 ff        rst     $38
-83a5 ff        rst     $38
-83a6 ff        rst     $38
-83a7 ff        rst     $38
-83a8 4a        ld      c,d
-83a9 4c        ld      c,h
-83aa 4e        ld      c,(hl)
-83ab ff        rst     $38
-83ac ff        rst     $38
-83ad ff        rst     $38
-83ae ff        rst     $38
-83af ff        rst     $38
-83b0 ff        rst     $38
-83b1 ff        rst     $38
-83b2 ff        rst     $38
-83b3 ff        rst     $38
-83b4 40        ld      b,b
-83b5 42        ld      b,d
-83b6 ff        rst     $38
-83b7 ff        rst     $38
-83b8 ff        rst     $38
-83b9 ff        rst     $38
-83ba 44        ld      b,h
-83bb 46        ld      b,(hl)
-83bc 48        ld      c,b
-83bd ff        rst     $38
-83be ff        rst     $38
-83bf ff        rst     $38
-83c0 ff        rst     $38
-83c1 ddcb18ee  set     5,(ix+$18)
-83c5 dd360d0e  ld      (ix+$0d),$0e
-83c9 dd360e08  ld      (ix+$0e),$08
-83cd ddcb1846  bit     0,(ix+$18)
-83d1 2054      jr      nz,_8427
-83d3 af        xor     a
-83d4 dd770f    ld      (ix+$0f),a
-83d7 dd7710    ld      (ix+$10),a
-83da 6f        ld      l,a
-83db 67        ld      h,a
-83dc 220ed2    ld      ($d20e),hl
-83df ddcb184e  bit     1,(ix+$18)
-83e3 200d      jr      nz,_83f2
-83e5 cd2506    call    _LABEL_625_57
-83e8 e61f      and     $1f
-83ea 3c        inc     a
-83eb dd7711    ld      (ix+$11),a
-83ee ddcb18ce  set     1,(ix+$18)
+	ld      a,($d223)
+	and     $07
+	ret     nz
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $a0
+	ret     c
+	ld      (ix+$11),$00
+	ret     
+
+_8374:
+.db $00, $06, $01, $06, $FF
+_8379:
+.db $02, $06, $03, $06, $FF
+_837e:
+.db $FE, $00, $02, $FF, $FF, $FF, $20, $22, $24, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FE, $00, $02, $FF, $FF, $FF, $26, $28, $2A, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $4A, $4C, $4E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $44, $46, $48, $FF
+.db $FF, $FF, $FF
+
+;____________________________________________________________________________[$83C1]___
+;OBJECT: UNKNOWN
+
+_83c1:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$0e
+	ld      (ix+$0e),$08
+	bit     0,(ix+$18)
+	jr      nz,_8427
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      l,a
+	ld      h,a
+	ld      ($d20e),hl
+	bit     1,(ix+$18)
+	jr      nz,_83f2
+	call    _LABEL_625_57
+	and     $1f
+	inc     a
+	ld      (ix+$11),a
+	set     1,(ix+$18)
 _83f2:
-83f2 dd3511    dec     (ix+$11)
-83f5 c26784    jp      nz,_8467
-83f8 dd361101  ld      (ix+$11),$01
-83fc 3aacd2    ld      a,($d2ac)
-83ff e680      and     $80
-8401 ca6784    jp      z,_8467
-8404 dd6e02    ld      l,(ix+$02)
-8407 dd6603    ld      h,(ix+$03)
-840a 22abd2    ld      ($d2ab),hl
-840d dd6e05    ld      l,(ix+$05)
-8410 dd6606    ld      h,(ix+$06)
-8413 110e00    ld      de,$000e
-8416 19        add     hl,de
-8417 22add2    ld      ($d2ad),hl
-841a 218e84    ld      hl,$848e
-841d 22afd2    ld      ($d2af),hl
-8420 ddcb18c6  set     0,(ix+$18)
-8424 3e20      ld      a,$20
-8426 ef        rst     $28
+	dec     (ix+$11)
+	jp      nz,_8467
+	ld      (ix+$11),$01
+	ld      a,($d2ac)
+	and     $80
+	jp      z,_8467
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d2ab),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$000e
+	add     hl,de
+	ld      ($d2ad),hl
+	ld      hl,$848e
+	ld      ($d2af),hl
+	set     0,(ix+$18)
+	ld      a,$20
+	rst     $28
 _8427:
-8427 dd360f81  ld      (ix+$0f),$81
-842b dd361084  ld      (ix+$10),$84
-842f dd6e0a    ld      l,(ix+$0a)
-8432 dd660b    ld      h,(ix+$0b)
-8435 dd7e0c    ld      a,(ix+$0c)
-8438 112000    ld      de,$0020
-843b 19        add     hl,de
-843c ce00      adc     a,$00
-843e 4f        ld      c,a
-843f 7c        ld      a,h
-8440 fe04      cp      $04
-8442 3802      jr      c,_8446
-8444 2604      ld      h,$04
+	ld      (ix+$0f),<_8481
+	ld      (ix+$10),>_8481
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$0020
+	add     hl,de
+	adc     a,$00
+	ld      c,a
+	ld      a,h
+	cp      $04
+	jr      c,_8446
+	ld      h,$04
 _8446:
-8446 dd750a    ld      (ix+$0a),l
-8449 dd740b    ld      (ix+$0b),h
-844c dd710c    ld      (ix+$0c),c
-844f 220ed2    ld      ($d20e),hl
-8452 ed5b5dd2  ld      de,($d25d)
-8456 14        inc     d
-8457 dd6e05    ld      l,(ix+$05)
-845a dd6606    ld      h,(ix+$06)
-845d a7        and     a
-845e ed52      sbc     hl,de
-8460 3805      jr      c,_8467
-8462 dd3600ff  ld      (ix+$00),$ff
-8466 c9        ret     
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	ld      ($d20e),hl
+	ld      de,($d25d)
+	inc     d
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	and     a
+	sbc     hl,de
+	jr      c,_8467
+	ld      (ix+$00),$ff
+	ret     
 _8467:
-8467 210204    ld      hl,$0402
-846a 2214d2    ld      ($d214),hl
-846d cd5639    call    _LABEL_3956_11
-8470 d8        ret     c
-8471 3a08d4    ld      a,($d408)
-8474 a7        and     a
-8475 f8        ret     m
-8476 ed5b0ed2  ld      de,($d20e)
-847a 011000    ld      bc,$0010
-847d cdc17c    call    _LABEL_7CC1_12
-8480 c9        ret     
-8481 feff      cp      $ff
-8483 ff        rst     $38
-8484 ff        rst     $38
-8485 ff        rst     $38
-8486 ff        rst     $38
-8487 70        ld      (hl),b
-8488 72        ld      (hl),d
-8489 ff        rst     $38
-848a ff        rst     $38
-848b ff        rst     $38
-848c ff        rst     $38
-848d ff        rst     $38
-848e 00        nop     
-848f 00        nop     
-8490 00        nop     
-8491 00        nop     
-8492 00        nop     
-8493 00        nop     
-8494 00        nop     
-8495 00        nop     
-8496 ddcb18ee  set     5,(ix+$18)
-849a dd360d1e  ld      (ix+$0d),$1e
-849e dd360e1c  ld      (ix+$0e),$1c
-84a2 cda67c    call    _7ca6
-84a5 dd360f5a  ld      (ix+$0f),$5a
-84a9 dd361086  ld      (ix+$10),$86
-84ad ddcb1846  bit     0,(ix+$18)
-84b1 2027      jr      nz,_84da
-84b3 21a003    ld      hl,$03a0
-84b6 110003    ld      de,$0300
-84b9 cd8c7c    call    _7c8c
+	ld      hl,$0402
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ret     c
+	ld      a,($d408)
+	and     a
+	ret     m
+	ld      de,($d20e)
+	ld      bc,$0010
+	call    _LABEL_7CC1_12
+	ret     
+_8481:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF, $FF, $00, $00, $00
+.db $00, $00, $00, $00, $00
 
-		;UNKNOWN
-84bc 2108e5    ld      hl,$e508
-84bf 110020    ld      de,$2000
-84c2 3e0c      ld      a,12
-84c4 cd0504    call    decompressArt
+;____________________________________________________________________________[$8496]___
+;OBJECT: boss (Bridge)
 
-84c7 211c73    ld      hl,S1_BossPalette
-84ca 3e02      ld      a,$02
-84cc cd3303    call    loadPaletteOnInterrupt
-84cf af        xor     a
-84d0 32ecd2    ld      ($d2ec),a
-84d3 3e0b      ld      a,$0b
-84d5 df        rst     $18
-84d6 ddcb18c6  set     0,(ix+$18)
+_8496:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$1c
+	call    _7ca6
+	ld      (ix+$0f),<_865a
+	ld      (ix+$10),>_865a
+	bit     0,(ix+$18)
+	jr      nz,_84da
+	ld      hl,$03a0
+	ld      de,$0300
+	call    _7c8c
+	
+	;UNKNOWN
+	ld      hl,$e508
+	ld      de,$2000
+	ld      a,12
+	call    decompressArt
+	
+	ld      hl,S1_BossPalette
+	ld      a,$02
+	call    loadPaletteOnInterrupt
+	xor     a
+	ld      ($d2ec),a
+	ld      a,$0b
+	rst     $18
+	set     0,(ix+$18)
 _84da:
-84da dd7e11    ld      a,(ix+$11)
-84dd a7        and     a
-84de 2028      jr      nz,_8508
-84e0 cd2506    call    _LABEL_625_57
-84e3 e601      and     $01
-84e5 87        add     a,a
-84e6 87        add     a,a
-84e7 5f        ld      e,a
-84e8 1600      ld      d,$00
-84ea 213286    ld      hl,$8632
-84ed 19        add     hl,de
-84ee 7e        ld      a,(hl)
-84ef dd7702    ld      (ix+$02),a
-84f2 23        inc     hl
-84f3 7e        ld      a,(hl)
-84f4 23        inc     hl
-84f5 dd7703    ld      (ix+$03),a
-84f8 7e        ld      a,(hl)
-84f9 23        inc     hl
-84fa dd7705    ld      (ix+$05),a
-84fd 7e        ld      a,(hl)
-84fe 23        inc     hl
-84ff dd7706    ld      (ix+$06),a
-8502 dd3411    inc     (ix+$11)
-8505 c3c785    jp      _85c7
+	ld      a,(ix+$11)
+	and     a
+	jr      nz,_8508
+	call    _LABEL_625_57
+	and     $01
+	add     a,a
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      hl,_8632
+	add     hl,de
+	ld      a,(hl)
+	ld      (ix+$02),a
+	inc     hl
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$03),a
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$05),a
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$06),a
+	inc     (ix+$11)
+	jp      _85c7
 _8508:
-8508 3d        dec     a
-8509 2024      jr      nz,_852f
-850b dd360a80  ld      (ix+$0a),$80
-850f dd360bff  ld      (ix+$0b),$ff
-8513 dd360cff  ld      (ix+$0c),$ff
-8517 218003    ld      hl,$0380
-851a dd5e05    ld      e,(ix+$05)
-851d dd5606    ld      d,(ix+$06)
-8520 af        xor     a
-8521 ed52      sbc     hl,de
-8523 dac785    jp      c,_85c7
-8526 dd3411    inc     (ix+$11)
-8529 dd7712    ld      (ix+$12),a
-852c c3c785    jp      _85c7
+	dec     a
+	jr      nz,_852f
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
+	ld      hl,$0380
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	xor     a
+	sbc     hl,de
+	jp      c,_85c7
+	inc     (ix+$11)
+	ld      (ix+$12),a
+	jp      _85c7
 _852f:
-852f 3d        dec     a
-8530 2078      jr      nz,_85aa
-8532 af        xor     a
-8533 dd770a    ld      (ix+$0a),a
-8536 dd770b    ld      (ix+$0b),a
-8539 dd770c    ld      (ix+$0c),a
-853c dd3412    inc     (ix+$12)
-853f dd7e12    ld      a,(ix+$12)
-8542 fe64      cp      $64
-8544 c2c785    jp      nz,_85c7
-8547 dd3411    inc     (ix+$11)
-854a 3aecd2    ld      a,($d2ec)
-854d fe08      cp      $08
-854f 3076      jr      nc,_85c7
-8551 2afed3    ld      hl,($d3fe)
-8554 dd5e02    ld      e,(ix+$02)
-8557 dd5603    ld      d,(ix+$03)
-855a a7        and     a
-855b ed52      sbc     hl,de
-855d 213a86    ld      hl,$863a
-8560 3803      jr      c,_8565
-8562 214a86    ld      hl,$864a
+	dec     a
+	jr      nz,_85aa
+	xor     a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	inc     (ix+$12)
+	ld      a,(ix+$12)
+	cp      $64
+	jp      nz,_85c7
+	inc     (ix+$11)
+	ld      a,($d2ec)
+	cp      $08
+	jr      nc,_85c7
+	ld      hl,($d3fe)
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	and     a
+	sbc     hl,de
+	ld      hl,_863a
+	jr      c,_8565
+	ld      hl,_864a
 _8565:
-8565 5e        ld      e,(hl)
-8566 23        inc     hl
-8567 56        ld      d,(hl)
-8568 23        inc     hl
-8569 4e        ld      c,(hl)
-856a 23        inc     hl
-856b 46        ld      b,(hl)
-856c 23        inc     hl
-856d e5        push    hl
-856e dd6e02    ld      l,(ix+$02)
-8571 dd6603    ld      h,(ix+$03)
-8574 19        add     hl,de
-8575 220ed2    ld      ($d20e),hl
-8578 dd6e05    ld      l,(ix+$05)
-857b dd6606    ld      h,(ix+$06)
-857e 09        add     hl,bc
-857f 2210d2    ld      ($d210),hl
-8582 e1        pop     hl
-8583 0603      ld      b,$03
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      c,(hl)
+	inc     hl
+	ld      b,(hl)
+	inc     hl
+	push    hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	add     hl,bc
+	ld      ($d210),hl
+	pop     hl
+	ld      b,$03
 _8585:
-8585 c5        push    bc
-8586 7e        ld      a,(hl)
-8587 3212d2    ld      ($d212),a
-858a 23        inc     hl
-858b 7e        ld      a,(hl)
-858c 3213d2    ld      ($d213),a
-858f 23        inc     hl
-8590 7e        ld      a,(hl)
-8591 3214d2    ld      ($d214),a
-8594 23        inc     hl
-8595 7e        ld      a,(hl)
-8596 3215d2    ld      ($d215),a
-8599 23        inc     hl
-859a e5        push    hl
-859b 0e10      ld      c,$10
-859d cdd185    call    _85d1
-85a0 e1        pop     hl
-85a1 c1        pop     bc
-85a2 10e1      djnz    _8585
-85a4 3e01      ld      a,$01
-85a6 ef        rst     $28
-85a7 c3c785    jp      _85c7
+	push    bc
+	ld      a,(hl)
+	ld      ($d212),a
+	inc     hl
+	ld      a,(hl)
+	ld      ($d213),a
+	inc     hl
+	ld      a,(hl)
+	ld      ($d214),a
+	inc     hl
+	ld      a,(hl)
+	ld      ($d215),a
+	inc     hl
+	push    hl
+	ld      c,$10
+	call    _85d1
+	pop     hl
+	pop     bc
+	djnz    _8585
+	ld      a,$01
+	rst     $28
+	jp      _85c7
 _85aa:
-85aa dd360a80  ld      (ix+$0a),$80
-85ae dd360b00  ld      (ix+$0b),$00
-85b2 dd360c00  ld      (ix+$0c),$00
-85b6 21c003    ld      hl,$03c0
-85b9 dd5e05    ld      e,(ix+$05)
-85bc dd5606    ld      d,(ix+$06)
-85bf af        xor     a
-85c0 ed52      sbc     hl,de
-85c2 3003      jr      nc,_85c7
-85c4 dd7711    ld      (ix+$11),a
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
+	ld      hl,$03c0
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	xor     a
+	sbc     hl,de
+	jr      nc,_85c7
+	ld      (ix+$11),a
 _85c7:
-85c7 21a200    ld      hl,$00a2
-85ca 2216d2    ld      ($d216),hl
-85cd cdbe77    call    _77be
-85d0 c9        ret     
+	ld      hl,$00a2
+	ld      ($d216),hl
+	call    _77be
+	ret     
 
 _85d1:
-85d1 c5        push    bc
-85d2 cd7b7c    call    _7c7b
-85d5 c1        pop     bc
-85d6 d8        ret     c
-85d7 dde5      push    ix
-85d9 e5        push    hl
-85da dde1      pop     ix
-85dc af        xor     a
-85dd dd36000d  ld      (ix+$00),$0d
-85e1 2a0ed2    ld      hl,($d20e)
-85e4 dd7701    ld      (ix+$01),a
-85e7 dd7502    ld      (ix+$02),l
-85ea dd7403    ld      (ix+$03),h
-85ed 2a10d2    ld      hl,($d210)
-85f0 dd7704    ld      (ix+$04),a
-85f3 dd7505    ld      (ix+$05),l
-85f6 dd7406    ld      (ix+$06),h
-85f9 dd7711    ld      (ix+$11),a
-85fc dd7113    ld      (ix+$13),c
-85ff dd7714    ld      (ix+$14),a
-8602 dd7715    ld      (ix+$15),a
-8605 dd7716    ld      (ix+$16),a
-8608 dd7717    ld      (ix+$17),a
-860b 2a12d2    ld      hl,($d212)
-860e af        xor     a
-860f cb7c      bit     7,h
-8611 2801      jr      z,_8614
-8613 3d        dec     a
+	push    bc
+	call    _7c7b
+	pop     bc
+	ret     c
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$0d
+	ld      hl,($d20e)
+	ld      (ix+$01),a
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      hl,($d210)
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),a
+	ld      (ix+$13),c
+	ld      (ix+$14),a
+	ld      (ix+$15),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	ld      hl,($d212)
+	xor     a
+	bit     7,h
+	jr      z,_8614
+	dec     a
 _8614:
-8614 dd7507    ld      (ix+$07),l
-8617 dd7408    ld      (ix+$08),h
-861a dd7709    ld      (ix+$09),a
-861d 2a14d2    ld      hl,($d214)
-8620 af        xor     a
-8621 cb7c      bit     7,h
-8623 2801      jr      z,_8626
-8625 3d        dec     a
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	ld      (ix+$09),a
+	ld      hl,($d214)
+	xor     a
+	bit     7,h
+	jr      z,_8626
+	dec     a
 _8626:
-8626 dd750a    ld      (ix+$0a),l
-8629 dd740b    ld      (ix+$0b),h
-862c dd770c    ld      (ix+$0c),a
-862f dde1      pop     ix
-8631 c9        ret     
-8632 d403c0    call----nc,$c003
-8635 03        inc     bc
-8636 44        ld      b,h
-8637 04        inc     b
-8638 c0        ret     nz
-8639 03        inc     bc
-863a 00        nop     
-863b 00        nop     
-863c f6ff      or      $ff
-863e c0        ret     nz
-863f fe00      cp      $00
-8641 fc60fe    call----m,$fe60
-8644 80        add     a,b
-8645 fdc0      ret     nz
-8647 fd00      nop     
-8649 ff        rst     $38
-864a 2000      jr------nz,$864c
-864c f6ff      or      $ff
-864e 40        ld      b,b
-864f 0100fc    ld      bc,$fc00
-8652 a0        and     b
-8653 0180fd    ld      bc,$fd80
-8656 40        ld      b,b
-8657 02        ld      (bc),a
-8658 00        nop     
-8659 ff        rst     $38
-865a 2022      jr------nz,$867e
-865c 24        inc     h
-865d 2628      ld      h,$28
-865f ff        rst     $38
-8660 40        ld      b,b
-8661 42        ld      b,d
-8662 44        ld      b,h
-8663 46        ld      b,(hl)
-8664 48        ld      c,b
-8665 ff        rst     $38
-8666 60        ld      h,b
-8667 62        ld      h,d
-8668 64        ld      h,h
-8669 66        ld      h,(hl)
-866a 68        ld      l,b
-866b ff        rst     $38
-866c ddcb18ee  set     5,(ix+$18)
-8670 ddcb1846  bit     0,(ix+$18)
-8674 2018      jr      nz,_868e
-8676 dd36111c  ld      (ix+$11),$1c
-867a dd6e02    ld      l,(ix+$02)
-867d dd6603    ld      h,(ix+$03)
-8680 11f0ff    ld      de,$fff0
-8683 19        add     hl,de
-8684 dd7502    ld      (ix+$02),l
-8687 dd7403    ld      (ix+$03),h
-868a ddcb18c6  set     0,(ix+$18)
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	pop     ix
+	ret     
+
+_8632:
+.db $D4, $03, $C0, $03, $44, $04, $C0, $03
+_863a:
+.db $00, $00, $F6, $FF, $C0, $FE, $00, $FC, $60, $FE, $80, $FD, $C0, $FD, $00, $FF
+_864a:
+.db $20, $00, $F6, $FF, $40, $01, $00, $FC, $A0, $01, $80, $FD, $40, $02, $00, $FF
+_865a:
+.db $20, $22, $24, $26, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+;____________________________________________________________________________[$866C]___
+;OBJECT: balance (Bridge)
+
+_866c:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_868e
+	ld      (ix+$11),$1c
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$fff0
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	set     0,(ix+$18)
 _868e:
-868e dd6e14    ld      l,(ix+$14)
-8691 dd6615    ld      h,(ix+$15)
-8694 dd7e16    ld      a,(ix+$16)
-8697 dd5e12    ld      e,(ix+$12)
-869a dd5613    ld      d,(ix+$13)
-869d 0e00      ld      c,$00
-869f cb7a      bit     7,d
-86a1 2801      jr      z,_86a4
-86a3 0d        dec     c
+	ld      l,(ix+$14)
+	ld      h,(ix+$15)
+	ld      a,(ix+$16)
+	ld      e,(ix+$12)
+	ld      d,(ix+$13)
+	ld      c,$00
+	bit     7,d
+	jr      z,_86a4
+	dec     c
 _86a4:
-86a4 19        add     hl,de
-86a5 89        adc     a,c
-86a6 dd7514    ld      (ix+$14),l
-86a9 dd7415    ld      (ix+$15),h
-86ac dd7716    ld      (ix+$16),a
-86af 4c        ld      c,h
-86b0 47        ld      b,a
-86b1 213800    ld      hl,$0038
-86b4 19        add     hl,de
-86b5 dd7512    ld      (ix+$12),l
-86b8 dd7413    ld      (ix+$13),h
-86bb cb7c      bit     7,h
-86bd 205c      jr      nz,_871b
-86bf 07        rlca    
-86c0 3859      jr      c,_871b
-86c2 dd7e11    ld      a,(ix+$11)
-86c5 a7        and     a
-86c6 283f      jr      z,_8707
-86c8 ddcb184e  bit     1,(ix+$18)
-86cc 2826      jr      z,_86f4
-86ce 7d        ld      a,l
-86cf b4        or      h
-86d0 200e      jr      nz,_86e0
-86d2 3ae8d2    ld      a,($d2e8)
-86d5 2ae6d2    ld      hl,($d2e6)
-86d8 2206d4    ld      ($d406),hl
-86db 3208d4    ld      ($d408),a
-86de 1814      jr      _86f4
+	add     hl,de
+	adc     a,c
+	ld      (ix+$14),l
+	ld      (ix+$15),h
+	ld      (ix+$16),a
+	ld      c,h
+	ld      b,a
+	ld      hl,$0038
+	add     hl,de
+	ld      (ix+$12),l
+	ld      (ix+$13),h
+	bit     7,h
+	jr      nz,_871b
+	rlca    
+	jr      c,_871b
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_8707
+	bit     1,(ix+$18)
+	jr      z,_86f4
+	ld      a,l
+	or      h
+	jr      nz,_86e0
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
+	jr      _86f4
 _86e0:
-86e0 7d        ld      a,l
-86e1 2f        cpl     
-86e2 6f        ld      l,a
-86e3 7c        ld      a,h
-86e4 2f        cpl     
-86e5 67        ld      h,a
-86e6 23        inc     hl
-86e7 ed5be6d2  ld      de,($d2e6)
-86eb 19        add     hl,de
-86ec 2206d4    ld      ($d406),hl
-86ef 3eff      ld      a,$ff
-86f1 3208d4    ld      ($d408),a
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	inc     hl
+	ld      de,($d2e6)
+	add     hl,de
+	ld      ($d406),hl
+	ld      a,$ff
+	ld      ($d408),a
 _86f4:
-86f4 3e1c      ld      a,$1c
-86f6 91        sub     c
-86f7 dd7711    ld      (ix+$11),a
-86fa 2802      jr      z,_86fe
-86fc 301d      jr      nc,_871b
+	ld      a,$1c
+	sub     c
+	ld      (ix+$11),a
+	jr      z,_86fe
+	jr      nc,_871b
 _86fe:
-86fe ddcb184e  bit     1,(ix+$18)
-8702 2803      jr      z,_8707
-8704 3e04      ld      a,$04
-8706 ef        rst     $28
+	bit     1,(ix+$18)
+	jr      z,_8707
+	ld      a,$04
+	rst     $28
 _8707:
-8707 af        xor     a
-8708 dd7711    ld      (ix+$11),a
-870b dd7712    ld      (ix+$12),a
-870e dd7713    ld      (ix+$13),a
-8711 dd7714    ld      (ix+$14),a
-8714 dd36151c  ld      (ix+$15),$1c
-8718 dd7716    ld      (ix+$16),a
+	xor     a
+	ld      (ix+$11),a
+	ld      (ix+$12),a
+	ld      (ix+$13),a
+	ld      (ix+$14),a
+	ld      (ix+$15),$1c
+	ld      (ix+$16),a
 _871b:
-871b dd6e02    ld      l,(ix+$02)
-871e dd6603    ld      h,(ix+$03)
-8721 220ed2    ld      ($d20e),hl
-8724 dd6e05    ld      l,(ix+$05)
-8727 dd6606    ld      h,(ix+$06)
-872a 2210d2    ld      ($d210),hl
-872d 210000    ld      hl,$0000
-8730 2212d2    ld      ($d212),hl
-8733 dd6e11    ld      l,(ix+$11)
-8736 111000    ld      de,$0010
-8739 19        add     hl,de
-873a 2214d2    ld      ($d214),hl
-873d 213088    ld      hl,$8830
-8740 cd1a88    call    _881a
-8743 212800    ld      hl,$0028
-8746 2212d2    ld      ($d212),hl
-8749 3e1c      ld      a,$1c
-874b dd9611    sub     (ix+$11)
-874e 6f        ld      l,a
-874f 2600      ld      h,$00
-8751 111000    ld      de,$0010
-8754 19        add     hl,de
-8755 2214d2    ld      ($d214),hl
-8758 213088    ld      hl,$8830
-875b cd1a88    call    _881a
-875e 212c00    ld      hl,$002c
-8761 2212d2    ld      ($d212),hl
-8764 dd6e15    ld      l,(ix+$15)
-8767 dd6616    ld      h,(ix+$16)
-876a 2214d2    ld      ($d214),hl
-876d 213488    ld      hl,$8834
-8770 cd1a88    call    _881a
-8773 ddcb188e  res     1,(ix+$18)
-8777 dd360d14  ld      (ix+$0d),$14
-877b 3e02      ld      a,$02
-877d 3214d2    ld      ($d214),a
-8780 dd7e11    ld      a,(ix+$11)
-8783 4f        ld      c,a
-8784 c608      add     a,$08
-8786 dd770e    ld      (ix+$0e),a
-8789 79        ld      a,c
-878a c604      add     a,$04
-878c 3215d2    ld      ($d215),a
-878f cd5639    call    _LABEL_3956_11
-8792 3028      jr      nc,_87bc
-8794 3a08d4    ld      a,($d408)
-8797 a7        and     a
-8798 f8        ret     m
-8799 dd360d3c  ld      (ix+$0d),$3c
-879d 3e2a      ld      a,$2a
-879f 3214d2    ld      ($d214),a
-87a2 3e1c      ld      a,$1c
-87a4 dd9611    sub     (ix+$11)
-87a7 c608      add     a,$08
-87a9 dd770e    ld      (ix+$0e),a
-87ac 3e1c      ld      a,$1c
-87ae dd9611    sub     (ix+$11)
-87b1 c604      add     a,$04
-87b3 3215d2    ld      ($d215),a
-87b6 cd5639    call    _LABEL_3956_11
-87b9 3032      jr      nc,_87ed
-87bb c9        ret     
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      l,(ix+$11)
+	ld      de,$0010
+	add     hl,de
+	ld      ($d214),hl
+	ld      hl,_8830
+	call    _881a
+	ld      hl,$0028
+	ld      ($d212),hl
+	ld      a,$1c
+	sub     (ix+$11)
+	ld      l,a
+	ld      h,$00
+	ld      de,$0010
+	add     hl,de
+	ld      ($d214),hl
+	ld      hl,_8830
+	call    _881a
+	ld      hl,$002c
+	ld      ($d212),hl
+	ld      l,(ix+$15)
+	ld      h,(ix+$16)
+	ld      ($d214),hl
+	ld      hl,_8834
+	call    _881a
+	res     1,(ix+$18)
+	ld      (ix+$0d),$14
+	ld      a,$02
+	ld      ($d214),a
+	ld      a,(ix+$11)
+	ld      c,a
+	add     a,$08
+	ld      (ix+$0e),a
+	ld      a,c
+	add     a,$04
+	ld      ($d215),a
+	call    _LABEL_3956_11
+	jr      nc,_87bc
+	ld      a,($d408)
+	and     a
+	ret     m
+	ld      (ix+$0d),$3c
+	ld      a,$2a
+	ld      ($d214),a
+	ld      a,$1c
+	sub     (ix+$11)
+	add     a,$08
+	ld      (ix+$0e),a
+	ld      a,$1c
+	sub     (ix+$11)
+	add     a,$04
+	ld      ($d215),a
+	call    _LABEL_3956_11
+	jr      nc,_87ed
+	ret     
 _87bc:
-87bc ddcb18ce  set     1,(ix+$18)
-87c0 3a08d4    ld      a,($d408)
-87c3 a7        and     a
-87c4 f8        ret     m
-87c5 dd7e11    ld      a,(ix+$11)
-87c8 fe1c      cp      $1c
-87ca 2821      jr      z,_87ed
-87cc 2a06d4    ld      hl,($d406)
-87cf 7d        ld      a,l
-87d0 2f        cpl     
-87d1 6f        ld      l,a
-87d2 7c        ld      a,h
-87d3 2f        cpl     
-87d4 67        ld      h,a
-87d5 23        inc     hl
-87d6 dd7512    ld      (ix+$12),l
-87d9 dd7413    ld      (ix+$13),h
-87dc 3a07d4    ld      a,($d407)
-87df dd8611    add     a,(ix+$11)
-87e2 dd7711    ld      (ix+$11),a
-87e5 fe1c      cp      $1c
-87e7 3810      jr      c,_87f9
-87e9 dd36111c  ld      (ix+$11),$1c
+	set     1,(ix+$18)
+	ld      a,($d408)
+	and     a
+	ret     m
+	ld      a,(ix+$11)
+	cp      $1c
+	jr      z,_87ed
+	ld      hl,($d406)
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	inc     hl
+	ld      (ix+$12),l
+	ld      (ix+$13),h
+	ld      a,($d407)
+	add     a,(ix+$11)
+	ld      (ix+$11),a
+	cp      $1c
+	jr      c,_87f9
+	ld      (ix+$11),$1c
 _87ed:
-87ed 3ae8d2    ld      a,($d2e8)
-87f0 2ae6d2    ld      hl,($d2e6)
-87f3 2206d4    ld      ($d406),hl
-87f6 3208d4    ld      ($d408),a
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
 _87f9:
-87f9 dd6e05    ld      l,(ix+$05)
-87fc dd6606    ld      h,(ix+$06)
-87ff 011000    ld      bc,$0010
-8802 09        add     hl,bc
-8803 3a15d2    ld      a,($d215)
-8806 d604      sub     $04
-8808 4f        ld      c,a
-8809 09        add     hl,bc
-880a 3a0ad4    ld      a,($d40a)
-880d 4f        ld      c,a
-880e af        xor     a
-880f ed42      sbc     hl,bc
-8811 2201d4    ld      ($d401),hl
-8814 2114d4    ld      hl,$d414
-8817 cbfe      set     7,(hl)
-8819 c9        ret     
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0010
+	add     hl,bc
+	ld      a,($d215)
+	sub     $04
+	ld      c,a
+	add     hl,bc
+	ld      a,($d40a)
+	ld      c,a
+	xor     a
+	sbc     hl,bc
+	ld      ($d401),hl
+	ld      hl,$d414
+	set     7,(hl)
+	ret     
 
 _881a:
-881a 7e        ld      a,(hl)
-881b a7        and     a
-881c f8        ret     m
-881d e5        push    hl
-881e cd8135    call    _3581
-8821 2a12d2    ld      hl,($d212)
-8824 110800    ld      de,$0008
-8827 19        add     hl,de
-8828 2212d2    ld      ($d212),hl
-882b e1        pop     hl
-882c 23        inc     hl
-882d c31a88    jp      _881a
-8830 3638      ld      (hl),$38
-8832 3aff3c    ld      a,($3cff)
-8835 3eff      ld      a,$ff
-8837 ddcb18ee  set     5,(ix+$18)
-883b dd7e11    ld      a,(ix+$11)
-883e fe80      cp      $80
-8840 3031      jr      nc,_8873
-8842 dd360720  ld      (ix+$07),$20
-8846 dd360800  ld      (ix+$08),$00
-884a dd360900  ld      (ix+$09),$00
-884e dd360d14  ld      (ix+$0d),$14
-8852 dd360e0c  ld      (ix+$0e),$0c
-8856 21020a    ld      hl,$0a02
-8859 2214d2    ld      ($d214),hl
-885c cd5639    call    _LABEL_3956_11
-885f 210800    ld      hl,$0008
-8862 220ed2    ld      ($d20e),hl
-8865 d4e535    call    nc,_35e5
-8868 11be88    ld      de,$88be
-886b 01b488    ld      bc,$88b4
-886e cd417c    call    _7c41
-8871 182f      jr      _88a2
+	ld      a,(hl)
+	and     a
+	ret     m
+	push    hl
+	call    _3581
+	ld      hl,($d212)
+	ld      de,$0008
+	add     hl,de
+	ld      ($d212),hl
+	pop     hl
+	inc     hl
+	jp      _881a
+
+_8830:
+.db $36, $38, $3A, $FF
+_8834:
+.db $3C, $3E, $FF
+
+;____________________________________________________________________________[$8837]___
+;OBJECT: badnick - Jaws (Labyrinth)
+
+_8837:
+	set     5,(ix+$18)
+	ld      a,(ix+$11)
+	cp      $80
+	jr      nc,_8873
+	ld      (ix+$07),$20
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      (ix+$0d),$14
+	ld      (ix+$0e),$0c
+	ld      hl,$0a02
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0008
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      de,_88be
+	ld      bc,_88b4
+	call    _7c41
+	jr      _88a2
 _8873:
-8873 dd3607e0  ld      (ix+$07),$e0
-8877 dd3608ff  ld      (ix+$08),$ff
-887b dd3609ff  ld      (ix+$09),$ff
-887f dd360d0c  ld      (ix+$0d),$0c
-8883 dd360e0c  ld      (ix+$0e),$0c
-8887 210202    ld      hl,$0202
-888a 2214d2    ld      ($d214),hl
-888d cd5639    call    _LABEL_3956_11
-8890 210000    ld      hl,$0000
-8893 220ed2    ld      ($d20e),hl
-8896 d4e535    call    nc,_35e5
-8899 11be88    ld      de,$88be
-889c 01b988    ld      bc,$88b9
-889f cd417c    call    _7c41
+	ld      (ix+$07),$e0
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$0c
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0000
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      de,_88be
+	ld      bc,_88b9
+	call    _7c41
 _88a2:
-88a2 3a23d2    ld      a,($d223)
-88a5 e607      and     $07
-88a7 c0        ret     nz
-88a8 dd3411    inc     (ix+$11)
-88ab cd2506    call    _LABEL_625_57
-88ae e61e      and     $1e
-88b0 cceb91    call    z,_91eb
-88b3 c9        ret     
-88b4 00        nop     
-88b5 04        inc     b
-88b6 0104ff    ld      bc,$ff04
-88b9 02        ld      (bc),a
-88ba 04        inc     b
-88bb 03        inc     bc
-88bc 04        inc     b
-88bd ff        rst     $38
-88be 04        inc     b
-88bf 2a2cff    ld      hl,($ff2c)
-88c2 ff        rst     $38
-88c3 ff        rst     $38
-88c4 ff        rst     $38
-88c5 ff        rst     $38
-88c6 ff        rst     $38
-88c7 ff        rst     $38
-88c8 ff        rst     $38
-88c9 ff        rst     $38
-88ca ff        rst     $38
-88cb ff        rst     $38
-88cc ff        rst     $38
-88cd ff        rst     $38
-88ce ff        rst     $38
-88cf ff        rst     $38
-88d0 0c        inc     c
-88d1 2a2cff    ld      hl,($ff2c)
-88d4 ff        rst     $38
-88d5 ff        rst     $38
-88d6 ff        rst     $38
-88d7 ff        rst     $38
-88d8 ff        rst     $38
-88d9 ff        rst     $38
-88da ff        rst     $38
-88db ff        rst     $38
-88dc ff        rst     $38
-88dd ff        rst     $38
-88de ff        rst     $38
-88df ff        rst     $38
-88e0 ff        rst     $38
-88e1 ff        rst     $38
-88e2 0e10      ld      c,$10
-88e4 0a        ld      a,(bc)
-88e5 ff        rst     $38
-88e6 ff        rst     $38
-88e7 ff        rst     $38
-88e8 ff        rst     $38
-88e9 ff        rst     $38
-88ea ff        rst     $38
-88eb ff        rst     $38
-88ec ff        rst     $38
-88ed ff        rst     $38
-88ee ff        rst     $38
-88ef ff        rst     $38
-88f0 ff        rst     $38
-88f1 ff        rst     $38
-88f2 ff        rst     $38
-88f3 ff        rst     $38
-88f4 0e10      ld      c,$10
-88f6 0c        inc     c
-88f7 ff        rst     $38
-88f8 ff        rst     $38
-88f9 ff        rst     $38
-88fa ff        rst     $38
-88fb ddcb18ee  set     5,(ix+$18)
-88ff dd360d08  ld      (ix+$0d),$08
-8903 dd360e0c  ld      (ix+$0e),$0c
-8907 ddcb1846  bit     0,(ix+$18)
-890b 2024      jr      nz,_8931
-890d dd6e02    ld      l,(ix+$02)
-8910 dd6603    ld      h,(ix+$03)
-8913 110800    ld      de,$0008
-8916 19        add     hl,de
-8917 dd7512    ld      (ix+$12),l
-891a dd7413    ld      (ix+$13),h
-891d dd6e05    ld      l,(ix+$05)
-8920 dd6606    ld      h,(ix+$06)
-8923 110800    ld      de,$0008
-8926 19        add     hl,de
-8927 dd7514    ld      (ix+$14),l
-892a dd7415    ld      (ix+$15),h
-892d ddcb18c6  set     0,(ix+$18)
+	ld      a,($d223)
+	and     $07
+	ret     nz
+	inc     (ix+$11)
+	call    _LABEL_625_57
+	and     $1e
+	call    z,_91eb
+	ret     
+
+_88b4:
+.db $00, $04, $01, $04, $FF
+_88b9:
+.db $02, $04, $03, $04, $FF
+_88be:
+.db $04, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $0C, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $0E, $10, $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $0E, $10, $0C, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$88FB]___
+;OBJECT: spike ball (Labyrinth)
+
+_88fb:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$08
+	ld      (ix+$0e),$0c
+	bit     0,(ix+$18)
+	jr      nz,_8931
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0008
+	add     hl,de
+	ld      (ix+$12),l
+	ld      (ix+$13),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0008
+	add     hl,de
+	ld      (ix+$14),l
+	ld      (ix+$15),h
+	set     0,(ix+$18)
 _8931:
-8931 dd6e11    ld      l,(ix+$11)
-8934 2600      ld      h,$00
-8936 29        add     hl,hl
-8937 118e89    ld      de,$898e
-893a 19        add     hl,de
-893b 5e        ld      e,(hl)
-893c 23        inc     hl
-893d 4e        ld      c,(hl)
-893e 1600      ld      d,$00
-8940 42        ld      b,d
-8941 cb7b      bit     7,e
-8943 2801      jr      z,_8946
-8945 15        dec     d
+	ld      l,(ix+$11)
+	ld      h,$00
+	add     hl,hl
+	ld      de,_898e
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      c,(hl)
+	ld      d,$00
+	ld      b,d
+	bit     7,e
+	jr      z,_8946
+	dec     d
 _8946:
-8946 cb79      bit     7,c
-8948 2801      jr      z,_894b
-894a 05        dec     b
+	bit     7,c
+	jr      z,_894b
+	dec     b
 _894b:
-894b dd6e12    ld      l,(ix+$12)
-894e dd6613    ld      h,(ix+$13)
-8951 19        add     hl,de
-8952 dd7502    ld      (ix+$02),l
-8955 dd7403    ld      (ix+$03),h
-8958 dd6e14    ld      l,(ix+$14)
-895b dd6615    ld      h,(ix+$15)
-895e 09        add     hl,bc
-895f dd7505    ld      (ix+$05),l
-8962 dd7406    ld      (ix+$06),h
-8965 210402    ld      hl,$0204
-8968 2214d2    ld      ($d214),hl
-896b cd5639    call    _LABEL_3956_11
-896e d4fd35    call    nc,_35fd
-8971 dd360f87  ld      (ix+$0f),$87
-8975 dd361089  ld      (ix+$10),$89
-8979 dd3411    inc     (ix+$11)
-897c dd7e11    ld      a,(ix+$11)
-897f feb4      cp      $b4
-8981 d8        ret     c
-8982 dd361100  ld      (ix+$11),$00
-8986 c9        ret     
-8987 60        ld      h,b
-8988 62        ld      h,d
-8989 ff        rst     $38
-898a ff        rst     $38
-898b ff        rst     $38
-898c ff        rst     $38
-898d ff        rst     $38
-898e 40        ld      b,b
-898f 00        nop     
-8990 40        ld      b,b
-8991 02        ld      (bc),a
-8992 40        ld      b,b
-8993 04        inc     b
-8994 40        ld      b,b
-8995 07        rlca    
-8996 3f        ccf     
-8997 09        add     hl,bc
-8998 3f        ccf     
-8999 0b        dec     bc
-899a 3f        ccf     
-899b 0d        dec     c
-899c 3e0f      ld      a,$0f
-899e 3e12      ld      a,$12
-89a0 3d        dec     a
-89a1 14        inc     d
-89a2 3c        inc     a
-89a3 163b      ld      d,$3b
-89a5 183a      jr------$89e1
-89a7 1a        ld      a,(de)
-89a8 3a1c39    ld      a,($391c)
-89ab 1e37      ld      e,$37
-89ad 2036      jr------nz,$89e5
-89af 223524    ld      ($2435),hl
-89b2 34        inc     (hl)
-89b3 2632      ld      h,$32
-89b5 27        daa     
-89b6 312930    ld      sp,$3029
-89b9 2b        dec     hl
-89ba 2e2c      ld      l,$2c
-89bc 2c        inc     l
-89bd 2e2b      ld      l,$2b
-89bf 3029      jr------nc,$89ea
-89c1 312732    ld      sp,$3227
-89c4 2634      ld      h,$34
-89c6 24        inc     h
-89c7 35        dec     (hl)
-89c8 223620    ld      ($2036),hl
-89cb 37        scf     
-89cc 1e39      ld      e,$39
-89ce 1c        inc     e
-89cf 3a1a3a    ld      a,($3a1a)
-89d2 183b      jr------$8a0f
-89d4 163c      ld      d,$3c
-89d6 14        inc     d
-89d7 3d        dec     a
-89d8 12        ld      (de),a
-89d9 3e0f      ld      a,$0f
-89db 3e0d      ld      a,$0d
-89dd 3f        ccf     
-89de 0b        dec     bc
-89df 3f        ccf     
-89e0 09        add     hl,bc
-89e1 3f        ccf     
-89e2 07        rlca    
-89e3 40        ld      b,b
-89e4 04        inc     b
-89e5 40        ld      b,b
-89e6 02        ld      (bc),a
-89e7 40        ld      b,b
-89e8 00        nop     
-89e9 40        ld      b,b
-89ea fe40      cp      $40
-89ec fc40f9    call----m,$f940
-89ef 40        ld      b,b
-89f0 f7        rst     $30
-89f1 3f        ccf     
-89f2 f5        push    af
-89f3 3f        ccf     
-89f4 f3        di      
-89f5 3f        ccf     
-89f6 f1        pop     af
-89f7 3eee      ld      a,$ee
-89f9 3eec      ld      a,$ec
-89fb 3d        dec     a
-89fc ea3ce8    jp------pe,$e83c
-89ff 3b        dec     sp
-8a00 e63a      and     $3a
-8a02 e43ae2    call----po,$e23a
-8a05 39        add     hl,sp
-8a06 e0        ret     po
-8a07 37        scf     
-8a08 de36      sbc     a,$36
-8a0a dc35da    call----c,$da35
-8a0d 34        inc     (hl)
-8a0e d9        exx     
-8a0f 32d731    ld      ($31d7),a
-8a12 d5        push    de
-8a13 30d4      jr------nc,$89e9
-8a15 2ed2      ld      l,$d2
-8a17 2c        inc     l
-8a18 d0        ret     nc
-8a19 2b        dec     hl
-8a1a cf        rst     $08
-8a1b 29        add     hl,hl
-8a1c ce27      adc     a,$27
-8a1e cc26cb    call----z,$cb26
-8a21 24        inc     h
-8a22 ca22c9    jp------z,$c922
-8a25 20c7      jr------nz,$89ee
-8a27 1ec6      ld      e,$c6
-8a29 1c        inc     e
-8a2a c61a      add     a,$1a
-8a2c c5        push    bc
-8a2d 18c4      jr------$89f3
-8a2f 16c3      ld      d,$c3
-8a31 14        inc     d
-8a32 c212c2    jp------nz,$c212
-8a35 0f        rrca    
-8a36 c1        pop     bc
-8a37 0d        dec     c
-8a38 c1        pop     bc
-8a39 0b        dec     bc
-8a3a c1        pop     bc
-8a3b 09        add     hl,bc
-8a3c c0        ret     nz
-8a3d 07        rlca    
-8a3e c0        ret     nz
-8a3f 04        inc     b
-8a40 c0        ret     nz
-8a41 02        ld      (bc),a
-8a42 c0        ret     nz
-8a43 00        nop     
-8a44 c0        ret     nz
-8a45 fec0      cp      $c0
-8a47 fcc0f9    call----m,$f9c0
-8a4a c1        pop     bc
-8a4b f7        rst     $30
-8a4c c1        pop     bc
-8a4d f5        push    af
-8a4e c1        pop     bc
-8a4f f3        di      
-8a50 c2f1c2    jp------nz,$c2f1
-8a53 eec3      xor     $c3
-8a55 ecc4ea    call----pe,$eac4
-8a58 c5        push    bc
-8a59 e8        ret     pe
-8a5a c6e6      add     a,$e6
-8a5c c6e4      add     a,$e4
-8a5e c7        rst     $00
-8a5f e2c9e0    jp------po,$e0c9
-8a62 cadecb    jp------z,$cbde
-8a65 dcccda    call----c,$dacc
-8a68 ced9      adc     a,$d9
-8a6a cf        rst     $08
-8a6b d7        rst     $10
-8a6c d0        ret     nc
-8a6d d5        push    de
-8a6e d2d4d4    jp------nc,$d4d4
-8a71 d2d5d0    jp------nc,$d0d5
-8a74 d7        rst     $10
-8a75 cf        rst     $08
-8a76 d9        exx     
-8a77 ceda      adc     a,$da
-8a79 ccdccb    call----z,$cbdc
-8a7c deca      sbc     a,$ca
-8a7e e0        ret     po
-8a7f c9        ret     
-8a80 e2c7e4    jp------po,$e4c7
-8a83 c6e6      add     a,$e6
-8a85 c6e8      add     a,$e8
-8a87 c5        push    bc
-8a88 eac4ec    jp------pe,$ecc4
-8a8b c3eec2    jp------$c2ee
-8a8e f1        pop     af
-8a8f c2f3c1    jp------nz,$c1f3
-8a92 f5        push    af
-8a93 c1        pop     bc
-8a94 f7        rst     $30
-8a95 c1        pop     bc
-8a96 f9        ld      sp,hl
-8a97 c0        ret     nz
-8a98 fcc0fe    call----m,$fec0
-8a9b c0        ret     nz
-8a9c 00        nop     
-8a9d c0        ret     nz
-8a9e 02        ld      (bc),a
-8a9f c0        ret     nz
-8aa0 04        inc     b
-8aa1 c0        ret     nz
-8aa2 07        rlca    
-8aa3 c0        ret     nz
-8aa4 09        add     hl,bc
-8aa5 c1        pop     bc
-8aa6 0b        dec     bc
-8aa7 c1        pop     bc
-8aa8 0d        dec     c
-8aa9 c1        pop     bc
-8aaa 0f        rrca    
-8aab c212c2    jp------nz,$c212
-8aae 14        inc     d
-8aaf c316c4    jp------$c416
-8ab2 18c5      jr------$8a79
-8ab4 1a        ld      a,(de)
-8ab5 c61c      add     a,$1c
-8ab7 c61e      add     a,$1e
-8ab9 c7        rst     $00
-8aba 20c9      jr------nz,$8a85
-8abc 22ca24    ld      ($24ca),hl
-8abf cb26      sla     (hl)
-8ac1 cc27ce    call----z,$ce27
-8ac4 29        add     hl,hl
-8ac5 cf        rst     $08
-8ac6 2b        dec     hl
-8ac7 d0        ret     nc
-8ac8 2c        inc     l
-8ac9 d22ed4    jp------nc,$d42e
-8acc 30d5      jr------nc,$8aa3
-8ace 31d732    ld      sp,$32d7
-8ad1 d9        exx     
-8ad2 34        inc     (hl)
-8ad3 da35dc    jp------c,$dc35
-8ad6 36de      ld      (hl),$de
-8ad8 37        scf     
-8ad9 e0        ret     po
-8ada 39        add     hl,sp
-8adb e23ae4    jp------po,$e43a
-8ade 3ae63b    ld      a,($3be6)
-8ae1 e8        ret     pe
-8ae2 3c        inc     a
-8ae3 ea3dec    jp------pe,$ec3d
-8ae6 3eee      ld      a,$ee
-8ae8 3ef1      ld      a,$f1
-8aea 3f        ccf     
-8aeb f3        di      
-8aec 3f        ccf     
-8aed f5        push    af
-8aee 3f        ccf     
-8aef f7        rst     $30
-8af0 40        ld      b,b
-8af1 f9        ld      sp,hl
-8af2 40        ld      b,b
-8af3 fc40fe    call----m,$fe40
+	ld      l,(ix+$12)
+	ld      h,(ix+$13)
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$14)
+	ld      h,(ix+$15)
+	add     hl,bc
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      hl,$0204
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      (ix+$0f),<_8987
+	ld      (ix+$10),>_8987
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $b4
+	ret     c
+	ld      (ix+$11),$00
+	ret     
 
-8af6 ddcb18ee  set     5,(ix+$18)
-8afa ddcb1846  bit     0,(ix+$18)
-8afe 2014      jr      nz,_8b14
-8b00 dd6e02    ld      l,(ix+$02)
-8b03 dd6603    ld      h,(ix+$03)
-8b06 110c00    ld      de,$000c
-8b09 19        add     hl,de
-8b0a dd7502    ld      (ix+$02),l
-8b0d dd7403    ld      (ix+$03),h
-8b10 ddcb18c6  set     0,(ix+$18)
+_8987:
+.db $60, $62, $FF, $FF, $FF, $FF, $FF
+;I imagine this a set of X/Y positions to do the spiked-ball rotation
+_898e:
+;180 lines, ergo 2deg per frame?
+.db $40, $00
+.db $40, $02
+.db $40, $04
+.db $40, $07
+.db $3F, $09
+.db $3F, $0B
+.db $3F, $0D
+.db $3E, $0F
+.db $3E, $12
+.db $3D, $14
+.db $3C, $16
+.db $3B, $18
+.db $3A, $1A
+.db $3A, $1C
+.db $39, $1E
+.db $37, $20
+.db $36, $22
+.db $35, $24
+.db $34, $26
+.db $32, $27
+.db $31, $29
+.db $30, $2B
+.db $2E, $2C
+.db $2C, $2E
+.db $2B, $30
+.db $29, $31
+.db $27, $32
+.db $26, $34
+.db $24, $35
+.db $22, $36
+.db $20, $37
+.db $1E, $39
+.db $1C, $3A
+.db $1A, $3A
+.db $18, $3B
+.db $16, $3C
+.db $14, $3D
+.db $12, $3E
+.db $0F, $3E
+.db $0D, $3F
+.db $0B, $3F
+.db $09, $3F
+.db $07, $40
+.db $04, $40
+.db $02, $40
+.db $00, $40
+.db $FE, $40
+.db $FC, $40
+.db $F9, $40
+.db $F7, $3F
+.db $F5, $3F
+.db $F3, $3F
+.db $F1, $3E
+.db $EE, $3E
+.db $EC, $3D
+.db $EA, $3C
+.db $E8, $3B
+.db $E6, $3A
+.db $E4, $3A
+.db $E2, $39
+.db $E0, $37
+.db $DE, $36
+.db $DC, $35
+.db $DA, $34
+.db $D9, $32
+.db $D7, $31
+.db $D5, $30
+.db $D4, $2E
+.db $D2, $2C
+.db $D0, $2B
+.db $CF, $29
+.db $CE, $27
+.db $CC, $26
+.db $CB, $24
+.db $CA, $22
+.db $C9, $20
+.db $C7, $1E
+.db $C6, $1C
+.db $C6, $1A
+.db $C5, $18
+.db $C4, $16
+.db $C3, $14
+.db $C2, $12
+.db $C2, $0F
+.db $C1, $0D
+.db $C1, $0B
+.db $C1, $09
+.db $C0, $07
+.db $C0, $04
+.db $C0, $02
+.db $C0, $00
+.db $C0, $FE
+.db $C0, $FC
+.db $C0, $F9
+.db $C1, $F7
+.db $C1, $F5
+.db $C1, $F3
+.db $C2, $F1
+.db $C2, $EE
+.db $C3, $EC
+.db $C4, $EA
+.db $C5, $E8
+.db $C6, $E6
+.db $C6, $E4
+.db $C7, $E2
+.db $C9, $E0
+.db $CA, $DE
+.db $CB, $DC
+.db $CC, $DA
+.db $CE, $D9
+.db $CF, $D7
+.db $D0, $D5
+.db $D2, $D4
+.db $D4, $D2
+.db $D5, $D0
+.db $D7, $CF
+.db $D9, $CE
+.db $DA, $CC
+.db $DC, $CB
+.db $DE, $CA
+.db $E0, $C9
+.db $E2, $C7
+.db $E4, $C6
+.db $E6, $C6
+.db $E8, $C5
+.db $EA, $C4
+.db $EC, $C3
+.db $EE, $C2
+.db $F1, $C2
+.db $F3, $C1
+.db $F5, $C1
+.db $F7, $C1
+.db $F9, $C0
+.db $FC, $C0
+.db $FE, $C0
+.db $00, $C0
+.db $02, $C0
+.db $04, $C0
+.db $07, $C0
+.db $09, $C1
+.db $0B, $C1
+.db $0D, $C1
+.db $0F, $C2
+.db $12, $C2
+.db $14, $C3
+.db $16, $C4
+.db $18, $C5
+.db $1A, $C6
+.db $1C, $C6
+.db $1E, $C7
+.db $20, $C9
+.db $22, $CA
+.db $24, $CB
+.db $26, $CC
+.db $27, $CE
+.db $29, $CF
+.db $2B, $D0
+.db $2C, $D2
+.db $2E, $D4
+.db $30, $D5
+.db $31, $D7
+.db $32, $D9
+.db $34, $DA
+.db $35, $DC
+.db $36, $DE
+.db $37, $E0
+.db $39, $E2
+.db $3A, $E4
+.db $3A, $E6
+.db $3B, $E8
+.db $3C, $EA
+.db $3D, $EC
+.db $3E, $EE
+.db $3E, $F1
+.db $3F, $F3
+.db $3F, $F5
+.db $3F, $F7
+.db $40, $F9
+.db $40, $FC
+.db $40, $FE
+
+;____________________________________________________________________________[$8AF6]___
+;OBJECT: spear (Labyrinth)
+
+_8af6:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_8b14
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000c
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	set     0,(ix+$18)
 _8b14:
-8b14 dd6e02    ld      l,(ix+$02)
-8b17 dd6603    ld      h,(ix+$03)
-8b1a 220ed2    ld      ($d20e),hl
-8b1d dd6e05    ld      l,(ix+$05)
-8b20 dd6606    ld      h,(ix+$06)
-8b23 2210d2    ld      ($d210),hl
-8b26 210000    ld      hl,$0000
-8b29 2212d2    ld      ($d212),hl
-8b2c 3a23d2    ld      a,($d223)
-8b2f 07        rlca    
-8b30 07        rlca    
-8b31 e603      and     $03
-8b33 2014      jr      nz,_8b49
-8b35 21bc8b    ld      hl,$8bbc
-8b38 3a23d2    ld      a,($d223)
-8b3b e63f      and     $3f
-8b3d 5f        ld      e,a
-8b3e fe08      cp      $08
-8b40 382f      jr      c,_8b71
-8b42 21cd8b    ld      hl,$8bcd
-8b45 1e00      ld      e,$00
-8b47 1828      jr      _8b71
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      a,($d223)
+	rlca    
+	rlca    
+	and     $03
+	jr      nz,_8b49
+	ld      hl,_8bbc
+	ld      a,($d223)
+	and     $3f
+	ld      e,a
+	cp      $08
+	jr      c,_8b71
+	ld      hl,_8bcd
+	ld      e,$00
+	jr      _8b71
 _8b49:
-8b49 fe01      cp      $01
-8b4b 2007      jr      nz,_8b54
-8b4d 21cd8b    ld      hl,$8bcd
-8b50 1e00      ld      e,$00
-8b52 181d      jr      _8b71
+	cp      $01
+	jr      nz,_8b54
+	ld      hl,_8bcd
+	ld      e,$00
+	jr      _8b71
 _8b54:
-8b54 fe02      cp      $02
-8b56 2014      jr      nz,_8b6c
-8b58 21c48b    ld      hl,$8bc4
-8b5b 3a23d2    ld      a,($d223)
-8b5e e63f      and     $3f
-8b60 5f        ld      e,a
-8b61 fe08      cp      $08
-8b63 380c      jr      c,_8b71
-8b65 21cc8b    ld      hl,$8bcc
-8b68 1e00      ld      e,$00
-8b6a 1805      jr      _8b71
+	cp      $02
+	jr      nz,_8b6c
+	ld      hl,_8bc4
+	ld      a,($d223)
+	and     $3f
+	ld      e,a
+	cp      $08
+	jr      c,_8b71
+	ld      hl,_8bcc
+	ld      e,$00
+	jr      _8b71
 _8b6c:
-8b6c 21cc8b    ld      hl,$8bcc
-8b6f 1e00      ld      e,$00
+	ld      hl,_8bcc
+	ld      e,$00
 _8b71:
-8b71 1600      ld      d,$00
-8b73 19        add     hl,de
-8b74 7e        ld      a,(hl)
-8b75 21ce8b    ld      hl,$8bce
-8b78 87        add     a,a
-8b79 87        add     a,a
-8b7a 87        add     a,a
-8b7b 5f        ld      e,a
-8b7c 19        add     hl,de
-8b7d 0603      ld      b,$03
+	ld      d,$00
+	add     hl,de
+	ld      a,(hl)
+	ld      hl,_8bce
+	add     a,a
+	add     a,a
+	add     a,a
+	ld      e,a
+	add     hl,de
+	ld      b,$03
 _8b7f:
-8b7f c5        push    bc
-8b80 7e        ld      a,(hl)
-8b81 23        inc     hl
-8b82 5e        ld      e,(hl)
-8b83 23        inc     hl
-8b84 a7        and     a
-8b85 fa938b    jp      m,_8b93
-8b88 e5        push    hl
-8b89 1600      ld      d,$00
-8b8b ed5314d2  ld      ($d214),de
-8b8f cd8135    call    _3581
-8b92 e1        pop     hl
+	push    bc
+	ld      a,(hl)
+	inc     hl
+	ld      e,(hl)
+	inc     hl
+	and     a
+	jp      m,_8b93
+	push    hl
+	ld      d,$00
+	ld      ($d214),de
+	call    _3581
+	pop     hl
 _8b93:
-8b93 c1        pop     bc
-8b94 10e9      djnz    _8b7f
-8b96 dd700f    ld      (ix+$0f),b
-8b99 dd7010    ld      (ix+$10),b
-8b9c 56        ld      d,(hl)
-8b9d 1e04      ld      e,$04
-8b9f ed5314d2  ld      ($d214),de
-8ba3 23        inc     hl
-8ba4 7e        ld      a,(hl)
-8ba5 dd360d01  ld      (ix+$0d),$01
-8ba9 dd770e    ld      (ix+$0e),a
-8bac cd5639    call    _LABEL_3956_11
-8baf d4fd35    call    nc,_35fd
-8bb2 3a23d2    ld      a,($d223)
-8bb5 fe80      cp      $80
-8bb7 c0        ret     nz
-8bb8 3e1d      ld      a,$1d
-8bba ef        rst     $28
-8bbb c9        ret     
-8bbc 00        nop     
-8bbd 010203    ld      bc,$0302
-8bc0 04        inc     b
-8bc1 05        dec     b
-8bc2 0607      ld      b,$07
-8bc4 07        rlca    
-8bc5 0605      ld      b,$05
-8bc7 04        inc     b
-8bc8 03        inc     bc
-8bc9 02        ld      (bc),a
-8bca 010000    ld      bc,$0000
-8bcd 08        ex      af,af'
-8bce 12        ld      (de),a
-8bcf 00        nop     
-8bd0 321032    ld      ($3210),a
-8bd3 2001      jr------nz,$8bd6
-8bd5 3012      jr------nc,$8be9
-8bd7 04        inc     b
-8bd8 321432    ld      ($3214),a
-8bdb 2002      jr------nz,$8bdf
-8bdd 3012      jr------nc,$8bf1
-8bdf 08        ex      af,af'
-8be0 321832    ld      ($3218),a
-8be3 2006      jr------nz,$8beb
-8be5 3012      jr------nc,$8bf9
-8be7 0c        inc     c
-8be8 321c32    ld      ($321c),a
-8beb 200a      jr------nz,$8bf7
-8bed 3012      jr------nc,$8c01
-8bef 1032      djnz----$8c23
-8bf1 20ff      jr------nz,$8bf2
-8bf3 00        nop     
-8bf4 0e30      ld      c,$30
-8bf6 12        ld      (de),a
-8bf7 14        inc     d
-8bf8 3220ff    ld      ($ff20),a
-8bfb 00        nop     
-8bfc 12        ld      (de),a
-8bfd 3012      jr------nc,$8c11
-8bff 1832      jr------$8c33
-8c01 20ff      jr------nz,$8c02
-8c03 00        nop     
-8c04 1630      ld      d,$30
-8c06 12        ld      (de),a
-8c07 1c        inc     e
-8c08 3220ff    ld      ($ff20),a
-8c0b 00        nop     
-8c0c 1a        ld      a,(de)
-8c0d 3012      jr------nc,$8c21
-8c0f 20ff      jr------nz,$8c10
-8c11 00        nop     
-8c12 ff        rst     $38
-8c13 00        nop     
-8c14 1e30      ld      e,$30
+	pop     bc
+	djnz    _8b7f
+	ld      (ix+$0f),b
+	ld      (ix+$10),b
+	ld      d,(hl)
+	ld      e,$04
+	ld      ($d214),de
+	inc     hl
+	ld      a,(hl)
+	ld      (ix+$0d),$01
+	ld      (ix+$0e),a
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      a,($d223)
+	cp      $80
+	ret     nz
+	ld      a,$1d
+	rst     $28
+	ret     
 
-8c16 ddcb18ae  res     5,(ix+$18)
-8c1a dd360d04  ld      (ix+$0d),$04
-8c1e dd360e0a  ld      (ix+$0e),$0a
-8c22 ddcb1846  bit     0,(ix+$18)
-8c26 2046      jr      nz,_8c6e
-8c28 dd6e02    ld      l,(ix+$02)
-8c2b dd6603    ld      h,(ix+$03)
-8c2e 110a00    ld      de,$000a
-8c31 19        add     hl,de
-8c32 dd7502    ld      (ix+$02),l
-8c35 dd7403    ld      (ix+$03),h
-8c38 dd7512    ld      (ix+$12),l
-8c3b dd7413    ld      (ix+$13),h
-8c3e dd6e05    ld      l,(ix+$05)
-8c41 dd6606    ld      h,(ix+$06)
-8c44 110800    ld      de,$0008
-8c47 19        add     hl,de
-8c48 dd7505    ld      (ix+$05),l
-8c4b dd7406    ld      (ix+$06),h
-8c4e dd7514    ld      (ix+$14),l
-8c51 dd7415    ld      (ix+$15),h
-8c54 dd361196  ld      (ix+$11),$96
-8c58 ddcb18c6  set     0,(ix+$18)
-8c5c 010000    ld      bc,$0000
-8c5f 110000    ld      de,$0000
-8c62 cdf936    call    _36f9
-8c65 7e        ld      a,(hl)
-8c66 fe52      cp      $52
-8c68 2804      jr      z,_8c6e
-8c6a ddcb18ce  set     1,(ix+$18)
+_8bbc:
+.db $00 $01 $02 $03 $04 $05 $06 $07
+_8bc4:
+.db $07 $06 $05 $04 $03 $02 $01 $00
+_8bcc:
+.db $00
+_8bcd:
+.db $08
+_8bce:
+.db $12, $00, $32, $10, $32, $20, $01, $30, $12, $04, $32, $14, $32, $20, $02, $30
+.db $12, $08, $32, $18, $32, $20, $06, $30, $12, $0C, $32, $1C, $32, $20, $0A, $30
+.db $12, $10, $32, $20, $FF, $00, $0E, $30, $12, $14, $32, $20, $FF, $00, $12, $30
+.db $12, $18, $32, $20, $FF, $00, $16, $30, $12, $1C, $32, $20, $FF, $00, $1A, $30
+.db $12, $20, $FF, $00, $FF, $00, $1E, $30
+
+;____________________________________________________________________________[$8C16]___
+;OBJECT: fireball head (Labyrinth)
+
+_8c16:
+	res     5,(ix+$18)
+	ld      (ix+$0d),$04
+	ld      (ix+$0e),$0a
+	bit     0,(ix+$18)
+	jr      nz,_8c6e
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000a
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$12),l
+	ld      (ix+$13),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0008
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$14),l
+	ld      (ix+$15),h
+	ld      (ix+$11),$96
+	set     0,(ix+$18)
+	ld      bc,$0000
+	ld      de,$0000
+	call    _36f9
+	ld      a,(hl)
+	cp      $52
+	jr      z,_8c6e
+	set     1,(ix+$18)
 _8c6e:
-8c6e dd7e11    ld      a,(ix+$11)
-8c71 a7        and     a
-8c72 2819      jr      z,_8c8d
-8c74 dd3511    dec     (ix+$11)
-8c77 2811      jr      z,_8c8a
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_8c8d
+	dec     (ix+$11)
+	jr      z,_8c8a
 _8c79:
-8c79 af        xor     a
-8c7a dd770f    ld      (ix+$0f),a
-8c7d dd7710    ld      (ix+$10),a
-8c80 dd7707    ld      (ix+$07),a
-8c83 dd7708    ld      (ix+$08),a
-8c86 dd7709    ld      (ix+$09),a
-8c89 c9        ret     
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ret     
 _8c8a:
-8c8a 3e18      ld      a,$18
-8c8c ef        rst     $28
+	ld      a,$18
+	rst     $28
 _8c8d:
-8c8d af        xor     a
-8c8e ddcb184e  bit     1,(ix+$18)
-8c92 2016      jr      nz,_8caa
-8c94 dd360700  ld      (ix+$07),$00
-8c98 dd3608ff  ld      (ix+$08),$ff
-8c9c dd3609ff  ld      (ix+$09),$ff
-8ca0 dd360f39  ld      (ix+$0f),$39
-8ca4 dd36108d  ld      (ix+$10),$8d
-8ca8 1812      jr      _8cbc
+	xor     a
+	bit     1,(ix+$18)
+	jr      nz,_8caa
+	ld      (ix+$07),$00
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      (ix+$0f),<_8d39
+	ld      (ix+$10),>_8d39
+	jr      _8cbc
 _8caa:
-8caa dd7707    ld      (ix+$07),a
-8cad dd360801  ld      (ix+$08),$01
-8cb1 dd7709    ld      (ix+$09),a
-8cb4 dd360f41  ld      (ix+$0f),$41
-8cb8 dd36108d  ld      (ix+$10),$8d
+	ld      (ix+$07),a
+	ld      (ix+$08),$01
+	ld      (ix+$09),a
+	ld      (ix+$0f),<$8d41		;WLA DX BUG? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	ld      (ix+$10),>$8d41		;this will not resolve if turned into a label
 _8cbc:
-8cbc dd770a    ld      (ix+$0a),a
-8cbf dd770b    ld      (ix+$0b),a
-8cc2 dd770c    ld      (ix+$0c),a
-8cc5 ddcb1876  bit     6,(ix+$18)
-8cc9 204f      jr      nz,_8d1a
-8ccb ddcb187e  bit     7,(ix+$18)
-8ccf 2049      jr      nz,_8d1a
-8cd1 210204    ld      hl,$0402
-8cd4 2214d2    ld      ($d214),hl
-8cd7 cd5639    call    _LABEL_3956_11
-8cda d4fd35    call    nc,_35fd
-8cdd dd5e02    ld      e,(ix+$02)
-8ce0 dd5603    ld      d,(ix+$03)
-8ce3 2a5ad2    ld      hl,($d25a)
-8ce6 01f0ff    ld      bc,$fff0
-8ce9 09        add     hl,bc
-8cea a7        and     a
-8ceb ed52      sbc     hl,de
-8ced 302b      jr      nc,_8d1a
-8cef 2a5ad2    ld      hl,($d25a)
-8cf2 011001    ld      bc,$0110
-8cf5 09        add     hl,bc
-8cf6 a7        and     a
-8cf7 ed52      sbc     hl,de
-8cf9 381f      jr      c,_8d1a
-8cfb dd5e05    ld      e,(ix+$05)
-8cfe dd5606    ld      d,(ix+$06)
-8d01 2a5dd2    ld      hl,($d25d)
-8d04 01f0ff    ld      bc,$fff0
-8d07 09        add     hl,bc
-8d08 a7        and     a
-8d09 ed52      sbc     hl,de
-8d0b 300d      jr      nc,_8d1a
-8d0d 2a5dd2    ld      hl,($d25d)
-8d10 01d000    ld      bc,$00d0
-8d13 09        add     hl,bc
-8d14 a7        and     a
-8d15 ed52      sbc     hl,de
-8d17 3801      jr      c,_8d1a
-8d19 c9        ret     
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	bit     6,(ix+$18)
+	jr      nz,_8d1a
+	bit     7,(ix+$18)
+	jr      nz,_8d1a
+	ld      hl,$0402
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      hl,($d25a)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_8d1a
+	ld      hl,($d25a)
+	ld      bc,$0110
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_8d1a
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	ld      hl,($d25d)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_8d1a
+	ld      hl,($d25d)
+	ld      bc,$00d0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_8d1a
+	ret     
 _8d1a:
-8d1a dd6e12    ld      l,(ix+$12)
-8d1d dd6613    ld      h,(ix+$13)
-8d20 dd7502    ld      (ix+$02),l
-8d23 dd7403    ld      (ix+$03),h
-8d26 dd6e14    ld      l,(ix+$14)
-8d29 dd6615    ld      h,(ix+$15)
-8d2c dd7505    ld      (ix+$05),l
-8d2f dd7406    ld      (ix+$06),h
-8d32 dd361196  ld      (ix+$11),$96
-8d36 c3798c    jp      _8c79
+	ld      l,(ix+$12)
+	ld      h,(ix+$13)
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$14)
+	ld      h,(ix+$15)
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),$96
+	jp      _8c79
 
-8d39 2eff      ld      l,$ff
-8d3b ff        rst     $38
-8d3c ff        rst     $38
-8d3d ff        rst     $38
-8d3e ff        rst     $38
-8d3f ff        rst     $38
-8d40 ff        rst     $38
-8d41 30ff      jr------nc,$8d42
-8d43 ff        rst     $38
-8d44 ff        rst     $38
-8d45 ff        rst     $38
-8d46 ff        rst     $38
-8d47 ff        rst     $38
+_8d39:
+.db $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+_8d41:
+.db $30, $FF, $FF, $FF, $FF, $FF, $FF
 
-8d48 ddcb18ee  set     5,(ix+$18)
-8d4c dd7e11    ld      a,(ix+$11)
-8d4f 5f        ld      e,a
-8d50 1600      ld      d,$00
-8d52 21368e    ld      hl,$8e36
-8d55 19        add     hl,de
-8d56 5e        ld      e,(hl)
-8d57 7a        ld      a,d
-8d58 cb7b      bit     7,e
-8d5a 2802      jr      z,_8d5e
-8d5c 3d        dec     a
-8d5d 15        dec     d
+;____________________________________________________________________________[$8D48]___
+;OBJECT: meta - water line position (Labyrinth)
+
+_8d48:
+	set     5,(ix+$18)
+	ld      a,(ix+$11)
+	ld      e,a
+	ld      d,$00
+	ld      hl,_8e36
+	add     hl,de
+	ld      e,(hl)
+	ld      a,d
+	bit     7,e
+	jr      z,_8d5e
+	dec     a
+	dec     d
 _8d5e:
-8d5e dd6e04    ld      l,(ix+$04)
-8d61 dd6605    ld      h,(ix+$05)
-8d64 19        add     hl,de
-8d65 dd8e06    adc     a,(ix+$06)
-8d68 dd7504    ld      (ix+$04),l
-8d6b dd7405    ld      (ix+$05),h
-8d6e dd7706    ld      (ix+$06),a
-8d71 6c        ld      l,h
-8d72 dd6606    ld      h,(ix+$06)
-8d75 3a23d2    ld      a,($d223)
-8d78 e60f      and     $0f
-8d7a 200e      jr      nz,_8d8a
-8d7c dd3411    inc     (ix+$11)
-8d7f dd7e11    ld      a,(ix+$11)
-8d82 fe20      cp      $20
-8d84 3804      jr      c,_8d8a
-8d86 dd361100  ld      (ix+$11),$00
+	ld      l,(ix+$04)
+	ld      h,(ix+$05)
+	add     hl,de
+	adc     a,(ix+$06)
+	ld      (ix+$04),l
+	ld      (ix+$05),h
+	ld      (ix+$06),a
+	ld      l,h
+	ld      h,(ix+$06)
+	ld      a,($d223)
+	and     $0f
+	jr      nz,_8d8a
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $20
+	jr      c,_8d8a
+	ld      (ix+$11),$00
 _8d8a:
-8d8a 22dcd2    ld      ($d2dc),hl
-8d8d ed5b5dd2  ld      de,($d25d)
-8d91 a7        and     a
-8d92 3eff      ld      a,$ff
-8d94 ed52      sbc     hl,de
-8d96 3813      jr      c,_8dab
-8d98 eb        ex      de,hl
-8d99 210c00    ld      hl,$000c
-8d9c 3eff      ld      a,$ff
-8d9e ed52      sbc     hl,de
-8da0 3009      jr      nc,_8dab
-8da2 21b400    ld      hl,$00b4
-8da5 af        xor     a
-8da6 ed52      sbc     hl,de
-8da8 3801      jr      c,_8dab
-8daa 7b        ld      a,e
+	ld      ($d2dc),hl
+	ld      de,($d25d)
+	and     a
+	ld      a,$ff
+	sbc     hl,de
+	jr      c,_8dab
+	ex      de,hl
+	ld      hl,$000c
+	ld      a,$ff
+	sbc     hl,de
+	jr      nc,_8dab
+	ld      hl,$00b4
+	xor     a
+	sbc     hl,de
+	jr      c,_8dab
+	ld      a,e
 _8dab:
-8dab 32dbd2    ld      ($d2db),a
-8dae a7        and     a
-8daf c8        ret     z
-8db0 feff      cp      $ff
-8db2 c8        ret     z
-8db3 c609      add     a,$09
-8db5 6f        ld      l,a
-8db6 2600      ld      h,$00
-8db8 2214d2    ld      ($d214),hl
-8dbb 2a5ad2    ld      hl,($d25a)
-8dbe 220ed2    ld      ($d20e),hl
-8dc1 2a5dd2    ld      hl,($d25d)
-8dc4 2210d2    ld      ($d210),hl
-8dc7 fd7e0a    ld      a,(iy+$0a)
-8dca 2a3cd2    ld      hl,($d23c)
-8dcd f5        push    af
-8dce e5        push    hl
-8dcf 2100d0    ld      hl,$d000
-8dd2 223cd2    ld      ($d23c),hl
-8dd5 3a23d2    ld      a,($d223)
-8dd8 e603      and     $03
-8dda 87        add     a,a
-8ddb 87        add     a,a
-8ddc 4f        ld      c,a
-8ddd 0600      ld      b,$00
-8ddf 21168e    ld      hl,$8e16
-8de2 09        add     hl,bc
-8de3 0604      ld      b,$04
+	ld      ($d2db),a
+	and     a
+	ret     z
+	cp      $ff
+	ret     z
+	add     a,$09
+	ld      l,a
+	ld      h,$00
+	ld      ($d214),hl
+	ld      hl,($d25a)
+	ld      ($d20e),hl
+	ld      hl,($d25d)
+	ld      ($d210),hl
+	ld      a,(iy+$0a)
+	ld      hl,($d23c)
+	push    af
+	push    hl
+	ld      hl,$d000
+	ld      ($d23c),hl
+	ld      a,($d223)
+	and     $03
+	add     a,a
+	add     a,a
+	ld      c,a
+	ld      b,$00
+	ld      hl,_8e16
+	add     hl,bc
+	ld      b,$04
 _8de5:
-8de5 c5        push    bc
-8de6 4e        ld      c,(hl)
-8de7 23        inc     hl
-8de8 e5        push    hl
-8de9 3a23d2    ld      a,($d223)
-8dec e60f      and     $0f
-8dee 81        add     a,c
-8def 6f        ld      l,a
-8df0 2600      ld      h,$00
-8df2 2212d2    ld      ($d212),hl
-8df5 3e00      ld      a,$00
-8df7 cd8135    call    _3581
-8dfa 2a12d2    ld      hl,($d212)
-8dfd 110800    ld      de,$0008
-8e00 19        add     hl,de
-8e01 2212d2    ld      ($d212),hl
-8e04 3e02      ld      a,$02
-8e06 cd8135    call    _3581
-8e09 e1        pop     hl
-8e0a c1        pop     bc
-8e0b 10d8      djnz    _8de5
-8e0d e1        pop     hl
-8e0e f1        pop     af
-8e0f 223cd2    ld      ($d23c),hl
-8e12 fd770a    ld      (iy+$0a),a
-8e15 c9        ret     
-8e16 00        nop     
-8e17 40        ld      b,b
-8e18 80        add     a,b
-8e19 c0        ret     nz
-8e1a 1050      djnz    _8e6c
-8e1c 90        sub     b
-8e1d d0        ret     nc
-8e1e 2060      jr------nz,$8e80
-8e20 a0        and     b
-8e21 e0        ret     po
-8e22 3070      jr------nc,$8e94
-8e24 b0        or      b
-8e25 f0        ret     p
-8e26 08        ex      af,af'
-8e27 48        ld      c,b
-8e28 88        adc     a,b
-8e29 c8        ret     z
-8e2a 1858      jr------$8e84
-8e2c 98        sbc     a,b
-8e2d d8        ret     c
-8e2e 2868      jr------z,$8e98
-8e30 a8        xor     b
-8e31 e8        ret     pe
-8e32 3878      jr------c,$8eac
-8e34 b8        cp      b
-8e35 f8        ret     m
-8e36 fefc      cp      $fc
-8e38 f8        ret     m
-8e39 f0        ret     p
-8e3a e8        ret     pe
-8e3b d8        ret     c
-8e3c c8        ret     z
-8e3d c8        ret     z
-8e3e c8        ret     z
-8e3f c8        ret     z
-8e40 d8        ret     c
-8e41 e8        ret     pe
-8e42 f0        ret     p
-8e43 f8        ret     m
-8e44 fcfe02    call----m,$02fe
-8e47 04        inc     b
-8e48 08        ex      af,af'
-8e49 1018      djnz----$8e63
-8e4b 2838      jr------z,$8e85
-8e4d 3838      jr------c,$8e87
-8e4f 3828      jr------c,$8e79
-8e51 1810      jr------$8e63
-8e53 08        ex      af,af'
-8e54 04        inc     b
-8e55 02        ld      (bc),a
+	push    bc
+	ld      c,(hl)
+	inc     hl
+	push    hl
+	ld      a,($d223)
+	and     $0f
+	add     a,c
+	ld      l,a
+	ld      h,$00
+	ld      ($d212),hl
+	ld      a,$00
+	call    _3581
+	ld      hl,($d212)
+	ld      de,$0008
+	add     hl,de
+	ld      ($d212),hl
+	ld      a,$02
+	call    _3581
+	pop     hl
+	pop     bc
+	djnz    _8de5
+	pop     hl
+	pop     af
+	ld      ($d23c),hl
+	ld      (iy+$0a),a
+	ret
+	
+_8e16:
+.db $00, $40, $80, $C0, $10, $50, $90, $D0, $20, $60, $A0, $E0, $30, $70, $B0, $F0
+.db $08, $48, $88, $C8, $18, $58, $98, $D8, $28, $68, $A8, $E8, $38, $78, $B8, $F8
+_8e36:
+.db $FE, $FC, $F8, $F0, $E8, $D8, $C8, $C8, $C8, $C8, $D8, $E8, $F0, $F8, $FC, $FE
+.db $02, $04, $08, $10, $18, $28, $38, $38, $38, $38, $28, $18, $10, $08, $04, $02
 
-8e56 ddcb18ee  set     5,(ix+$18)
-8e5a dd7e12    ld      a,(ix+$12)
-8e5d e67f      and     $7f
-8e5f 2011      jr      nz,_8e72
-8e61 cd2506    call    _LABEL_625_57
-8e64 e607      and     $07
-8e66 5f        ld      e,a
-8e67 1600      ld      d,$00
-8e69 21c28e    ld      hl,$8ec2
+;____________________________________________________________________________[$8E56]___
+;OBJECT: bubbles (Labyrinth)
+
+_8e56:
+	set     5,(ix+$18)
+	ld      a,(ix+$12)
+	and     $7f
+	jr      nz,_8e72
+	call    _LABEL_625_57
+	and     $07
+	ld      e,a
+	ld      d,$00
+	ld      hl,_8ec2
 _8e6c:
-8e6c 19        add     hl,de
-8e6d cb46      bit     0,(hl)
-8e6f c4eb91    call    nz,_91eb
+	add     hl,de
+	bit     0,(hl)
+	call    nz,_91eb
 _8e72:
-8e72 dd6e02    ld      l,(ix+$02)
-8e75 dd6603    ld      h,(ix+$03)
-8e78 220ed2    ld      ($d20e),hl
-8e7b dd6e05    ld      l,(ix+$05)
-8e7e dd6606    ld      h,(ix+$06)
-8e81 2210d2    ld      ($d210),hl
-8e84 dd7e11    ld      a,(ix+$11)
-8e87 87        add     a,a
-8e88 5f        ld      e,a
-8e89 1600      ld      d,$00
-8e8b 21b68e    ld      hl,$8eb6
-8e8e 19        add     hl,de
-8e8f 5e        ld      e,(hl)
-8e90 ed5312d2  ld      ($d212),de
-8e94 23        inc     hl
-8e95 5e        ld      e,(hl)
-8e96 ed5314d2  ld      ($d214),de
-8e9a 3e0c      ld      a,$0c
-8e9c cd8135    call    _3581
-8e9f dd3412    inc     (ix+$12)
-8ea2 3a23d2    ld      a,($d223)
-8ea5 e607      and     $07
-8ea7 c0        ret     nz
-8ea8 dd3411    inc     (ix+$11)
-8eab dd7e11    ld      a,(ix+$11)
-8eae fe06      cp      $06
-8eb0 d8        ret     c
-8eb1 dd361100  ld      (ix+$11),$00
-8eb5 c9        ret     
-8eb6 08        ex      af,af'
-8eb7 05        dec     b
-8eb8 08        ex      af,af'
-8eb9 04        inc     b
-8eba 07        rlca    
-8ebb 03        inc     bc
-_8ebc:
-8ebc 0602      ld      b,$02
-8ebe 07        rlca    
-8ebf 010600    ld      bc,$0006
-8ec2 010001    ld      bc,$0100
-8ec5 010001    ld      bc,$0100
-8ec8 00        nop     
-8ec9 01ddcb    ld      bc,$cbdd
-8ecc 18ee      jr      _8ebc
-8ece af        xor     a
-8ecf dd770f    ld      (ix+$0f),a
-8ed2 dd7710    ld      (ix+$10),a
-8ed5 dd7e11    ld      a,(ix+$11)
-8ed8 e60f      and     $0f
-8eda 201c      jr      nz,_8ef8
-8edc cd2506    call    _LABEL_625_57
-8edf 012000    ld      bc,$0020
-8ee2 1600      ld      d,$00
-8ee4 e63f      and     $3f
-8ee6 fe20      cp      $20
-8ee8 3805      jr      c,_8eef
-8eea 01e0ff    ld      bc,$ffe0
-8eed 16ff      ld      d,$ff
-_8eef:
-8eef dd7107    ld      (ix+$07),c
-8ef2 dd7008    ld      (ix+$08),b
-8ef5 dd7209    ld      (ix+$09),d
-_8ef8:
-8ef8 dd360aa0  ld      (ix+$0a),$a0
-8efc dd360bff  ld      (ix+$0b),$ff
-8f00 dd360cff  ld      (ix+$0c),$ff
-8f04 dd6e02    ld      l,(ix+$02)
-8f07 dd6603    ld      h,(ix+$03)
-8f0a 220ed2    ld      ($d20e),hl
-8f0d eb        ex      de,hl
-8f0e 2a5ad2    ld      hl,($d25a)
-8f11 010800    ld      bc,$0008
-8f14 af        xor     a
-8f15 ed42      sbc     hl,bc
-8f17 3002      jr      nc,_8f1b
-8f19 6f        ld      l,a
-8f1a 67        ld      h,a
-_8f1b:
-8f1b a7        and     a
-8f1c ed52      sbc     hl,de
-8f1e 3036      jr      nc,_8f56
-8f20 2a5ad2    ld      hl,($d25a)
-8f23 010001    ld      bc,$0100
-8f26 09        add     hl,bc
-8f27 a7        and     a
-8f28 ed52      sbc     hl,de
-8f2a 382a      jr      c,_8f56
-8f2c dd6e05    ld      l,(ix+$05)
-8f2f dd6606    ld      h,(ix+$06)
-8f32 2210d2    ld      ($d210),hl
-8f35 eb        ex      de,hl
-8f36 2adcd2    ld      hl,($d2dc)
-8f39 a7        and     a
-8f3a ed52      sbc     hl,de
-8f3c 3018      jr      nc,_8f56
-8f3e 2a5dd2    ld      hl,($d25d)
-8f41 01f0ff    ld      bc,$fff0
-8f44 09        add     hl,bc
-8f45 a7        and     a
-8f46 ed52      sbc     hl,de
-8f48 300c      jr      nc,_8f56
-8f4a 2a5dd2    ld      hl,($d25d)
-8f4d 01c000    ld      bc,$00c0
-8f50 09        add     hl,bc
-8f51 a7        and     a
-8f52 ed52      sbc     hl,de
-8f54 3004      jr      nc,_8f5a
-_8f56:
-8f56 dd3600ff  ld      (ix+$00),$ff
-_8f5a:
-8f5a 210000    ld      hl,$0000
-8f5d 2212d2    ld      ($d212),hl
-8f60 2214d2    ld      ($d214),hl
-8f63 3e0c      ld      a,$0c
-8f65 cd8135    call    _3581
-8f68 dd3411    inc     (ix+$11)
-8f6b c9        ret     
-8f6c c9        ret     
-8f6d dd360d0c  ld      (ix+$0d),$0c
-8f71 dd360e20  ld      (ix+$0e),$20
-8f75 210202    ld      hl,$0202
-8f78 2214d2    ld      ($d214),hl
-8f7b cd5639    call    _LABEL_3956_11
-8f7e 210008    ld      hl,$0800
-8f81 220ed2    ld      ($d20e),hl
-8f84 d4e535    call    nc,_35e5
-8f87 dd6e0a    ld      l,(ix+$0a)
-8f8a dd660b    ld      h,(ix+$0b)
-8f8d dd7e0c    ld      a,(ix+$0c)
-8f90 111000    ld      de,$0010
-8f93 19        add     hl,de
-8f94 ce00      adc     a,$00
-8f96 4f        ld      c,a
-8f97 faa48f    jp      m,_8fa4
-8f9a 7c        ld      a,h
-8f9b fe04      cp      $04
-8f9d 3805      jr      c,_8fa4
-8f9f 210003    ld      hl,$0300
-8fa2 0e00      ld      c,$00
-_8fa4:
-8fa4 dd750a    ld      (ix+$0a),l
-8fa7 dd740b    ld      (ix+$0b),h
-8faa dd710c    ld      (ix+$0c),c
-8fad ddcb1846  bit     0,(ix+$18)
-8fb1 c22990    jp      nz,_9029
-8fb4 11d0ff    ld      de,$ffd0
-8fb7 dd6e02    ld      l,(ix+$02)
-8fba dd6603    ld      h,(ix+$03)
-8fbd 19        add     hl,de
-8fbe ed5bfed3  ld      de,($d3fe)
-8fc2 a7        and     a
-8fc3 ed52      sbc     hl,de
-8fc5 301f      jr      nc,_8fe6
-8fc7 013000    ld      bc,$0030
-8fca dd6e02    ld      l,(ix+$02)
-8fcd dd6603    ld      h,(ix+$03)
-8fd0 09        add     hl,bc
-8fd1 a7        and     a
-8fd2 ed52      sbc     hl,de
-8fd4 3810      jr      c,_8fe6
-8fd6 ddcb18c6  set     0,(ix+$18)
-8fda dd360a80  ld      (ix+$0a),$80
-8fde dd360bfd  ld      (ix+$0b),$fd
-8fe2 dd360cff  ld      (ix+$0c),$ff
-_8fe6:
-8fe6 dd6e02    ld      l,(ix+$02)
-8fe9 dd6603    ld      h,(ix+$03)
-8fec ed5bfed3  ld      de,($d3fe)
-8ff0 a7        and     a
-8ff1 ed52      sbc     hl,de
-8ff3 381a      jr      c,_900f
-8ff5 dd3607c0  ld      (ix+$07),$c0
-8ff9 dd3608ff  ld      (ix+$08),$ff
-8ffd dd3609ff  ld      (ix+$09),$ff
-9001 115990    ld      de,$9059
-9004 014a90    ld      bc,$904a
-9007 cd417c    call    _7c41
-900a ddcb18ce  set     1,(ix+$18)
-900e c9        ret     
-_900f:
-900f dd360740  ld      (ix+$07),$40
-9013 dd360800  ld      (ix+$08),$00
-9017 dd360900  ld      (ix+$09),$00
-901b 115990    ld      de,$9059
-901e 014590    ld      bc,$9045
-9021 cd417c    call    _7c41
-9024 ddcb188e  res     1,(ix+$18)
-9028 c9        ret     
-_9029:
-9029 015490    ld      bc,$9054
-902c ddcb184e  bit     1,(ix+$18)
-9030 2003      jr      nz,_9035
-9032 014f90    ld      bc,$904f
-_9035:
-9035 115990    ld      de,$9059
-9038 cd417c    call    _7c41
-903b ddcb187e  bit     7,(ix+$18)
-903f c8        ret     z
-9040 ddcb1886  res     0,(ix+$18)
-9044 c9        ret     
-9045 00        nop     
-9046 04        inc     b
-9047 0104ff    ld      bc,$ff04
-904a 02        ld      (bc),a
-904b 04        inc     b
-904c 03        inc     bc
-904d 04        inc     b
-904e ff        rst     $38
-904f 04        inc     b
-9050 04        inc     b
-9051 04        inc     b
-9052 04        inc     b
-9053 ff        rst     $38
-9054 05        dec     b
-9055 04        inc     b
-9056 05        dec     b
-9057 04        inc     b
-9058 ff        rst     $38
-9059 44        ld      b,h
-905a 46        ld      b,(hl)
-905b ff        rst     $38
-905c ff        rst     $38
-905d ff        rst     $38
-905e ff        rst     $38
-905f 64        ld      h,h
-9060 66        ld      h,(hl)
-9061 ff        rst     $38
-9062 ff        rst     $38
-9063 ff        rst     $38
-9064 ff        rst     $38
-9065 ff        rst     $38
-9066 ff        rst     $38
-9067 ff        rst     $38
-9068 ff        rst     $38
-9069 ff        rst     $38
-906a ff        rst     $38
-906b 44        ld      b,h
-906c 46        ld      b,(hl)
-906d ff        rst     $38
-906e ff        rst     $38
-906f ff        rst     $38
-9070 ff        rst     $38
-9071 48        ld      c,b
-9072 4a        ld      c,d
-9073 ff        rst     $38
-9074 ff        rst     $38
-9075 ff        rst     $38
-9076 ff        rst     $38
-9077 ff        rst     $38
-9078 ff        rst     $38
-9079 ff        rst     $38
-907a ff        rst     $38
-907b ff        rst     $38
-907c ff        rst     $38
-907d 50        ld      d,b
-907e 52        ld      d,d
-907f ff        rst     $38
-9080 ff        rst     $38
-9081 ff        rst     $38
-9082 ff        rst     $38
-9083 70        ld      (hl),b
-9084 72        ld      (hl),d
-9085 ff        rst     $38
-9086 ff        rst     $38
-9087 ff        rst     $38
-9088 ff        rst     $38
-9089 ff        rst     $38
-908a ff        rst     $38
-908b ff        rst     $38
-908c ff        rst     $38
-908d ff        rst     $38
-908e ff        rst     $38
-908f 50        ld      d,b
-9090 52        ld      d,d
-9091 ff        rst     $38
-9092 ff        rst     $38
-9093 ff        rst     $38
-9094 ff        rst     $38
-9095 4c        ld      c,h
-9096 4e        ld      c,(hl)
-9097 ff        rst     $38
-9098 ff        rst     $38
-9099 ff        rst     $38
-909a ff        rst     $38
-909b ff        rst     $38
-909c ff        rst     $38
-909d ff        rst     $38
-909e ff        rst     $38
-909f ff        rst     $38
-90a0 ff        rst     $38
-90a1 44        ld      b,h
-90a2 46        ld      b,(hl)
-90a3 ff        rst     $38
-90a4 ff        rst     $38
-90a5 ff        rst     $38
-90a6 ff        rst     $38
-90a7 68        ld      l,b
-90a8 6a        ld      l,d
-90a9 ff        rst     $38
-90aa ff        rst     $38
-90ab ff        rst     $38
-90ac ff        rst     $38
-90ad ff        rst     $38
-90ae ff        rst     $38
-90af ff        rst     $38
-90b0 ff        rst     $38
-90b1 ff        rst     $38
-90b2 ff        rst     $38
-90b3 50        ld      d,b
-90b4 52        ld      d,d
-90b5 ff        rst     $38
-90b6 ff        rst     $38
-90b7 ff        rst     $38
-90b8 ff        rst     $38
-90b9 6c        ld      l,h
-90ba 6e        ld      l,(hl)
-90bb ff        rst     $38
-90bc ff        rst     $38
-90bd ff        rst     $38
-90be ff        rst     $38
-90bf ff        rst     $38
-90c0 ddcb18ee  set     5,(ix+$18)
-90c4 dd360d1e  ld      (ix+$0d),$1e
-90c8 dd360e1c  ld      (ix+$0e),$1c
-90cc dd360fde  ld      (ix+$0f),$de
-90d0 dd361091  ld      (ix+$10),$91
-90d4 ddcb184e  bit     1,(ix+$18)
-90d8 2026      jr      nz,_9100
-90da dd6e02    ld      l,(ix+$02)
-90dd dd6603    ld      h,(ix+$03)
-90e0 dd7511    ld      (ix+$11),l
-90e3 dd7412    ld      (ix+$12),h
-90e6 dd6e05    ld      l,(ix+$05)
-90e9 dd6606    ld      h,(ix+$06)
-90ec 11ffff    ld      de,$ffff
-90ef 19        add     hl,de
-90f0 dd7505    ld      (ix+$05),l
-90f3 dd7406    ld      (ix+$06),h
-90f6 dd7513    ld      (ix+$13),l
-90f9 dd7414    ld      (ix+$14),h
-90fc ddcb18ce  set     1,(ix+$18)
-_9100:
-9100 011000    ld      bc,$0010
-9103 112000    ld      de,$0020
-9106 cdf936    call    _36f9
-9109 5e        ld      e,(hl)
-910a 1600      ld      d,$00
-910c 3ad4d2    ld      a,(S1_LEVEL_SOLIDITY)
-910f 87        add     a,a
-9110 4f        ld      c,a
-9111 42        ld      b,d
-9112 21653a    ld      hl,S1_SolidityPointers
-9115 09        add     hl,bc
-9116 7e        ld      a,(hl)
-9117 23        inc     hl
-9118 66        ld      h,(hl)
-9119 6f        ld      l,a
-911a 19        add     hl,de
-911b 7e        ld      a,(hl)
-911c e63f      and     $3f
-911e 0e00      ld      c,$00
-9120 69        ld      l,c
-9121 61        ld      h,c
-9122 fe1e      cp      $1e
-9124 2822      jr      z,_9148
-9126 ddcb1846  bit     0,(ix+$18)
-912a 2825      jr      z,_9151
-912c dd6e0a    ld      l,(ix+$0a)
-912f dd660b    ld      h,(ix+$0b)
-9132 dd7e0c    ld      a,(ix+$0c)
-9135 11f8ff    ld      de,$fff8
-9138 19        add     hl,de
-9139 ceff      adc     a,$ff
-913b 4f        ld      c,a
-913c 7c        ld      a,h
-913d ed44      neg     
-913f fe02      cp      $02
-9141 3805      jr      c,_9148
-9143 2100ff    ld      hl,$ff00
-9146 0eff      ld      c,$ff
-_9148:
-9148 dd750a    ld      (ix+$0a),l
-914b dd740b    ld      (ix+$0b),h
-914e dd710c    ld      (ix+$0c),c
-_9151:
-9151 dd5e02    ld      e,(ix+$02)
-9154 dd5603    ld      d,(ix+$03)
-9157 2a5ad2    ld      hl,($d25a)
-915a 01e0ff    ld      bc,$ffe0
-915d 09        add     hl,bc
-915e a7        and     a
-915f ed52      sbc     hl,de
-9161 3027      jr      nc,_918a
-9163 2a5ad2    ld      hl,($d25a)
-9166 24        inc     h
-9167 a7        and     a
-9168 ed52      sbc     hl,de
-916a 381e      jr      c,_918a
-916c dd5e05    ld      e,(ix+$05)
-916f dd5606    ld      d,(ix+$06)
-9172 2a5dd2    ld      hl,($d25d)
-9175 01e0ff    ld      bc,$ffe0
-9178 09        add     hl,bc
-9179 a7        and     a
-917a ed52      sbc     hl,de
-917c 300c      jr      nc,_918a
-917e 2a5dd2    ld      hl,($d25d)
-9181 01e000    ld      bc,$00e0
-9184 09        add     hl,bc
-9185 a7        and     a
-9186 ed52      sbc     hl,de
-9188 302d      jr      nc,_91b7
-_918a:
-918a dd6e11    ld      l,(ix+$11)
-918d dd6612    ld      h,(ix+$12)
-9190 dd7502    ld      (ix+$02),l
-9193 dd7403    ld      (ix+$03),h
-9196 dd6e13    ld      l,(ix+$13)
-9199 dd6614    ld      h,(ix+$14)
-919c dd7505    ld      (ix+$05),l
-919f dd7406    ld      (ix+$06),h
-91a2 af        xor     a
-91a3 dd7701    ld      (ix+$01),a
-91a6 dd7704    ld      (ix+$04),a
-91a9 dd770a    ld      (ix+$0a),a
-91ac dd770b    ld      (ix+$0b),a
-91af dd770c    ld      (ix+$0c),a
-91b2 ddcb1886  res     0,(ix+$18)
-91b6 c9        ret     
-_91b7:
-91b7 21020e    ld      hl,$0e02
-91ba 2214d2    ld      ($d214),hl
-91bd cd5639    call    _LABEL_3956_11
-91c0 d8        ret     c
-91c1 ddcb18c6  set     0,(ix+$18)
-91c5 3a07d4    ld      a,($d407)
-91c8 a7        and     a
-91c9 f2d191    jp      p,_91d1
-91cc ed44      neg     
-91ce fe02      cp      $02
-91d0 d0        ret     nc
-_91d1:
-91d1 dd5e0a    ld      e,(ix+$0a)
-91d4 dd560b    ld      d,(ix+$0b)
-91d7 011000    ld      bc,$0010
-91da cdc17c    call    _LABEL_7CC1_12
-91dd c9        ret     
-91de feff      cp      $ff
-91e0 ff        rst     $38
-91e1 ff        rst     $38
-91e2 ff        rst     $38
-91e3 ff        rst     $38
-91e4 1618      ld      d,$18
-91e6 1a        ld      a,(de)
-91e7 1c        inc     e
-91e8 ff        rst     $38
-91e9 ff        rst     $38
-91ea ff        rst     $38
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      a,(ix+$11)
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      hl,_8eb6
+	add     hl,de
+	ld      e,(hl)
+	ld      ($d212),de
+	inc     hl
+	ld      e,(hl)
+	ld      ($d214),de
+	ld      a,$0c
+	call    _3581
+	inc     (ix+$12)
+	ld      a,($d223)
+	and     $07
+	ret     nz
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $06
+	ret     c
+	ld      (ix+$11),$00
+	ret     
 
-.ASM
-.ORGA $91EB
+_8eb6:
+.db $08, $05, $08, $04, $07, $03
+_8ebc:
+.db $06, $02, $07, $01, $06, $00
+_8ec2:
+.db $01, $00, $01, $01, $00, $01, $00, $01
+
+;____________________________________________________________________________[$8ECA]___
+;OBJECT: UNKNOWN
+
+_8eca:
+	set 5, (ix+$18)
+	xor a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      a,(ix+$11)
+	and     $0f
+	jr      nz,_8ef8
+	call    _LABEL_625_57
+	ld      bc,$0020
+	ld      d,$00
+	and     $3f
+	cp      $20
+	jr      c,_8eef
+	ld      bc,$ffe0
+	ld      d,$ff
+_8eef:
+	ld      (ix+$07),c
+	ld      (ix+$08),b
+	ld      (ix+$09),d
+_8ef8:
+	ld      (ix+$0a),$a0
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ex      de,hl
+	ld      hl,($d25a)
+	ld      bc,$0008
+	xor     a
+	sbc     hl,bc
+	jr      nc,_8f1b
+	ld      l,a
+	ld      h,a
+_8f1b:
+	and     a
+	sbc     hl,de
+	jr      nc,_8f56
+	ld      hl,($d25a)
+	ld      bc,$0100
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_8f56
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ex      de,hl
+	ld      hl,($d2dc)
+	and     a
+	sbc     hl,de
+	jr      nc,_8f56
+	ld      hl,($d25d)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_8f56
+	ld      hl,($d25d)
+	ld      bc,$00c0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_8f5a
+_8f56:
+	ld      (ix+$00),$ff
+_8f5a:
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      ($d214),hl
+	ld      a,$0c
+	call    _3581
+	inc     (ix+$11)
+	ret     
+
+;____________________________________________________________________________[$8F6C]___
+;OBJECT: UNKNOWN
+
+_8f6c:
+	ret     			;object nullified!
+
+;____________________________________________________________________________[$8F6D]___
+;OBJECT: badnick - Burrobot (Labyrinth)
+
+_8f6d:
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$20
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0800
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$0010
+	add     hl,de
+	adc     a,$00
+	ld      c,a
+	jp      m,_8fa4
+	ld      a,h
+	cp      $04
+	jr      c,_8fa4
+	ld      hl,$0300
+	ld      c,$00
+_8fa4:
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	bit     0,(ix+$18)
+	jp      nz,_9029
+	ld      de,$ffd0
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      de,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      nc,_8fe6
+	ld      bc,$0030
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_8fe6
+	set     0,(ix+$18)
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$fd
+	ld      (ix+$0c),$ff
+_8fe6:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      c,_900f
+	ld      (ix+$07),$c0
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      de,_9059
+	ld      bc,_904a
+	call    _7c41
+	set     1,(ix+$18)
+	ret     
+_900f:
+	ld      (ix+$07),$40
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      de,_9059
+	ld      bc,_9045
+	call    _7c41
+	res     1,(ix+$18)
+	ret     
+_9029:
+	ld      bc,_9054
+	bit     1,(ix+$18)
+	jr      nz,_9035
+	ld      bc,_904f
+_9035:
+	ld      de,_9059
+	call    _7c41
+	bit     7,(ix+$18)
+	ret     z
+	res     0,(ix+$18)
+	ret     
+
+_9045:
+.db $00, $04, $01, $04, $FF
+_904a:
+.db $02, $04, $03, $04, $FF
+_904f:
+.db $04, $04, $04, $04, $FF
+_9054:
+.db $05, $04, $05, $04, $FF
+_9059:
+.db $44, $46, $FF, $FF, $FF, $FF, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $48, $4A, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $4C, $4E, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $68, $6A
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF
+.db $6C, $6E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$90C0]___
+;OBJECT: platform - float up (Labyrinth)
+
+_90c0:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$1c
+	ld      (ix+$0f),<_91de
+	ld      (ix+$10),>_91de
+	bit     1,(ix+$18)
+	jr      nz,_9100
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      (ix+$11),l
+	ld      (ix+$12),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffff
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$13),l
+	ld      (ix+$14),h
+	set     1,(ix+$18)
+_9100:
+	ld      bc,$0010
+	ld      de,$0020
+	call    _36f9
+	ld      e,(hl)
+	ld      d,$00
+	ld      a,(S1_LEVEL_SOLIDITY)
+	add     a,a
+	ld      c,a
+	ld      b,d
+	ld      hl,S1_SolidityPointers
+	add     hl,bc
+	ld      a,(hl)
+	inc     hl
+	ld      h,(hl)
+	ld      l,a
+	add     hl,de
+	ld      a,(hl)
+	and     $3f
+	ld      c,$00
+	ld      l,c
+	ld      h,c
+	cp      $1e
+	jr      z,_9148
+	bit     0,(ix+$18)
+	jr      z,_9151
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$fff8
+	add     hl,de
+	adc     a,$ff
+	ld      c,a
+	ld      a,h
+	neg     
+	cp      $02
+	jr      c,_9148
+	ld      hl,$ff00
+	ld      c,$ff
+_9148:
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+_9151:
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      hl,($d25a)
+	ld      bc,$ffe0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_918a
+	ld      hl,($d25a)
+	inc     h
+	and     a
+	sbc     hl,de
+	jr      c,_918a
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	ld      hl,($d25d)
+	ld      bc,$ffe0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_918a
+	ld      hl,($d25d)
+	ld      bc,$00e0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_91b7
+_918a:
+	ld      l,(ix+$11)
+	ld      h,(ix+$12)
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$13)
+	ld      h,(ix+$14)
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	xor     a
+	ld      (ix+$01),a
+	ld      (ix+$04),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	res     0,(ix+$18)
+	ret     
+_91b7:
+	ld      hl,$0e02
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ret     c
+	set     0,(ix+$18)
+	ld      a,($d407)
+	and     a
+	jp      p,_91d1
+	neg     
+	cp      $02
+	ret     nc
+_91d1:
+	ld      e,(ix+$0a)
+	ld      d,(ix+$0b)
+	ld      bc,$0010
+	call    _LABEL_7CC1_12
+	ret     
+
+_91de:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $16, $18, $1A, $1C, $FF, $FF, $FF
+
 _91eb:
 	call    _7c7b
 	ret     c
@@ -15693,7 +15324,7 @@ _91eb:
 	and     $0f
 	ld      e,a
 	ld      d,$00
-	ld      hl,$9257
+	ld      hl,_9257
 	add     hl,de
 	ld      c,(hl)
 	pop     hl
@@ -15734,3497 +15365,2608 @@ _9207:
 	pop     ix
 	ret     
 
-.ENDASM
-9257 42        ld      b,d
-9258 2020      jr------nz,$927a
-925a 2042      jr------nz,$929e
-925c 2020      jr------nz,$927e
-925e 2042      jr------nz,$92a2
-9260 2020      jr------nz,$9282
-9262 2042      jr------nz,$92a6
-9264 2020      jr------nz,$9286
-9266 20dd      jr------nz,$9245
-9268 cb18      rr      b
-926a eedd      xor     $dd
-926c 360d      ld      (hl),$0d
-926e 20dd      jr------nz,$924d
-9270 360e      ld      (hl),$0e
-9272 1c        inc     e
-9273 cda67c    call    _7ca6
-9276 dd360f93  ld      (ix+$0f),$93
-927a dd361094  ld      (ix+$10),$94
-927e ddcb1846  bit     0,(ix+$18)
-9282 202b      jr      nz,_92af
-9284 21d002    ld      hl,$02d0
-9287 119002    ld      de,$0290
-928a cd8c7c    call    _7c8c
-928d fdcb09ce  set     1,(iy+$09)
+_9257:
+.db $42, $20, $20, $20, $42, $20, $20, $20, $42, $20, $20, $20, $42, $20, $20, $20
 
-		;UNKNOWN
-9291 2108e5    ld      hl,$e508
-9294 110020    ld      de,$2000
-9297 3e0c      ld      a,12
-9299 cd0504    call    decompressArt
+;____________________________________________________________________________[$9267]___
+;OBJECT: boss (Labyrinth)
 
-929c 211c73    ld      hl,S1_BossPalette
-929f 3e02      ld      a,$02
-92a1 cd3303    call    loadPaletteOnInterrupt
-92a4 af        xor     a
-92a5 32ecd2    ld      ($d2ec),a
-92a8 3e0b      ld      a,$0b
-92aa df        rst     $18
-92ab ddcb18c6  set     0,(ix+$18)
+_9267:
+	set 5, (ix+$18)
+	ld (ix+$0D), $20
+	ld (ix+$0E), $1C
+	call    _7ca6
+	ld      (ix+$0f),<_9493
+	ld      (ix+$10),>_9493
+	bit     0,(ix+$18)
+	jr      nz,_92af
+	ld      hl,$02d0
+	ld      de,$0290
+	call    _7c8c
+	set     1,(iy+$09)
+	
+	;UNKNOWN
+	ld      hl,$e508
+	ld      de,$2000
+	ld      a,12
+	call    decompressArt
+	
+	ld      hl,S1_BossPalette
+	ld      a,$02
+	call    loadPaletteOnInterrupt
+	xor     a
+	ld      ($d2ec),a
+	ld      a,$0b
+	rst     $18
+	set     0,(ix+$18)
 _92af:
-92af dd7e11    ld      a,(ix+$11)
-92b2 a7        and     a
-92b3 2026      jr      nz,_92db
-92b5 dd7e13    ld      a,(ix+$13)
-92b8 87        add     a,a
-92b9 87        add     a,a
-92ba 5f        ld      e,a
-92bb 1600      ld      d,$00
-92bd 217b94    ld      hl,$947b
-92c0 19        add     hl,de
-92c1 7e        ld      a,(hl)
-92c2 dd7702    ld      (ix+$02),a
-92c5 23        inc     hl
-92c6 7e        ld      a,(hl)
-92c7 23        inc     hl
-92c8 dd7703    ld      (ix+$03),a
-92cb 7e        ld      a,(hl)
-92cc 23        inc     hl
-92cd dd7705    ld      (ix+$05),a
-92d0 7e        ld      a,(hl)
-92d1 23        inc     hl
-92d2 dd7706    ld      (ix+$06),a
-92d5 dd3411    inc     (ix+$11)
-92d8 c3f793    jp      _93f7
+	ld      a,(ix+$11)
+	and     a
+	jr      nz,_92db
+	ld      a,(ix+$13)
+	add     a,a
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      hl,_947b
+	add     hl,de
+	ld      a,(hl)
+	ld      (ix+$02),a
+	inc     hl
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$03),a
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$05),a
+	ld      a,(hl)
+	inc     hl
+	ld      (ix+$06),a
+	inc     (ix+$11)
+	jp      _93f7
 _92db:
-92db 3d        dec     a
-92dc 2046      jr      nz,_9324
-92de dd7e13    ld      a,(ix+$13)
-92e1 a7        and     a
-92e2 200f      jr      nz,_92f3
-92e4 dd360a80  ld      (ix+$0a),$80
-92e8 dd360bff  ld      (ix+$0b),$ff
-92ec dd360cff  ld      (ix+$0c),$ff
-92f0 c3ff92    jp      _92ff
+	dec     a
+	jr      nz,_9324
+	ld      a,(ix+$13)
+	and     a
+	jr      nz,_92f3
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
+	jp      _92ff
 _92f3:
-92f3 dd360a80  ld      (ix+$0a),$80
-92f7 dd360b00  ld      (ix+$0b),$00
-92fb dd360c00  ld      (ix+$0c),$00
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
 _92ff:
-92ff 218794    ld      hl,$9487
-9302 dd7e13    ld      a,(ix+$13)
-9305 87        add     a,a
-9306 5f        ld      e,a
-9307 1600      ld      d,$00
-9309 19        add     hl,de
-930a 7e        ld      a,(hl)
-930b 23        inc     hl
-930c 66        ld      h,(hl)
-930d 6f        ld      l,a
-930e dd5e05    ld      e,(ix+$05)
-9311 dd5606    ld      d,(ix+$06)
-9314 a7        and     a
-9315 ed52      sbc     hl,de
-9317 c2f793    jp      nz,_93f7
-931a dd3411    inc     (ix+$11)
-931d dd361200  ld      (ix+$12),$00
-9321 c3f793    jp      _93f7
+	ld      hl,_9487
+	ld      a,(ix+$13)
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	add     hl,de
+	ld      a,(hl)
+	inc     hl
+	ld      h,(hl)
+	ld      l,a
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	and     a
+	sbc     hl,de
+	jp      nz,_93f7
+	inc     (ix+$11)
+	ld      (ix+$12),$00
+	jp      _93f7
 _9324:
-9324 3d        dec     a
-9325 c2ab93    jp      nz,_93ab
-9328 af        xor     a
-9329 dd770a    ld      (ix+$0a),a
-932c dd770b    ld      (ix+$0b),a
-932f dd770c    ld      (ix+$0c),a
-9332 dd3412    inc     (ix+$12)
-9335 dd7e12    ld      a,(ix+$12)
-9338 fe64      cp      $64
-933a c2f793    jp      nz,_93f7
-933d dd3411    inc     (ix+$11)
-9340 dd6e02    ld      l,(ix+$02)
-9343 dd6603    ld      h,(ix+$03)
-9346 110f00    ld      de,$000f
-9349 19        add     hl,de
-934a 220ed2    ld      ($d20e),hl
-934d dd6e05    ld      l,(ix+$05)
-9350 dd6606    ld      h,(ix+$06)
-9353 012200    ld      bc,$0022
-9356 09        add     hl,bc
-9357 2210d2    ld      ($d210),hl
-935a dd7e13    ld      a,(ix+$13)
-935d a7        and     a
-935e ca3294    jp      z,_9432
-9361 3aecd2    ld      a,($d2ec)
-9364 fe08      cp      $08
-9366 d2f793    jp      nc,_93f7
-9369 cd7b7c    call    _7c7b
-936c daf793    jp      c,_93f7
-936f dde5      push    ix
-9371 e5        push    hl
-9372 dde1      pop     ix
-9374 af        xor     a
-9375 dd36002f  ld      (ix+$00),$2f
-9379 2a0ed2    ld      hl,($d20e)
-937c dd7701    ld      (ix+$01),a
-937f dd7502    ld      (ix+$02),l
-9382 dd7403    ld      (ix+$03),h
-9385 2a10d2    ld      hl,($d210)
-9388 dd7704    ld      (ix+$04),a
-938b dd7505    ld      (ix+$05),l
-938e dd7406    ld      (ix+$06),h
-9391 dd7718    ld      (ix+$18),a
-9394 dd7707    ld      (ix+$07),a
-9397 dd7708    ld      (ix+$08),a
-939a dd7709    ld      (ix+$09),a
-939d dd770a    ld      (ix+$0a),a
-93a0 dd770b    ld      (ix+$0b),a
-93a3 dd770c    ld      (ix+$0c),a
-93a6 dde1      pop     ix
-93a8 c3f793    jp      _93f7
+	dec     a
+	jp      nz,_93ab
+	xor     a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	inc     (ix+$12)
+	ld      a,(ix+$12)
+	cp      $64
+	jp      nz,_93f7
+	inc     (ix+$11)
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000f
+	add     hl,de
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0022
+	add     hl,bc
+	ld      ($d210),hl
+	ld      a,(ix+$13)
+	and     a
+	jp      z,_9432
+	ld      a,($d2ec)
+	cp      $08
+	jp      nc,_93f7
+	call    _7c7b
+	jp      c,_93f7
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$2f
+	ld      hl,($d20e)
+	ld      (ix+$01),a
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      hl,($d210)
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$18),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	pop     ix
+	jp      _93f7
 _93ab:
-93ab dd7e13    ld      a,(ix+$13)
-93ae a7        and     a
-93af 200f      jr      nz,_93c0
-93b1 dd360a80  ld      (ix+$0a),$80
-93b5 dd360b00  ld      (ix+$0b),$00
-93b9 dd360c00  ld      (ix+$0c),$00
-93bd c3cc93    jp      _93cc
+	ld      a,(ix+$13)
+	and     a
+	jr      nz,_93c0
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
+	jp      _93cc
 _93c0:
-93c0 dd360a80  ld      (ix+$0a),$80
-93c4 dd360bff  ld      (ix+$0b),$ff
-93c8 dd360cff  ld      (ix+$0c),$ff
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
 _93cc:
-93cc 218d94    ld      hl,$948d
-93cf dd7e13    ld      a,(ix+$13)
-93d2 87        add     a,a
-93d3 5f        ld      e,a
-93d4 1600      ld      d,$00
-93d6 19        add     hl,de
-93d7 7e        ld      a,(hl)
-93d8 23        inc     hl
-93d9 66        ld      h,(hl)
-93da 6f        ld      l,a
-93db dd5e05    ld      e,(ix+$05)
-93de dd5606    ld      d,(ix+$06)
-93e1 af        xor     a
-93e2 ed52      sbc     hl,de
-93e4 2011      jr      nz,_93f7
-93e6 dd7711    ld      (ix+$11),a
-93e9 dd3413    inc     (ix+$13)
-93ec dd7e13    ld      a,(ix+$13)
-93ef fe03      cp      $03
-93f1 3804      jr      c,_93f7
-93f3 dd361300  ld      (ix+$13),$00
+	ld      hl,$948d
+	ld      a,(ix+$13)
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	add     hl,de
+	ld      a,(hl)
+	inc     hl
+	ld      h,(hl)
+	ld      l,a
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	xor     a
+	sbc     hl,de
+	jr      nz,_93f7
+	ld      (ix+$11),a
+	inc     (ix+$13)
+	ld      a,(ix+$13)
+	cp      $03
+	jr      c,_93f7
+	ld      (ix+$13),$00
 _93f7:
-93f7 21a200    ld      hl,$00a2
-93fa 2216d2    ld      ($d216),hl
-93fd cdbe77    call    _77be
-9400 3aecd2    ld      a,($d2ec)
-9403 fe08      cp      $08
-9405 d0        ret     nc
-9406 ddcb0c7e  bit     7,(ix+$0c)
-940a c8        ret     z
-940b dd6e02    ld      l,(ix+$02)
-940e dd6603    ld      h,(ix+$03)
-9411 220ed2    ld      ($d20e),hl
-9414 dd6e05    ld      l,(ix+$05)
-9417 dd6606    ld      h,(ix+$06)
-941a 2210d2    ld      ($d210),hl
-941d 211000    ld      hl,$0010
-9420 2212d2    ld      ($d212),hl
-9423 213000    ld      hl,$0030
-9426 2214d2    ld      ($d214),hl
-9429 3a23d2    ld      a,($d223)
-942c e602      and     $02
-942e cd8135    call    _3581
-9431 c9        ret     
+	ld      hl,$00a2
+	ld      ($d216),hl
+	call    _77be
+	ld      a,($d2ec)
+	cp      $08
+	ret     nc
+	bit     7,(ix+$0c)
+	ret     z
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0010
+	ld      ($d212),hl
+	ld      hl,$0030
+	ld      ($d214),hl
+	ld      a,($d223)
+	and     $02
+	call    _3581
+	ret     
 _9432:
-9432 dd6e02    ld      l,(ix+$02)
-9435 dd6603    ld      h,(ix+$03)
-9438 110400    ld      de,$0004
-943b 19        add     hl,de
-943c 220ed2    ld      ($d20e),hl
-943f dd6e05    ld      l,(ix+$05)
-9442 dd6606    ld      h,(ix+$06)
-9445 11faff    ld      de,$fffa
-9448 19        add     hl,de
-9449 2210d2    ld      ($d210),hl
-944c 2100ff    ld      hl,$ff00
-944f 2212d2    ld      ($d212),hl
-9452 2100ff    ld      hl,$ff00
-9455 2214d2    ld      ($d214),hl
-9458 0e04      ld      c,$04
-945a cdd185    call    _85d1
-945d dd6e02    ld      l,(ix+$02)
-9460 dd6603    ld      h,(ix+$03)
-9463 112000    ld      de,$0020
-9466 19        add     hl,de
-9467 220ed2    ld      ($d20e),hl
-946a 210001    ld      hl,$0100
-946d 2212d2    ld      ($d212),hl
-9470 0e04      ld      c,$04
-9472 cdd185    call    _85d1
-9475 3e01      ld      a,$01
-9477 ef        rst     $28
-9478 c3f793    jp      _93f7
-947b 3c        inc     a
-947c 03        inc     bc
-947d 60        ld      h,b
-947e 03        inc     bc
-947f ec0260    call----pe,$6002
-9482 02        ld      (bc),a
-9483 8c        adc     a,h
-9484 03        inc     bc
-9485 60        ld      h,b
-9486 02        ld      (bc),a
-9487 2803      jr      z,_948c
-9489 b0        or      b
-948a 02        ld      (bc),a
-948b b0        or      b
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0004
+	add     hl,de
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$fffa
+	add     hl,de
+	ld      ($d210),hl
+	ld      hl,$ff00
+	ld      ($d212),hl
+	ld      hl,$ff00
+	ld      ($d214),hl
+	ld      c,$04
+	call    _85d1
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0020
+	add     hl,de
+	ld      ($d20e),hl
+	ld      hl,$0100
+	ld      ($d212),hl
+	ld      c,$04
+	call    _85d1
+	ld      a,$01
+	rst     $28
+	jp      _93f7
+
+_947b:
+.db $3C, $03, $60, $03, $EC, $02, $60, $02, $8C, $03, $60, $02
+_9487:
+.db $28, $03, $B0, $02, $B0
 _948c:
-948c 02        ld      (bc),a
-948d 60        ld      h,b
-948e 03        inc     bc
-948f 60        ld      h,b
-9490 02        ld      (bc),a
-9491 60        ld      h,b
-9492 02        ld      (bc),a
-9493 2022      jr      nz,_94b7
-9495 24        inc     h
-9496 2628      ld      h,$28
-9498 ff        rst     $38
-9499 40        ld      b,b
-949a 42        ld      b,d
-949b 44        ld      b,h
-949c 46        ld      b,(hl)
-949d 48        ld      c,b
-949e ff        rst     $38
-949f 60        ld      h,b
-94a0 62        ld      h,d
-94a1 64        ld      h,h
-94a2 66        ld      h,(hl)
-94a3 68        ld      l,b
-94a4 ff        rst     $38
-94a5 ddcb18ee  set     5,(ix+$18)
-94a9 dd360d08  ld      (ix+$0d),$08
-94ad dd360e0a  ld      (ix+$0e),$0a
-94b1 210404    ld      hl,$0404
-94b4 2214d2    ld      ($d214),hl
+.db $02, $60, $03, $60, $02, $60, $02
+_9493:
+.db $20, $22, $24, $26, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+;____________________________________________________________________________[$94A5]___
+;OBJECT: UNKNOWN
+
+_94a5:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$08
+	ld      (ix+$0e),$0a
+	ld      hl,$0404
+	ld      ($d214),hl
 _94b7:
-94b7 cd5639    call    _LABEL_3956_11
-94ba d4fd35    call    nc,_35fd
-94bd ddcb184e  bit     1,(ix+$18)
-94c1 201f      jr      nz,_94e2
-94c3 ddcb18ce  set     1,(ix+$18)
-94c7 2afed3    ld      hl,($d3fe)
-94ca 110c00    ld      de,$000c
-94cd 19        add     hl,de
-94ce eb        ex      de,hl
-94cf dd6e02    ld      l,(ix+$02)
-94d2 dd6603    ld      h,(ix+$03)
-94d5 010800    ld      bc,$0008
-94d8 09        add     hl,bc
-94d9 a7        and     a
-94da ed52      sbc     hl,de
-94dc 3004      jr      nc,_94e2
-94de ddcb18d6  set     2,(ix+$18)
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	bit     1,(ix+$18)
+	jr      nz,_94e2
+	set     1,(ix+$18)
+	ld      hl,($d3fe)
+	ld      de,$000c
+	add     hl,de
+	ex      de,hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      bc,$0008
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_94e2
+	set     2,(ix+$18)
 _94e2:
-94e2 ddcb1846  bit     0,(ix+$18)
-94e6 2030      jr      nz,_9518
-94e8 dd360a40  ld      (ix+$0a),$40
-94ec dd360b00  ld      (ix+$0b),$00
-94f0 dd360c00  ld      (ix+$0c),$00
-94f4 219896    ld      hl,$9698
-94f7 ddcb1856  bit     2,(ix+$18)
-94fb 2803      jr      z,_9500
-94fd 218896    ld      hl,$9688
+	bit     0,(ix+$18)
+	jr      nz,_9518
+	ld      (ix+$0a),$40
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
+	ld      hl,_9698
+	bit     2,(ix+$18)
+	jr      z,_9500
+	ld      hl,_9688
 _9500:
-9500 dd750f    ld      (ix+$0f),l
-9503 dd7410    ld      (ix+$10),h
-9506 2a01d4    ld      hl,($d401)
-9509 dd5e05    ld      e,(ix+$05)
-950c dd5606    ld      d,(ix+$06)
-950f a7        and     a
-9510 ed52      sbc     hl,de
-9512 d0        ret     nc
-9513 ddcb18c6  set     0,(ix+$18)
-9517 c9        ret     
+	ld      (ix+$0f),l
+	ld      (ix+$10),h
+	ld      hl,($d401)
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	and     a
+	sbc     hl,de
+	ret     nc
+	set     0,(ix+$18)
+	ret     
 _9518:
-9518 dd4e02    ld      c,(ix+$02)
-951b dd4603    ld      b,(ix+$03)
-951e 21f0ff    ld      hl,$fff0
-9521 09        add     hl,bc
-9522 ed5b5ad2  ld      de,($d25a)
-9526 a7        and     a
-9527 ed52      sbc     hl,de
-9529 3824      jr      c,_954f
-952b 69        ld      l,c
-952c 60        ld      h,b
-952d 14        inc     d
-952e a7        and     a
-952f ed52      sbc     hl,de
-9531 301c      jr      nc,_954f
-9533 dd4e05    ld      c,(ix+$05)
-9536 dd4606    ld      b,(ix+$06)
-9539 21f0ff    ld      hl,$fff0
-953c 09        add     hl,bc
-953d ed5b5dd2  ld      de,($d25d)
-9541 a7        and     a
-9542 ed52      sbc     hl,de
-9544 3809      jr      c,_954f
-9546 21c000    ld      hl,$00c0
-9549 19        add     hl,de
-954a a7        and     a
-954b ed42      sbc     hl,bc
-954d 3004      jr      nc,_9553
+	ld      c,(ix+$02)
+	ld      b,(ix+$03)
+	ld      hl,$fff0
+	add     hl,bc
+	ld      de,($d25a)
+	and     a
+	sbc     hl,de
+	jr      c,_954f
+	ld      l,c
+	ld      h,b
+	inc     d
+	and     a
+	sbc     hl,de
+	jr      nc,_954f
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	ld      hl,$fff0
+	add     hl,bc
+	ld      de,($d25d)
+	and     a
+	sbc     hl,de
+	jr      c,_954f
+	ld      hl,$00c0
+	add     hl,de
+	and     a
+	sbc     hl,bc
+	jr      nc,_9553
 _954f:
-954f dd3600ff  ld      (ix+$00),$ff
+	ld      (ix+$00),$ff
 _9553:
-9553 af        xor     a
-9554 210200    ld      hl,$0002
-9557 ddcb1856  bit     2,(ix+$18)
-955b 2004      jr      nz,_9561
-955d 3d        dec     a
-955e 21feff    ld      hl,$fffe
+	xor     a
+	ld      hl,$0002
+	bit     2,(ix+$18)
+	jr      nz,_9561
+	dec     a
+	ld      hl,$fffe
 _9561:
-9561 dd5e07    ld      e,(ix+$07)
-9564 dd5608    ld      d,(ix+$08)
-9567 19        add     hl,de
-9568 dd8e09    adc     a,(ix+$09)
-956b 4f        ld      c,a
-956c 7c        ld      a,h
-956d 110001    ld      de,$0100
-9570 cb79      bit     7,c
-9572 280b      jr      z,_957f
-9574 7d        ld      a,l
-9575 2f        cpl     
-9576 5f        ld      e,a
-9577 7c        ld      a,h
-9578 2f        cpl     
-9579 57        ld      d,a
-957a 13        inc     de
-957b 7a        ld      a,d
-957c 1100ff    ld      de,$ff00
+	ld      e,(ix+$07)
+	ld      d,(ix+$08)
+	add     hl,de
+	adc     a,(ix+$09)
+	ld      c,a
+	ld      a,h
+	ld      de,$0100
+	bit     7,c
+	jr      z,_957f
+	ld      a,l
+	cpl     
+	ld      e,a
+	ld      a,h
+	cpl     
+	ld      d,a
+	inc     de
+	ld      a,d
+	ld      de,$ff00
 _957f:
-957f a7        and     a
-9580 2801      jr      z,_9583
-9582 eb        ex      de,hl
+	and     a
+	jr      z,_9583
+	ex      de,hl
 _9583:
-9583 dd7507    ld      (ix+$07),l
-9586 dd7408    ld      (ix+$08),h
-9589 dd7109    ld      (ix+$09),c
-958c 2a01d4    ld      hl,($d401)
-958f 111000    ld      de,$0010
-9592 19        add     hl,de
-9593 eb        ex      de,hl
-9594 dd6e05    ld      l,(ix+$05)
-9597 dd6606    ld      h,(ix+$06)
-959a 010800    ld      bc,$0008
-959d 09        add     hl,bc
-959e a7        and     a
-959f ed52      sbc     hl,de
-95a1 3eff      ld      a,$ff
-95a3 21feff    ld      hl,$fffe
-95a6 ddcb0c7e  bit     7,(ix+$0c)
-95aa 2003      jr      nz,_95af
-95ac 21fcff    ld      hl,$fffc
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	ld      (ix+$09),c
+	ld      hl,($d401)
+	ld      de,$0010
+	add     hl,de
+	ex      de,hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0008
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	ld      a,$ff
+	ld      hl,$fffe
+	bit     7,(ix+$0c)
+	jr      nz,_95af
+	ld      hl,$fffc
 _95af:
-95af 300d      jr      nc,_95be
-95b1 3c        inc     a
-95b2 210200    ld      hl,$0002
-95b5 ddcb0c7e  bit     7,(ix+$0c)
-95b9 2803      jr      z,_95be
-95bb 210400    ld      hl,$0004
+	jr      nc,_95be
+	inc     a
+	ld      hl,$0002
+	bit     7,(ix+$0c)
+	jr      z,_95be
+	ld      hl,$0004
 _95be:
-95be dd5e0a    ld      e,(ix+$0a)
-95c1 dd560b    ld      d,(ix+$0b)
-95c4 19        add     hl,de
-95c5 dd8e0c    adc     a,(ix+$0c)
-95c8 4f        ld      c,a
-95c9 7c        ld      a,h
-95ca 110001    ld      de,$0100
-95cd cb79      bit     7,c
-95cf 280b      jr      z,_95dc
-95d1 7d        ld      a,l
-95d2 2f        cpl     
-95d3 5f        ld      e,a
-95d4 7c        ld      a,h
-95d5 2f        cpl     
-95d6 57        ld      d,a
-95d7 13        inc     de
-95d8 7a        ld      a,d
-95d9 1100ff    ld      de,$ff00
+	ld      e,(ix+$0a)
+	ld      d,(ix+$0b)
+	add     hl,de
+	adc     a,(ix+$0c)
+	ld      c,a
+	ld      a,h
+	ld      de,$0100
+	bit     7,c
+	jr      z,_95dc
+	ld      a,l
+	cpl     
+	ld      e,a
+	ld      a,h
+	cpl     
+	ld      d,a
+	inc     de
+	ld      a,d
+	ld      de,$ff00
 _95dc:
-95dc a7        and     a
-95dd 2801      jr      z,_95e0
-95df eb        ex      de,hl
+	and     a
+	jr      z,_95e0
+	ex      de,hl
 _95e0:
-95e0 dd750a    ld      (ix+$0a),l
-95e3 dd740b    ld      (ix+$0b),h
-95e6 dd710c    ld      (ix+$0c),c
-95e9 218896    ld      hl,$9688
-95ec ddcb097e  bit     7,(ix+$09)
-95f0 2803      jr      z,_95f5
-95f2 219896    ld      hl,$9698
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	ld      hl,_9688
+	bit     7,(ix+$09)
+	jr      z,_95f5
+	ld      hl,_9698
 _95f5:
-95f5 e5        push    hl
-95f6 dd6e07    ld      l,(ix+$07)
-95f9 dd6608    ld      h,(ix+$08)
-95fc cb7c      bit     7,h
-95fe 2807      jr      z,_9607
-9600 7d        ld      a,l
-9601 2f        cpl     
-9602 6f        ld      l,a
-9603 7c        ld      a,h
-9604 2f        cpl     
-9605 67        ld      h,a
-9606 23        inc     hl
+	push    hl
+	ld      l,(ix+$07)
+	ld      h,(ix+$08)
+	bit     7,h
+	jr      z,_9607
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	inc     hl
 _9607:
-9607 dd5e11    ld      e,(ix+$11)
-960a dd5612    ld      d,(ix+$12)
-960d 19        add     hl,de
-960e dd7511    ld      (ix+$11),l
-9611 dd7412    ld      (ix+$12),h
-9614 7c        ld      a,h
-9615 e608      and     $08
-9617 5f        ld      e,a
-9618 1600      ld      d,$00
-961a e1        pop     hl
-961b 19        add     hl,de
-961c dd750f    ld      (ix+$0f),l
-961f dd7410    ld      (ix+$10),h
-9622 dd6e02    ld      l,(ix+$02)
-9625 dd6603    ld      h,(ix+$03)
-9628 11f9ff    ld      de,$fff9
-962b ddcb097e  bit     7,(ix+$09)
-962f 2803      jr      z,_9634
-9631 110f00    ld      de,$000f
+	ld      e,(ix+$11)
+	ld      d,(ix+$12)
+	add     hl,de
+	ld      (ix+$11),l
+	ld      (ix+$12),h
+	ld      a,h
+	and     $08
+	ld      e,a
+	ld      d,$00
+	pop     hl
+	add     hl,de
+	ld      (ix+$0f),l
+	ld      (ix+$10),h
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$fff9
+	bit     7,(ix+$09)
+	jr      z,_9634
+	ld      de,$000f
 _9634:
-9634 19        add     hl,de
-9635 220ed2    ld      ($d20e),hl
-9638 dd6e05    ld      l,(ix+$05)
-963b dd6606    ld      h,(ix+$06)
-963e 2210d2    ld      ($d210),hl
-9641 3a23d2    ld      a,($d223)
-9644 e60f      and     $0f
-9646 c0        ret     nz
-9647 cd7b7c    call    _7c7b
-964a d8        ret     c
-964b dde5      push    ix
-964d e5        push    hl
-964e dde1      pop     ix
-9650 af        xor     a
-9651 dd36002a  ld      (ix+$00),$2a
-9655 2a0ed2    ld      hl,($d20e)
-9658 dd7701    ld      (ix+$01),a
-965b dd7502    ld      (ix+$02),l
-965e dd7403    ld      (ix+$03),h
-9661 2a10d2    ld      hl,($d210)
-9664 dd7704    ld      (ix+$04),a
-9667 dd7505    ld      (ix+$05),l
-966a dd7406    ld      (ix+$06),h
-966d dd7711    ld      (ix+$11),a
-9670 dd7712    ld      (ix+$12),a
-9673 dd7707    ld      (ix+$07),a
-9676 dd7708    ld      (ix+$08),a
-9679 dd7709    ld      (ix+$09),a
-967c dd770a    ld      (ix+$0a),a
-967f dd770b    ld      (ix+$0b),a
-9682 dd770c    ld      (ix+$0c),a
-9685 dde1      pop     ix
-9687 c9        ret     
-9688 3c        inc     a
-9689 3eff      ld      a,$ff
-968b ff        rst     $38
-968c ff        rst     $38
-968d ff        rst     $38
-968e ff        rst     $38
-968f ff        rst     $38
-9690 383a      jr------c,$96cc
-9692 ff        rst     $38
-9693 ff        rst     $38
-9694 ff        rst     $38
-9695 ff        rst     $38
-9696 ff        rst     $38
-9697 ff        rst     $38
-9698 56        ld      d,(hl)
-9699 58        ld      e,b
-969a ff        rst     $38
-969b ff        rst     $38
-969c ff        rst     $38
-969d ff        rst     $38
-969e ff        rst     $38
-969f ff        rst     $38
-96a0 5a        ld      e,d
-96a1 5c        ld      e,h
-96a2 ff        rst     $38
-96a3 ff        rst     $38
-96a4 ff        rst     $38
-96a5 ff        rst     $38
-96a6 ff        rst     $38
-96a7 ff        rst     $38
-96a8 ddcb18ee  set     5,(ix+$18)
-96ac af        xor     a
-96ad dd770f    ld      (ix+$0f),a
-96b0 dd7710    ld      (ix+$10),a
-96b3 dd6e02    ld      l,(ix+$02)
-96b6 dd6603    ld      h,(ix+$03)
-96b9 220ed2    ld      ($d20e),hl
-96bc dd6e05    ld      l,(ix+$05)
-96bf dd6606    ld      h,(ix+$06)
-96c2 2210d2    ld      ($d210),hl
-96c5 6f        ld      l,a
-96c6 67        ld      h,a
-96c7 2212d2    ld      ($d212),hl
-96ca 2214d2    ld      ($d214),hl
-96cd dd5e12    ld      e,(ix+$12)
-96d0 1600      ld      d,$00
-96d2 21f596    ld      hl,$96f5
-96d5 19        add     hl,de
-96d6 7e        ld      a,(hl)
-96d7 cd8135    call    _3581
-96da dd3411    inc     (ix+$11)
-96dd dd7e11    ld      a,(ix+$11)
-96e0 fe0c      cp      $0c
-96e2 d8        ret     c
-96e3 dd361100  ld      (ix+$11),$00
-96e7 dd3412    inc     (ix+$12)
-96ea dd7e12    ld      a,(ix+$12)
-96ed fe03      cp      $03
-96ef d8        ret     c
-96f0 dd3600ff  ld      (ix+$00),$ff
-96f4 c9        ret     
-96f5 1c        inc     e
-96f6 1e5e      ld      e,$5e
-96f8 ddcb18ee  set     5,(ix+$18)
-96fc af        xor     a
-96fd dd770f    ld      (ix+$0f),a
-9700 dd7710    ld      (ix+$10),a
-9703 fd7e0a    ld      a,(iy+$0a)
-9706 2a3cd2    ld      hl,($d23c)
-9709 f5        push    af
-970a e5        push    hl
-970b 3aded2    ld      a,($d2de)
-970e fe24      cp      $24
-9710 3055      jr      nc,_9767
-9712 5f        ld      e,a
-9713 1600      ld      d,$00
-9715 2100d0    ld      hl,$d000
-9718 19        add     hl,de
-9719 223cd2    ld      ($d23c),hl
-971c dd6e02    ld      l,(ix+$02)
-971f dd6603    ld      h,(ix+$03)
-9722 220ed2    ld      ($d20e),hl
-9725 dd6e05    ld      l,(ix+$05)
-9728 dd6606    ld      h,(ix+$06)
-972b 2210d2    ld      ($d210),hl
-972e 210000    ld      hl,$0000
-9731 2212d2    ld      ($d212),hl
-9734 2214d2    ld      ($d214),hl
-9737 dd7e12    ld      a,(ix+$12)
-973a a7        and     a
-973b 280e      jr      z,_974b
-973d fe08      cp      $08
-973f 300a      jr      nc,_974b
-9741 210400    ld      hl,$0004
-9744 2212d2    ld      ($d212),hl
-9747 3e0c      ld      a,$0c
-9749 1811      jr      _975c
+	add     hl,de
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      a,($d223)
+	and     $0f
+	ret     nz
+	call    _7c7b
+	ret     c
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$2a
+	ld      hl,($d20e)
+	ld      (ix+$01),a
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      hl,($d210)
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),a
+	ld      (ix+$12),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	pop     ix
+	ret     
+
+_9688:
+.db $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $38, $3A, $FF, $FF, $FF, $FF, $FF, $FF
+_9698:
+.db $56, $58, $FF, $FF, $FF, $FF, $FF, $FF, $5A, $5C, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$96A8]___
+;OBJECT: UNKNOWN
+
+_96a8:
+	set     5,(ix+$18)
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      l,a
+	ld      h,a
+	ld      ($d212),hl
+	ld      ($d214),hl
+	ld      e,(ix+$12)
+	ld      d,$00
+	ld      hl,_96f5
+	add     hl,de
+	ld      a,(hl)
+	call    _3581
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $0c
+	ret     c
+	ld      (ix+$11),$00
+	inc     (ix+$12)
+	ld      a,(ix+$12)
+	cp      $03
+	ret     c
+	ld      (ix+$00),$ff
+	ret     
+
+_96f5:
+.db $1C, $1E, $5E
+
+;____________________________________________________________________________[$96F8]___
+;OBJECT: UNKNOWN
+
+_96f8:
+	set     5,(ix+$18)
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      a,(iy+$0a)
+	ld      hl,($d23c)
+	push    af
+	push    hl
+	ld      a,($d2de)
+	cp      $24
+	jr      nc,_9767
+	ld      e,a
+	ld      d,$00
+	ld      hl,$d000
+	add     hl,de
+	ld      ($d23c),hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      ($d214),hl
+	ld      a,(ix+$12)
+	and     a
+	jr      z,_974b
+	cp      $08
+	jr      nc,_974b
+	ld      hl,$0004
+	ld      ($d212),hl
+	ld      a,$0c
+	jr      _975c
 _974b:
-974b 3e40      ld      a,$40
-974d cd8135    call    _3581
-9750 2a12d2    ld      hl,($d212)
-9753 110800    ld      de,$0008
-9756 19        add     hl,de
-9757 2212d2    ld      ($d212),hl
-975a 3e42      ld      a,$42
+	ld      a,$40
+	call    _3581
+	ld      hl,($d212)
+	ld      de,$0008
+	add     hl,de
+	ld      ($d212),hl
+	ld      a,$42
 _975c:
-975c cd8135    call    _3581
-975f 3aded2    ld      a,($d2de)
-9762 c606      add     a,$06
-9764 32ded2    ld      ($d2de),a
+	call    _3581
+	ld      a,($d2de)
+	add     a,$06
+	ld      ($d2de),a
 _9767:
-9767 e1        pop     hl
-9768 f1        pop     af
-9769 223cd2    ld      ($d23c),hl
-976c fd770a    ld      (iy+$0a),a
-976f dd360d0a  ld      (ix+$0d),$0a
-9773 dd360e0c  ld      (ix+$0e),$0c
-9777 dd7e12    ld      a,(ix+$12)
-977a a7        and     a
-977b 281a      jr      z,_9797
-977d 0e00      ld      c,$00
-977f 41        ld      b,c
-9780 51        ld      d,c
-9781 dd710a    ld      (ix+$0a),c
-9784 dd710b    ld      (ix+$0b),c
-9787 dd710c    ld      (ix+$0c),c
-978a dd3512    dec     (ix+$12)
-978d c20998    jp      nz,_9809
-9790 dd3600ff  ld      (ix+$00),$ff
-9794 c30998    jp      _9809
+	pop     hl
+	pop     af
+	ld      ($d23c),hl
+	ld      (iy+$0a),a
+	ld      (ix+$0d),$0a
+	ld      (ix+$0e),$0c
+	ld      a,(ix+$12)
+	and     a
+	jr      z,_9797
+	ld      c,$00
+	ld      b,c
+	ld      d,c
+	ld      (ix+$0a),c
+	ld      (ix+$0b),c
+	ld      (ix+$0c),c
+	dec     (ix+$12)
+	jp      nz,_9809
+	ld      (ix+$00),$ff
+	jp      _9809
 _9797:
-9797 210602    ld      hl,$0206
-979a 2214d2    ld      ($d214),hl
-979d cd5639    call    _LABEL_3956_11
-97a0 3841      jr      c,_97e3
-97a2 ed4b01d4  ld      bc,($d401)
-97a6 dd5e05    ld      e,(ix+$05)
-97a9 dd5606    ld      d,(ix+$06)
-97ac 21f8ff    ld      hl,$fff8
-97af 19        add     hl,de
-97b0 a7        and     a
-97b1 ed42      sbc     hl,bc
-97b3 302e      jr      nc,_97e3
-97b5 210600    ld      hl,$0006
-97b8 19        add     hl,de
-97b9 a7        and     a
-97ba ed42      sbc     hl,bc
-97bc 3825      jr      c,_97e3
-97be dd7e12    ld      a,(ix+$12)
-97c1 a7        and     a
-97c2 201f      jr      nz,_97e3
-97c4 af        xor     a
-97c5 6f        ld      l,a
-97c6 67        ld      h,a
-97c7 2206d4    ld      ($d406),hl
-97ca 3208d4    ld      ($d408),a
-97cd 328ed2    ld      ($d28e),a
-97d0 229bd2    ld      ($d29b),hl
-97d3 fdcb08d6  set     2,(iy+$08)
-97d7 3e20      ld      a,$20
-97d9 32fbd2    ld      ($d2fb),a
-97dc dd361210  ld      (ix+$12),$10
-97e0 3e22      ld      a,$22
-97e2 ef        rst     $28
+	ld      hl,$0206
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_97e3
+	ld      bc,($d401)
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	ld      hl,$fff8
+	add     hl,de
+	and     a
+	sbc     hl,bc
+	jr      nc,_97e3
+	ld      hl,$0006
+	add     hl,de
+	and     a
+	sbc     hl,bc
+	jr      c,_97e3
+	ld      a,(ix+$12)
+	and     a
+	jr      nz,_97e3
+	xor     a
+	ld      l,a
+	ld      h,a
+	ld      ($d406),hl
+	ld      ($d408),a
+	ld      ($d28e),a
+	ld      ($d29b),hl
+	set     2,(iy+$08)
+	ld      a,$20
+	ld      ($d2fb),a
+	ld      (ix+$12),$10
+	ld      a,$22
+	rst     $28
 _97e3:
-97e3 dd360a98  ld      (ix+$0a),$98
-97e7 dd360bff  ld      (ix+$0b),$ff
-97eb dd360cff  ld      (ix+$0c),$ff
-97ef dd7e11    ld      a,(ix+$11)
-97f2 e60f      and     $0f
-97f4 201c      jr      nz,_9812
-97f6 cd2506    call    _LABEL_625_57
-97f9 012000    ld      bc,$0020
-97fc 1600      ld      d,$00
-97fe e63f      and     $3f
-9800 fe20      cp      $20
-9802 3805      jr      c,_9809
-9804 01e0ff    ld      bc,$ffe0
-9807 16ff      ld      d,$ff
+	ld      (ix+$0a),$98
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
+	ld      a,(ix+$11)
+	and     $0f
+	jr      nz,_9812
+	call    _LABEL_625_57
+	ld      bc,$0020
+	ld      d,$00
+	and     $3f
+	cp      $20
+	jr      c,_9809
+	ld      bc,$ffe0
+	ld      d,$ff
 _9809:
-9809 dd7107    ld      (ix+$07),c
-980c dd7008    ld      (ix+$08),b
-980f dd7209    ld      (ix+$09),d
+	ld      (ix+$07),c
+	ld      (ix+$08),b
+	ld      (ix+$09),d
 _9812:
-9812 dd6e02    ld      l,(ix+$02)
-9815 dd6603    ld      h,(ix+$03)
-9818 eb        ex      de,hl
-9819 2a5ad2    ld      hl,($d25a)
-981c 010800    ld      bc,$0008
-981f af        xor     a
-9820 ed42      sbc     hl,bc
-9822 3002      jr      nc,_9826
-9824 6f        ld      l,a
-9825 67        ld      h,a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ex      de,hl
+	ld      hl,($d25a)
+	ld      bc,$0008
+	xor     a
+	sbc     hl,bc
+	jr      nc,_9826
+	ld      l,a
+	ld      h,a
 _9826:
-9826 a7        and     a
-9827 ed52      sbc     hl,de
-9829 3033      jr      nc,_985e
-982b 2a5ad2    ld      hl,($d25a)
-982e 010001    ld      bc,$0100
-9831 09        add     hl,bc
-9832 a7        and     a
-9833 ed52      sbc     hl,de
-9835 3827      jr      c,_985e
-9837 dd6e05    ld      l,(ix+$05)
-983a dd6606    ld      h,(ix+$06)
-983d eb        ex      de,hl
-983e 2adcd2    ld      hl,($d2dc)
-9841 a7        and     a
-9842 ed52      sbc     hl,de
-9844 3018      jr      nc,_985e
-9846 2a5dd2    ld      hl,($d25d)
-9849 01f0ff    ld      bc,$fff0
-984c 09        add     hl,bc
-984d a7        and     a
-984e ed52      sbc     hl,de
-9850 300c      jr      nc,_985e
-9852 2a5dd2    ld      hl,($d25d)
-9855 01c000    ld      bc,$00c0
-9858 09        add     hl,bc
-9859 a7        and     a
-985a ed52      sbc     hl,de
-985c 3004      jr      nc,_9862
+	and     a
+	sbc     hl,de
+	jr      nc,_985e
+	ld      hl,($d25a)
+	ld      bc,$0100
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_985e
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ex      de,hl
+	ld      hl,($d2dc)
+	and     a
+	sbc     hl,de
+	jr      nc,_985e
+	ld      hl,($d25d)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_985e
+	ld      hl,($d25d)
+	ld      bc,$00c0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_9862
 _985e:
-985e dd3600ff  ld      (ix+$00),$ff
+	ld      (ix+$00),$ff
 _9862:
-9862 dd3411    inc     (ix+$11)
-9865 c9        ret     
-9866 ddcb18ee  set     5,(ix+$18)
-986a dd360f7e  ld      (ix+$0f),$7e
-986e dd36109a  ld      (ix+$10),$9a
-9872 fdcb036e  bit     5,(iy+$03)
-9876 2013      jr      nz,_988b
-9878 dd7e11    ld      a,(ix+$11)
-987b dd7712    ld      (ix+$12),a
-987e dd7e11    ld      a,(ix+$11)
-9881 fe05      cp      $05
-9883 300f      jr      nc,_9894
-9885 dd3411    inc     (ix+$11)
-9888 c39498    jp      _9894
+	inc     (ix+$11)
+	ret     
+
+;____________________________________________________________________________[$9866]___
+;OBJECT: flipper (Special Stage)
+
+_9866:
+	set     5,(ix+$18)
+	ld      (ix+$0f),<_9a7e
+	ld      (ix+$10),>_9a7e
+	bit     5,(iy+$03)
+	jr      nz,_988b
+	ld      a,(ix+$11)
+	ld      (ix+$12),a
+	ld      a,(ix+$11)
+	cp      $05
+	jr      nc,_9894
+	inc     (ix+$11)
+	jp      _9894
 _988b:
-988b dd7e11    ld      a,(ix+$11)
-988e a7        and     a
-988f 2803      jr      z,_9894
-9891 dd3511    dec     (ix+$11)
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_9894
+	dec     (ix+$11)
 _9894:
-9894 dd7e11    ld      a,(ix+$11)
-9897 fe01      cp      $01
-9899 3038      jr      nc,_98d3
-989b 210c14    ld      hl,$140c
-989e 2214d2    ld      ($d214),hl
-98a1 dd360d1e  ld      (ix+$0d),$1e
-98a5 dd360e16  ld      (ix+$0e),$16
-98a9 cd5639    call    _LABEL_3956_11
-98ac d8        ret     c
-98ad 019e99    ld      bc,$999e
-98b0 cdaf9a    call    _9aaf
-98b3 d0        ret     nc
-98b4 3ae8d2    ld      a,($d2e8)
-98b7 2ae6d2    ld      hl,($d2e6)
-98ba 2206d4    ld      ($d406),hl
-98bd 3208d4    ld      ($d408),a
-98c0 11fcff    ld      de,$fffc
-98c3 2a03d4    ld      hl,($d403)
-98c6 3a05d4    ld      a,($d405)
-98c9 19        add     hl,de
-98ca ceff      adc     a,$ff
-98cc 2203d4    ld      ($d403),hl
-98cf 3205d4    ld      ($d405),a
-98d2 c9        ret     
+	ld      a,(ix+$11)
+	cp      $01
+	jr      nc,_98d3
+	ld      hl,$140c
+	ld      ($d214),hl
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$16
+	call    _LABEL_3956_11
+	ret     c
+	ld      bc,_999e
+	call    _9aaf
+	ret     nc
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
+	ld      de,$fffc
+	ld      hl,($d403)
+	ld      a,($d405)
+	add     hl,de
+	adc     a,$ff
+	ld      ($d403),hl
+	ld      ($d405),a
+	ret     
 _98d3:
-98d3 fe04      cp      $04
-98d5 d25e99    jp      nc,_995e
-98d8 dd360f90  ld      (ix+$0f),$90
-98dc dd36109a  ld      (ix+$10),$9a
-98e0 210f08    ld      hl,$080f
-98e3 2214d2    ld      ($d214),hl
-98e6 dd360d1e  ld      (ix+$0d),$1e
-98ea dd360e16  ld      (ix+$0e),$16
-98ee cd5639    call    _LABEL_3956_11
-98f1 d8        ret     c
-98f2 01be99    ld      bc,$99be
-98f5 cdaf9a    call    _9aaf
-98f8 d0        ret     nc
-98f9 dd7e12    ld      a,(ix+$12)
-98fc ddbe11    cp      (ix+$11)
-98ff d0        ret     nc
-9900 3afed3    ld      a,($d3fe)
-9903 c60c      add     a,$0c
-9905 e61f      and     $1f
-9907 87        add     a,a
-9908 4f        ld      c,a
-9909 0600      ld      b,$00
-990b 21fe99    ld      hl,$99fe
-990e 09        add     hl,bc
-990f 5e        ld      e,(hl)
-9910 23        inc     hl
-9911 56        ld      d,(hl)
-9912 2a03d4    ld      hl,($d403)
-9915 3a05d4    ld      a,($d405)
-9918 19        add     hl,de
-9919 ceff      adc     a,$ff
-991b 2203d4    ld      ($d403),hl
-991e 3205d4    ld      ($d405),a
-9921 213e9a    ld      hl,$9a3e
-9924 09        add     hl,bc
-9925 5e        ld      e,(hl)
-9926 23        inc     hl
-9927 56        ld      d,(hl)
-9928 2a06d4    ld      hl,($d406)
-992b 7d        ld      a,l
-992c 2f        cpl     
-992d 6f        ld      l,a
-992e 7c        ld      a,h
-992f 2f        cpl     
-9930 67        ld      h,a
-9931 3a08d4    ld      a,($d408)
-9934 2f        cpl     
-9935 19        add     hl,de
-9936 ceff      adc     a,$ff
-9938 2206d4    ld      ($d406),hl
-993b 3208d4    ld      ($d408),a
-993e c9        ret     
-993f 3ae8d2    ld      a,($d2e8)
-9942 2ae6d2    ld      hl,($d2e6)
-9945 2206d4    ld      ($d406),hl
-9948 3208d4    ld      ($d408),a
-994b 110800    ld      de,$0008
-994e 2a03d4    ld      hl,($d403)
-9951 3a05d4    ld      a,($d405)
-9954 19        add     hl,de
-9955 ce00      adc     a,$00
-9957 2203d4    ld      ($d403),hl
-995a 3205d4    ld      ($d405),a
-995d c9        ret     
+	cp      $04
+	jp      nc,_995e
+	ld      (ix+$0f),<_9a90
+	ld      (ix+$10),>_9a90
+	ld      hl,$080f
+	ld      ($d214),hl
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$16
+	call    _LABEL_3956_11
+	ret     c
+	ld      bc,_99be
+	call    _9aaf
+	ret     nc
+	ld      a,(ix+$12)
+	cp      (ix+$11)
+	ret     nc
+	ld      a,($d3fe)
+	add     a,$0c
+	and     $1f
+	add     a,a
+	ld      c,a
+	ld      b,$00
+	ld      hl,_99fe
+	add     hl,bc
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	ld      hl,($d403)
+	ld      a,($d405)
+	add     hl,de
+	adc     a,$ff
+	ld      ($d403),hl
+	ld      ($d405),a
+	ld      hl,_9a3e
+	add     hl,bc
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	ld      hl,($d406)
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	ld      a,($d408)
+	cpl     
+	add     hl,de
+	adc     a,$ff
+	ld      ($d406),hl
+	ld      ($d408),a
+	ret     
+
+	;unused section of code?
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
+	ld      de,$0008
+	ld      hl,($d403)
+	ld      a,($d405)
+	add     hl,de
+	adc     a,$00
+	ld      ($d403),hl
+	ld      ($d405),a
+	ret     
 _995e:
-995e dd360fa2  ld      (ix+$0f),$a2
-9962 dd36109a  ld      (ix+$10),$9a
-9966 211a02    ld      hl,$021a
-9969 2214d2    ld      ($d214),hl
-996c dd360d1e  ld      (ix+$0d),$1e
-9970 dd360e16  ld      (ix+$0e),$16
-9974 cd5639    call    _LABEL_3956_11
-9977 d8        ret     c
-9978 01de99    ld      bc,$99de
-997b cdaf9a    call    _9aaf
-997e d0        ret     nc
-997f 3ae8d2    ld      a,($d2e8)
-9982 2ae6d2    ld      hl,($d2e6)
-9985 2206d4    ld      ($d406),hl
-9988 3208d4    ld      ($d408),a
-998b 111a00    ld      de,$001a
-998e 2a03d4    ld      hl,($d403)
-9991 3a05d4    ld      a,($d405)
-9994 19        add     hl,de
-9995 ce00      adc     a,$00
-9997 2203d4    ld      ($d403),hl
-999a 3205d4    ld      ($d405),a
-999d c9        ret     
-999e ff        rst     $38
-999f ff        rst     $38
-99a0 fefe      cp      $fe
-99a2 fefd      cp      $fd
-99a4 fdfdfcfcfc  call----m,$fcfc
-99a9 fcfbfb    call----m,$fbfb
-99ac fb        ei      
-99ad fb        ei      
-99ae fafafa    jp------m,$fafa
-99b1 fafaf9    jp------m,$f9fa
-99b4 f9        ld      sp,hl
-99b5 f9        ld      sp,hl
-99b6 f9        ld      sp,hl
-99b7 f9        ld      sp,hl
-99b8 f9        ld      sp,hl
-99b9 fafafb    jp------m,$fbfa
-99bc fcfeea    call----m,$eafe
-99bf eaeaf6    jp------pe,$f6ea
-99c2 f7        rst     $30
-99c3 f8        ret     m
-99c4 f8        ret     m
-99c5 f8        ret     m
-99c6 f9        ld      sp,hl
-99c7 f9        ld      sp,hl
-99c8 f9        ld      sp,hl
-99c9 fafafa    jp------m,$fafa
-99cc fb        ei      
-99cd fb        ei      
-99ce fb        ei      
-99cf fb        ei      
-99d0 fcfcfc    call----m,$fcfc
-99d3 fcfdfd    call----m,$fdfd
-99d6 fdfdfefe  cp      $fe
-99da ff        rst     $38
-99db 00        nop     
-99dc 02        ld      (bc),a
-99dd 04        inc     b
-99de eaeaea    jp------pe,$eaea
-99e1 eaeaea    jp------pe,$eaea
-99e4 eaeaea    jp------pe,$eaea
-99e7 eaeaea    jp------pe,$eaea
-99ea eeed      xor     $ed
-99ec ececec    call----pe,$ecec
-99ef edee      db      $ed, $ee         ; Undocumented 8 T-State NOP
-99f1 ef        rst     $28
-99f2 f0        ret     p
-99f3 f2f3f4    jp------p,$f4f3
-99f6 f5        push    af
-99f7 f7        rst     $30
-99f8 f8        ret     m
-99f9 f9        ld      sp,hl
-99fa fafbfd    jp------m,$fdfb
-99fd ff        rst     $38
-99fe 00        nop     
-99ff f8        ret     m
-9a00 00        nop     
-9a01 f8        ret     m
-9a02 00        nop     
-9a03 f9        ld      sp,hl
-9a04 00        nop     
-9a05 fa00fb    jp------m,$fb00
-9a08 00        nop     
-9a09 fce0fc    call----m,$fce0
-9a0c 80        add     a,b
-9a0d fdc0      ret     nz
-9a0f fd00      nop     
-9a11 fe40      cp      $40
-9a13 fe80      cp      $80
-9a15 fec0      cp      $c0
-9a17 fe00      cp      $00
-9a19 ff        rst     $38
-9a1a 20ff      jr------nz,$9a1b
-9a1c 40        ld      b,b
-9a1d ff        rst     $38
-9a1e 60        ld      h,b
-9a1f ff        rst     $38
-9a20 80        add     a,b
-9a21 ff        rst     $38
-9a22 a0        and     b
-9a23 ff        rst     $38
-9a24 c0        ret     nz
-9a25 ff        rst     $38
-9a26 e0        ret     po
-9a27 ff        rst     $38
-9a28 e8        ret     pe
-9a29 ff        rst     $38
-9a2a eaffec    jp------pe,$ecff
-9a2d ff        rst     $38
-9a2e eeff      xor     $ff
-9a30 f0        ret     p
-9a31 ff        rst     $38
-9a32 f2fff4    jp------p,$f4ff
-9a35 ff        rst     $38
-9a36 f6ff      or      $ff
-9a38 f8        ret     m
-9a39 ff        rst     $38
-9a3a fcfffe    call----m,$feff
-9a3d ff        rst     $38
-9a3e 00        nop     
-9a3f fc00fc    call----m,$fc00
-9a42 00        nop     
-9a43 fc00fb    call----m,$fb00
-9a46 00        nop     
-9a47 fa00f9    jp------m,$f900
-9a4a 00        nop     
-9a4b f8        ret     m
-9a4c 00        nop     
-9a4d f7        rst     $30
-9a4e 00        nop     
-9a4f f680      or      $80
-9a51 f5        push    af
-9a52 00        nop     
-9a53 f5        push    af
-9a54 c0        ret     nz
-9a55 f480f4    call----p,$f480
-9a58 40        ld      b,b
-9a59 f400f4    call----p,$f400
-9a5c 00        nop     
-9a5d f400f4    call----p,$f400
-9a60 00        nop     
-9a61 f440f4    call----p,$f440
-9a64 80        add     a,b
-9a65 f4c0f4    call----p,$f4c0
-9a68 00        nop     
-9a69 f5        push    af
-9a6a 00        nop     
-9a6b f600      or      $00
-9a6d f7        rst     $30
-9a6e 00        nop     
-9a6f f9        ld      sp,hl
-9a70 00        nop     
-9a71 fa00fc    jp------m,$fc00
-9a74 80        add     a,b
-9a75 fc00fd    call----m,$fd00
-9a78 c0        ret     nz
-9a79 fd00      nop     
-9a7b ff        rst     $38
-9a7c 00        nop     
-9a7d ff        rst     $38
-9a7e feff      cp      $ff
-9a80 ff        rst     $38
-9a81 ff        rst     $38
-9a82 ff        rst     $38
-9a83 ff        rst     $38
-9a84 383a      jr------c,$9ac0
-9a86 3c        inc     a
-9a87 3eff      ld      a,$ff
-9a89 ff        rst     $38
-9a8a ff        rst     $38
-9a8b ff        rst     $38
-9a8c ff        rst     $38
-9a8d ff        rst     $38
-9a8e ff        rst     $38
-9a8f ff        rst     $38
-9a90 48        ld      c,b
-9a91 4a        ld      c,d
-9a92 4c        ld      c,h
-9a93 4e        ld      c,(hl)
-9a94 ff        rst     $38
-9a95 ff        rst     $38
-9a96 68        ld      l,b
-9a97 6a        ld      l,d
-9a98 6c        ld      l,h
-9a99 6e        ld      l,(hl)
-9a9a ff        rst     $38
-9a9b ff        rst     $38
-9a9c ff        rst     $38
-9a9d ff        rst     $38
-9a9e ff        rst     $38
-9a9f ff        rst     $38
-9aa0 ff        rst     $38
-9aa1 ff        rst     $38
-9aa2 fe12      cp      $12
-9aa4 14        inc     d
-9aa5 16ff      ld      d,$ff
-9aa7 ff        rst     $38
-9aa8 fe32      cp      $32
-9aaa 34        inc     (hl)
-9aab 36ff      ld      (hl),$ff
-9aad ff        rst     $38
-9aae ff        rst     $38
+	ld      (ix+$0f),<_9aa2
+	ld      (ix+$10),>_9aa2
+	ld      hl,$021a
+	ld      ($d214),hl
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$16
+	call    _LABEL_3956_11
+	ret     c
+	ld      bc,_99de
+	call    _9aaf
+	ret     nc
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
+	ld      de,$001a
+	ld      hl,($d403)
+	ld      a,($d405)
+	add     hl,de
+	adc     a,$00
+	ld      ($d403),hl
+	ld      ($d405),a
+	ret     
+
+_999e:
+.db $FF, $FF, $FE, $FE, $FE, $FD, $FD, $FD, $FC, $FC, $FC, $FC, $FB, $FB, $FB, $FB
+.db $FA, $FA, $FA, $FA, $FA, $F9, $F9, $F9, $F9, $F9, $F9, $FA, $FA, $FB, $FC, $FE
+_99be:
+.db $EA, $EA, $EA, $F6, $F7, $F8, $F8, $F8, $F9, $F9, $F9, $FA, $FA, $FA, $FB, $FB
+.db $FB, $FB, $FC, $FC, $FC, $FC, $FD, $FD, $FD, $FD, $FE, $FE, $FF, $00, $02, $04
+_99de:
+.db $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EA, $EE, $ED, $EC, $EC
+.db $EC, $ED, $EE, $EF, $F0, $F2, $F3, $F4, $F5, $F7, $F8, $F9, $FA, $FB, $FD, $FF
+_99fe:
+.db $00, $F8, $00, $F8, $00, $F9, $00, $FA, $00, $FB, $00, $FC, $E0, $FC, $80, $FD
+.db $C0, $FD, $00, $FE, $40, $FE, $80, $FE, $C0, $FE, $00, $FF, $20, $FF, $40, $FF
+.db $60, $FF, $80, $FF, $A0, $FF, $C0, $FF, $E0, $FF, $E8, $FF, $EA, $FF, $EC, $FF
+.db $EE, $FF, $F0, $FF, $F2, $FF, $F4, $FF, $F6, $FF, $F8, $FF, $FC, $FF, $FE, $FF
+_9a3e:
+.db $00, $FC, $00, $FC, $00, $FC, $00, $FB, $00, $FA, $00, $F9, $00, $F8, $00, $F7
+.db $00, $F6, $80, $F5, $00, $F5, $C0, $F4, $80, $F4, $40, $F4, $00, $F4, $00, $F4
+.db $00, $F4, $00, $F4, $40, $F4, $80, $F4, $C0, $F4, $00, $F5, $00, $F6, $00, $F7
+.db $00, $F9, $00, $FA, $00, $FC, $80, $FC, $00, $FD, $C0, $FD, $00, $FF, $00, $FF
+_9a7e:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $38, $3A, $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF
+_9a90:
+.db $48, $4A, $4C, $4E, $FF, $FF, $68, $6A, $6C, $6E, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF
+_9aa2:
+.db $FE, $12, $14, $16, $FF, $FF, $FE, $32, $34, $36, $FF, $FF, $FF
 
 _9aaf:
-9aaf 3a08d4    ld      a,($d408)
-9ab2 a7        and     a
-9ab3 f8        ret     m
-9ab4 3afed3    ld      a,($d3fe)
-9ab7 c60c      add     a,$0c
-9ab9 e61f      and     $1f
-9abb 6f        ld      l,a
-9abc 2600      ld      h,$00
-9abe 09        add     hl,bc
-9abf 0600      ld      b,$00
-9ac1 4e        ld      c,(hl)
-9ac2 cb79      bit     7,c
-9ac4 2801      jr      z,_9ac7
-9ac6 05        dec     b
+	ld      a,($d408)
+	and     a
+	ret     m
+	ld      a,($d3fe)
+	add     a,$0c
+	and     $1f
+	ld      l,a
+	ld      h,$00
+	add     hl,bc
+	ld      b,$00
+	ld      c,(hl)
+	bit     7,c
+	jr      z,_9ac7
+	dec     b
 _9ac7:
-9ac7 dd6e05    ld      l,(ix+$05)
-9aca dd6606    ld      h,(ix+$06)
-9acd 09        add     hl,bc
-9ace 2201d4    ld      ($d401),hl
-9ad1 3a07d4    ld      a,($d407)
-9ad4 fe03      cp      $03
-9ad6 3002      jr      nc,_9ada
-9ad8 37        scf     
-9ad9 c9        ret    
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	add     hl,bc
+	ld      ($d401),hl
+	ld      a,($d407)
+	cp      $03
+	jr      nc,_9ada
+	scf     
+	ret    
 _9ada: 
-9ada 110100    ld      de,$0001
-9add 2a06d4    ld      hl,($d406)
-9ae0 7d        ld      a,l
-9ae1 2f        cpl     
-9ae2 6f        ld      l,a
-9ae3 7c        ld      a,h
-9ae4 2f        cpl     
-9ae5 67        ld      h,a
-9ae6 3a08d4    ld      a,($d408)
-9ae9 2f        cpl     
-9aea 19        add     hl,de
-9aeb ce00      adc     a,$00
-9aed cb2f      sra     a
-9aef cb1c      rr      h
-9af1 cb1d      rr      l
-9af3 2206d4    ld      ($d406),hl
-9af6 3208d4    ld      ($d408),a
-9af9 a7        and     a
-9afa c9        ret     
-9afb ddcb18ee  set     5,(ix+$18)
-9aff dd360d1c  ld      (ix+$0d),$1c
-9b03 dd360e06  ld      (ix+$0e),$06
-9b07 dd360f6e  ld      (ix+$0f),$6e
-9b0b dd36109b  ld      (ix+$10),$9b
-9b0f 210100    ld      hl,$0001
-9b12 dd7e12    ld      a,(ix+$12)
-9b15 fe60      cp      $60
-9b17 3003      jr      nc,_9b1c
-9b19 21ffff    ld      hl,$ffff
+	ld      de,$0001
+	ld      hl,($d406)
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	ld      a,($d408)
+	cpl     
+	add     hl,de
+	adc     a,$00
+	sra     a
+	rr      h
+	rr      l
+	ld      ($d406),hl
+	ld      ($d408),a
+	and     a
+	ret     
+
+;____________________________________________________________________________[$9AFB]___
+;OBJECT: moving bumper (Special Stage)
+
+_9afb:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$1c
+	ld      (ix+$0e),$06
+	ld      (ix+$0f),<_9b6e
+	ld      (ix+$10),>_9b6e
+	ld      hl,$0001
+	ld      a,(ix+$12)
+	cp      $60
+	jr      nc,_9b1c
+	ld      hl,$ffff
 _9b1c:
-9b1c dd360700  ld      (ix+$07),$00
-9b20 dd7508    ld      (ix+$08),l
-9b23 dd7409    ld      (ix+$09),h
-9b26 3c        inc     a
-9b27 fec0      cp      $c0
-9b29 3801      jr      c,_9b2c
-9b2b af        xor     a
+	ld      (ix+$07),$00
+	ld      (ix+$08),l
+	ld      (ix+$09),h
+	inc     a
+	cp      $c0
+	jr      c,_9b2c
+	xor     a
 _9b2c:
-9b2c dd7712    ld      (ix+$12),a
-9b2f dd7e11    ld      a,(ix+$11)
-9b32 a7        and     a
-9b33 2035      jr      nz,_9b6a
-9b35 210206    ld      hl,$0602
-9b38 2214d2    ld      ($d214),hl
-9b3b cd5639    call    _LABEL_3956_11
-9b3e d8        ret     c
-9b3f 3ae8d2    ld      a,($d2e8)
-9b42 ed5be6d2  ld      de,($d2e6)
-9b46 4f        ld      c,a
-9b47 2a06d4    ld      hl,($d406)
-9b4a 7d        ld      a,l
-9b4b 2f        cpl     
-9b4c 6f        ld      l,a
-9b4d 7c        ld      a,h
-9b4e 2f        cpl     
-9b4f 67        ld      h,a
-9b50 3a08d4    ld      a,($d408)
-9b53 2f        cpl     
-9b54 19        add     hl,de
-9b55 89        adc     a,c
-9b56 110100    ld      de,$0001
-9b59 19        add     hl,de
-9b5a ce00      adc     a,$00
-9b5c 2206d4    ld      ($d406),hl
-9b5f 3208d4    ld      ($d408),a
-9b62 dd361108  ld      (ix+$11),$08
-9b66 3e07      ld      a,$07
-9b68 ef        rst     $28
-9b69 c9        ret     
+	ld      (ix+$12),a
+	ld      a,(ix+$11)
+	and     a
+	jr      nz,_9b6a
+	ld      hl,$0602
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ret     c
+	ld      a,($d2e8)
+	ld      de,($d2e6)
+	ld      c,a
+	ld      hl,($d406)
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	ld      a,($d408)
+	cpl     
+	add     hl,de
+	adc     a,c
+	ld      de,$0001
+	add     hl,de
+	adc     a,$00
+	ld      ($d406),hl
+	ld      ($d408),a
+	ld      (ix+$11),$08
+	ld      a,$07
+	rst     $28
+	ret     
 _9b6a:
-9b6a dd3511    dec     (ix+$11)
-9b6d c9        ret     
-9b6e 08        ex      af,af'
-9b6f 0a        ld      a,(bc)
-9b70 282a      jr      z,_9b9c
-9b72 ff        rst     $38
-9b73 ff        rst     $38
-9b74 ff        rst     $38
+	dec     (ix+$11)
+	ret     
+
+_9b6e:
+.db $08, $0A, $28, $2A, $FF, $FF, $FF
+
+;____________________________________________________________________________[$9B75]___
+;OBJECT: UNKNOWN
 
 _9b75:
-9b75 ddcb18ee  set     5,(ix+$18)
-9b79 dd360d1e  ld      (ix+$0d),$1e
-9b7d dd360e60  ld      (ix+$0e),$60
-9b81 210000    ld      hl,$0000
-9b84 2214d2    ld      ($d214),hl
-9b87 cd5639    call    _LABEL_3956_11
-9b8a 3845      jr      c,_9bd1
-9b8c dd6e02    ld      l,(ix+$02)
-9b8f dd6603    ld      h,(ix+$03)
-9b92 7d        ld      a,l
-9b93 87        add     a,a
-9b94 cb14      rl      h
-9b96 87        add     a,a
-9b97 cb14      rl      h
-9b99 87        add     a,a
-9b9a cb14      rl      h
+	set     5,(ix+$18)
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$60
+	ld      hl,$0000
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_9bd1
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      a,l
+	add     a,a
+	rl      h
+	add     a,a
+	rl      h
+	add     a,a
+	rl      h
 _9b9c:
-9b9c 5c        ld      e,h
-9b9d dd6e05    ld      l,(ix+$05)
-9ba0 dd6606    ld      h,(ix+$06)
-9ba3 7d        ld      a,l
-9ba4 87        add     a,a
-9ba5 cb14      rl      h
-9ba7 87        add     a,a
-9ba8 cb14      rl      h
-9baa 87        add     a,a
-9bab cb14      rl      h
-9bad 54        ld      d,h
-9bae 21d99b    ld      hl,$9bd9
-9bb1 0605      ld      b,$05
+	ld      e,h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      a,l
+	add     a,a
+	rl      h
+	add     a,a
+	rl      h
+	add     a,a
+	rl      h
+	ld      d,h
+	ld      hl,_9bd9
+	ld      b,$05
 _9bb3:
-9bb3 7e        ld      a,(hl)
-9bb4 23        inc     hl
-9bb5 bb        cp      e
-9bb6 2015      jr      nz,_9bcd
-9bb8 7e        ld      a,(hl)
-9bb9 ba        cp      d
-9bba 2011      jr      nz,_9bcd
-9bbc 23        inc     hl
-9bbd 7e        ld      a,(hl)
-9bbe 32d3d2    ld      ($d2d3),a
-9bc1 3e01      ld      a,$01
-9bc3 3289d2    ld      ($d289),a
-9bc6 fdcb06e6  set     4,(iy+$06)
-9bca c3d19b    jp      _9bd1
+	ld      a,(hl)
+	inc     hl
+	cp      e
+	jr      nz,_9bcd
+	ld      a,(hl)
+	cp      d
+	jr      nz,_9bcd
+	inc     hl
+	ld      a,(hl)
+	ld      ($d2d3),a
+	ld      a,$01
+	ld      ($d289),a
+	set     4,(iy+$06)
+	jp      _9bd1
 _9bcd:
-9bcd 23        inc     hl
-9bce 23        inc     hl
-9bcf 10e2      djnz    _9bb3
+	inc     hl
+	inc     hl
+	djnz    _9bb3
 _9bd1:
-9bd1 af        xor     a
-9bd2 dd770f    ld      (ix+$0f),a
-9bd5 dd7710    ld      (ix+$10),a
-9bd8 c9        ret     
-9bd9 7d        ld      a,l
-9bda 1a        ld      a,(de)
-9bdb 15        dec     d
-9bdc 7d        ld      a,l
-9bdd 011401    ld      bc,$0114
-9be0 3c        inc     a
-9be1 1801      jr      _9be4
-9be3 02        ld      (bc),a
-_9be4:
-9be4 19        add     hl,de
-9be5 14        inc     d
-9be6 0f        rrca    
-9be7 1a        ld      a,(de)
-9be8 dd360780  ld      (ix+$07),$80
-9bec dd360801  ld      (ix+$08),$01
-9bf0 dd360900  ld      (ix+$09),$00
-9bf4 dd360f69  ld      (ix+$0f),$69
-9bf8 dd36109c  ld      (ix+$10),$9c
-_9bfc:
-9bfc ddcb18ee  set     5,(ix+$18)
-9c00 ddcb1846  bit     0,(ix+$18)
-9c04 2013      jr      nz,_9c19
-9c06 dd7e02    ld      a,(ix+$02)
-9c09 dd7711    ld      (ix+$11),a
-9c0c dd7e03    ld      a,(ix+$03)
-9c0f dd7712    ld      (ix+$12),a
-9c12 3e18      ld      a,$18
-9c14 ef        rst     $28
-9c15 ddcb18c6  set     0,(ix+$18)
-_9c19:
-9c19 dd360d06  ld      (ix+$0d),$06
-9c1d dd360e08  ld      (ix+$0e),$08
-9c21 dd7e13    ld      a,(ix+$13)
-9c24 fe64      cp      $64
-9c26 300c      jr      nc,_9c34
-9c28 210004    ld      hl,$0400
-9c2b 2214d2    ld      ($d214),hl
-9c2e cd5639    call    _LABEL_3956_11
-9c31 d4fd35    call    nc,_35fd
-_9c34:
-9c34 dd3413    inc     (ix+$13)
-9c37 dd7e13    ld      a,(ix+$13)
-9c3a fe64      cp      $64
-9c3c d8        ret     c
-9c3d fef0      cp      $f0
-9c3f 3817      jr      c,_9c58
-9c41 af        xor     a
-9c42 dd7701    ld      (ix+$01),a
-9c45 dd7713    ld      (ix+$13),a
-9c48 dd7e11    ld      a,(ix+$11)
-9c4b dd7702    ld      (ix+$02),a
-9c4e dd7e12    ld      a,(ix+$12)
-9c51 dd7703    ld      (ix+$03),a
-9c54 3e18      ld      a,$18
-9c56 ef        rst     $28
-9c57 c9        ret     
-_9c58:
-9c58 af        xor     a
-9c59 dd770f    ld      (ix+$0f),a
-9c5c dd7710    ld      (ix+$10),a
-9c5f dd7707    ld      (ix+$07),a
-9c62 dd7708    ld      (ix+$08),a
-9c65 dd7709    ld      (ix+$09),a
-9c68 c9        ret     
-9c69 0c        inc     c
-9c6a 0eff      ld      c,$ff
-9c6c ff        rst     $38
-9c6d ff        rst     $38
-9c6e ff        rst     $38
-9c6f ff        rst     $38
-9c70 dd360780  ld      (ix+$07),$80
-9c74 dd3608fe  ld      (ix+$08),$fe
-9c78 dd3609ff  ld      (ix+$09),$ff
-9c7c dd360f87  ld      (ix+$0f),$87
-9c80 dd36109c  ld      (ix+$10),$9c
-9c84 c3fc9b    jp      _9bfc
-9c87 2c        inc     l
-9c88 2eff      ld      l,$ff
-9c8a ff        rst     $38
-9c8b ff        rst     $38
-9c8c ff        rst     $38
-9c8d ff        rst     $38
-9c8e ddcb18ee  set     5,(ix+$18)
-9c92 ddcb1846  bit     0,(ix+$18)
-9c96 202a      jr      nz,_9cc2
-9c98 dd6e02    ld      l,(ix+$02)
-9c9b dd6603    ld      h,(ix+$03)
-9c9e 110c00    ld      de,$000c
-9ca1 19        add     hl,de
-9ca2 dd7502    ld      (ix+$02),l
-9ca5 dd7403    ld      (ix+$03),h
-9ca8 dd6e05    ld      l,(ix+$05)
-9cab dd6606    ld      h,(ix+$06)
-9cae 111200    ld      de,$0012
-9cb1 19        add     hl,de
-9cb2 dd7505    ld      (ix+$05),l
-9cb5 dd7406    ld      (ix+$06),h
-9cb8 cd2506    call    _LABEL_625_57
-9cbb dd7711    ld      (ix+$11),a
-9cbe ddcb18c6  set     0,(ix+$18)
-_9cc2:
-9cc2 dd6e02    ld      l,(ix+$02)
-9cc5 dd6603    ld      h,(ix+$03)
-9cc8 220ed2    ld      ($d20e),hl
-9ccb dd6e05    ld      l,(ix+$05)
-9cce dd6606    ld      h,(ix+$06)
-9cd1 2210d2    ld      ($d210),hl
-9cd4 210000    ld      hl,$0000
-9cd7 2212d2    ld      ($d212),hl
-9cda dd7e11    ld      a,(ix+$11)
-9cdd cb3f      srl     a
-9cdf cb3f      srl     a
-9ce1 cb3f      srl     a
-9ce3 cb3f      srl     a
-9ce5 4f        ld      c,a
-9ce6 0600      ld      b,$00
-9ce8 87        add     a,a
-9ce9 5f        ld      e,a
-9cea 1600      ld      d,$00
-9cec 216a9d    ld      hl,$9d6a
-9cef 09        add     hl,bc
-9cf0 7e        ld      a,(hl)
-9cf1 dd770e    ld      (ix+$0e),a
-9cf4 dd360d06  ld      (ix+$0d),$06
-9cf8 214a9d    ld      hl,$9d4a
-9cfb 19        add     hl,de
-9cfc 7e        ld      a,(hl)
-9cfd 23        inc     hl
-9cfe 66        ld      h,(hl)
-9cff 6f        ld      l,a
-9d00 b4        or      h
-9d01 2833      jr      z,_9d36
-9d03 dd7e11    ld      a,(ix+$11)
-9d06 87        add     a,a
-9d07 87        add     a,a
-9d08 87        add     a,a
-9d09 e61f      and     $1f
-9d0b 5f        ld      e,a
-9d0c 1600      ld      d,$00
-9d0e 19        add     hl,de
-9d0f 0604      ld      b,$04
-_9d11:
-9d11 c5        push    bc
-9d12 7e        ld      a,(hl)
-9d13 23        inc     hl
-9d14 5e        ld      e,(hl)
-9d15 23        inc     hl
-9d16 1600      ld      d,$00
-9d18 e5        push    hl
-9d19 ed5314d2  ld      ($d214),de
-9d1d cd8135    call    _3581
-9d20 e1        pop     hl
-9d21 c1        pop     bc
-9d22 10ed      djnz    _9d11
-9d24 dd7e0e    ld      a,(ix+$0e)
-9d27 a7        and     a
-9d28 280c      jr      z,_9d36
-9d2a 210202    ld      hl,$0202
-9d2d 2214d2    ld      ($d214),hl
-9d30 cd5639    call    _LABEL_3956_11
-9d33 d4fd35    call    nc,_35fd
-_9d36:
-9d36 dd3411    inc     (ix+$11)
-9d39 af        xor     a
-9d3a dd770f    ld      (ix+$0f),a
-9d3d dd7710    ld      (ix+$10),a
-9d40 dd7e11    ld      a,(ix+$11)
-9d43 fe70      cp      $70
-9d45 c0        ret     nz
-9d46 3e17      ld      a,$17
-9d48 ef        rst     $28
-9d49 c9        ret     
-9d4a 00        nop     
-9d4b 00        nop     
-9d4c 00        nop     
-9d4d 00        nop     
-9d4e 00        nop     
-9d4f 00        nop     
-9d50 00        nop     
-9d51 00        nop     
-9d52 00        nop     
-9d53 00        nop     
-9d54 00        nop     
-9d55 00        nop     
-9d56 00        nop     
-9d57 00        nop     
-9d58 9a        sbc     a,d
-9d59 9d        sbc     a,l
-9d5a ba        cp      d
-9d5b 9d        sbc     a,l
-9d5c da9d7a    jp------c,$7a9d
-9d5f 9d        sbc     a,l
-9d60 7a        ld      a,d
-9d61 9d        sbc     a,l
-9d62 7a        ld      a,d
-9d63 9d        sbc     a,l
-9d64 da9dba    jp------c,$ba9d
-9d67 9d        sbc     a,l
-9d68 9a        sbc     a,d
-9d69 9d        sbc     a,l
-9d6a 00        nop     
-9d6b 00        nop     
-9d6c 00        nop     
-9d6d 00        nop     
-9d6e 00        nop     
-9d6f 00        nop     
-9d70 00        nop     
-9d71 1b        dec     de
-9d72 1f        rra     
-9d73 222525    ld      ($2525),hl
-9d76 25        dec     h
-9d77 221f1b    ld      ($1b1f),hl
-9d7a 00        nop     
-9d7b 15        dec     d
-9d7c 1e0e      ld      e,$0e
-9d7e 1e07      ld      e,$07
-9d80 1e00      ld      e,$00
-9d82 00        nop     
-9d83 17        rla     
-9d84 1e10      ld      e,$10
-9d86 1e09      ld      e,$09
-9d88 1e02      ld      e,$02
-9d8a 00        nop     
-9d8b 19        add     hl,de
-9d8c 1e12      ld      e,$12
-9d8e 1e0b      ld      e,$0b
-9d90 1e04      ld      e,$04
-9d92 00        nop     
-9d93 1b        dec     de
-9d94 1e14      ld      e,$14
-9d96 1e0d      ld      e,$0d
-9d98 1e06      ld      e,$06
-9d9a 00        nop     
-9d9b 0c        inc     c
-9d9c 1e08      ld      e,$08
-9d9e 1e04      ld      e,$04
-9da0 1e00      ld      e,$00
-9da2 00        nop     
-9da3 0e1e      ld      c,$1e
-9da5 0a        ld      a,(bc)
-9da6 1e06      ld      e,$06
-9da8 1e02      ld      e,$02
-9daa 00        nop     
-9dab 101e      djnz----$9dcb
-9dad 0c        inc     c
-9dae 1e08      ld      e,$08
-9db0 1e04      ld      e,$04
-9db2 00        nop     
-9db3 111e0e    ld      de,$0e1e
-9db6 1e0a      ld      e,$0a
-9db8 1e06      ld      e,$06
-9dba 00        nop     
-9dbb 0f        rrca    
-9dbc 1e0a      ld      e,$0a
-9dbe 1e05      ld      e,$05
-9dc0 1e00      ld      e,$00
-9dc2 00        nop     
-9dc3 111e0c    ld      de,$0c1e
-9dc6 1e07      ld      e,$07
-9dc8 1e02      ld      e,$02
-9dca 00        nop     
-9dcb 13        inc     de
-9dcc 1e0e      ld      e,$0e
-9dce 1e09      ld      e,$09
-9dd0 1e04      ld      e,$04
-9dd2 00        nop     
-9dd3 15        dec     d
-9dd4 1e10      ld      e,$10
-9dd6 1e0b      ld      e,$0b
-9dd8 1e06      ld      e,$06
-9dda 00        nop     
-9ddb 12        ld      (de),a
-9ddc 1e0c      ld      e,$0c
-9dde 1e06      ld      e,$06
-9de0 1e00      ld      e,$00
-9de2 00        nop     
-9de3 14        inc     d
-9de4 1e0e      ld      e,$0e
-9de6 1e08      ld      e,$08
-9de8 1e02      ld      e,$02
-9dea 00        nop     
-9deb 161e      ld      d,$1e
-9ded 101e      djnz----$9e0d
-9def 0a        ld      a,(bc)
-9df0 1e04      ld      e,$04
-9df2 00        nop     
-9df3 181e      jr------$9e13
-9df5 12        ld      (de),a
-9df6 1e0c      ld      e,$0c
-9df8 1e06      ld      e,$06
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ret     
 
-9dfa ddcb18ee  set     5,(ix+$18)
-9dfe cdd49e    call    _9ed4
-9e01 dd7e11    ld      a,(ix+$11)
-9e04 fe28      cp      $28
-9e06 302b      jr      nc,_9e33
-9e08 210500    ld      hl,$0005
-9e0b 2214d2    ld      ($d214),hl
-9e0e cd5639    call    _LABEL_3956_11
-9e11 3820      jr      c,_9e33
-9e13 110500    ld      de,$0005
-9e16 3a05d4    ld      a,($d405)
-9e19 a7        and     a
-9e1a fa209e    jp      m,_9e20
-9e1d 11ecff    ld      de,$ffec
+_9bd9:
+.db $7D, $1A, $15, $7D, $01, $14, $01, $3C, $18, $01, $02
+_9be4:
+.db $19, $14, $0F, $1A
+
+;____________________________________________________________________________[$9BE8]___
+;OBJECT: UNKNOWN
+
+_9be8:
+	ld      (ix+$07),$80
+	ld      (ix+$08),$01
+	ld      (ix+$09),$00
+	ld      (ix+$0f),<_9c69
+	ld      (ix+$10),>_9c69
+_9bfc:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_9c19
+	ld      a,(ix+$02)
+	ld      (ix+$11),a
+	ld      a,(ix+$03)
+	ld      (ix+$12),a
+	ld      a,$18
+	rst     $28
+	set     0,(ix+$18)
+_9c19:
+	ld      (ix+$0d),$06
+	ld      (ix+$0e),$08
+	ld      a,(ix+$13)
+	cp      $64
+	jr      nc,_9c34
+	ld      hl,$0400
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+_9c34:
+	inc     (ix+$13)
+	ld      a,(ix+$13)
+	cp      $64
+	ret     c
+	cp      $f0
+	jr      c,_9c58
+	xor     a
+	ld      (ix+$01),a
+	ld      (ix+$13),a
+	ld      a,(ix+$11)
+	ld      (ix+$02),a
+	ld      a,(ix+$12)
+	ld      (ix+$03),a
+	ld      a,$18
+	rst     $28
+	ret     
+_9c58:
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ret     
+
+_9c69:
+.db $0C, $0E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$9C70]___
+;OBJECT: UNKNOWN
+
+_9c70:
+	ld      (ix+$07),$80
+	ld      (ix+$08),$fe
+	ld      (ix+$09),$ff
+	ld      (ix+$0f),<_9c87
+	ld      (ix+$10),>_9c87
+	jp      _9bfc
+
+_9c87:
+.db $2C, $2E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$9C8E]___
+;OBJECT: flame thrower - scrap brain
+
+_9c8e:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_9cc2
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000c
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0012
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	call    _LABEL_625_57
+	ld      (ix+$11),a
+	set     0,(ix+$18)
+_9cc2:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      a,(ix+$11)
+	srl     a
+	srl     a
+	srl     a
+	srl     a
+	ld      c,a
+	ld      b,$00
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      hl,_9d6a
+	add     hl,bc
+	ld      a,(hl)
+	ld      (ix+$0e),a
+	ld      (ix+$0d),$06
+	ld      hl,_9d4a
+	add     hl,de
+	ld      a,(hl)
+	inc     hl
+	ld      h,(hl)
+	ld      l,a
+	or      h
+	jr      z,_9d36
+	ld      a,(ix+$11)
+	add     a,a
+	add     a,a
+	add     a,a
+	and     $1f
+	ld      e,a
+	ld      d,$00
+	add     hl,de
+	ld      b,$04
+_9d11:
+	push    bc
+	ld      a,(hl)
+	inc     hl
+	ld      e,(hl)
+	inc     hl
+	ld      d,$00
+	push    hl
+	ld      ($d214),de
+	call    _3581
+	pop     hl
+	pop     bc
+	djnz    _9d11
+	ld      a,(ix+$0e)
+	and     a
+	jr      z,_9d36
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+_9d36:	
+	inc     (ix+$11)
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      a,(ix+$11)
+	cp      $70
+	ret     nz
+	ld      a,$17
+	rst     $28
+	ret     
+
+_9d4a:
+.db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $9A, $9D
+.db $BA, $9D, $DA, $9D, $7A, $9D, $7A, $9D, $7A, $9D, $DA, $9D, $BA, $9D, $9A, $9D
+_9d6a:
+.db $00, $00, $00, $00, $00, $00, $00, $1B, $1F, $22, $25, $25, $25, $22, $1F, $1B
+.db $00, $15, $1E, $0E, $1E, $07, $1E, $00, $00, $17, $1E, $10, $1E, $09, $1E, $02
+.db $00, $19, $1E, $12, $1E, $0B, $1E, $04, $00, $1B, $1E, $14, $1E, $0D, $1E, $06
+.db $00, $0C, $1E, $08, $1E, $04, $1E, $00, $00, $0E, $1E, $0A, $1E, $06, $1E, $02
+.db $00, $10, $1E, $0C, $1E, $08, $1E, $04, $00, $11, $1E, $0E, $1E, $0A, $1E, $06
+.db $00, $0F, $1E, $0A, $1E, $05, $1E, $00, $00, $11, $1E, $0C, $1E, $07, $1E, $02
+.db $00, $13, $1E, $0E, $1E, $09, $1E, $04, $00, $15, $1E, $10, $1E, $0B, $1E, $06
+.db $00, $12, $1E, $0C, $1E, $06, $1E, $00, $00, $14, $1E, $0E, $1E, $08, $1E, $02
+.db $00, $16, $1E, $10, $1E, $0A, $1E, $04, $00, $18, $1E, $12, $1E, $0C, $1E, $06
+
+;____________________________________________________________________________[$9DFA]___
+;OBJECT: door - one way left (Scrap Brain)
+
+_9dfa:
+	set     5,(ix+$18)
+	call    _9ed4
+	ld      a,(ix+$11)
+	cp      $28
+	jr      nc,_9e33
+	ld      hl,$0005
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_9e33
+	ld      de,$0005
+	ld      a,($d405)
+	and     a
+	jp      m,_9e20
+	ld      de,$ffec
 _9e20:
-9e20 dd6e02    ld      l,(ix+$02)
-9e23 dd6603    ld      h,(ix+$03)
-9e26 19        add     hl,de
-9e27 22fed3    ld      ($d3fe),hl
-9e2a af        xor     a
-9e2b 6f        ld      l,a
-9e2c 67        ld      h,a
-9e2d 2203d4    ld      ($d403),hl
-9e30 3205d4    ld      ($d405),a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      ($d3fe),hl
+	xor     a
+	ld      l,a
+	ld      h,a
+	ld      ($d403),hl
+	ld      ($d405),a
 _9e33:
-9e33 dd6e02    ld      l,(ix+$02)
-9e36 dd6603    ld      h,(ix+$03)
-9e39 11c8ff    ld      de,$ffc8
-9e3c 19        add     hl,de
-9e3d ed5bfed3  ld      de,($d3fe)
-9e41 af        xor     a
-9e42 ed52      sbc     hl,de
-9e44 3032      jr      nc,_9e78
-9e46 dd6e02    ld      l,(ix+$02)
-9e49 dd6603    ld      h,(ix+$03)
-9e4c a7        and     a
-9e4d ed52      sbc     hl,de
-9e4f 3827      jr      c,_9e78
-9e51 dd6e05    ld      l,(ix+$05)
-9e54 dd6606    ld      h,(ix+$06)
-9e57 11e0ff    ld      de,$ffe0
-9e5a 19        add     hl,de
-9e5b ed5b01d4  ld      de,($d401)
-9e5f af        xor     a
-9e60 ed52      sbc     hl,de
-9e62 3014      jr      nc,_9e78
-9e64 dd6e05    ld      l,(ix+$05)
-9e67 dd6606    ld      h,(ix+$06)
-9e6a 015000    ld      bc,$0050
-9e6d 09        add     hl,bc
-9e6e a7        and     a
-9e6f ed52      sbc     hl,de
-9e71 3805      jr      c,_9e78
-9e73 cdb49e    call    _9eb4
-9e76 1803      jr      _9e7b
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$ffc8
+	add     hl,de
+	ld      de,($d3fe)
+	xor     a
+	sbc     hl,de
+	jr      nc,_9e78
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	and     a
+	sbc     hl,de
+	jr      c,_9e78
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffe0
+	add     hl,de
+	ld      de,($d401)
+	xor     a
+	sbc     hl,de
+	jr      nc,_9e78
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0050
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_9e78
+	call    _9eb4
+	jr      _9e7b
 _9e78:
-9e78 cdc49e    call    _9ec4
+	call    _9ec4
 _9e7b:
-9e7b 112b9f    ld      de,$9f2b
+	ld      de,_9f2b
 _9e7e:
-9e7e dd7e11    ld      a,(ix+$11)
-9e81 e60f      and     $0f
-9e83 4f        ld      c,a
-9e84 0600      ld      b,$00
-9e86 dd6e12    ld      l,(ix+$12)
-9e89 dd6613    ld      h,(ix+$13)
-9e8c a7        and     a
-9e8d ed42      sbc     hl,bc
-9e8f dd7505    ld      (ix+$05),l
-9e92 dd7406    ld      (ix+$06),h
-9e95 dd7e11    ld      a,(ix+$11)
-9e98 cb3f      srl     a
-9e9a cb3f      srl     a
-9e9c cb3f      srl     a
-9e9e cb3f      srl     a
-9ea0 e603      and     $03
-9ea2 87        add     a,a
-9ea3 4f        ld      c,a
-9ea4 87        add     a,a
-9ea5 87        add     a,a
-9ea6 87        add     a,a
-9ea7 81        add     a,c
-9ea8 4f        ld      c,a
-9ea9 0600      ld      b,$00
-9eab eb        ex      de,hl
-9eac 09        add     hl,bc
-9ead dd750f    ld      (ix+$0f),l
-9eb0 dd7410    ld      (ix+$10),h
-9eb3 c9        ret     
+	ld      a,(ix+$11)
+	and     $0f
+	ld      c,a
+	ld      b,$00
+	ld      l,(ix+$12)
+	ld      h,(ix+$13)
+	and     a
+	sbc     hl,bc
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      a,(ix+$11)
+	srl     a
+	srl     a
+	srl     a
+	srl     a
+	and     $03
+	add     a,a
+	ld      c,a
+	add     a,a
+	add     a,a
+	add     a,a
+	add     a,c
+	ld      c,a
+	ld      b,$00
+	ex      de,hl
+	add     hl,bc
+	ld      (ix+$0f),l
+	ld      (ix+$10),h
+	ret     
 
 _9eb4:
-9eb4 dd7e11    ld      a,(ix+$11)
-9eb7 fe30      cp      $30
-9eb9 d0        ret     nc
-9eba 3c        inc     a
-9ebb dd7711    ld      (ix+$11),a
-9ebe 3d        dec     a
-9ebf c0        ret     nz
-9ec0 3e19      ld      a,$19
-9ec2 ef        rst     $28
-9ec3 c9        ret     
+	ld      a,(ix+$11)
+	cp      $30
+	ret     nc
+	inc     a
+	ld      (ix+$11),a
+	dec     a
+	ret     nz
+	ld      a,$19
+	rst     $28
+	ret     
 
 _9ec4:
-9ec4 dd7e11    ld      a,(ix+$11)
-9ec7 a7        and     a
-9ec8 c8        ret     z
-9ec9 3d        dec     a
-9eca dd7711    ld      (ix+$11),a
-9ecd fe2f      cp      $2f
-9ecf c0        ret     nz
-9ed0 3e19      ld      a,$19
-9ed2 ef        rst     $28
-9ed3 c9        ret     
+	ld      a,(ix+$11)
+	and     a
+	ret     z
+	dec     a
+	ld      (ix+$11),a
+	cp      $2f
+	ret     nz
+	ld      a,$19
+	rst     $28
+	ret     
 
 _9ed4:
-9ed4 dd360d04  ld      (ix+$0d),$04
-9ed8 dd7e11    ld      a,(ix+$11)
-9edb cb3f      srl     a
-9edd cb3f      srl     a
-9edf cb3f      srl     a
-9ee1 cb3f      srl     a
-9ee3 e603      and     $03
-9ee5 5f        ld      e,a
-9ee6 3e03      ld      a,$03
-9ee8 93        sub     e
-9ee9 87        add     a,a
-9eea 87        add     a,a
-9eeb 87        add     a,a
-9eec 87        add     a,a
-9eed dd770e    ld      (ix+$0e),a
-9ef0 ddcb1846  bit     0,(ix+$18)
-9ef4 c0        ret     nz
-9ef5 010000    ld      bc,$0000
-9ef8 11f0ff    ld      de,$fff0
-9efb cdf936    call    _36f9
-9efe 111400    ld      de,$0014
-9f01 7e        ld      a,(hl)
-9f02 fea3      cp      $a3
-9f04 2807      jr      z,_9f0d
-9f06 110400    ld      de,$0004
-9f09 ddcb18ce  set     1,(ix+$18)
+	ld      (ix+$0d),$04
+	ld      a,(ix+$11)
+	srl     a
+	srl     a
+	srl     a
+	srl     a
+	and     $03
+	ld      e,a
+	ld      a,$03
+	sub     e
+	add     a,a
+	add     a,a
+	add     a,a
+	add     a,a
+	ld      (ix+$0e),a
+	bit     0,(ix+$18)
+	ret     nz
+	ld      bc,$0000
+	ld      de,$fff0
+	call    _36f9
+	ld      de,$0014
+	ld      a,(hl)
+	cp      $a3
+	jr      z,_9f0d
+	ld      de,$0004
+	set     1,(ix+$18)
 _9f0d:
-9f0d dd6e02    ld      l,(ix+$02)
-9f10 dd6603    ld      h,(ix+$03)
-9f13 19        add     hl,de
-9f14 dd7502    ld      (ix+$02),l
-9f17 dd7403    ld      (ix+$03),h
-9f1a dd7e05    ld      a,(ix+$05)
-9f1d dd7712    ld      (ix+$12),a
-9f20 dd7e06    ld      a,(ix+$06)
-9f23 dd7713    ld      (ix+$13),a
-9f26 ddcb18c6  set     0,(ix+$18)
-9f2a c9        ret     
-9f2b 0a        ld      a,(bc)
-9f2c ff        rst     $38
-9f2d ff        rst     $38
-9f2e ff        rst     $38
-9f2f ff        rst     $38
-9f30 ff        rst     $38
-9f31 3eff      ld      a,$ff
-9f33 ff        rst     $38
-9f34 ff        rst     $38
-9f35 ff        rst     $38
-9f36 ff        rst     $38
-9f37 0a        ld      a,(bc)
-9f38 ff        rst     $38
-9f39 ff        rst     $38
-9f3a ff        rst     $38
-9f3b ff        rst     $38
-9f3c ff        rst     $38
-9f3d 3eff      ld      a,$ff
-9f3f ff        rst     $38
-9f40 ff        rst     $38
-9f41 ff        rst     $38
-9f42 ff        rst     $38
-9f43 0a        ld      a,(bc)
-9f44 ff        rst     $38
-9f45 ff        rst     $38
-9f46 ff        rst     $38
-9f47 ff        rst     $38
-9f48 ff        rst     $38
-9f49 ff        rst     $38
-9f4a ff        rst     $38
-9f4b ff        rst     $38
-9f4c ff        rst     $38
-9f4d ff        rst     $38
-9f4e ff        rst     $38
-9f4f 0a        ld      a,(bc)
-9f50 ff        rst     $38
-9f51 ff        rst     $38
-9f52 ff        rst     $38
-9f53 ff        rst     $38
-9f54 ff        rst     $38
-9f55 ff        rst     $38
-9f56 ff        rst     $38
-9f57 ff        rst     $38
-9f58 ff        rst     $38
-9f59 ff        rst     $38
-9f5a ff        rst     $38
-9f5b ff        rst     $38
-9f5c ff        rst     $38
-9f5d ff        rst     $38
-9f5e ff        rst     $38
-9f5f ff        rst     $38
-9f60 ff        rst     $38
-9f61 ff        rst     $38
-9f62 ddcb18ee  set     5,(ix+$18)
-9f66 cdd49e    call    _9ed4
-9f69 dd7e11    ld      a,(ix+$11)
-9f6c fe28      cp      $28
-9f6e 302c      jr      nc,_9f9c
-9f70 210500    ld      hl,$0005
-9f73 2214d2    ld      ($d214),hl
-9f76 cd5639    call    _LABEL_3956_11
-9f79 3821      jr      c,_9f9c
-9f7b 110500    ld      de,$0005
-9f7e 3a05d4    ld      a,($d405)
-9f81 a7        and     a
-9f82 fa889f    jp      m,_9f88
-9f85 11ecff    ld      de,$ffec
-_9f88:
-9f88 dd6e02    ld      l,(ix+$02)
-9f8b dd6603    ld      h,(ix+$03)
-9f8e 19        add     hl,de
-9f8f 22fed3    ld      ($d3fe),hl
-9f92 af        xor     a
-9f93 3203d4    ld      ($d403),a
-9f96 3204d4    ld      ($d404),a
-9f99 3205d4    ld      ($d405),a
-_9f9c:
-9f9c dd6e02    ld      l,(ix+$02)
-9f9f dd6603    ld      h,(ix+$03)
-9fa2 11f0ff    ld      de,$fff0
-9fa5 19        add     hl,de
-9fa6 ed5bfed3  ld      de,($d3fe)
-9faa af        xor     a
-9fab ed52      sbc     hl,de
-9fad 3036      jr      nc,_9fe5
-9faf dd6e02    ld      l,(ix+$02)
-9fb2 dd6603    ld      h,(ix+$03)
-9fb5 012400    ld      bc,$0024
-9fb8 09        add     hl,bc
-9fb9 a7        and     a
-9fba ed52      sbc     hl,de
-9fbc 3827      jr      c,_9fe5
-9fbe dd6e05    ld      l,(ix+$05)
-9fc1 dd6606    ld      h,(ix+$06)
-9fc4 11e0ff    ld      de,$ffe0
-9fc7 19        add     hl,de
-9fc8 ed5b01d4  ld      de,($d401)
-9fcc af        xor     a
-9fcd ed52      sbc     hl,de
-9fcf 3014      jr      nc,_9fe5
-9fd1 dd6e05    ld      l,(ix+$05)
-9fd4 dd6606    ld      h,(ix+$06)
-9fd7 015000    ld      bc,$0050
-9fda 09        add     hl,bc
-9fdb a7        and     a
-9fdc ed52      sbc     hl,de
-9fde 3805      jr      c,_9fe5
-9fe0 cdb49e    call    _9eb4
-9fe3 1803      jr      _9fe8
-_9fe5:
-9fe5 cdc49e    call    _9ec4
-_9fe8:
-9fe8 11ee9f    ld      de,$9fee
-9feb c37e9e    jp      _9e7e
-9fee 36ff      ld      (hl),$ff
-9ff0 ff        rst     $38
-9ff1 ff        rst     $38
-9ff2 ff        rst     $38
-9ff3 ff        rst     $38
-9ff4 3eff      ld      a,$ff
-9ff6 ff        rst     $38
-9ff7 ff        rst     $38
-9ff8 ff        rst     $38
-9ff9 ff        rst     $38
-9ffa 36ff      ld      (hl),$ff
-9ffc ff        rst     $38
-9ffd ff        rst     $38
-9ffe ff        rst     $38
-9fff ff        rst     $38
-a000 3eff      ld      a,$ff
-a002 ff        rst     $38
-a003 ff        rst     $38
-a004 ff        rst     $38
-a005 ff        rst     $38
-a006 36ff      ld      (hl),$ff
-a008 ff        rst     $38
-a009 ff        rst     $38
-a00a ff        rst     $38
-a00b ff        rst     $38
-a00c ff        rst     $38
-a00d ff        rst     $38
-a00e ff        rst     $38
-a00f ff        rst     $38
-a010 ff        rst     $38
-a011 ff        rst     $38
-a012 36ff      ld      (hl),$ff
-a014 ff        rst     $38
-a015 ff        rst     $38
-a016 ff        rst     $38
-a017 ff        rst     $38
-a018 ff        rst     $38
-a019 ff        rst     $38
-a01a ff        rst     $38
-a01b ff        rst     $38
-a01c ff        rst     $38
-a01d ff        rst     $38
-a01e ff        rst     $38
-a01f ff        rst     $38
-a020 ff        rst     $38
-a021 ff        rst     $38
-a022 ff        rst     $38
-a023 ff        rst     $38
-a024 ff        rst     $38
-a025 ddcb18ee  set     5,(ix+$18)
-a029 cdd49e    call    _9ed4
-a02c dd7e11    ld      a,(ix+$11)
-a02f fe28      cp      $28
-a031 302c      jr      nc,_a05f
-a033 210500    ld      hl,$0005
-a036 2214d2    ld      ($d214),hl
-a039 cd5639    call    _LABEL_3956_11
-a03c 3821      jr      c,_a05f
-a03e 110500    ld      de,$0005
-a041 3a05d4    ld      a,($d405)
-a044 a7        and     a
-a045 fa4ba0    jp      m,_a04b
-a048 11ecff    ld      de,$ffec
-_a04b:
-a04b dd6e02    ld      l,(ix+$02)
-a04e dd6603    ld      h,(ix+$03)
-a051 19        add     hl,de
-a052 22fed3    ld      ($d3fe),hl
-a055 af        xor     a
-a056 3203d4    ld      ($d403),a
-a059 3204d4    ld      ($d404),a
-a05c 3205d4    ld      ($d405),a
-_a05f:
-a05f dd6e02    ld      l,(ix+$02)
-a062 dd6603    ld      h,(ix+$03)
-a065 11c8ff    ld      de,$ffc8
-a068 19        add     hl,de
-a069 ed5bfed3  ld      de,($d3fe)
-a06d af        xor     a
-a06e ed52      sbc     hl,de
-a070 3036      jr      nc,_a0a8
-a072 dd6e02    ld      l,(ix+$02)
-a075 dd6603    ld      h,(ix+$03)
-a078 012400    ld      bc,$0024
-a07b 09        add     hl,bc
-a07c a7        and     a
-a07d ed52      sbc     hl,de
-a07f 3827      jr      c,_a0a8
-a081 dd6e05    ld      l,(ix+$05)
-a084 dd6606    ld      h,(ix+$06)
-a087 11e0ff    ld      de,$ffe0
-a08a 19        add     hl,de
-a08b ed5b01d4  ld      de,($d401)
-a08f af        xor     a
-a090 ed52      sbc     hl,de
-a092 3014      jr      nc,_a0a8
-a094 dd6e05    ld      l,(ix+$05)
-a097 dd6606    ld      h,(ix+$06)
-a09a 015000    ld      bc,$0050
-a09d 09        add     hl,bc
-a09e a7        and     a
-a09f ed52      sbc     hl,de
-a0a1 3805      jr      c,_a0a8
-a0a3 cdb49e    call    _9eb4
-a0a6 1803      jr      _a0ab
-_a0a8:
-a0a8 cdc49e    call    _9ec4
-_a0ab:
-a0ab 11b1a0    ld      de,$a0b1
-a0ae c37e9e    jp      _9e7e
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      a,(ix+$05)
+	ld      (ix+$12),a
+	ld      a,(ix+$06)
+	ld      (ix+$13),a
+	set     0,(ix+$18)
+	ret     
 
-a0b1 38ff      jr------c,$a0b2
-a0b3 ff        rst     $38
-a0b4 ff        rst     $38
-a0b5 ff        rst     $38
-a0b6 ff        rst     $38
-a0b7 3eff      ld      a,$ff
-a0b9 ff        rst     $38
-a0ba ff        rst     $38
-a0bb ff        rst     $38
-a0bc ff        rst     $38
-a0bd 38ff      jr------c,$a0be
-a0bf ff        rst     $38
-a0c0 ff        rst     $38
-a0c1 ff        rst     $38
-a0c2 ff        rst     $38
-a0c3 3eff      ld      a,$ff
-a0c5 ff        rst     $38
-a0c6 ff        rst     $38
-a0c7 ff        rst     $38
-a0c8 ff        rst     $38
-a0c9 38ff      jr------c,$a0ca
-a0cb ff        rst     $38
-a0cc ff        rst     $38
-a0cd ff        rst     $38
-a0ce ff        rst     $38
-a0cf ff        rst     $38
-a0d0 ff        rst     $38
-a0d1 ff        rst     $38
-a0d2 ff        rst     $38
-a0d3 ff        rst     $38
-a0d4 ff        rst     $38
-a0d5 38ff      jr------c,$a0d6
-a0d7 ff        rst     $38
-a0d8 ff        rst     $38
-a0d9 ff        rst     $38
-a0da ff        rst     $38
-a0db ff        rst     $38
-a0dc ff        rst     $38
-a0dd ff        rst     $38
-a0de ff        rst     $38
-a0df ff        rst     $38
-a0e0 ff        rst     $38
-a0e1 ff        rst     $38
-a0e2 ff        rst     $38
-a0e3 ff        rst     $38
-a0e4 ff        rst     $38
-a0e5 ff        rst     $38
-a0e6 ff        rst     $38
-a0e7 ff        rst     $38
-a0e8 ddcb18ee  set     5,(ix+$18)
-a0ec dd360d30  ld      (ix+$0d),$30
-a0f0 dd360e10  ld      (ix+$0e),$10
-a0f4 ddcb1846  bit     0,(ix+$18)
-a0f8 2024      jr      nz,_a11e
-a0fa dd6e02    ld      l,(ix+$02)
-a0fd dd6603    ld      h,(ix+$03)
-a100 111800    ld      de,$0018
-a103 19        add     hl,de
-a104 dd7502    ld      (ix+$02),l
-a107 dd7403    ld      (ix+$03),h
-a10a dd6e05    ld      l,(ix+$05)
-a10d dd6606    ld      h,(ix+$06)
-a110 111000    ld      de,$0010
-a113 19        add     hl,de
-a114 dd7505    ld      (ix+$05),l
-a117 dd7406    ld      (ix+$06),h
-a11a ddcb18c6  set     0,(ix+$18)
+_9f2b:
+.db $0A, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$9F62]___
+;OBJECT: door - one way right (Scrap Brain)
+
+_9f62:
+	set     5,(ix+$18)
+	call    _9ed4
+	ld      a,(ix+$11)
+	cp      $28
+	jr      nc,_9f9c
+	ld      hl,$0005
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_9f9c
+	ld      de,$0005
+	ld      a,($d405)
+	and     a
+	jp      m,_9f88
+	ld      de,$ffec
+_9f88:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      ($d3fe),hl
+	xor     a
+	ld      ($d403),a
+	ld      ($d404),a
+	ld      ($d405),a
+_9f9c:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$fff0
+	add     hl,de
+	ld      de,($d3fe)
+	xor     a
+	sbc     hl,de
+	jr      nc,_9fe5
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      bc,$0024
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_9fe5
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffe0
+	add     hl,de
+	ld      de,($d401)
+	xor     a
+	sbc     hl,de
+	jr      nc,_9fe5
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0050
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_9fe5
+	call    _9eb4
+	jr      _9fe8
+_9fe5:
+	call    _9ec4
+_9fe8:
+	ld      de,_9fee
+	jp      _9e7e
+
+_9fee:
+.db $36, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A025]___
+;OBJECT: door (Scrap Brain)
+
+_a025:
+	set     5,(ix+$18)
+	call    _9ed4
+	ld      a,(ix+$11)
+	cp      $28
+	jr      nc,_a05f
+	ld      hl,$0005
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_a05f
+	ld      de,$0005
+	ld      a,($d405)
+	and     a
+	jp      m,_a04b
+	ld      de,$ffec
+_a04b:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      ($d3fe),hl
+	xor     a
+	ld      ($d403),a
+	ld      ($d404),a
+	ld      ($d405),a
+_a05f:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$ffc8
+	add     hl,de
+	ld      de,($d3fe)
+	xor     a
+	sbc     hl,de
+	jr      nc,_a0a8
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      bc,$0024
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_a0a8
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffe0
+	add     hl,de
+	ld      de,($d401)
+	xor     a
+	sbc     hl,de
+	jr      nc,_a0a8
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$0050
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_a0a8
+	call    _9eb4
+	jr      _a0ab
+_a0a8:
+	call    _9ec4
+_a0ab:
+	ld      de,_a0b1
+	jp      _9e7e
+
+_a0b1:
+.db $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A0E8]___
+;OBJECT: electric sphere (Scrap Brain)
+
+_a0e8:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$30
+	ld      (ix+$0e),$10
+	bit     0,(ix+$18)
+	jr      nz,_a11e
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0018
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0010
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	set     0,(ix+$18)
 _a11e:
-a11e dd7e11    ld      a,(ix+$11)
-a121 fe64      cp      $64
-a123 381d      jr      c,_a142
-a125 2003      jr      nz,_a12a
-a127 3e13      ld      a,$13
-a129 ef        rst     $28
+	ld      a,(ix+$11)
+	cp      $64
+	jr      c,_a142
+	jr      nz,_a12a
+	ld      a,$13
+	rst     $28
 _a12a:
-a12a 210000    ld      hl,$0000
-a12d 2214d2    ld      ($d214),hl
-a130 cd5639    call    _LABEL_3956_11
-a133 d4fd35    call    nc,_35fd
-a136 1173a1    ld      de,$a173
-a139 0167a1    ld      bc,$a167
-a13c cd417c    call    _7c41
-a13f c359a1    jp      _a159
+	ld      hl,$0000
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      de,_a173
+	ld      bc,_a167
+	call    _7c41
+	jp      _a159
 _a142:
-a142 fe46      cp      $46
-a144 300a      jr      nc,_a150
-a146 af        xor     a
-a147 dd770f    ld      (ix+$0f),a
-a14a dd7710    ld      (ix+$10),a
-a14d c359a1    jp      _a159
+	cp      $46
+	jr      nc,_a150
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	jp      _a159
 _a150:
-a150 1173a1    ld      de,$a173
-a153 016ea1    ld      bc,$a16e
-a156 cd417c    call    _7c41
+	ld      de,_a173
+	ld      bc,_a16e
+	call    _7c41
 _a159:
-a159 dd3411    inc     (ix+$11)
-a15c dd7e11    ld      a,(ix+$11)
-a15f fea0      cp      $a0
-a161 d8        ret     c
-a162 dd361100  ld      (ix+$11),$00
-a166 c9        ret     
-a167 00        nop     
-a168 010101    ld      bc,$0101
-a16b 02        ld      (bc),a
-a16c 01ff02    ld      bc,$02ff
-a16f 010301    ld      bc,$0103
-a172 ff        rst     $38
-a173 02        ld      (bc),a
-a174 04        inc     b
-a175 ff        rst     $38
-a176 ff        rst     $38
-a177 ff        rst     $38
-a178 ff        rst     $38
-a179 ff        rst     $38
-a17a ff        rst     $38
-a17b ff        rst     $38
-a17c ff        rst     $38
-a17d ff        rst     $38
-a17e ff        rst     $38
-a17f ff        rst     $38
-a180 ff        rst     $38
-a181 ff        rst     $38
-a182 ff        rst     $38
-a183 ff        rst     $38
-a184 ff        rst     $38
-a185 fefe      cp      $fe
-a187 fefe      cp      $fe
-a189 02        ld      (bc),a
-a18a 04        inc     b
-a18b ff        rst     $38
-a18c ff        rst     $38
-a18d ff        rst     $38
-a18e ff        rst     $38
-a18f ff        rst     $38
-a190 ff        rst     $38
-a191 ff        rst     $38
-a192 ff        rst     $38
-a193 ff        rst     $38
-a194 ff        rst     $38
-a195 ff        rst     $38
-a196 ff        rst     $38
-a197 fefe      cp      $fe
-a199 1618      ld      d,$18
-a19b ff        rst     $38
-a19c ff        rst     $38
-a19d ff        rst     $38
-a19e ff        rst     $38
-a19f ff        rst     $38
-a1a0 ff        rst     $38
-a1a1 ff        rst     $38
-a1a2 ff        rst     $38
-a1a3 ff        rst     $38
-a1a4 ff        rst     $38
-a1a5 ff        rst     $38
-a1a6 ff        rst     $38
-a1a7 ff        rst     $38
-a1a8 ff        rst     $38
-a1a9 ff        rst     $38
-a1aa dd360d0a  ld      (ix+$0d),$0a
-a1ae dd360e20  ld      (ix+$0e),$20
-a1b2 210308    ld      hl,$0803
-a1b5 2214d2    ld      ($d214),hl
-a1b8 cd5639    call    _LABEL_3956_11
-a1bb 21000e    ld      hl,$0e00
-a1be 220ed2    ld      ($d20e),hl
-a1c1 d4e535    call    nc,_35e5
-a1c4 dd360a00  ld      (ix+$0a),$00
-a1c8 dd360b01  ld      (ix+$0b),$01
-a1cc dd360c00  ld      (ix+$0c),$00
-a1d0 dd6e02    ld      l,(ix+$02)
-a1d3 dd6603    ld      h,(ix+$03)
-a1d6 110a00    ld      de,$000a
-a1d9 19        add     hl,de
-a1da eb        ex      de,hl
-a1db 2afed3    ld      hl,($d3fe)
-a1de 010c00    ld      bc,$000c
-a1e1 09        add     hl,bc
-a1e2 a7        and     a
-a1e3 ed52      sbc     hl,de
-a1e5 3076      jr      nc,_a25d
-a1e7 01d2a2    ld      bc,$a2d2
-a1ea dd7e11    ld      a,(ix+$11)
-a1ed feeb      cp      $eb
-a1ef 3809      jr      c,_a1fa
-a1f1 2004      jr      nz,_a1f7
-a1f3 dd361600  ld      (ix+$16),$00
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $a0
+	ret     c
+	ld      (ix+$11),$00
+	ret     
+
+_a167:
+.db $00, $01, $01, $01, $02, $01, $FF
+_a16e:
+.db $02, $01, $03, $01, $FF
+_a173:
+.db $02, $04, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FE, $FE, $FE, $FE
+.db $02, $04, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FE
+.db $16, $18, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF
+
+;____________________________________________________________________________[$A1AA]___
+;OBJECT: badnick - Ball Hog (Scrap Brain)
+
+_a1aa:
+	ld      (ix+$0d),$0a
+	ld      (ix+$0e),$20
+	ld      hl,$0803
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0e00
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),$01
+	ld      (ix+$0c),$00
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000a
+	add     hl,de
+	ex      de,hl
+	ld      hl,($d3fe)
+	ld      bc,$000c
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_a25d
+	ld      bc,_a2d2
+	ld      a,(ix+$11)
+	cp      $eb
+	jr      c,_a1fa
+	jr      nz,_a1f7
+	ld      (ix+$16),$00
 _a1f7:
-a1f7 01d7a2    ld      bc,$a2d7
+	ld      bc,_a2d7
 _a1fa:
-a1fa 11daa2    ld      de,$a2da
-a1fd cd417c    call    _7c41
-a200 dd7e11    ld      a,(ix+$11)
-a203 feed      cp      $ed
-a205 c2cea2    jp      nz,_a2ce
-a208 cd7b7c    call    _7c7b
-a20b dacea2    jp      c,_a2ce
-a20e dd5e02    ld      e,(ix+$02)
-a211 dd5603    ld      d,(ix+$03)
-a214 dd4e05    ld      c,(ix+$05)
-a217 dd4606    ld      b,(ix+$06)
-a21a dde5      push    ix
-a21c e5        push    hl
-a21d dde1      pop     ix
-a21f af        xor     a
-a220 dd36001c  ld      (ix+$00),$1c
-a224 dd7701    ld      (ix+$01),a
-a227 dd7302    ld      (ix+$02),e
-a22a dd7203    ld      (ix+$03),d
-a22d 210600    ld      hl,$0006
-a230 09        add     hl,bc
-a231 dd7704    ld      (ix+$04),a
-a234 dd7505    ld      (ix+$05),l
-a237 dd7406    ld      (ix+$06),h
-a23a dd7711    ld      (ix+$11),a
-a23d dd7716    ld      (ix+$16),a
-a240 dd7717    ld      (ix+$17),a
-a243 dd7707    ld      (ix+$07),a
-a246 dd3608ff  ld      (ix+$08),$ff
-a24a dd3609ff  ld      (ix+$09),$ff
-a24e dd770a    ld      (ix+$0a),a
-a251 dd360b01  ld      (ix+$0b),$01
-a255 dd770c    ld      (ix+$0c),a
-a258 dde1      pop     ix
-a25a c3cea2    jp      _a2ce
+	ld      de,_a2da
+	call    _7c41
+	ld      a,(ix+$11)
+	cp      $ed
+	jp      nz,_a2ce
+	call    _7c7b
+	jp      c,_a2ce
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$1c
+	ld      (ix+$01),a
+	ld      (ix+$02),e
+	ld      (ix+$03),d
+	ld      hl,$0006
+	add     hl,bc
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	ld      (ix+$07),a
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      (ix+$0a),a
+	ld      (ix+$0b),$01
+	ld      (ix+$0c),a
+	pop     ix
+	jp      _a2ce
 _a25d:
-a25d 01d2a2    ld      bc,$a2d2
-a260 dd7e11    ld      a,(ix+$11)
-a263 feeb      cp      $eb
-a265 3809      jr      c,_a270
-a267 2004      jr      nz,_a26d
-a269 dd361600  ld      (ix+$16),$00
+	ld      bc,_a2d2
+	ld      a,(ix+$11)
+	cp      $eb
+	jr      c,_a270
+	jr      nz,_a26d
+	ld      (ix+$16),$00
 _a26d:
-a26d 01d7a2    ld      bc,$a2d7
+	ld      bc,_a2d7
 _a270:
-a270 110ba3    ld      de,$a30b
-a273 cd417c    call    _7c41
-a276 dd7e11    ld      a,(ix+$11)
-a279 feed      cp      $ed
-a27b 2051      jr      nz,_a2ce
-a27d cd7b7c    call    _7c7b
-a280 dacea2    jp      c,_a2ce
-a283 dd5e02    ld      e,(ix+$02)
-a286 dd5603    ld      d,(ix+$03)
-a289 dd4e05    ld      c,(ix+$05)
-a28c dd4606    ld      b,(ix+$06)
-a28f dde5      push    ix
-a291 e5        push    hl
-a292 dde1      pop     ix
-a294 af        xor     a
-a295 dd36001c  ld      (ix+$00),$1c
-a299 dd7701    ld      (ix+$01),a
-a29c dd7302    ld      (ix+$02),e
-a29f dd7203    ld      (ix+$03),d
-a2a2 210600    ld      hl,$0006
-a2a5 09        add     hl,bc
-a2a6 dd7704    ld      (ix+$04),a
-a2a9 dd7505    ld      (ix+$05),l
-a2ac dd7406    ld      (ix+$06),h
-a2af dd7711    ld      (ix+$11),a
-a2b2 dd7716    ld      (ix+$16),a
-a2b5 dd7717    ld      (ix+$17),a
-a2b8 dd7707    ld      (ix+$07),a
-a2bb dd360801  ld      (ix+$08),$01
-a2bf dd7709    ld      (ix+$09),a
-a2c2 dd770a    ld      (ix+$0a),a
-a2c5 dd360b01  ld      (ix+$0b),$01
-a2c9 dd770c    ld      (ix+$0c),a
-a2cc dde1      pop     ix
+	ld      de,_a30b
+	call    _7c41
+	ld      a,(ix+$11)
+	cp      $ed
+	jr      nz,_a2ce
+	call    _7c7b
+	jp      c,_a2ce
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$1c
+	ld      (ix+$01),a
+	ld      (ix+$02),e
+	ld      (ix+$03),d
+	ld      hl,$0006
+	add     hl,bc
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	ld      (ix+$07),a
+	ld      (ix+$08),$01
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),$01
+	ld      (ix+$0c),a
+	pop     ix
 _a2ce:
-a2ce dd3411    inc     (ix+$11)
-a2d1 c9        ret
-     
-a2d2 00        nop     
-a2d3 1c        inc     e
-a2d4 0106ff    ld      bc,$ff06
-a2d7 02        ld      (bc),a
-a2d8 18ff      jr------$a2d9
-a2da 40        ld      b,b
-a2db 42        ld      b,d
-a2dc ff        rst     $38
-a2dd ff        rst     $38
-a2de ff        rst     $38
-a2df ff        rst     $38
-a2e0 60        ld      h,b
-a2e1 62        ld      h,d
-a2e2 ff        rst     $38
-a2e3 ff        rst     $38
-a2e4 ff        rst     $38
-a2e5 ff        rst     $38
-a2e6 ff        rst     $38
-a2e7 ff        rst     $38
-a2e8 ff        rst     $38
-a2e9 ff        rst     $38
-a2ea ff        rst     $38
-a2eb ff        rst     $38
-a2ec 44        ld      b,h
-a2ed 46        ld      b,(hl)
-a2ee ff        rst     $38
-a2ef ff        rst     $38
-a2f0 ff        rst     $38
-a2f1 ff        rst     $38
-a2f2 64        ld      h,h
-a2f3 66        ld      h,(hl)
-a2f4 ff        rst     $38
-a2f5 ff        rst     $38
-a2f6 ff        rst     $38
-a2f7 ff        rst     $38
-a2f8 ff        rst     $38
-a2f9 ff        rst     $38
-a2fa ff        rst     $38
-a2fb ff        rst     $38
-a2fc ff        rst     $38
-a2fd ff        rst     $38
-a2fe 40        ld      b,b
-a2ff 42        ld      b,d
-a300 ff        rst     $38
-a301 ff        rst     $38
-a302 ff        rst     $38
-a303 ff        rst     $38
-a304 68        ld      l,b
-a305 6a        ld      l,d
-a306 ff        rst     $38
-a307 ff        rst     $38
-a308 ff        rst     $38
-a309 ff        rst     $38
-a30a ff        rst     $38
-a30b 50        ld      d,b
-a30c 52        ld      d,d
-a30d ff        rst     $38
-a30e ff        rst     $38
-a30f ff        rst     $38
-a310 ff        rst     $38
-a311 70        ld      (hl),b
-a312 72        ld      (hl),d
-a313 ff        rst     $38
-a314 ff        rst     $38
-a315 ff        rst     $38
-a316 ff        rst     $38
-a317 ff        rst     $38
-a318 ff        rst     $38
-a319 ff        rst     $38
-a31a ff        rst     $38
-a31b ff        rst     $38
-a31c ff        rst     $38
-a31d 4c        ld      c,h
-a31e 4e        ld      c,(hl)
-a31f ff        rst     $38
-a320 ff        rst     $38
-a321 ff        rst     $38
-a322 ff        rst     $38
-a323 6c        ld      l,h
-a324 6e        ld      l,(hl)
-a325 ff        rst     $38
-a326 ff        rst     $38
-a327 ff        rst     $38
-a328 ff        rst     $38
-a329 ff        rst     $38
-a32a ff        rst     $38
-a32b ff        rst     $38
-a32c ff        rst     $38
-a32d ff        rst     $38
-a32e ff        rst     $38
-a32f 50        ld      d,b
-a330 52        ld      d,d
-a331 ff        rst     $38
-a332 ff        rst     $38
-a333 ff        rst     $38
-a334 ff        rst     $38
-a335 48        ld      c,b
-a336 4a        ld      c,d
-a337 ff        rst     $38
-a338 ff        rst     $38
-a339 ff        rst     $38
-a33a ff        rst     $38
-a33b ff        rst     $38
-a33c ddcb18ae  res     5,(ix+$18)
-a340 dd360d0a  ld      (ix+$0d),$0a
-a344 dd360e0f  ld      (ix+$0e),$0f
-a348 210101    ld      hl,$0101
-a34b 2214d2    ld      ($d214),hl
-a34e cd5639    call    _LABEL_3956_11
-a351 d4fd35    call    nc,_35fd
-a354 ddcb187e  bit     7,(ix+$18)
-a358 280c      jr      z,_a366
-a35a dd360a00  ld      (ix+$0a),$00
-a35e dd360bfd  ld      (ix+$0b),$fd
-a362 dd360cff  ld      (ix+$0c),$ff
+	inc     (ix+$11)
+	ret
+
+_a2d2:
+.db $00, $1C, $01, $06, $FF
+_a2d7:
+.db $02, $18, $FF
+_a2da:
+.db $40, $42, $FF, $FF, $FF, $FF, $60, $62, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $68, $6A, $FF, $FF, $FF, $FF
+.db $FF
+_a30b:
+.db $50, $52, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $4C, $4E, $FF, $FF, $FF, $FF, $6C, $6E, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $48, $4A, $FF, $FF, $FF, $FF
+.db $FF
+
+;____________________________________________________________________________[$A33C]___
+;OBJECT: UNKNOWN (ball from Ball Hog?)
+
+_a33c:
+	res     5,(ix+$18)
+	ld      (ix+$0d),$0a
+	ld      (ix+$0e),$0f
+	ld      hl,$0101
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	bit     7,(ix+$18)
+	jr      z,_a366
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),$fd
+	ld      (ix+$0c),$ff
 _a366:
-a366 dd6e0a    ld      l,(ix+$0a)
-a369 dd660b    ld      h,(ix+$0b)
-a36c dd7e0c    ld      a,(ix+$0c)
-a36f 111f00    ld      de,$001f
-a372 19        add     hl,de
-a373 ce00      adc     a,$00
-a375 dd750a    ld      (ix+$0a),l
-a378 dd740b    ld      (ix+$0b),h
-a37b dd770c    ld      (ix+$0c),a
-a37e dd7e11    ld      a,(ix+$11)
-a381 fe82      cp      $82
-a383 300c      jr      nc,_a391
-a385 01b1a3    ld      bc,$a3b1
-a388 11bba3    ld      de,$a3bb
-a38b cd417c    call    _7c41
-a38e c3a3a3    jp      _a3a3
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$001f
+	add     hl,de
+	adc     a,$00
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	ld      a,(ix+$11)
+	cp      $82
+	jr      nc,_a391
+	ld      bc,_a3b1
+	ld      de,_a3bb
+	call    _7c41
+	jp      _a3a3
 _a391:
-a391 2007      jr      nz,_a39a
-a393 dd361600  ld      (ix+$16),$00
-a397 3e01      ld      a,$01
-a399 ef        rst     $28
+	jr      nz,_a39a
+	ld      (ix+$16),$00
+	ld      a,$01
+	rst     $28
 _a39a:
-a39a 01b4a3    ld      bc,$a3b4
-a39d 11bba3    ld      de,$a3bb
-a3a0 cd417c    call    _7c41
+	ld      bc,_a3b4
+	ld      de,_a3bb
+	call    _7c41
 _a3a3:
-a3a3 dd3411    inc     (ix+$11)
-a3a6 dd7e11    ld      a,(ix+$11)
-a3a9 fea5      cp      $a5
-a3ab d8        ret     c
-a3ac dd3600ff  ld      (ix+$00),$ff
-a3b0 c9        ret     
-a3b1 00        nop     
-a3b2 08        ex      af,af'
-a3b3 ff        rst     $38
-a3b4 010c02    ld      bc,$020c
-a3b7 0c        inc     c
-a3b8 03        inc     bc
-a3b9 0c        inc     c
-a3ba ff        rst     $38
-a3bb 2022      jr------nz,$a3df
-a3bd ff        rst     $38
-a3be ff        rst     $38
-a3bf ff        rst     $38
-a3c0 ff        rst     $38
-a3c1 ff        rst     $38
-a3c2 ff        rst     $38
-a3c3 ff        rst     $38
-a3c4 ff        rst     $38
-a3c5 ff        rst     $38
-a3c6 ff        rst     $38
-a3c7 ff        rst     $38
-a3c8 ff        rst     $38
-a3c9 ff        rst     $38
-a3ca ff        rst     $38
-a3cb ff        rst     $38
-a3cc ff        rst     $38
-a3cd 74        ld      (hl),h
-a3ce 76        halt    
-a3cf ff        rst     $38
-a3d0 ff        rst     $38
-a3d1 ff        rst     $38
-a3d2 ff        rst     $38
-a3d3 ff        rst     $38
-a3d4 ff        rst     $38
-a3d5 ff        rst     $38
-a3d6 ff        rst     $38
-a3d7 ff        rst     $38
-a3d8 ff        rst     $38
-a3d9 ff        rst     $38
-a3da ff        rst     $38
-a3db ff        rst     $38
-a3dc ff        rst     $38
-a3dd ff        rst     $38
-a3de ff        rst     $38
-a3df 78        ld      a,b
-a3e0 7a        ld      a,d
-a3e1 ff        rst     $38
-a3e2 ff        rst     $38
-a3e3 ff        rst     $38
-a3e4 ff        rst     $38
-a3e5 ff        rst     $38
-a3e6 ff        rst     $38
-a3e7 ff        rst     $38
-a3e8 ff        rst     $38
-a3e9 ff        rst     $38
-a3ea ff        rst     $38
-a3eb ff        rst     $38
-a3ec ff        rst     $38
-a3ed ff        rst     $38
-a3ee ff        rst     $38
-a3ef ff        rst     $38
-a3f0 ff        rst     $38
-a3f1 7c        ld      a,h
-a3f2 7e        ld      a,(hl)
-a3f3 ff        rst     $38
-a3f4 ff        rst     $38
-a3f5 ff        rst     $38
-a3f6 ff        rst     $38
-a3f7 ff        rst     $38
-a3f8 dd360d0a  ld      (ix+$0d),$0a
-a3fc dd360e11  ld      (ix+$0e),$11
-a400 ddcb1846  bit     0,(ix+$18)
-a404 2014      jr      nz,_a41a
-a406 dd6e02    ld      l,(ix+$02)
-a409 dd6603    ld      h,(ix+$03)
-a40c 110800    ld      de,$0008
-a40f 19        add     hl,de
-a410 dd7502    ld      (ix+$02),l
-a413 dd7403    ld      (ix+$03),h
-a416 ddcb18c6  set     0,(ix+$18)
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $a5
+	ret     c
+	ld      (ix+$00),$ff
+	ret     
+
+_a3b1:
+.db $00, $08, $FF
+_a3b4:
+.db $01, $0C, $02, $0C, $03, $0C, $FF
+_a3bb:
+.db $20, $22, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $74, $76, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $78, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $7C, $7E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A3F8]___
+;OBJECT: switch
+
+_a3f8:
+	ld      (ix+$0d),$0a
+	ld      (ix+$0e),$11
+	bit     0,(ix+$18)
+	jr      nz,_a41a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0008
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	set     0,(ix+$18)
 _a41a:
-a41a 210100    ld      hl,$0001
-a41d 2214d2    ld      ($d214),hl
-a420 cd5639    call    _LABEL_3956_11
-a423 383f      jr      c,_a464
-a425 3a08d4    ld      a,($d408)
-a428 a7        and     a
-a429 fa64a4    jp      m,_a464
-a42c dd360f8b  ld      (ix+$0f),$8b
-a430 dd3610a4  ld      (ix+$10),$a4
-a434 3ad4d2    ld      a,(S1_LEVEL_SOLIDITY)
-a437 fe03      cp      $03
-a439 2008      jr      nz,_a443
-a43b dd360f9b  ld      (ix+$0f),$9b
-a43f dd3610a4  ld      (ix+$10),$a4
+	ld      hl,$0001
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_a464
+	ld      a,($d408)
+	and     a
+	jp      m,_a464
+	ld      (ix+$0f),<_a48b
+	ld      (ix+$10),>_a48b
+	ld      a,(S1_LEVEL_SOLIDITY)
+	cp      $03
+	jr      nz,_a443
+	ld      (ix+$0f),<_a49b
+	ld      (ix+$10),>_a49b
 _a443:
-a443 010600    ld      bc,$0006
-a446 110000    ld      de,$0000
-a449 cdc17c    call    _LABEL_7CC1_12
-a44c ddcb184e  bit     1,(ix+$18)
-a450 202d      jr      nz,_a47f
-a452 ddcb18ce  set     1,(ix+$18)
-a456 2117d3    ld      hl,$d317
-a459 cd020c    call    _LABEL_C02_135
-a45c 7e        ld      a,(hl)
-a45d a9        xor     c
-a45e 77        ld      (hl),a
-a45f 3e1a      ld      a,$1a
-a461 ef        rst     $28
-a462 181b      jr      _a47f
+	ld      bc,$0006
+	ld      de,$0000
+	call    _LABEL_7CC1_12
+	bit     1,(ix+$18)
+	jr      nz,_a47f
+	set     1,(ix+$18)
+	ld      hl,$d317
+	call    _LABEL_C02_135
+	ld      a,(hl)
+	xor     c
+	ld      (hl),a
+	ld      a,$1a
+	rst     $28
+	jr      _a47f
 _a464:
-a464 ddcb188e  res     1,(ix+$18)
-a468 dd360f93  ld      (ix+$0f),$93
-a46c dd3610a4  ld      (ix+$10),$a4
-a470 3ad4d2    ld      a,(S1_LEVEL_SOLIDITY)
-a473 fe03      cp      $03
-a475 2008      jr      nz,_a47f
-a477 dd360fa3  ld      (ix+$0f),$a3
-a47b dd3610a4  ld      (ix+$10),$a4
+	res     1,(ix+$18)
+	ld      (ix+$0f),<_a493
+	ld      (ix+$10),>_a493
+	ld      a,(S1_LEVEL_SOLIDITY)
+	cp      $03
+	jr      nz,_a47f
+	ld      (ix+$0f),$a3
+	ld      (ix+$10),$a4
 _a47f:
-a47f af        xor     a
-a480 dd770a    ld      (ix+$0a),a
-a483 dd360b02  ld      (ix+$0b),$02
-a487 dd770c    ld      (ix+$0c),a
-a48a c9        ret     
-a48b 1a        ld      a,(de)
-a48c 1c        inc     e
-a48d ff        rst     $38
-a48e ff        rst     $38
-a48f ff        rst     $38
-a490 ff        rst     $38
-a491 ff        rst     $38
-a492 ff        rst     $38
-a493 3a3cff    ld      a,($ff3c)
-a496 ff        rst     $38
-a497 ff        rst     $38
-a498 ff        rst     $38
-a499 ff        rst     $38
-a49a ff        rst     $38
-a49b 383a      jr------c,$a4d7
-a49d ff        rst     $38
-a49e ff        rst     $38
-a49f ff        rst     $38
-a4a0 ff        rst     $38
-a4a1 ff        rst     $38
-a4a2 ff        rst     $38
-a4a3 34        inc     (hl)
-a4a4 36ff      ld      (hl),$ff
-a4a6 ff        rst     $38
-a4a7 ff        rst     $38
-a4a8 ff        rst     $38
-a4a9 ff        rst     $38
-a4aa ff        rst     $38
-a4ab ddcb18ee  set     5,(ix+$18)
-a4af cdd49e    call    _9ed4
-a4b2 dd7e11    ld      a,(ix+$11)
-a4b5 fe28      cp      $28
-a4b7 302c      jr      nc,_a4e5
-a4b9 210500    ld      hl,$0005
-a4bc 2214d2    ld      ($d214),hl
-a4bf cd5639    call    _LABEL_3956_11
-a4c2 3821      jr      c,_a4e5
-a4c4 110500    ld      de,$0005
-a4c7 3a05d4    ld      a,($d405)
-a4ca a7        and     a
-a4cb fad1a4    jp      m,_a4d1
-a4ce 11ecff    ld      de,$ffec
+	xor     a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),$02
+	ld      (ix+$0c),a
+	ret     
+
+_a48b:
+.db $1A, $1C, $FF, $FF, $FF, $FF, $FF, $FF
+_a493:
+.db $3A, $3C, $FF, $FF, $FF, $FF, $FF, $FF
+_a49b:
+.db $38, $3A, $FF, $FF, $FF, $FF, $FF, $FF, $34, $36, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A4AB]___
+;OBJECT: switch door
+
+_a4ab:
+	set     5,(ix+$18)
+	call    _9ed4
+	ld      a,(ix+$11)
+	cp      $28
+	jr      nc,_a4e5
+	ld      hl,$0005
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_a4e5
+	ld      de,$0005
+	ld      a,($d405)
+	and     a
+	jp      m,_a4d1
+	ld      de,$ffec
 _a4d1:
-a4d1 dd6e02    ld      l,(ix+$02)
-a4d4 dd6603    ld      h,(ix+$03)
-a4d7 19        add     hl,de
-a4d8 22fed3    ld      ($d3fe),hl
-a4db af        xor     a
-a4dc 3203d4    ld      ($d403),a
-a4df 3204d4    ld      ($d404),a
-a4e2 3205d4    ld      ($d405),a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ld      ($d3fe),hl
+	xor     a
+	ld      ($d403),a
+	ld      ($d404),a
+	ld      ($d405),a
 _a4e5:
-a4e5 2117d3    ld      hl,$d317
-a4e8 cd020c    call    _LABEL_C02_135
-a4eb ddcb184e  bit     1,(ix+$18)
-a4ef 2806      jr      z,_a4f7
-a4f1 7e        ld      a,(hl)
-a4f2 a1        and     c
-a4f3 2014      jr      nz,_a509
-a4f5 1804      jr      _a4fb
+	ld      hl,$d317
+	call    _LABEL_C02_135
+	bit     1,(ix+$18)
+	jr      z,_a4f7
+	ld      a,(hl)
+	and     c
+	jr      nz,_a509
+	jr      _a4fb
 _a4f7:
-a4f7 7e        ld      a,(hl)
-a4f8 a1        and     c
-a4f9 280e      jr      z,_a509
+	ld      a,(hl)
+	and     c
+	jr      z,_a509
 _a4fb:
-a4fb dd7e11    ld      a,(ix+$11)
-a4fe fe30      cp      $30
-a500 3012      jr      nc,_a514
-a502 3c        inc     a
-a503 3c        inc     a
-a504 dd7711    ld      (ix+$11),a
-a507 180b      jr      _a514
+	ld      a,(ix+$11)
+	cp      $30
+	jr      nc,_a514
+	inc     a
+	inc     a
+	ld      (ix+$11),a
+	jr      _a514
 _a509:
-a509 dd7e11    ld      a,(ix+$11)
-a50c a7        and     a
-a50d 2805      jr      z,_a514
-a50f 3d        dec     a
-a510 3d        dec     a
-a511 dd7711    ld      (ix+$11),a
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_a514
+	dec     a
+	dec     a
+	ld      (ix+$11),a
 _a514:
-a514 111aa5    ld      de,$a51a
-a517 c37e9e    jp      _9e7e
-a51a 3eff      ld      a,$ff
-a51c ff        rst     $38
-a51d ff        rst     $38
-a51e ff        rst     $38
-a51f ff        rst     $38
-a520 38ff      jr------c,$a521
-a522 ff        rst     $38
-a523 ff        rst     $38
-a524 ff        rst     $38
-a525 ff        rst     $38
-a526 3eff      ld      a,$ff
-a528 ff        rst     $38
-a529 ff        rst     $38
-a52a ff        rst     $38
-a52b ff        rst     $38
-a52c 38ff      jr------c,$a52d
-a52e ff        rst     $38
-a52f ff        rst     $38
-a530 ff        rst     $38
-a531 ff        rst     $38
-a532 3eff      ld      a,$ff
-a534 ff        rst     $38
-a535 ff        rst     $38
-a536 ff        rst     $38
-a537 ff        rst     $38
-a538 ff        rst     $38
-a539 ff        rst     $38
-a53a ff        rst     $38
-a53b ff        rst     $38
-a53c ff        rst     $38
-a53d ff        rst     $38
-a53e 3eff      ld      a,$ff
-a540 ff        rst     $38
-a541 ff        rst     $38
-a542 ff        rst     $38
-a543 ff        rst     $38
-a544 ff        rst     $38
-a545 ff        rst     $38
-a546 ff        rst     $38
-a547 ff        rst     $38
-a548 ff        rst     $38
-a549 ff        rst     $38
-a54a ff        rst     $38
-a54b ff        rst     $38
-a54c ff        rst     $38
-a54d ff        rst     $38
-a54e ff        rst     $38
-a54f ff        rst     $38
-a550 ff        rst     $38
-a551 dd360d06  ld      (ix+$0d),$06
-a555 dd360e10  ld      (ix+$0e),$10
-a559 3a23d2    ld      a,($d223)
-a55c e601      and     $01
-a55e 2053      jr      nz,_a5b3
-a560 21b9a6    ld      hl,$a6b9
-a563 ddcb184e  bit     1,(ix+$18)
-a567 2803      jr      z,_a56c
-a569 2169a7    ld      hl,$a769
+	ld      de,_a51a
+	jp      _9e7e
+
+_a51a:
+.db $3E, $FF, $FF, $FF, $FF, $FF, $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF
+.db $FF, $FF, $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A551]___
+;OBJECT: badnick - Caterkiller
+
+_a551:
+	ld      (ix+$0d),$06
+	ld      (ix+$0e),$10
+	ld      a,($d223)
+	and     $01
+	jr      nz,_a5b3
+	ld      hl,_a6b9
+	bit     1,(ix+$18)
+	jr      z,_a56c
+	ld      hl,_a769
 _a56c:
-a56c dd5e11    ld      e,(ix+$11)
-a56f cb23      sla     e
-a571 1600      ld      d,$00
-a573 19        add     hl,de
-a574 4e        ld      c,(hl)
-a575 23        inc     hl
-a576 46        ld      b,(hl)
-a577 dd6e01    ld      l,(ix+$01)
-a57a dd6602    ld      h,(ix+$02)
-a57d dd7e03    ld      a,(ix+$03)
-a580 09        add     hl,bc
-a581 cb78      bit     7,b
-a583 2804      jr      z,_a589
-a585 ceff      adc     a,$ff
-a587 1802      jr      _a58b
+	ld      e,(ix+$11)
+	sla     e
+	ld      d,$00
+	add     hl,de
+	ld      c,(hl)
+	inc     hl
+	ld      b,(hl)
+	ld      l,(ix+$01)
+	ld      h,(ix+$02)
+	ld      a,(ix+$03)
+	add     hl,bc
+	bit     7,b
+	jr      z,_a589
+	adc     a,$ff
+	jr      _a58b
 _a589:
-a589 ce00      adc     a,$00
+	adc     a,$00
 _a58b:
-a58b dd7501    ld      (ix+$01),l
-a58e dd7402    ld      (ix+$02),h
-a591 dd7703    ld      (ix+$03),a
-a594 21e5a6    ld      hl,$a6e5
-a597 19        add     hl,de
-a598 5e        ld      e,(hl)
-a599 23        inc     hl
-a59a 56        ld      d,(hl)
-a59b dd6e12    ld      l,(ix+$12)
-a59e dd6613    ld      h,(ix+$13)
-a5a1 19        add     hl,de
-a5a2 dd7512    ld      (ix+$12),l
-a5a5 dd7413    ld      (ix+$13),h
-a5a8 0e00      ld      c,$00
-a5aa cb7c      bit     7,h
-a5ac 2802      jr      z,_a5b0
-a5ae 0eff      ld      c,$ff
+	ld      (ix+$01),l
+	ld      (ix+$02),h
+	ld      (ix+$03),a
+	ld      hl,_a6e5
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	ld      l,(ix+$12)
+	ld      h,(ix+$13)
+	add     hl,de
+	ld      (ix+$12),l
+	ld      (ix+$13),h
+	ld      c,$00
+	bit     7,h
+	jr      z,_a5b0
+	ld      c,$ff
 _a5b0:
-a5b0 dd7114    ld      (ix+$14),c
+	ld      (ix+$14),c
 _a5b3:
-a5b3 dd6e02    ld      l,(ix+$02)
-a5b6 dd6603    ld      h,(ix+$03)
-a5b9 220ed2    ld      ($d20e),hl
-a5bc dd6e05    ld      l,(ix+$05)
-a5bf dd6606    ld      h,(ix+$06)
-a5c2 2210d2    ld      ($d210),hl
-a5c5 ddcb184e  bit     1,(ix+$18)
-a5c9 2049      jr      nz,_a614
-a5cb 2111a7    ld      hl,$a711
-a5ce dd5e11    ld      e,(ix+$11)
-a5d1 1600      ld      d,$00
-a5d3 19        add     hl,de
-a5d4 3e24      ld      a,$24
-a5d6 cd88a6    call    _a688
-a5d9 3e26      ld      a,$26
-a5db cda2a6    call    _a6a2
-a5de 3e26      ld      a,$26
-a5e0 cd88a6    call    _a688
-a5e3 3e26      ld      a,$26
-a5e5 cda2a6    call    _a6a2
-a5e8 dd360d06  ld      (ix+$0d),$06
-a5ec 210208    ld      hl,$0802
-a5ef 2214d2    ld      ($d214),hl
-a5f2 cd5639    call    _LABEL_3956_11
-a5f5 210000    ld      hl,$0000
-a5f8 220ed2    ld      ($d20e),hl
-a5fb 3805      jr      c,_a602
-a5fd cde535    call    _35e5
-a600 1859      jr      _a65b
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	bit     1,(ix+$18)
+	jr      nz,_a614
+	ld      hl,_a711
+	ld      e,(ix+$11)
+	ld      d,$00
+	add     hl,de
+	ld      a,$24
+	call    _a688
+	ld      a,$26
+	call    _a6a2
+	ld      a,$26
+	call    _a688
+	ld      a,$26
+	call    _a6a2
+	ld      (ix+$0d),$06
+	ld      hl,$0802
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0000
+	ld      ($d20e),hl
+	jr      c,_a602
+	call    _35e5
+	jr      _a65b
 _a602:
-a602 dd360d16  ld      (ix+$0d),$16
-a606 210608    ld      hl,$0806
-a609 2214d2    ld      ($d214),hl
-a60c cd5639    call    _LABEL_3956_11
-a60f d4fd35    call    nc,_35fd
-a612 1847      jr      _a65b
+	ld      (ix+$0d),$16
+	ld      hl,$0806
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	jr      _a65b
 _a614:
-a614 2195a7    ld      hl,$a795
-a617 dd5e11    ld      e,(ix+$11)
-a61a 1600      ld      d,$00
-a61c 19        add     hl,de
-a61d 3e2a      ld      a,$2a
-a61f cd88a6    call    _a688
-a622 3e28      ld      a,$28
-a624 cda2a6    call    _a6a2
-a627 3e28      ld      a,$28
-a629 cd88a6    call    _a688
-a62c 3e28      ld      a,$28
-a62e cda2a6    call    _a6a2
-a631 dd360d10  ld      (ix+$0d),$10
-a635 210104    ld      hl,$0401
-a638 2214d2    ld      ($d214),hl
-a63b cd5639    call    _LABEL_3956_11
-a63e 3805      jr      c,_a645
-a640 cdfd35    call    _35fd
-a643 1816      jr      _a65b
+	ld      hl,_a795
+	ld      e,(ix+$11)
+	ld      d,$00
+	add     hl,de
+	ld      a,$2a
+	call    _a688
+	ld      a,$28
+	call    _a6a2
+	ld      a,$28
+	call    _a688
+	ld      a,$28
+	call    _a6a2
+	ld      (ix+$0d),$10
+	ld      hl,$0401
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_a645
+	call    _35fd
+	jr      _a65b
 _a645:
-a645 dd360d16  ld      (ix+$0d),$16
-a649 211004    ld      hl,$0410
-a64c 2214d2    ld      ($d214),hl
-a64f cd5639    call    _LABEL_3956_11
-a652 210000    ld      hl,$0000
-a655 220ed2    ld      ($d20e),hl
-a658 d4e535    call    nc,_35e5
+	ld      (ix+$0d),$16
+	ld      hl,$0410
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$0000
+	ld      ($d20e),hl
+	call    nc,_35e5
 _a65b:
-a65b dd360b01  ld      (ix+$0b),$01
-a65f 3a23d2    ld      a,($d223)
-a662 e601      and     $01
-a664 c0        ret     nz
-a665 dd3411    inc     (ix+$11)
-a668 dd7e11    ld      a,(ix+$11)
-a66b fe16      cp      $16
-a66d d8        ret     c
-a66e dd361100  ld      (ix+$11),$00
-a672 dd3415    inc     (ix+$15)
-a675 dd7e15    ld      a,(ix+$15)
-a678 fe14      cp      $14
-a67a d8        ret     c
-a67b dd361500  ld      (ix+$15),$00
-a67f dd7e18    ld      a,(ix+$18)
-a682 ee02      xor     $02
-a684 dd7718    ld      (ix+$18),a
-a687 c9        ret     
+	ld      (ix+$0b),$01
+	ld      a,($d223)
+	and     $01
+	ret     nz
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $16
+	ret     c
+	ld      (ix+$11),$00
+	inc     (ix+$15)
+	ld      a,(ix+$15)
+	cp      $14
+	ret     c
+	ld      (ix+$15),$00
+	ld      a,(ix+$18)
+	xor     $02
+	ld      (ix+$18),a
+	ret     
 
 _a688:
-a688 e5        push    hl
-a689 5e        ld      e,(hl)
-a68a 1600      ld      d,$00
-a68c ed5312d2  ld      ($d212),de
-a690 dd6e13    ld      l,(ix+$13)
-a693 dd6614    ld      h,(ix+$14)
-a696 2214d2    ld      ($d214),hl
-a699 cd8135    call    _3581
-a69c e1        pop     hl
-a69d 111600    ld      de,$0016
-a6a0 19        add     hl,de
-a6a1 c9        ret     
+	push    hl
+	ld      e,(hl)
+	ld      d,$00
+	ld      ($d212),de
+	ld      l,(ix+$13)
+	ld      h,(ix+$14)
+	ld      ($d214),hl
+	call    _3581
+	pop     hl
+	ld      de,$0016
+	add     hl,de
+	ret     
 
 _a6a2:
-a6a2 e5        push    hl
-a6a3 5e        ld      e,(hl)
-a6a4 1600      ld      d,$00
-a6a6 ed5312d2  ld      ($d212),de
-a6aa 210000    ld      hl,$0000
-a6ad 2214d2    ld      ($d214),hl
-a6b0 cd8135    call    _3581
-a6b3 e1        pop     hl
-a6b4 111600    ld      de,$0016
-a6b7 19        add     hl,de
-a6b8 c9        ret     
-a6b9 00        nop     
-a6ba 00        nop     
-a6bb 00        nop     
-a6bc 00        nop     
-a6bd 00        nop     
-a6be 00        nop     
-a6bf 00        nop     
-a6c0 00        nop     
-a6c1 00        nop     
-a6c2 00        nop     
-a6c3 00        nop     
-a6c4 00        nop     
-a6c5 00        nop     
-a6c6 00        nop     
-a6c7 00        nop     
-a6c8 00        nop     
-a6c9 00        nop     
-a6ca 00        nop     
-a6cb 00        nop     
-a6cc 00        nop     
-a6cd 00        nop     
-a6ce 00        nop     
-a6cf e0        ret     po
-a6d0 ff        rst     $38
-a6d1 e0        ret     po
-a6d2 ff        rst     $38
-a6d3 e0        ret     po
-a6d4 ff        rst     $38
-a6d5 e0        ret     po
-a6d6 ff        rst     $38
-a6d7 c0        ret     nz
-a6d8 ff        rst     $38
-a6d9 c0        ret     nz
-a6da ff        rst     $38
-a6db 80        add     a,b
-a6dc ff        rst     $38
-a6dd 80        add     a,b
-a6de ff        rst     $38
-a6df 00        nop     
-a6e0 ff        rst     $38
-a6e1 00        nop     
-a6e2 ff        rst     $38
-a6e3 00        nop     
-a6e4 fe00      cp      $00
-a6e6 ff        rst     $38
-a6e7 80        add     a,b
-a6e8 ff        rst     $38
-a6e9 80        add     a,b
-a6ea ff        rst     $38
-a6eb c0        ret     nz
-a6ec ff        rst     $38
-a6ed c0        ret     nz
-a6ee ff        rst     $38
-a6ef e0        ret     po
-a6f0 ff        rst     $38
-a6f1 e0        ret     po
-a6f2 ff        rst     $38
-a6f3 f0        ret     p
-a6f4 ff        rst     $38
-a6f5 f0        ret     p
-a6f6 ff        rst     $38
-a6f7 f0        ret     p
-a6f8 ff        rst     $38
-a6f9 f0        ret     p
-a6fa ff        rst     $38
-a6fb 1000      djnz----$a6fd
-a6fd 1000      djnz----$a6ff
-a6ff 1000      djnz----$a701
-a701 1000      djnz----$a703
-a703 2000      jr------nz,$a705
-a705 2000      jr------nz,$a707
-a707 40        ld      b,b
-a708 00        nop     
-a709 40        ld      b,b
-a70a 00        nop     
-a70b 80        add     a,b
-a70c 00        nop     
-a70d 80        add     a,b
-a70e 00        nop     
-a70f 00        nop     
-a710 010001    ld      bc,$0100
-a713 02        ld      (bc),a
-a714 02        ld      (bc),a
-a715 03        inc     bc
-a716 03        inc     bc
-a717 03        inc     bc
-a718 03        inc     bc
-a719 03        inc     bc
-a71a 03        inc     bc
-a71b 03        inc     bc
-a71c 03        inc     bc
-a71d 03        inc     bc
-a71e 03        inc     bc
-a71f 03        inc     bc
-a720 03        inc     bc
-a721 03        inc     bc
-a722 03        inc     bc
-a723 02        ld      (bc),a
-a724 02        ld      (bc),a
-a725 010007    ld      bc,$0700
-a728 07        rlca    
-a729 07        rlca    
-a72a 07        rlca    
-a72b 07        rlca    
-a72c 07        rlca    
-a72d 07        rlca    
-a72e 07        rlca    
-a72f 07        rlca    
-a730 07        rlca    
-a731 07        rlca    
-a732 07        rlca    
-a733 07        rlca    
-a734 07        rlca    
-a735 07        rlca    
-a736 07        rlca    
-a737 07        rlca    
-a738 07        rlca    
-a739 07        rlca    
-a73a 07        rlca    
-a73b 07        rlca    
-a73c 07        rlca    
-a73d 0e0d      ld      c,$0d
-a73f 0c        inc     c
-a740 0c        inc     c
-a741 0b        dec     bc
-a742 0b        dec     bc
-a743 0b        dec     bc
-a744 0b        dec     bc
-a745 0b        dec     bc
-a746 0b        dec     bc
-a747 0b        dec     bc
-a748 0b        dec     bc
-a749 0b        dec     bc
-a74a 0b        dec     bc
-a74b 0b        dec     bc
-a74c 0b        dec     bc
-a74d 0b        dec     bc
-a74e 0b        dec     bc
-a74f 0c        inc     c
-a750 0c        inc     c
-a751 0d        dec     c
-a752 0e15      ld      c,$15
-a754 13        inc     de
-a755 12        ld      (de),a
-a756 111010    ld      de,$1010
-a759 0f        rrca    
-a75a 0f        rrca    
-a75b 0f        rrca    
-a75c 0f        rrca    
-a75d 0f        rrca    
-a75e 0f        rrca    
-a75f 0f        rrca    
-a760 0f        rrca    
-a761 0f        rrca    
-a762 0f        rrca    
-a763 1010      djnz----$a775
-a765 111213    ld      de,$1312
-a768 15        dec     d
-a769 00        nop     
-a76a 00        nop     
-a76b 00        nop     
-a76c 00        nop     
-a76d 00        nop     
-a76e 00        nop     
-a76f 00        nop     
-a770 00        nop     
-a771 00        nop     
-a772 00        nop     
-a773 00        nop     
-a774 00        nop     
-a775 00        nop     
-a776 00        nop     
-a777 00        nop     
-a778 00        nop     
-a779 00        nop     
-a77a 00        nop     
-a77b 00        nop     
-a77c 00        nop     
-a77d 00        nop     
-a77e 00        nop     
-a77f 2000      jr------nz,$a781
-a781 2000      jr------nz,$a783
-a783 2000      jr------nz,$a785
-a785 2000      jr------nz,$a787
-a787 40        ld      b,b
-a788 00        nop     
-a789 40        ld      b,b
-a78a 00        nop     
-a78b 80        add     a,b
-a78c 00        nop     
-a78d 80        add     a,b
-a78e 00        nop     
-a78f 00        nop     
-a790 010001    ld      bc,$0100
-a793 00        nop     
-a794 02        ld      (bc),a
-a795 15        dec     d
-a796 14        inc     d
-a797 13        inc     de
-a798 13        inc     de
-a799 12        ld      (de),a
-a79a 12        ld      (de),a
-a79b 12        ld      (de),a
-a79c 12        ld      (de),a
-a79d 12        ld      (de),a
-a79e 12        ld      (de),a
-a79f 12        ld      (de),a
-a7a0 12        ld      (de),a
-a7a1 12        ld      (de),a
-a7a2 12        ld      (de),a
-a7a3 12        ld      (de),a
-a7a4 12        ld      (de),a
-a7a5 12        ld      (de),a
-a7a6 12        ld      (de),a
-a7a7 13        inc     de
-a7a8 13        inc     de
-a7a9 14        inc     d
-a7aa 15        dec     d
-a7ab 0e0e      ld      c,$0e
-a7ad 0e0e      ld      c,$0e
-a7af 0e0e      ld      c,$0e
-a7b1 0e0e      ld      c,$0e
-a7b3 0e0e      ld      c,$0e
-a7b5 0e0e      ld      c,$0e
-a7b7 0e0e      ld      c,$0e
-a7b9 0e0e      ld      c,$0e
-a7bb 0e0e      ld      c,$0e
-a7bd 0e0e      ld      c,$0e
-a7bf 0e0e      ld      c,$0e
-a7c1 07        rlca    
-a7c2 08        ex      af,af'
-a7c3 09        add     hl,bc
-a7c4 09        add     hl,bc
-a7c5 0a        ld      a,(bc)
-a7c6 0a        ld      a,(bc)
-a7c7 0a        ld      a,(bc)
-a7c8 0a        ld      a,(bc)
-a7c9 0a        ld      a,(bc)
-a7ca 0a        ld      a,(bc)
-a7cb 0a        ld      a,(bc)
-a7cc 0a        ld      a,(bc)
-a7cd 0a        ld      a,(bc)
-a7ce 0a        ld      a,(bc)
-a7cf 0a        ld      a,(bc)
-a7d0 0a        ld      a,(bc)
-a7d1 0a        ld      a,(bc)
-a7d2 0a        ld      a,(bc)
-a7d3 09        add     hl,bc
-a7d4 09        add     hl,bc
-a7d5 08        ex      af,af'
-a7d6 07        rlca    
-a7d7 00        nop     
-a7d8 02        ld      (bc),a
-a7d9 03        inc     bc
-a7da 04        inc     b
-a7db 05        dec     b
-a7dc 05        dec     b
-a7dd 0606      ld      b,$06
-a7df 0606      ld      b,$06
-a7e1 0606      ld      b,$06
-a7e3 0606      ld      b,$06
-a7e5 0606      ld      b,$06
-a7e7 05        dec     b
-a7e8 05        dec     b
-a7e9 04        inc     b
-a7ea 03        inc     bc
-a7eb 02        ld      (bc),a
-a7ec 00        nop     
-a7ed dd360d1e  ld      (ix+$0d),$1e
-a7f1 dd360e2f  ld      (ix+$0e),$2f
-a7f5 ddcb1846  bit     0,(ix+$18)
-a7f9 2035      jr      nz,_a830
-a7fb 214003    ld      hl,$0340
-a7fe 2273d2    ld      (S1_LEVEL_CROPLEFT),hl
-a801 214005    ld      hl,$0540
-a804 2275d2    ld      ($d275),hl
-a807 2a5dd2    ld      hl,($d25d)
-a80a 2277d2    ld      (S1_LEVEL_CROPTOP),hl
-a80d 2279d2    ld      (S1_LEVEL_EXTENDHEIGHT),hl
-a810 212002    ld      hl,$0220
-a813 227dd2    ld      ($d27d),hl
+	push    hl
+	ld      e,(hl)
+	ld      d,$00
+	ld      ($d212),de
+	ld      hl,$0000
+	ld      ($d214),hl
+	call    _3581
+	pop     hl
+	ld      de,$0016
+	add     hl,de
+	ret     
 
-		;UNKNOWN
-a816 213fef    ld      hl,$ef3f
-a819 110020    ld      de,$2000
-a81c 3e0c      ld      a,12
-a81e cd0504    call    decompressArt
+_a6b9:
+.db $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
+.db $00 $00 $00 $00 $00 $00 $E0 $FF $E0 $FF $E0 $FF $E0 $FF $C0 $FF
+.db $C0 $FF $80 $FF $80 $FF $00 $FF $00 $FF $00 $FE
+_a6e5:
+.db $00 $FF $80 $FF $80 $FF $C0 $FF $C0 $FF $E0 $FF $E0 $FF $F0 $FF
+.db $F0 $FF $F0 $FF $F0 $FF $10 $00 $10 $00 $10 $00 $10 $00 $20 $00
+.db $20 $00 $40 $00 $40 $00 $80 $00 $80 $00 $00 $01
+_a711:
+.db $00 $01 $02 $02 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03
+.db $03 $03 $02 $02 $01 $00 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07
+.db $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $0E $0D $0C $0C
+.db $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0C $0C
+.db $0D $0E $15 $13 $12 $11 $10 $10 $0F $0F $0F $0F $0F $0F $0F $0F
+.db $0F $0F $10 $10 $11 $12 $13 $15
+_a769:
+.db $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
+.db $00 $00 $00 $00 $00 $00 $20 $00 $20 $00 $20 $00 $20 $00 $40 $00
+.db $40 $00 $80 $00 $80 $00 $00 $01 $00 $01 $00 $02
+_a795:
+.db $15 $14 $13 $13 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12
+.db $12 $12 $13 $13 $14 $15 $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E
+.db $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $07 $08 $09 $09
+.db $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $09 $09
+.db $08 $07 $00 $02 $03 $04 $05 $05 $06 $06 $06 $06 $06 $06 $06 $06
+.db $06 $06 $05 $05 $04 $03 $02 $00
 
-a821 211c73    ld      hl,S1_BossPalette
-a824 3e02      ld      a,$02
-a826 cd3303    call    loadPaletteOnInterrupt
-a829 3e0b      ld      a,$0b
-a82b df        rst     $18
-a82c ddcb18c6  set     0,(ix+$18)
+;____________________________________________________________________________[$A7ED]___
+;OBJECT: boss (Scrap Brain)
+
+_a7ed:
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$2f
+	bit     0,(ix+$18)
+	jr      nz,_a830
+	ld      hl,$0340
+	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      hl,$0540
+	ld      ($d275),hl
+	ld      hl,($d25d)
+	ld      (S1_LEVEL_CROPTOP),hl
+	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      hl,$0220
+	ld      ($d27d),hl
+
+	;UNKNOWN
+	ld      hl,$ef3f
+	ld      de,$2000
+	ld      a,12
+	call    decompressArt
+
+	ld      hl,S1_BossPalette
+	ld      a,$02
+	call    loadPaletteOnInterrupt
+	
+	ld      a,$0b
+	rst     $18
+	
+	set     0,(ix+$18)
 _a830:
-a830 ddcb184e  bit     1,(ix+$18)
-a834 205d      jr      nz,_a893
-a836 2a5ad2    ld      hl,($d25a)
-a839 2273d2    ld      (S1_LEVEL_CROPLEFT),hl
-a83c 11f9ba    ld      de,$baf9
-a83f 01b7a9    ld      bc,$a9b7
-a842 cd417c    call    _7c41
-a845 dd6e02    ld      l,(ix+$02)
-a848 dd6603    ld      h,(ix+$03)
-a84b ed5bfed3  ld      de,($d3fe)
-a84f af        xor     a
-a850 ed52      sbc     hl,de
-a852 114000    ld      de,$0040
-a855 af        xor     a
-a856 ed4b03d4  ld      bc,($d403)
-a85a cb78      bit     7,b
-a85c 2004      jr      nz,_a862
-a85e ed52      sbc     hl,de
-a860 3803      jr      c,_a865
+	bit     1,(ix+$18)
+	jr      nz,_a893
+	ld      hl,($d25a)
+	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      de,_baf9
+	ld      bc,_a9b7
+	call    _7c41
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,($d3fe)
+	xor     a
+	sbc     hl,de
+	ld      de,$0040
+	xor     a
+	ld      bc,($d403)
+	bit     7,b
+	jr      nz,_a862
+	sbc     hl,de
+	jr      c,_a865
 _a862:
-a862 0180ff    ld      bc,$ff80
+	ld      bc,$ff80
 _a865:
-a865 04        inc     b
-a866 dd7107    ld      (ix+$07),c
-a869 dd7008    ld      (ix+$08),b
-a86c dd7709    ld      (ix+$09),a
-a86f dd6e02    ld      l,(ix+$02)
-a872 dd6603    ld      h,(ix+$03)
-a875 11a005    ld      de,$05a0
-a878 af        xor     a
-a879 ed52      sbc     hl,de
-a87b da74a9    jp      c,_a974
-a87e 6f        ld      l,a
-a87f 67        ld      h,a
-a880 dd7707    ld      (ix+$07),a
-a883 dd7708    ld      (ix+$08),a
-a886 2203d4    ld      ($d403),hl
-a889 3205d4    ld      ($d405),a
-a88c ddcb18ce  set     1,(ix+$18)
-a890 c374a9    jp      _a974
+	inc     b
+	ld      (ix+$07),c
+	ld      (ix+$08),b
+	ld      (ix+$09),a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$05a0
+	xor     a
+	sbc     hl,de
+	jp      c,_a974
+	ld      l,a
+	ld      h,a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      ($d403),hl
+	ld      ($d405),a
+	set     1,(ix+$18)
+	jp      _a974
 _a893:
-a893 ddcb1856  bit     2,(ix+$18)
-a897 2034      jr      nz,_a8cd
-a899 213005    ld      hl,$0530
-a89c 112002    ld      de,$0220
-a89f cd8c7c    call    _7c8c
-a8a2 fd3603ff  ld      (iy+$03),$ff
-a8a6 21a005    ld      hl,$05a0
-a8a9 dd360100  ld      (ix+$01),$00
-a8ad dd7502    ld      (ix+$02),l
-a8b0 dd7403    ld      (ix+$03),h
-a8b3 dd360ff9  ld      (ix+$0f),$f9
-a8b7 dd3610ba  ld      (ix+$10),$ba
-a8bb dd3411    inc     (ix+$11)
-a8be dd7e11    ld      a,(ix+$11)
-a8c1 fec0      cp      $c0
-a8c3 da74a9    jp      c,_a974
-a8c6 ddcb18d6  set     2,(ix+$18)
-a8ca c374a9    jp      _a974
+	bit     2,(ix+$18)
+	jr      nz,_a8cd
+	ld      hl,$0530
+	ld      de,$0220
+	call    _7c8c
+	ld      (iy+$03),$ff
+	ld      hl,$05a0
+	ld      (ix+$01),$00
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$0f),<_baf9
+	ld      (ix+$10),>_baf9
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $c0
+	jp      c,_a974
+	set     2,(ix+$18)
+	jp      _a974
 _a8cd:
-a8cd ddcb185e  bit     3,(ix+$18)
-a8d1 2018      jr      nz,_a8eb
-a8d3 fd3603ff  ld      (iy+$03),$ff
-a8d7 af        xor     a
-a8d8 dd770f    ld      (ix+$0f),a
-a8db dd7710    ld      (ix+$10),a
-a8de dd3511    dec     (ix+$11)
-a8e1 c274a9    jp      nz,_a974
-a8e4 ddcb18de  set     3,(ix+$18)
-a8e8 c374a9    jp      _a974
+	bit     3,(ix+$18)
+	jr      nz,_a8eb
+	ld      (iy+$03),$ff
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	dec     (ix+$11)
+	jp      nz,_a974
+	set     3,(ix+$18)
+	jp      _a974
 _a8eb:
-a8eb ddcb1866  bit     4,(ix+$18)
-a8ef 207a      jr      nz,_a96b
-a8f1 ed5bfed3  ld      de,($d3fe)
-a8f5 219605    ld      hl,$0596
-a8f8 a7        and     a
-a8f9 ed52      sbc     hl,de
-a8fb 3077      jr      nc,_a974
-a8fd 21c005    ld      hl,$05c0
-a900 af        xor     a
-a901 ed52      sbc     hl,de
-a903 386f      jr      c,_a974
-a905 ddb611    or      (ix+$11)
-a908 2013      jr      nz,_a91d
-a90a 2a01d4    ld      hl,($d401)
-a90d 118d02    ld      de,$028d
-a910 af        xor     a
-a911 ed52      sbc     hl,de
-a913 385f      jr      c,_a974
-a915 6f        ld      l,a
-a916 67        ld      h,a
-a917 2203d4    ld      ($d403),hl
-a91a 3205d4    ld      ($d405),a
+	bit     4,(ix+$18)
+	jr      nz,_a96b
+	ld      de,($d3fe)
+	ld      hl,$0596
+	and     a
+	sbc     hl,de
+	jr      nc,_a974
+	ld      hl,$05c0
+	xor     a
+	sbc     hl,de
+	jr      c,_a974
+	or      (ix+$11)
+	jr      nz,_a91d
+	ld      hl,($d401)
+	ld      de,$028d
+	xor     a
+	sbc     hl,de
+	jr      c,_a974
+	ld      l,a
+	ld      h,a
+	ld      ($d403),hl
+	ld      ($d405),a
 _a91d:
-a91d 3e80      ld      a,$80
-a91f 3214d4    ld      ($d414),a
-a922 21a005    ld      hl,$05a0
-a925 22fed3    ld      ($d3fe),hl
-a928 fd3603ff  ld      (iy+$03),$ff
-a92c dd5e11    ld      e,(ix+$11)
-a92f 1600      ld      d,$00
-a931 218e02    ld      hl,$028e
-a934 af        xor     a
-a935 ed52      sbc     hl,de
-a937 3200d4    ld      ($d400),a
-a93a 2201d4    ld      ($d401),hl
-a93d 3ae8d2    ld      a,($d2e8)
-a940 2ae6d2    ld      hl,($d2e6)
-a943 2206d4    ld      ($d406),hl
-a946 3208d4    ld      ($d408),a
-a949 dd3411    inc     (ix+$11)
-a94c dd7e11    ld      a,(ix+$11)
-a94f fec0      cp      $c0
-a951 2021      jr      nz,_a974
-a953 2a5ad2    ld      hl,($d25a)
-a956 24        inc     h
-a957 22fed3    ld      ($d3fe),hl
-a95a ddcb18e6  set     4,(ix+$18)
-a95e 3e09      ld      a,$09
-a960 df        rst     $18
-a961 3ea0      ld      a,$a0
-a963 3289d2    ld      ($d289),a
-a966 fdcb06ce  set     1,(iy+$06)
-a96a c9        ret     
+	ld      a,$80
+	ld      ($d414),a
+	ld      hl,$05a0
+	ld      ($d3fe),hl
+	ld      (iy+$03),$ff
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      hl,$028e
+	xor     a
+	sbc     hl,de
+	ld      ($d400),a
+	ld      ($d401),hl
+	ld      a,($d2e8)
+	ld      hl,($d2e6)
+	ld      ($d406),hl
+	ld      ($d408),a
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $c0
+	jr      nz,_a974
+	ld      hl,($d25a)
+	inc     h
+	ld      ($d3fe),hl
+	set     4,(ix+$18)
+	ld      a,$09
+	rst     $18
+	ld      a,$a0
+	ld      ($d289),a
+	set     1,(iy+$06)
+	ret     
 _a96b:
-a96b dd7e11    ld      a,(ix+$11)
-a96e a7        and     a
-a96f 2803      jr      z,_a974
-a971 dd3511    dec     (ix+$11)
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_a974
+	dec     (ix+$11)
 _a974:
-a974 dd5e11    ld      e,(ix+$11)
-a977 1600      ld      d,$00
-a979 218002    ld      hl,$0280
-a97c af        xor     a
-a97d ed52      sbc     hl,de
-a97f dd7704    ld      (ix+$04),a
-a982 dd7505    ld      (ix+$05),l
-a985 dd7406    ld      (ix+$06),h
-a988 dd5e11    ld      e,(ix+$11)
-a98b 1600      ld      d,$00
-a98d 21af02    ld      hl,$02af
-a990 a7        and     a
-a991 ed52      sbc     hl,de
-a993 ed4b5dd2  ld      bc,($d25d)
-a997 a7        and     a
-a998 ed42      sbc     hl,bc
-a99a eb        ex      de,hl
-a99b 21a005    ld      hl,$05a0
-a99e ed4b5ad2  ld      bc,($d25a)
-a9a2 a7        and     a
-a9a3 ed42      sbc     hl,bc
-a9a5 01c0a9    ld      bc,$a9c0
-a9a8 cd0f35    call    _LABEL_350F_95
-a9ab dd7e11    ld      a,(ix+$11)
-a9ae e61f      and     $1f
-a9b0 fe0f      cp      $0f
-a9b2 c0        ret     nz
-a9b3 3e19      ld      a,$19
-a9b5 ef        rst     $28
-a9b6 c9        ret     
-a9b7 03        inc     bc
-a9b8 08        ex      af,af'
-a9b9 04        inc     b
-a9ba 07        rlca    
-a9bb 05        dec     b
-a9bc 08        ex      af,af'
-a9bd 04        inc     b
-a9be 07        rlca    
-a9bf ff        rst     $38
-a9c0 74        ld      (hl),h
-a9c1 76        halt    
-a9c2 76        halt    
-a9c3 78        ld      a,b
-a9c4 ff        rst     $38
-a9c5 ff        rst     $38
-a9c6 ff        rst     $38
-a9c7 ddcb18ee  set     5,(ix+$18)
-a9cb fd7e0a    ld      a,(iy+$0a)
-a9ce 2a3cd2    ld      hl,($d23c)
-a9d1 f5        push    af
-a9d2 e5        push    hl
-a9d3 3aded2    ld      a,($d2de)
-a9d6 fe24      cp      $24
-a9d8 3042      jr      nc,_aa1c
-a9da 5f        ld      e,a
-a9db 1600      ld      d,$00
-a9dd 2100d0    ld      hl,$d000
-a9e0 19        add     hl,de
-a9e1 223cd2    ld      ($d23c),hl
-a9e4 3aa3d2    ld      a,($d2a3)
-a9e7 4f        ld      c,a
-a9e8 ed5ba1d2  ld      de,($d2a1)
-a9ec dd6e04    ld      l,(ix+$04)
-a9ef dd6605    ld      h,(ix+$05)
-a9f2 dd7e06    ld      a,(ix+$06)
-a9f5 19        add     hl,de
-a9f6 89        adc     a,c
-a9f7 6c        ld      l,h
-a9f8 67        ld      h,a
-a9f9 ed4b5dd2  ld      bc,($d25d)
-a9fd a7        and     a
-a9fe ed42      sbc     hl,bc
-aa00 eb        ex      de,hl
-aa01 dd6e02    ld      l,(ix+$02)
-aa04 dd6603    ld      h,(ix+$03)
-aa07 ed4b5ad2  ld      bc,($d25a)
-aa0b a7        and     a
-aa0c ed42      sbc     hl,bc
-aa0e 0163aa    ld      bc,$aa63
-aa11 cd0f35    call    _LABEL_350F_95
-aa14 3aded2    ld      a,($d2de)
-aa17 c60c      add     a,$0c
-aa19 32ded2    ld      ($d2de),a
-_aa1c:
-aa1c e1        pop     hl
-aa1d f1        pop     af
-aa1e 223cd2    ld      ($d23c),hl
-aa21 fd770a    ld      (iy+$0a),a
-aa24 2a5ad2    ld      hl,($d25a)
-aa27 11e0ff    ld      de,$ffe0
-aa2a 19        add     hl,de
-aa2b eb        ex      de,hl
-aa2c dd6e02    ld      l,(ix+$02)
-aa2f dd6603    ld      h,(ix+$03)
-aa32 a7        and     a
-aa33 ed52      sbc     hl,de
-aa35 3017      jr      nc,_aa4e
-aa37 cd2506    call    _LABEL_625_57
-aa3a 0600      ld      b,$00
-aa3c 87        add     a,a
-aa3d 4f        ld      c,a
-aa3e cb10      rl      b
-aa40 2a5ad2    ld      hl,($d25a)
-aa43 11b401    ld      de,$01b4
-aa46 19        add     hl,de
-aa47 09        add     hl,bc
-aa48 dd7502    ld      (ix+$02),l
-aa4b dd7403    ld      (ix+$03),h
-_aa4e:
-aa4e dd360700  ld      (ix+$07),$00
-aa52 dd3608fd  ld      (ix+$08),$fd
-aa56 dd3609ff  ld      (ix+$09),$ff
-aa5a dd360f00  ld      (ix+$0f),$00
-aa5e dd361000  ld      (ix+$10),$00
-aa62 c9        ret     
-aa63 40        ld      b,b
-aa64 42        ld      b,d
-aa65 44        ld      b,h
-aa66 46        ld      b,(hl)
-aa67 ff        rst     $38
-aa68 ff        rst     $38
-aa69 ff        rst     $38
-aa6a ddcb18ee  set     5,(ix+$18)
-aa6e dd360d05  ld      (ix+$0d),$05
-aa72 dd360e14  ld      (ix+$0e),$14
-aa76 ddcb1846  bit     0,(ix+$18)
-aa7a 2024      jr      nz,_aaa0
-aa7c dd6e02    ld      l,(ix+$02)
-aa7f dd6603    ld      h,(ix+$03)
-aa82 110f00    ld      de,$000f
-aa85 19        add     hl,de
-aa86 dd7502    ld      (ix+$02),l
-aa89 dd7403    ld      (ix+$03),h
-aa8c dd6e05    ld      l,(ix+$05)
-aa8f dd6606    ld      h,(ix+$06)
-aa92 11faff    ld      de,$fffa
-aa95 19        add     hl,de
-aa96 dd7505    ld      (ix+$05),l
-aa99 dd7406    ld      (ix+$06),h
-aa9c ddcb18c6  set     0,(ix+$18)
-_aaa0:
-aaa0 dd6e02    ld      l,(ix+$02)
-aaa3 dd6603    ld      h,(ix+$03)
-aaa6 220ed2    ld      ($d20e),hl
-aaa9 dd6e05    ld      l,(ix+$05)
-aaac dd6606    ld      h,(ix+$06)
-aaaf 2210d2    ld      ($d210),hl
-aab2 dd5e11    ld      e,(ix+$11)
-aab5 1600      ld      d,$00
-aab7 2101ab    ld      hl,$ab01
-aaba 19        add     hl,de
-aabb 5e        ld      e,(hl)
-aabc 23        inc     hl
-aabd 56        ld      d,(hl)
-aabe 0602      ld      b,$02
-_aac0:
-aac0 c5        push    bc
-aac1 1a        ld      a,(de)
-aac2 6f        ld      l,a
-aac3 2600      ld      h,$00
-aac5 2212d2    ld      ($d212),hl
-aac8 13        inc     de
-aac9 1a        ld      a,(de)
-aaca 6f        ld      l,a
-aacb 2214d2    ld      ($d214),hl
-aace 13        inc     de
-aacf 1a        ld      a,(de)
-aad0 13        inc     de
-aad1 a7        and     a
-aad2 fadaaa    jp      m,_aada
-aad5 d5        push    de
-aad6 cd8135    call    _3581
-aad9 d1        pop     de
-_aada:
-aada c1        pop     bc
-aadb 10e3      djnz    _aac0
-aadd 210202    ld      hl,$0202
-aae0 2214d2    ld      ($d214),hl
-aae3 cd5639    call    _LABEL_3956_11
-aae6 d4fd35    call    nc,_35fd
-aae9 dd360f00  ld      (ix+$0f),$00
-aaed dd361000  ld      (ix+$10),$00
-aaf1 dd7e11    ld      a,(ix+$11)
-aaf4 3c        inc     a
-aaf5 3c        inc     a
-aaf6 fe08      cp      $08
-aaf8 dd7711    ld      (ix+$11),a
-aafb d8        ret     c
-aafc dd361100  ld      (ix+$11),$00
-ab00 c9        ret     
-ab01 09        add     hl,bc
-ab02 ab        xor     e
-ab03 0f        rrca    
-ab04 ab        xor     e
-ab05 15        dec     d
-ab06 ab        xor     e
-ab07 1b        dec     de
-ab08 ab        xor     e
-ab09 00        nop     
-ab0a 00        nop     
-ab0b 1c        inc     e
-ab0c 00        nop     
-ab0d 183c      jr------$ab4b
-ab0f 00        nop     
-ab10 00        nop     
-ab11 1e00      ld      e,$00
-ab13 183e      jr------$ab53
-ab15 00        nop     
-ab16 00        nop     
-ab17 3800      jr------c,$ab19
-ab19 183a      jr------$ab55
-ab1b 00        nop     
-ab1c 08        ex      af,af'
-ab1d 1a        ld      a,(de)
-ab1e 00        nop     
-ab1f 00        nop     
-ab20 ff        rst     $38
-ab21 dd360d0c  ld      (ix+$0d),$0c
-ab25 dd360e10  ld      (ix+$0e),$10
-ab29 dd7e11    ld      a,(ix+$11)
-ab2c fe64      cp      $64
-ab2e 302a      jr      nc,_ab5a
-ab30 dd6e02    ld      l,(ix+$02)
-ab33 dd6603    ld      h,(ix+$03)
-ab36 11c8ff    ld      de,$ffc8
-ab39 19        add     hl,de
-ab3a eb        ex      de,hl
-ab3b 2afed3    ld      hl,($d3fe)
-ab3e a7        and     a
-ab3f ed52      sbc     hl,de
-ab41 3817      jr      c,_ab5a
-ab43 dd6e02    ld      l,(ix+$02)
-ab46 dd6603    ld      h,(ix+$03)
-ab49 112c00    ld      de,$002c
-ab4c 19        add     hl,de
-ab4d eb        ex      de,hl
-ab4e 2afed3    ld      hl,($d3fe)
-ab51 a7        and     a
-ab52 ed52      sbc     hl,de
-ab54 3004      jr      nc,_ab5a
-ab56 dd361164  ld      (ix+$11),$64
-_ab5a:
-ab5a dd7e11    ld      a,(ix+$11)
-ab5d fe1e      cp      $1e
-ab5f 3018      jr      nc,_ab79
-ab61 dd3607f8  ld      (ix+$07),$f8
-ab65 dd3608ff  ld      (ix+$08),$ff
-ab69 dd3609ff  ld      (ix+$09),$ff
-ab6d 110bad    ld      de,$ad0b
-ab70 01f1ac    ld      bc,$acf1
-ab73 cd417c    call    _7c41
-ab76 c36aac    jp      _ac6a
-_ab79:
-ab79 dd7e11    ld      a,(ix+$11)
-ab7c fe64      cp      $64
-ab7e da1eac    jp      c,_ac1e
-ab81 dd360700  ld      (ix+$07),$00
-ab85 dd360800  ld      (ix+$08),$00
-ab89 dd360900  ld      (ix+$09),$00
-ab8d fe66      cp      $66
-ab8f 300c      jr      nc,_ab9d
-ab91 110bad    ld      de,$ad0b
-ab94 0101ad    ld      bc,$ad01
-ab97 cd417c    call    _7c41
-ab9a c36aac    jp      _ac6a
-_ab9d:
-ab9d dd360f53  ld      (ix+$0f),$53
-aba1 dd3610ad  ld      (ix+$10),$ad
-aba5 fe67      cp      $67
-aba7 c26aac    jp      nz,_ac6a
-abaa 21feff    ld      hl,$fffe
-abad 2212d2    ld      ($d212),hl
-abb0 21fcff    ld      hl,$fffc
-abb3 2214d2    ld      ($d214),hl
-abb6 cd7b7c    call    _7c7b
-abb9 da76ac    jp      c,_ac76
-abbc 110000    ld      de,$0000
-abbf 4b        ld      c,e
-abc0 42        ld      b,d
-abc1 cd96ac    call    _ac96
-abc4 210300    ld      hl,$0003
-abc7 2212d2    ld      ($d212),hl
-abca 21fcff    ld      hl,$fffc
-abcd 2214d2    ld      ($d214),hl
-abd0 cd7b7c    call    _7c7b
-abd3 da76ac    jp      c,_ac76
-abd6 110800    ld      de,$0008
-abd9 010000    ld      bc,$0000
-abdc cd96ac    call    _ac96
-abdf 21feff    ld      hl,$fffe
-abe2 2212d2    ld      ($d212),hl
-abe5 21feff    ld      hl,$fffe
-abe8 2214d2    ld      ($d214),hl
-abeb cd7b7c    call    _7c7b
-abee da76ac    jp      c,_ac76
-abf1 110000    ld      de,$0000
-abf4 010800    ld      bc,$0008
-abf7 cd96ac    call    _ac96
-abfa 210300    ld      hl,$0003
-abfd 2212d2    ld      ($d212),hl
-ac00 21feff    ld      hl,$fffe
-ac03 2214d2    ld      ($d214),hl
-ac06 cd7b7c    call    _7c7b
-ac09 da76ac    jp      c,_ac76
-ac0c 110800    ld      de,$0008
-ac0f 010800    ld      bc,$0008
-ac12 cd96ac    call    _ac96
-ac15 dd3600ff  ld      (ix+$00),$ff
-ac19 3e1b      ld      a,$1b
-ac1b ef        rst     $28
-ac1c 1858      jr      _ac76
-_ac1e:
-ac1e fe23      cp      $23
-ac20 3015      jr      nc,_ac37
-ac22 af        xor     a
-ac23 dd7707    ld      (ix+$07),a
-ac26 dd7708    ld      (ix+$08),a
-ac29 dd7709    ld      (ix+$09),a
-ac2c 110bad    ld      de,$ad0b
-ac2f 01f6ac    ld      bc,$acf6
-ac32 cd417c    call    _7c41
-ac35 1833      jr      _ac6a
-_ac37:
-ac37 dd7e11    ld      a,(ix+$11)
-ac3a fe41      cp      $41
-ac3c 3017      jr      nc,_ac55
-ac3e dd360708  ld      (ix+$07),$08
-ac42 dd360800  ld      (ix+$08),$00
-ac46 dd360900  ld      (ix+$09),$00
-ac4a 110bad    ld      de,$ad0b
-ac4d 01f9ac    ld      bc,$acf9
-ac50 cd417c    call    _7c41
-ac53 1815      jr      _ac6a
-_ac55:
-ac55 dd360700  ld      (ix+$07),$00
-ac59 dd360800  ld      (ix+$08),$00
-ac5d dd360900  ld      (ix+$09),$00
-ac61 110bad    ld      de,$ad0b
-ac64 01feac    ld      bc,$acfe
-ac67 cd417c    call    _7c41
-_ac6a:
-ac6a dd360a80  ld      (ix+$0a),$80
-ac6e dd360b00  ld      (ix+$0b),$00
-ac72 dd360c00  ld      (ix+$0c),$00
-_ac76:
-ac76 210202    ld      hl,$0202
-ac79 2214d2    ld      ($d214),hl
-ac7c cd5639    call    _LABEL_3956_11
-ac7f d4fd35    call    nc,_35fd
-ac82 3a23d2    ld      a,($d223)
-ac85 e63f      and     $3f
-ac87 c0        ret     nz
-ac88 dd3411    inc     (ix+$11)
-ac8b dd7e11    ld      a,(ix+$11)
-ac8e fe46      cp      $46
-ac90 c0        ret     nz
-ac91 dd361100  ld      (ix+$11),$00
-ac95 c9        ret     
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      hl,$0280
+	xor     a
+	sbc     hl,de
+	ld      (ix+$04),a
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      hl,$02af
+	and     a
+	sbc     hl,de
+	ld      bc,($d25d)
+	and     a
+	sbc     hl,bc
+	ex      de,hl
+	ld      hl,$05a0
+	ld      bc,($d25a)
+	and     a
+	sbc     hl,bc
+	ld      bc,_a9c0
+	call    _LABEL_350F_95
+	ld      a,(ix+$11)
+	and     $1f
+	cp      $0f
+	ret     nz
+	ld      a,$19
+	rst     $28
+	ret     
 
-.ASM
-.ORGA $AC96
+_a9b7:
+.db $03, $08, $04, $07, $05, $08, $04, $07, $FF
+_a9c0:
+.db $74, $76, $76, $78, $FF, $FF, $FF
+
+;____________________________________________________________________________[$A9C7]___
+;OBJECT: meta - clouds (Sky Base)
+
+_a9c7:
+	set     5,(ix+$18)
+	ld      a,(iy+$0a)
+	ld      hl,($d23c)
+	push    af
+	push    hl
+	ld      a,($d2de)
+	cp      $24
+	jr      nc,_aa1c
+	ld      e,a
+	ld      d,$00
+	ld      hl,$d000
+	add     hl,de
+	ld      ($d23c),hl
+	ld      a,($d2a3)
+	ld      c,a
+	ld      de,($d2a1)
+	ld      l,(ix+$04)
+	ld      h,(ix+$05)
+	ld      a,(ix+$06)
+	add     hl,de
+	adc     a,c
+	ld      l,h
+	ld      h,a
+	ld      bc,($d25d)
+	and     a
+	sbc     hl,bc
+	ex      de,hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      bc,($d25a)
+	and     a
+	sbc     hl,bc
+	ld      bc,_aa63
+	call    _LABEL_350F_95
+	ld      a,($d2de)
+	add     a,$0c
+	ld      ($d2de),a
+_aa1c:
+	pop     hl
+	pop     af
+	ld      ($d23c),hl
+	ld      (iy+$0a),a
+	ld      hl,($d25a)
+	ld      de,$ffe0
+	add     hl,de
+	ex      de,hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	and     a
+	sbc     hl,de
+	jr      nc,_aa4e
+	call    _LABEL_625_57
+	ld      b,$00
+	add     a,a
+	ld      c,a
+	rl      b
+	ld      hl,($d25a)
+	ld      de,$01b4
+	add     hl,de
+	add     hl,bc
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+_aa4e:
+	ld      (ix+$07),$00
+	ld      (ix+$08),$fd
+	ld      (ix+$09),$ff
+	ld      (ix+$0f),$00
+	ld      (ix+$10),$00
+	ret     
+
+_aa63:
+.db $40, $42, $44, $46, $FF, $FF, $FF
+
+;____________________________________________________________________________[$AA6A]___
+;OBJECT: propeller (Sky Base)
+
+_aa6a:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$05
+	ld      (ix+$0e),$14
+	bit     0,(ix+$18)
+	jr      nz,_aaa0
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$000f
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$fffa
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	set     0,(ix+$18)
+_aaa0:
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      hl,_ab01
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	ld      b,$02
+_aac0:
+	push    bc
+	ld      a,(de)
+	ld      l,a
+	ld      h,$00
+	ld      ($d212),hl
+	inc     de
+	ld      a,(de)
+	ld      l,a
+	ld      ($d214),hl
+	inc     de
+	ld      a,(de)
+	inc     de
+	and     a
+	jp      m,_aada
+	push    de
+	call    _3581
+	pop     de
+_aada:
+	pop     bc
+	djnz    _aac0
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      (ix+$0f),$00
+	ld      (ix+$10),$00
+	ld      a,(ix+$11)
+	inc     a
+	inc     a
+	cp      $08
+	ld      (ix+$11),a
+	ret     c
+	ld      (ix+$11),$00
+	ret     
+
+_ab01:
+.db $09, $AB, $0F, $AB, $15, $AB, $1B, $AB, $00, $00, $1C, $00, $18, $3C, $00, $00
+.db $1E, $00, $18, $3E, $00, $00, $38, $00, $18, $3A, $00, $08, $1A, $00, $00, $FF
+
+;____________________________________________________________________________[$AB21]___
+;OBJECT: badnick - bomb (Sky Base)
+
+_ab21:
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$10
+	ld      a,(ix+$11)
+	cp      $64
+	jr      nc,_ab5a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$ffc8
+	add     hl,de
+	ex      de,hl
+	ld      hl,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      c,_ab5a
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$002c
+	add     hl,de
+	ex      de,hl
+	ld      hl,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      nc,_ab5a
+	ld      (ix+$11),$64
+_ab5a:
+	ld      a,(ix+$11)
+	cp      $1e
+	jr      nc,_ab79
+	ld      (ix+$07),$f8
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      de,_ad0b
+	ld      bc,_acf1
+	call    _7c41
+	jp      _ac6a
+_ab79:
+	ld      a,(ix+$11)
+	cp      $64
+	jp      c,_ac1e
+	ld      (ix+$07),$00
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	cp      $66
+	jr      nc,_ab9d
+	ld      de,_ad0b
+	ld      bc,_ad01
+	call    _7c41
+	jp      _ac6a
+_ab9d:
+	ld      (ix+$0f),<_ad53
+	ld      (ix+$10),>_ad53
+	cp      $67
+	jp      nz,_ac6a
+	ld      hl,$fffe
+	ld      ($d212),hl
+	ld      hl,$fffc
+	ld      ($d214),hl
+	call    _7c7b
+	jp      c,_ac76
+	ld      de,$0000
+	ld      c,e
+	ld      b,d
+	call    _ac96
+	ld      hl,$0003
+	ld      ($d212),hl
+	ld      hl,$fffc
+	ld      ($d214),hl
+	call    _7c7b
+	jp      c,_ac76
+	ld      de,$0008
+	ld      bc,$0000
+	call    _ac96
+	ld      hl,$fffe
+	ld      ($d212),hl
+	ld      hl,$fffe
+	ld      ($d214),hl
+	call    _7c7b
+	jp      c,_ac76
+	ld      de,$0000
+	ld      bc,$0008
+	call    _ac96
+	ld      hl,$0003
+	ld      ($d212),hl
+	ld      hl,$fffe
+	ld      ($d214),hl
+	call    _7c7b
+	jp      c,_ac76
+	ld      de,$0008
+	ld      bc,$0008
+	call    _ac96
+	ld      (ix+$00),$ff
+	ld      a,$1b
+	rst     $28
+	jr      _ac76
+_ac1e:
+	cp      $23
+	jr      nc,_ac37
+	xor     a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      de,_ad0b
+	ld      bc,_acf6
+	call    _7c41
+	jr      _ac6a
+_ac37:
+	ld      a,(ix+$11)
+	cp      $41
+	jr      nc,_ac55
+	ld      (ix+$07),$08
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      de,_ad0b
+	ld      bc,_acf9
+	call    _7c41
+	jr      _ac6a
+_ac55:
+	ld      (ix+$07),$00
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      de,_ad0b
+	ld      bc,_acfe
+	call    _7c41
+_ac6a:
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$00
+	ld      (ix+$0c),$00
+_ac76:
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      a,($d223)
+	and     $3f
+	ret     nz
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $46
+	ret     nz
+	ld      (ix+$11),$00
+	ret     
+
 _ac96:
 	push    ix
 	push    hl
@@ -19262,2576 +18004,1900 @@ _ac96:
 	ld      (ix+$0c),h
 	pop     ix
 	ret    
-	
-.ENDASM
-acf1 00        nop     
-acf2 2001      jr------nz,$acf5
-acf4 20ff      jr------nz,$acf5
-acf6 0120ff    ld      bc,$ff20
-acf9 02        ld      (bc),a
-acfa 2003      jr------nz,$acff
-acfc 20ff      jr------nz,$acfd
-acfe 03        inc     bc
-acff 20ff      jr------nz,$ad00
-ad01 010204    ld      bc,$0402
-ad04 02        ld      (bc),a
-ad05 ff        rst     $38
-ad06 03        inc     bc
-ad07 02        ld      (bc),a
-ad08 05        dec     b
-ad09 02        ld      (bc),a
-ad0a ff        rst     $38
-ad0b 0a        ld      a,(bc)
-ad0c 0c        inc     c
-ad0d ff        rst     $38
-ad0e ff        rst     $38
-ad0f ff        rst     $38
-ad10 ff        rst     $38
-ad11 ff        rst     $38
-ad12 ff        rst     $38
-ad13 ff        rst     $38
-ad14 ff        rst     $38
-ad15 ff        rst     $38
-ad16 ff        rst     $38
-ad17 ff        rst     $38
-ad18 ff        rst     $38
-ad19 ff        rst     $38
-ad1a ff        rst     $38
-ad1b ff        rst     $38
-ad1c ff        rst     $38
-ad1d 0e10      ld      c,$10
-ad1f ff        rst     $38
-ad20 ff        rst     $38
-ad21 ff        rst     $38
-ad22 ff        rst     $38
-ad23 ff        rst     $38
-ad24 ff        rst     $38
-ad25 ff        rst     $38
-ad26 ff        rst     $38
-ad27 ff        rst     $38
-ad28 ff        rst     $38
-ad29 ff        rst     $38
-ad2a ff        rst     $38
-ad2b ff        rst     $38
-ad2c ff        rst     $38
-ad2d ff        rst     $38
-ad2e ff        rst     $38
-ad2f 2a2cff    ld      hl,($ff2c)
-ad32 ff        rst     $38
-ad33 ff        rst     $38
-ad34 ff        rst     $38
-ad35 ff        rst     $38
-ad36 ff        rst     $38
-ad37 ff        rst     $38
-ad38 ff        rst     $38
-ad39 ff        rst     $38
-ad3a ff        rst     $38
-ad3b ff        rst     $38
-ad3c ff        rst     $38
-ad3d ff        rst     $38
-ad3e ff        rst     $38
-ad3f ff        rst     $38
-ad40 ff        rst     $38
-ad41 2e30      ld      l,$30
-ad43 ff        rst     $38
-ad44 ff        rst     $38
-ad45 ff        rst     $38
-ad46 ff        rst     $38
-ad47 ff        rst     $38
-ad48 ff        rst     $38
-ad49 ff        rst     $38
-ad4a ff        rst     $38
-ad4b ff        rst     $38
-ad4c ff        rst     $38
-ad4d ff        rst     $38
-ad4e ff        rst     $38
-ad4f ff        rst     $38
-ad50 ff        rst     $38
-ad51 ff        rst     $38
-ad52 ff        rst     $38
-ad53 12        ld      (de),a
-ad54 14        inc     d
-ad55 ff        rst     $38
-ad56 ff        rst     $38
-ad57 ff        rst     $38
-ad58 ff        rst     $38
-ad59 ff        rst     $38
-ad5a ff        rst     $38
-ad5b ff        rst     $38
-ad5c ff        rst     $38
-ad5d ff        rst     $38
-ad5e ff        rst     $38
-ad5f ff        rst     $38
-ad60 ff        rst     $38
-ad61 ff        rst     $38
-ad62 ff        rst     $38
-ad63 ff        rst     $38
-ad64 ff        rst     $38
-ad65 3234ff    ld      ($ff34),a
-ad68 ff        rst     $38
-ad69 ff        rst     $38
-ad6a ff        rst     $38
-ad6b ff        rst     $38
 
-ad6c ddcb18ee  set     5,(ix+$18)
-ad70 ddcb1846  bit     0,(ix+$18)
-ad74 201a      jr      nz,_ad90
-ad76 dd6e02    ld      l,(ix+$02)
-ad79 dd6603    ld      h,(ix+$03)
-ad7c 11fcff    ld      de,$fffc
-ad7f 19        add     hl,de
-ad80 dd7502    ld      (ix+$02),l
-ad83 dd7403    ld      (ix+$03),h
-ad86 cd2506    call    _LABEL_625_57
-ad89 dd7711    ld      (ix+$11),a
-ad8c ddcb18c6  set     0,(ix+$18
+_acf1:
+.db $00, $20, $01, $20, $FF
+_acf6:
+.db $01, $20, $FF
+_acf9:
+.db $02, $20, $03, $20, $FF
+_acfe:
+.db $03, $20, $FF
+_ad01:
+.db $01, $02, $04, $02, $FF, $03, $02, $05, $02, $FF
+_ad0b:
+.db $0A, $0C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $0E, $10, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $2E, $30, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, 
+_ad53:
+.db $12, $14, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$AD6C]___
+;OBJECT: canon (Sky Base)
+
+_ad6c:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_ad90
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$fffc
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	call    _LABEL_625_57
+	ld      (ix+$11),a
+	set     0,(ix+$18)
 _ad90:
-ad90 dd7e11    ld      a,(ix+$11)
-ad93 fe64      cp      $64
-ad95 2046      jr      nz,_addd
-ad97 cd7b7c    call    _7c7b
-ad9a 3841      jr      c,_addd
-ad9c dde5      push    ix
-ad9e dd5e02    ld      e,(ix+$02)
-ada1 dd5603    ld      d,(ix+$03)
-ada4 dd4e05    ld      c,(ix+$05)
-ada7 dd4606    ld      b,(ix+$06)
-adaa e5        push    hl
-adab dde1      pop     ix
-adad af        xor     a
-adae dd360034  ld      (ix+$00),$34
-adb2 dd7701    ld      (ix+$01),a
-adb5 210400    ld      hl,$0004
-adb8 19        add     hl,de
-adb9 dd7502    ld      (ix+$02),l
-adbc dd7403    ld      (ix+$03),h
-adbf dd7704    ld      (ix+$04),a
-adc2 211000    ld      hl,$0010
-adc5 09        add     hl,bc
-adc6 dd7505    ld      (ix+$05),l
-adc9 dd7406    ld      (ix+$06),h
-adcc dde1      pop     ix
-adce 3e1c      ld      a,$1c
-add0 ef        rst     $28
-add1 dd361218  ld      (ix+$12),$18
-add5 dd361600  ld      (ix+$16),$00
-add9 dd361700  ld      (ix+$17),$00
+	ld      a,(ix+$11)
+	cp      $64
+	jr      nz,_addd
+	call    _7c7b
+	jr      c,_addd
+	push    ix
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$34
+	ld      (ix+$01),a
+	ld      hl,$0004
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$04),a
+	ld      hl,$0010
+	add     hl,bc
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	pop     ix
+	ld      a,$1c
+	rst     $28
+	ld      (ix+$12),$18
+	ld      (ix+$16),$00
+	ld      (ix+$17),$00
 _addd:
-addd dd7e12    ld      a,(ix+$12)
-ade0 a7        and     a
-ade1 2810      jr      z,_adf3
-ade3 1104ae    ld      de,$ae04
-ade6 01fdad    ld      bc,$adfd
-ade9 cd417c    call    _7c41
-adec dd3512    dec     (ix+$12)
-adef dd3411    inc     (ix+$11)
-adf2 c9        ret     
+	ld      a,(ix+$12)
+	and     a
+	jr      z,_adf3
+	ld      de,_ae04
+	ld      bc,_adfd
+	call    _7c41
+	dec     (ix+$12)
+	inc     (ix+$11)
+	ret     
 _adf3:
-adf3 dd770f    ld      (ix+$0f),a
-adf6 dd7710    ld      (ix+$10),a
-adf9 dd3411    inc     (ix+$11)
-adfc c9        ret     
-adfd 00        nop     
-adfe 08        ex      af,af'
-adff 010802    ld      bc,$0208
-ae02 08        ex      af,af'
-ae03 ff        rst     $38
-ae04 feff      cp      $ff
-ae06 ff        rst     $38
-ae07 ff        rst     $38
-ae08 ff        rst     $38
-ae09 ff        rst     $38
-ae0a 74        ld      (hl),h
-ae0b 76        halt    
-ae0c ff        rst     $38
-ae0d ff        rst     $38
-ae0e ff        rst     $38
-ae0f ff        rst     $38
-ae10 ff        rst     $38
-ae11 ff        rst     $38
-ae12 ff        rst     $38
-ae13 ff        rst     $38
-ae14 ff        rst     $38
-ae15 ff        rst     $38
-ae16 feff      cp      $ff
-ae18 ff        rst     $38
-ae19 ff        rst     $38
-ae1a ff        rst     $38
-ae1b ff        rst     $38
-ae1c 78        ld      a,b
-ae1d 7a        ld      a,d
-ae1e ff        rst     $38
-ae1f ff        rst     $38
-ae20 ff        rst     $38
-ae21 ff        rst     $38
-ae22 ff        rst     $38
-ae23 ff        rst     $38
-ae24 ff        rst     $38
-ae25 ff        rst     $38
-ae26 ff        rst     $38
-ae27 ff        rst     $38
-ae28 feff      cp      $ff
-ae2a ff        rst     $38
-ae2b ff        rst     $38
-ae2c ff        rst     $38
-ae2d ff        rst     $38
-ae2e 7c        ld      a,h
-ae2f 7e        ld      a,(hl)
-ae30 ff        rst     $38
-ae31 ff        rst     $38
-ae32 ff        rst     $38
-ae33 ff        rst     $38
-ae34 ff        rst     $38
-ae35 ddcb18ee  set     5,(ix+$18)
-ae39 dd360d0c  ld      (ix+$0d),$0c
-ae3d dd360e0c  ld      (ix+$0e),$0c
-ae41 2a5ad2    ld      hl,($d25a)
-ae44 111001    ld      de,$0110
-ae47 19        add     hl,de
-ae48 dd5e02    ld      e,(ix+$02)
-ae4b dd5603    ld      d,(ix+$03)
-ae4e a7        and     a
-ae4f ed52      sbc     hl,de
-ae51 3004      jr      nc,_ae57
-ae53 dd3600ff  ld      (ix+$00),$ff
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	inc     (ix+$11)
+	ret     
+
+_adfd:
+.db $00, $08, $01, $08, $02, $08, $FF
+_ae04:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $74, $76, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $78, $7A, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $7C, $7E, $FF, $FF, $FF, $FF
+.db $FF
+
+;____________________________________________________________________________[$AE35]___
+;OBJECT: UNKNOWN
+
+_ae35:
+	set     5,(ix+$18)
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$0c
+	ld      hl,($d25a)
+	ld      de,$0110
+	add     hl,de
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	and     a
+	sbc     hl,de
+	jr      nc,_ae57
+	ld      (ix+$00),$ff
 _ae57:
-ae57 210202    ld      hl,$0202
-ae5a 2214d2    ld      ($d214),hl
-ae5d cd5639    call    _LABEL_3956_11
-ae60 d4fd35    call    nc,_35fd
-ae63 af        xor     a
-ae64 dd360780  ld      (ix+$07),$80
-ae68 dd360802  ld      (ix+$08),$02
-ae6c dd7709    ld      (ix+$09),a
-ae6f dd770a    ld      (ix+$0a),a
-ae72 dd770b    ld      (ix+$0b),a
-ae75 dd770c    ld      (ix+$0c),a
-ae78 dd360f81  ld      (ix+$0f),$81
-ae7c dd3610ae  ld      (ix+$10),$ae
-ae80 c9        ret     
-ae81 02        ld      (bc),a
-ae82 04        inc     b
-ae83 ff        rst     $38
-ae84 ff        rst     $38
-ae85 ff        rst     $38
-ae86 ff        rst     $38
-ae87 ff        rst     $38
-ae88 ddcb18ee  set     5,(ix+$18)
-ae8c ddcb1846  bit     0,(ix+$18)
-ae90 2014      jr      nz,_aea6
-ae92 dd361100  ld      (ix+$11),$00
-ae96 dd36122a  ld      (ix+$12),$2a
-ae9a dd361352  ld      (ix+$13),$52
-ae9e dd36147c  ld      (ix+$14),$7c
-aea2 ddcb18c6  set     0,(ix+$18)
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	xor     a
+	ld      (ix+$07),$80
+	ld      (ix+$08),$02
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	ld      (ix+$0f),<_ae81
+	ld      (ix+$10),>_ae81
+	ret     
+
+_ae81:
+.db $02, $04, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$AE88]___
+;OBJECT: badnick - Unidos (Sky Base)
+
+_ae88:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_aea6
+	ld      (ix+$11),$00
+	ld      (ix+$12),$2a
+	ld      (ix+$13),$52
+	ld      (ix+$14),$7c
+	set     0,(ix+$18)
 _aea6:
-aea6 dd6e02    ld      l,(ix+$02)
-aea9 dd6603    ld      h,(ix+$03)
-aeac ed5bfed3  ld      de,($d3fe)
-aeb0 a7        and     a
-aeb1 ed52      sbc     hl,de
-aeb3 3823      jr      c,_aed8
-aeb5 dd3607f8  ld      (ix+$07),$f8
-aeb9 dd3608ff  ld      (ix+$08),$ff
-aebd dd3609ff  ld      (ix+$09),$ff
-aec1 dd360fd5  ld      (ix+$0f),$d5
-aec5 dd3610b0  ld      (ix+$10),$b0
-aec9 2180ff    ld      hl,$ff80
-aecc 2216d2    ld      ($d216),hl
-aecf cd98af    call    _af98
-aed2 dd361601  ld      (ix+$16),$01
-aed6 1821      jr      _aef9
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      c,_aed8
+	ld      (ix+$07),$f8
+	ld      (ix+$08),$ff
+	ld      (ix+$09),$ff
+	ld      (ix+$0f),<_b0d5
+	ld      (ix+$10),>_b0d5
+	ld      hl,$ff80
+	ld      ($d216),hl
+	call    _af98
+	ld      (ix+$16),$01
+	jr      _aef9
 _aed8:
-aed8 dd360708  ld      (ix+$07),$08
-aedc dd360800  ld      (ix+$08),$00
-aee0 dd360900  ld      (ix+$09),$00
-aee4 dd360fe7  ld      (ix+$0f),$e7
-aee8 dd3610b0  ld      (ix+$10),$b0
-aeec 218000    ld      hl,$0080
-aeef 2216d2    ld      ($d216),hl
-aef2 cd98af    call    _af98
-aef5 dd3616ff  ld      (ix+$16),$ff
+	ld      (ix+$07),$08
+	ld      (ix+$08),$00
+	ld      (ix+$09),$00
+	ld      (ix+$0f),<_b0e7
+	ld      (ix+$10),>_b0e7
+	ld      hl,$0080
+	ld      ($d216),hl
+	call    _af98
+	ld      (ix+$16),$ff
 _aef9:
-aef9 dd360d1c  ld      (ix+$0d),$1c
-aefd dd360e1c  ld      (ix+$0e),$1c
-af01 211212    ld      hl,$1212
-af04 2214d2    ld      ($d214),hl
-af07 cd5639    call    _LABEL_3956_11
-af0a 211010    ld      hl,$1010
-af0d 220ed2    ld      ($d20e),hl
-af10 d4e535    call    nc,_35e5
-af13 dd6e02    ld      l,(ix+$02)
-af16 dd6603    ld      h,(ix+$03)
-af19 220ed2    ld      ($d20e),hl
-af1c dd6e05    ld      l,(ix+$05)
-af1f dd6606    ld      h,(ix+$06)
-af22 2210d2    ld      ($d210),hl
-af25 dde5      push    ix
-af27 e1        pop     hl
-af28 111100    ld      de,$0011
-af2b 19        add     hl,de
-af2c 0604      ld      b,$04
+	ld      (ix+$0d),$1c
+	ld      (ix+$0e),$1c
+	ld      hl,$1212
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ld      hl,$1010
+	ld      ($d20e),hl
+	call    nc,_35e5
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	push    ix
+	pop     hl
+	ld      de,$0011
+	add     hl,de
+	ld      b,$04
 _af2e:
-af2e c5        push    bc
-af2f e5        push    hl
-af30 7e        ld      a,(hl)
-af31 fefe      cp      $fe
-af33 2838      jr      z,_af6d
-af35 e6fe      and     $fe
-af37 5f        ld      e,a
-af38 1600      ld      d,$00
-af3a 2131b0    ld      hl,$b031
-af3d 19        add     hl,de
-af3e e5        push    hl
-af3f 5e        ld      e,(hl)
-af40 ed5312d2  ld      ($d212),de
-af44 23        inc     hl
-af45 5e        ld      e,(hl)
-af46 ed5314d2  ld      ($d214),de
-af4a 3e24      ld      a,$24
-af4c cd8135    call    _3581
-af4f e1        pop     hl
-af50 7e        ld      a,(hl)
-af51 3c        inc     a
-af52 3c        inc     a
-af53 3214d2    ld      ($d214),a
-af56 c604      add     a,$04
-af58 dd770d    ld      (ix+$0d),a
-af5b 23        inc     hl
-af5c 7e        ld      a,(hl)
-af5d 3c        inc     a
-af5e 3c        inc     a
-af5f 3215d2    ld      ($d215),a
-af62 c604      add     a,$04
-af64 dd770e    ld      (ix+$0e),a
-af67 cd5639    call    _LABEL_3956_11
-af6a d4fd35    call    nc,_35fd
+	push    bc
+	push    hl
+	ld      a,(hl)
+	cp      $fe
+	jr      z,_af6d
+	and     $fe
+	ld      e,a
+	ld      d,$00
+	ld      hl,_b031
+	add     hl,de
+	push    hl
+	ld      e,(hl)
+	ld      ($d212),de
+	inc     hl
+	ld      e,(hl)
+	ld      ($d214),de
+	ld      a,$24
+	call    _3581
+	pop     hl
+	ld      a,(hl)
+	inc     a
+	inc     a
+	ld      ($d214),a
+	add     a,$04
+	ld      (ix+$0d),a
+	inc     hl
+	ld      a,(hl)
+	inc     a
+	inc     a
+	ld      ($d215),a
+	add     a,$04
+	ld      (ix+$0e),a
+	call    _LABEL_3956_11
+	call    nc,_35fd
 _af6d:
-af6d e1        pop     hl
-af6e c1        pop     bc
-af6f 7e        ld      a,(hl)
-af70 fefe      cp      $fe
-af72 2810      jr      z,_af84
-af74 dd8616    add     a,(ix+$16)
-af77 feff      cp      $ff
-af79 2004      jr      nz,_af7f
-af7b 3ea3      ld      a,$a3
-af7d 1805      jr      _af84
+	pop     hl
+	pop     bc
+	ld      a,(hl)
+	cp      $fe
+	jr      z,_af84
+	add     a,(ix+$16)
+	cp      $ff
+	jr      nz,_af7f
+	ld      a,$a3
+	jr      _af84
 _af7f:
-af7f fea4      cp      $a4
-af81 2001      jr      nz,_af84
-af83 af        xor     a
+	cp      $a4
+	jr      nz,_af84
+	xor     a
 _af84:
-af84 77        ld      (hl),a
-af85 23        inc     hl
-af86 10a6      djnz    _af2e
-af88 3a23d2    ld      a,($d223)
-af8b e607      and     $07
-af8d c8        ret     z
-af8e dd7e15    ld      a,(ix+$15)
-af91 fec8      cp      $c8
-af93 d0        ret     nc
-af94 dd3415    inc     (ix+$15)
-af97 c9        ret     
+	ld      (hl),a
+	inc     hl
+	djnz    _af2e
+	ld      a,($d223)
+	and     $07
+	ret     z
+	ld      a,(ix+$15)
+	cp      $c8
+	ret     nc
+	inc     (ix+$15)
+	ret     
 
 _af98:
-af98 dd7e15    ld      a,(ix+$15)
-af9b fec8      cp      $c8
-af9d c0        ret     nz
-af9e 3ad4d2    ld      a,(S1_LEVEL_SOLIDITY)
-afa1 fe03      cp      $03
-afa3 c0        ret     nz
-afa4 dd6e05    ld      l,(ix+$05)
-afa7 dd6606    ld      h,(ix+$06)
-afaa 11d0ff    ld      de,$ffd0
-afad 19        add     hl,de
-afae ed5b01d4  ld      de,($d401)
-afb2 a7        and     a
-afb3 ed52      sbc     hl,de
-afb5 d0        ret     nc
-afb6 dd6e05    ld      l,(ix+$05)
-afb9 dd6606    ld      h,(ix+$06)
-afbc 012c00    ld      bc,$002c
-afbf 09        add     hl,bc
-afc0 a7        and     a
-afc1 ed52      sbc     hl,de
-afc3 d8        ret     c
-afc4 dde5      push    ix
-afc6 e1        pop     hl
-afc7 111100    ld      de,$0011
-afca 19        add     hl,de
-afcb 0604      ld      b,$04
+	ld      a,(ix+$15)
+	cp      $c8
+	ret     nz
+	ld      a,(S1_LEVEL_SOLIDITY)
+	cp      $03
+	ret     nz
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffd0
+	add     hl,de
+	ld      de,($d401)
+	and     a
+	sbc     hl,de
+	ret     nc
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      bc,$002c
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	ret     c
+	push    ix
+	pop     hl
+	ld      de,$0011
+	add     hl,de
+	ld      b,$04
 _afcd:
-afcd c5        push    bc
-afce e5        push    hl
-afcf 7e        ld      a,(hl)
-afd0 fe4a      cp      $4a
-afd2 ccdbaf    call    z,_afdb
-afd5 e1        pop     hl
-afd6 c1        pop     bc
-afd7 23        inc     hl
-afd8 10f3      djnz    _afcd
-afda c9        ret     
+	push    bc
+	push    hl
+	ld      a,(hl)
+	cp      $4a
+	call    z,_afdb
+	pop     hl
+	pop     bc
+	inc     hl
+	djnz    _afcd
+	ret     
 
 _afdb:
-afdb 36fe      ld      (hl),$fe
-afdd cd7b7c    call    _7c7b
-afe0 d8        ret     c
-afe1 dde5      push    ix
-afe3 dd5e02    ld      e,(ix+$02)
-afe6 dd5603    ld      d,(ix+$03)
-afe9 dd4e05    ld      c,(ix+$05)
-afec dd4606    ld      b,(ix+$06)
-afef e5        push    hl
-aff0 dde1      pop     ix
-aff2 af        xor     a
-aff3 dd360036  ld      (ix+$00),$36
-aff7 dd7701    ld      (ix+$01),a
-affa 211200    ld      hl,$0012
-affd 19        add     hl,de
-affe dd7502    ld      (ix+$02),l
-b001 dd7403    ld      (ix+$03),h
-b004 dd7704    ld      (ix+$04),a
-b007 211e00    ld      hl,$001e
-b00a 09        add     hl,bc
-b00b dd7505    ld      (ix+$05),l
-b00e dd7406    ld      (ix+$06),h
-b011 2a16d2    ld      hl,($d216)
-b014 dd7507    ld      (ix+$07),l
-b017 dd7408    ld      (ix+$08),h
-b01a af        xor     a
-b01b cb7c      bit     7,h
-b01d 2802      jr      z,_b021
-b01f 3eff      ld      a,$ff
+	ld      (hl),$fe
+	call    _7c7b
+	ret     c
+	push    ix
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$36
+	ld      (ix+$01),a
+	ld      hl,$0012
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$04),a
+	ld      hl,$001e
+	add     hl,bc
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      hl,($d216)
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	xor     a
+	bit     7,h
+	jr      z,_b021
+	ld      a,$ff
 _b021:
-b021 dd7709    ld      (ix+$09),a
-b024 af        xor     a
-b025 dd770a    ld      (ix+$0a),a
-b028 dd770b    ld      (ix+$0b),a
-b02b dd770c    ld      (ix+$0c),a
-b02e dde1      pop     ix
-b030 c9        ret     
+	ld      (ix+$09),a
+	xor     a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	pop     ix
+	ret     
 
-b031 0c        inc     c
-b032 03        inc     bc
-b033 0d        dec     c
-b034 03        inc     bc
-b035 0e03      ld      c,$03
-b037 0e04      ld      c,$04
-b039 0f        rrca    
-b03a 04        inc     b
-b03b 1004      djnz----$b041
-b03d 1005      djnz----$b044
-b03f 110511    ld      de,$1105
-b042 0612      ld      b,$12
-b044 0612      ld      b,$12
-b046 07        rlca    
-b047 13        inc     de
-b048 07        rlca    
-b049 13        inc     de
-b04a 08        ex      af,af'
-b04b 13        inc     de
-b04c 09        add     hl,bc
-b04d 14        inc     d
-b04e 09        add     hl,bc
-b04f 14        inc     d
-b050 0a        ld      a,(bc)
-b051 14        inc     d
-b052 0b        dec     bc
-b053 15        dec     d
-b054 0b        dec     bc
-b055 15        dec     d
-b056 0c        inc     c
-b057 15        dec     d
-b058 0d        dec     c
-b059 15        dec     d
-b05a 0e15      ld      c,$15
-b05c 0f        rrca    
-b05d 15        dec     d
-b05e 1015      djnz----$b075
-b060 111411    ld      de,$1114
-b063 14        inc     d
-b064 12        ld      (de),a
-b065 14        inc     d
-b066 13        inc     de
-b067 13        inc     de
-b068 13        inc     de
-b069 13        inc     de
-b06a 14        inc     d
-b06b 13        inc     de
-b06c 15        dec     d
-b06d 12        ld      (de),a
-b06e 15        dec     d
-b06f 12        ld      (de),a
-b070 1611      ld      d,$11
-b072 1611      ld      d,$11
-b074 17        rla     
-b075 1017      djnz----$b08e
-b077 1018      djnz----$b091
-b079 0f        rrca    
-b07a 180e      jr------$b08a
-b07c 180e      jr------$b08c
-b07e 19        add     hl,de
-b07f 0d        dec     c
-b080 19        add     hl,de
-b081 0c        inc     c
-b082 19        add     hl,de
-b083 0b        dec     bc
-b084 19        add     hl,de
-b085 0a        ld      a,(bc)
-b086 19        add     hl,de
-b087 09        add     hl,bc
-b088 19        add     hl,de
-b089 09        add     hl,bc
-b08a 1808      jr------$b094
-b08c 1807      jr------$b095
-b08e 1807      jr------$b097
-b090 17        rla     
-b091 0617      ld      b,$17
-b093 0616      ld      b,$16
-b095 05        dec     b
-b096 1605      ld      d,$05
-b098 15        dec     d
-b099 04        inc     b
-b09a 15        dec     d
-b09b 04        inc     b
-b09c 14        inc     d
-b09d 04        inc     b
-b09e 13        inc     de
-b09f 03        inc     bc
-b0a0 13        inc     de
-b0a1 03        inc     bc
-b0a2 12        ld      (de),a
-b0a3 03        inc     bc
-
-b0a4 110211    ld      de,$1102
-b0a7 02        ld      (bc),a
-b0a8 1002      djnz    _b0ac
-b0aa 0f        rrca    
-b0ab 02        ld      (bc),a
+_b031:
+.db $0C, $03, $0D, $03, $0E, $03, $0E, $04, $0F, $04, $10, $04, $10, $05, $11, $05
+.db $11, $06, $12, $06, $12, $07, $13, $07, $13, $08, $13, $09, $14, $09, $14, $0A
+.db $14, $0B, $15, $0B, $15, $0C, $15, $0D, $15, $0E, $15, $0F, $15, $10, $15, $11
+.db $14, $11, $14, $12, $14, $13, $13, $13, $13, $14, $13, $15, $12, $15, $12, $16
+.db $11, $16, $11, $17, $10, $17, $10, $18, $0F, $18, $0E, $18, $0E, $19, $0D, $19
+.db $0C, $19, $0B, $19, $0A, $19, $09, $19, $09, $18, $08, $18, $07, $18, $07, $17
+.db $06, $17, $06, $16, $05, $16, $05, $15, $04, $15, $04, $14, $04, $13, $03, $13
+.db $03, $12, $03, $11, $02, $11, $02, $10, $02, $0F, $02
 _b0ac:
-b0ac 0e02      ld      c,$02
-b0ae 0d        dec     c
-b0af 02        ld      (bc),a
-b0b0 0c        inc     c
-b0b1 02        ld      (bc),a
-b0b2 0b        dec     bc
-b0b3 03        inc     bc
-b0b4 0b        dec     bc
-b0b5 03        inc     bc
-b0b6 0a        ld      a,(bc)
-b0b7 03        inc     bc
-b0b8 09        add     hl,bc
-b0b9 04        inc     b
-b0ba 09        add     hl,bc
-b0bb 04        inc     b
-b0bc 08        ex      af,af'
-b0bd 04        inc     b
-b0be 07        rlca    
-b0bf 05        dec     b
-b0c0 07        rlca    
-b0c1 05        dec     b
-b0c2 0606      ld      b,$06
-b0c4 0606      ld      b,$06
-b0c6 05        dec     b
-b0c7 07        rlca    
-b0c8 05        dec     b
-b0c9 07        rlca    
-b0ca 04        inc     b
-b0cb 08        ex      af,af'
-b0cc 04        inc     b
-b0cd 09        add     hl,bc
-b0ce 04        inc     b
-b0cf 09        add     hl,bc
-b0d0 03        inc     bc
-b0d1 0a        ld      a,(bc)
-b0d2 03        inc     bc
-b0d3 0b        dec     bc
-b0d4 03        inc     bc
-b0d5 feff      cp      $ff
-b0d7 ff        rst     $38
-b0d8 ff        rst     $38
-b0d9 ff        rst     $38
-b0da ff        rst     $38
-b0db fe26      cp      $26
-b0dd 28ff      jr------z,$b0de
-b0df ff        rst     $38
-b0e0 ff        rst     $38
-b0e1 ff        rst     $38
-b0e2 ff        rst     $38
-b0e3 ff        rst     $38
-b0e4 ff        rst     $38
-b0e5 ff        rst     $38
-b0e6 ff        rst     $38
-b0e7 feff      cp      $ff
-b0e9 ff        rst     $38
-b0ea ff        rst     $38
-b0eb ff        rst     $38
-b0ec ff        rst     $38
-b0ed fe20      cp      $20
-b0ef 22ffff    ld      (SMS_PAGE_2),hl
-b0f2 ff        rst     $38
-b0f3 ff        rst     $38
-b0f4 ddcb18ee  set     5,(ix+$18)
-b0f8 dd360f00  ld      (ix+$0f),$00
-b0fc dd361000  ld      (ix+$10),$00
-b100 dd360d04  ld      (ix+$0d),$04
-b104 dd360e0a  ld      (ix+$0e),$0a
-b108 210206    ld      hl,$0602
-b10b 2214d2    ld      ($d214),hl
-b10e cd5639    call    _LABEL_3956_11
-b111 d4fd35    call    nc,_35fd
-b114 dd6e02    ld      l,(ix+$02)
-b117 dd6603    ld      h,(ix+$03)
-b11a 220ed2    ld      ($d20e),hl
-b11d eb        ex      de,hl
-b11e 2a5ad2    ld      hl,($d25a)
-b121 01f0ff    ld      bc,$fff0
-b124 09        add     hl,bc
-b125 a7        and     a
-b126 ed52      sbc     hl,de
-b128 303d      jr      nc,_b167
-b12a 2a5ad2    ld      hl,($d25a)
-b12d 011001    ld      bc,$0110
-b130 09        add     hl,bc
-b131 a7        and     a
-b132 ed52      sbc     hl,de
-b134 3831      jr      c,_b167
-b136 dd6e05    ld      l,(ix+$05)
-b139 dd6606    ld      h,(ix+$06)
-b13c 2210d2    ld      ($d210),hl
-b13f eb        ex      de,hl
-b140 2a5dd2    ld      hl,($d25d)
-b143 01f0ff    ld      bc,$fff0
-b146 09        add     hl,bc
-b147 a7        and     a
-b148 ed52      sbc     hl,de
-b14a 301b      jr      nc,_b167
-b14c 2a5dd2    ld      hl,($d25d)
-b14f 01d000    ld      bc,$00d0
-b152 09        add     hl,bc
-b153 a7        and     a
-b154 ed52      sbc     hl,de
-b156 380f      jr      c,_b167
-b158 210000    ld      hl,$0000
-b15b 2212d2    ld      ($d212),hl
-b15e 2214d2    ld      ($d214),hl
-b161 3e24      ld      a,$24
-b163 cd8135    call    _3581
-b166 c9        ret     
-_b167:
-b167 dd3600ff  ld      (ix+$00),$ff
-b16b c9        ret     
-b16c ddcb18ee  set     5,(ix+$18)
-b170 ddcb1846  bit     0,(ix+$18)
-b174 200c      jr      nz,_b182
-b176 cd2506    call    _LABEL_625_57
-b179 e607      and     $07
-b17b dd7711    ld      (ix+$11),a
-b17e ddcb18c6  set     0,(ix+$18)
-_b182:
-b182 dd360f00  ld      (ix+$0f),$00
-b186 dd361000  ld      (ix+$10),$00
-b18a dd6e02    ld      l,(ix+$02)
-b18d dd6603    ld      h,(ix+$03)
-b190 220ed2    ld      ($d20e),hl
-b193 dd6e05    ld      l,(ix+$05)
-b196 dd6606    ld      h,(ix+$06)
-b199 2210d2    ld      ($d210),hl
-b19c dd7e11    ld      a,(ix+$11)
-b19f 87        add     a,a
-b1a0 87        add     a,a
-b1a1 87        add     a,a
-b1a2 5f        ld      e,a
-b1a3 1600      ld      d,$00
-b1a5 2127b2    ld      hl,$b227
-b1a8 19        add     hl,de
-b1a9 0602      ld      b,$02
-_b1ab:
-b1ab c5        push    bc
-b1ac 1600      ld      d,$00
-b1ae 5e        ld      e,(hl)
-b1af cb7b      bit     7,e
-b1b1 2802      jr      z,_b1b5
-b1b3 16ff      ld      d,$ff
-_b1b5:
-b1b5 ed5312d2  ld      ($d212),de
-b1b9 23        inc     hl
-b1ba 1600      ld      d,$00
-b1bc 5e        ld      e,(hl)
-b1bd cb7b      bit     7,e
-b1bf 2802      jr      z,_b1c3
-b1c1 16ff      ld      d,$ff
-_b1c3:
-b1c3 ed5314d2  ld      ($d214),de
-b1c7 23        inc     hl
-b1c8 7e        ld      a,(hl)
-b1c9 23        inc     hl
-b1ca 23        inc     hl
-b1cb feff      cp      $ff
-b1cd 2805      jr      z,_b1d4
-b1cf e5        push    hl
-b1d0 cd8135    call    _3581
-b1d3 e1        pop     hl
-_b1d4:
-b1d4 c1        pop     bc
-b1d5 10d4      djnz    _b1ab
-b1d7 3a23d2    ld      a,($d223)
-b1da e63f      and     $3f
-b1dc 2009      jr      nz,_b1e7
-b1de dd7e11    ld      a,(ix+$11)
-b1e1 3c        inc     a
-b1e2 e607      and     $07
-b1e4 dd7711    ld      (ix+$11),a
-_b1e7:
-b1e7 dd3412    inc     (ix+$12)
-b1ea dd7e12    ld      a,(ix+$12)
-b1ed fe1a      cp      $1a
-b1ef c0        ret     nz
-b1f0 dd361200  ld      (ix+$12),$00
-b1f4 dd7e11    ld      a,(ix+$11)
-b1f7 87        add     a,a
-b1f8 5f        ld      e,a
-b1f9 87        add     a,a
-b1fa 83        add     a,e
-b1fb 5f        ld      e,a
-b1fc 1600      ld      d,$00
-b1fe 2167b2    ld      hl,$b267
-b201 19        add     hl,de
-b202 5e        ld      e,(hl)
-b203 23        inc     hl
-b204 56        ld      d,(hl)
-b205 23        inc     hl
-b206 ed5312d2  ld      ($d212),de
-b20a 5e        ld      e,(hl)
-b20b 23        inc     hl
-b20c 56        ld      d,(hl)
-b20d ed5314d2  ld      ($d214),de
-b211 23        inc     hl
-b212 5e        ld      e,(hl)
-b213 1600      ld      d,$00
-b215 cb7b      bit     7,e
-b217 2801      jr      z,_b21a
-b219 15        dec     d
-_b21a:
-b21a 23        inc     hl
-b21b 4e        ld      c,(hl)
-b21c 0600      ld      b,$00
-b21e cb79      bit     7,c
-b220 2801      jr      z,_b223
-b222 05        dec     b
-_b223:
-b223 cdc2b5    call    _b5c2
-b226 c9        ret     
-b227 08        ex      af,af'
-b228 f8        ret     m
+.db $0E, $02, $0D, $02, $0C, $02, $0B, $03, $0B, $03, $0A, $03, $09, $04, $09, $04
+.db $08, $04, $07, $05, $07, $05, $06, $06, $06, $06, $05, $07, $05, $07, $04, $08
+.db $04, $09, $04, $09, $03, $0A, $03, $0B, $03
+_b0d5:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $26, $28, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF
+_b0e7:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $20, $22, $FF, $FF, $FF, $FF
 
-b229 66        ld      h,(hl)
-b22a 00        nop     
-b22b 00        nop     
-b22c 00        nop     
-b22d ff        rst     $38
-b22e 00        nop     
-b22f 0c        inc     c
-b230 fa7000    jp------m,$0070
-b233 14        inc     d
-b234 fa7200    jp------m,$0072
-b237 0f        rrca    
-b238 07        rlca    
-b239 4c        ld      c,h
-b23a 00        nop     
-b23b 17        rla     
-b23c 07        rlca    
-b23d 4e        ld      c,(hl)
-b23e 00        nop     
-b23f 0d        dec     c
-b240 0c        inc     c
-b241 6c        ld      l,h
-b242 00        nop     
-b243 15        dec     d
-b244 0c        inc     c
-b245 6e        ld      l,(hl)
-b246 00        nop     
-b247 08        ex      af,af'
-b248 0f        rrca    
-b249 64        ld      h,h
-b24a 00        nop     
-b24b 00        nop     
-b24c 00        nop     
-b24d ff        rst     $38
-b24e 00        nop     
-b24f fc0c68    call----m,$680c
-b252 00        nop     
-b253 04        inc     b
-b254 0c        inc     c
-b255 6a        ld      l,d
-b256 00        nop     
-b257 f9        ld      sp,hl
-b258 07        rlca    
-b259 48        ld      c,b
-b25a 00        nop     
-b25b 01074a    ld      bc,$4a07
-b25e 00        nop     
-b25f fb        ei      
-b260 f9        ld      sp,hl
-b261 50        ld      d,b
-b262 00        nop     
-b263 03        inc     bc
-b264 f9        ld      sp,hl
-b265 52        ld      d,d
-b266 00        nop     
-b267 00        nop     
-b268 00        nop     
-b269 00        nop     
-b26a fe08      cp      $08
-b26c f0        ret     p
-b26d 00        nop     
-b26e 0100ff    ld      bc,$ff00
-b271 18f8      jr------$b26b
-b273 00        nop     
-b274 02        ld      (bc),a
-b275 00        nop     
-b276 00        nop     
-b277 1e07      ld      e,$07
-b279 00        nop     
-b27a 010001    ld      bc,$0100
-b27d 1616      ld      d,$16
-b27f 00        nop     
-b280 00        nop     
-b281 00        nop     
-b282 02        ld      (bc),a
-b283 08        ex      af,af'
-b284 2000      jr------nz,$b286
-b286 ff        rst     $38
-b287 00        nop     
-b288 01f818    ld      bc,$18f8
-b28b 00        nop     
-b28c fe00      cp      $00
-b28e 00        nop     
-b28f f20700    jp------p,$0007
-b292 ff        rst     $38
-b293 00        nop     
-b294 ff        rst     $38
-b295 f7        rst     $30
-b296 f6dd      or      $dd
-b298 cb18      rr      b
-b29a eedd      xor     $dd
-b29c cb18      rr      b
-b29e 46        ld      b,(hl)
-b29f 2016      jr      nz,_b2b7
-b2a1 dd7e04    ld      a,(ix+$04)
-b2a4 dd7712    ld      (ix+$12),a
-b2a7 dd7e05    ld      a,(ix+$05)
-b2aa dd7713    ld      (ix+$13),a
-b2ad dd7e06    ld      a,(ix+$06)
-b2b0 dd7714    ld      (ix+$14),a
-b2b3 ddcb18c6  set     0,(ix+$18)
+;____________________________________________________________________________[$B0F4]___
+;OBJECT: UNKNOWN
+
+_b0f4:
+	set     5,(ix+$18)
+	ld      (ix+$0f),$00
+	ld      (ix+$10),$00
+	ld      (ix+$0d),$04
+	ld      (ix+$0e),$0a
+	ld      hl,$0602
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ex      de,hl
+	ld      hl,($d25a)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_b167
+	ld      hl,($d25a)
+	ld      bc,$0110
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_b167
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ex      de,hl
+	ld      hl,($d25d)
+	ld      bc,$fff0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_b167
+	ld      hl,($d25d)
+	ld      bc,$00d0
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      c,_b167
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      ($d214),hl
+	ld      a,$24
+	call    _3581
+	ret     
+_b167:
+	ld      (ix+$00),$ff
+	ret     
+
+;____________________________________________________________________________[$B16C]___
+;OBJECT: rotating turret (Sky Base)
+
+_b16c:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_b182
+	call    _LABEL_625_57
+	and     $07
+	ld      (ix+$11),a
+	set     0,(ix+$18)
+_b182:
+	ld      (ix+$0f),$00
+	ld      (ix+$10),$00
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      a,(ix+$11)
+	add     a,a
+	add     a,a
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      hl,_b227
+	add     hl,de
+	ld      b,$02
+_b1ab:
+	push    bc
+	ld      d,$00
+	ld      e,(hl)
+	bit     7,e
+	jr      z,_b1b5
+	ld      d,$ff
+_b1b5:
+	ld      ($d212),de
+	inc     hl
+	ld      d,$00
+	ld      e,(hl)
+	bit     7,e
+	jr      z,_b1c3
+	ld      d,$ff
+_b1c3:
+	ld      ($d214),de
+	inc     hl
+	ld      a,(hl)
+	inc     hl
+	inc     hl
+	cp      $ff
+	jr      z,_b1d4
+	push    hl
+	call    _3581
+	pop     hl
+_b1d4:
+	pop     bc
+	djnz    _b1ab
+	ld      a,($d223)
+	and     $3f
+	jr      nz,_b1e7
+	ld      a,(ix+$11)
+	inc     a
+	and     $07
+	ld      (ix+$11),a
+_b1e7:
+	inc     (ix+$12)
+	ld      a,(ix+$12)
+	cp      $1a
+	ret     nz
+	ld      (ix+$12),$00
+	ld      a,(ix+$11)
+	add     a,a
+	ld      e,a
+	add     a,a
+	add     a,e
+	ld      e,a
+	ld      d,$00
+	ld      hl,_b267
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      ($d212),de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	ld      ($d214),de
+	inc     hl
+	ld      e,(hl)
+	ld      d,$00
+	bit     7,e
+	jr      z,_b21a
+	dec     d
+_b21a:
+	inc     hl
+	ld      c,(hl)
+	ld      b,$00
+	bit     7,c
+	jr      z,_b223
+	dec     b
+_b223:
+	call    _b5c2
+	ret     
+
+_b227:
+.db $08, $F8, $66, $00, $00, $00, $FF, $00, $0C, $FA, $70, $00, $14, $FA, $72, $00
+.db $0F, $07, $4C, $00, $17, $07, $4E, $00, $0D, $0C, $6C, $00, $15, $0C, $6E, $00
+.db $08, $0F, $64, $00, $00, $00, $FF, $00, $FC, $0C, $68, $00, $04, $0C, $6A, $00
+.db $F9, $07, $48, $00, $01, $07, $4A, $00, $FB, $F9, $50, $00, $03, $F9, $52, $00   
+_b267:
+.db $00, $00, $00, $FE, $08, $F0, $00, $01, $00, $FF, $18, $F8, $00, $02, $00, $00
+.db $1E, $07, $00, $01, $00, $01, $16, $16, $00, $00, $00, $02, $08, $20, $00, $FF
+.db $00, $01, $F8, $18, $00, $FE, $00, $00, $F2, $07, $00, $FF, $00, $FF, $F7, $F6
+
+;____________________________________________________________________________[$B297]___
+;OBJECT: flying platform (Sky Base)
+
+_b297:
+	set 5, (ix+$18)
+	bit 0, (ix+$18)
+	jr      nz,_b2b7
+	ld      a,(ix+$04)
+	ld      (ix+$12),a
+	ld      a,(ix+$05)
+	ld      (ix+$13),a
+	ld      a,(ix+$06)
+	ld      (ix+$14),a
+	set     0,(ix+$18)
 _b2b7:
-b2b7 3aa3d2    ld      a,($d2a3)
-b2ba 4f        ld      c,a
-b2bb ed5ba1d2  ld      de,($d2a1)
-b2bf dd6e12    ld      l,(ix+$12)
-b2c2 dd6613    ld      h,(ix+$13)
-b2c5 dd7e14    ld      a,(ix+$14)
-b2c8 19        add     hl,de
-b2c9 89        adc     a,c
-b2ca dd7504    ld      (ix+$04),l
-b2cd dd7405    ld      (ix+$05),h
-b2d0 dd7706    ld      (ix+$06),a
-b2d3 3a08d4    ld      a,($d408)
-b2d6 a7        and     a
-b2d7 fa29b3    jp      m,_b329
-b2da dd360d1e  ld      (ix+$0d),$1e
-b2de dd360e10  ld      (ix+$0e),$10
-b2e2 21020a    ld      hl,$0a02
-b2e5 2214d2    ld      ($d214),hl
-b2e8 cd5639    call    _LABEL_3956_11
-b2eb 383c      jr      c,_b329
-b2ed 213000    ld      hl,$0030
-b2f0 226bd2    ld      ($d26b),hl
-b2f3 213000    ld      hl,$0030
-b2f6 226dd2    ld      ($d26d),hl
-b2f9 011000    ld      bc,$0010
-b2fc 110000    ld      de,$0000
-b2ff cdc17c    call    _LABEL_7CC1_12
-b302 dd6e01    ld      l,(ix+$01)
-b305 dd6602    ld      h,(ix+$02)
-b308 dd7e03    ld      a,(ix+$03)
-b30b 118000    ld      de,$0080
-b30e 19        add     hl,de
-b30f ce00      adc     a,$00
-b311 dd7501    ld      (ix+$01),l
-b314 dd7402    ld      (ix+$02),h
-b317 dd7703    ld      (ix+$03),a
-b31a 2afdd3    ld      hl,($d3fd)
-b31d 3affd3    ld      a,($d3ff)
-b320 19        add     hl,de
-b321 ce00      adc     a,$00
-b323 22fdd3    ld      ($d3fd),hl
-b326 32ffd3    ld      ($d3ff),a
+	ld      a,($d2a3)
+	ld      c,a
+	ld      de,($d2a1)
+	ld      l,(ix+$12)
+	ld      h,(ix+$13)
+	ld      a,(ix+$14)
+	add     hl,de
+	adc     a,c
+	ld      (ix+$04),l
+	ld      (ix+$05),h
+	ld      (ix+$06),a
+	ld      a,($d408)
+	and     a
+	jp      m,_b329
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$10
+	ld      hl,$0a02
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_b329
+	ld      hl,$0030
+	ld      ($d26b),hl
+	ld      hl,$0030
+	ld      ($d26d),hl
+	ld      bc,$0010
+	ld      de,$0000
+	call    _LABEL_7CC1_12
+	ld      l,(ix+$01)
+	ld      h,(ix+$02)
+	ld      a,(ix+$03)
+	ld      de,$0080
+	add     hl,de
+	adc     a,$00
+	ld      (ix+$01),l
+	ld      (ix+$02),h
+	ld      (ix+$03),a
+	ld      hl,($d3fd)
+	ld      a,($d3ff)
+	add     hl,de
+	adc     a,$00
+	ld      ($d3fd),hl
+	ld      ($d3ff),a
 _b329:
-b329 dd6e02    ld      l,(ix+$02)
-b32c dd6603    ld      h,(ix+$03)
-b32f 220ed2    ld      ($d20e),hl
-b332 dd6e05    ld      l,(ix+$05)
-b335 dd6606    ld      h,(ix+$06)
-b338 2210d2    ld      ($d210),hl
-b33b 21f8ff    ld      hl,$fff8
-b33e 2212d2    ld      ($d212),hl
-b341 dd5e11    ld      e,(ix+$11)
-b344 1600      ld      d,$00
-b346 2188b3    ld      hl,$b388
-b349 19        add     hl,de
-b34a 0602      ld      b,$02
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$fff8
+	ld      ($d212),hl
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      hl,_b388
+	add     hl,de
+	ld      b,$02
 _b34c:
-b34c c5        push    bc
-b34d 5e        ld      e,(hl)
-b34e 1600      ld      d,$00
-b350 23        inc     hl
-b351 ed5314d2  ld      ($d214),de
-b355 7e        ld      a,(hl)
-b356 23        inc     hl
-b357 feff      cp      $ff
-b359 2805      jr      z,_b360
-b35b e5        push    hl
-b35c cd8135    call    _3581
-b35f e1        pop     hl
+	push    bc
+	ld      e,(hl)
+	ld      d,$00
+	inc     hl
+	ld      ($d214),de
+	ld      a,(hl)
+	inc     hl
+	cp      $ff
+	jr      z,_b360
+	push    hl
+	call    _3581
+	pop     hl
 _b360:
-b360 c1        pop     bc
-b361 10e9      djnz    _b34c
-b363 dd360f7b  ld      (ix+$0f),$7b
-b367 dd3610b3  ld      (ix+$10),$b3
-b36b dd7e11    ld      a,(ix+$11)
-b36e c604      add     a,$04
-b370 dd7711    ld      (ix+$11),a
-b373 fe10      cp      $10
-b375 d8        ret     c
-b376 dd361100  ld      (ix+$11),$00
-b37a c9        ret     
-b37b feff      cp      $ff
-b37d ff        rst     $38
-b37e ff        rst     $38
-b37f ff        rst     $38
-b380 ff        rst     $38
-b381 3636      ld      (hl),$36
-b383 3636      ld      (hl),$36
-b385 ff        rst     $38
-b386 ff        rst     $38
-b387 ff        rst     $38
-b388 08        ex      af,af'
-b389 1c        inc     e
-b38a 183c      jr      _b3c8
-b38c 08        ex      af,af'
-b38d 1e18      ld      e,$18
-b38f 3e08      ld      a,$08
-b391 3818      jr      c,_b3ab
-b393 3a0c1a    ld      a,($1a0c)
-b396 00        nop     
-b397 ff        rst     $38
-b398 ddcb18ee  set     5,(ix+$18)
-b39c ddcb1846  bit     0,(ix+$18)
-b3a0 2010      jr      nz,_b3b2
-b3a2 dd6e02    ld      l,(ix+$02)
-b3a5 dd6603    ld      h,(ix+$03)
-b3a8 dd7511    ld      (ix+$11),l
+	pop     bc
+	djnz    _b34c
+	ld      (ix+$0f),<_b37b
+	ld      (ix+$10),>_b37b
+	ld      a,(ix+$11)
+	add     a,$04
+	ld      (ix+$11),a
+	cp      $10
+	ret     c
+	ld      (ix+$11),$00
+	ret     
+
+_b37b:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $36, $36, $36, $36, $FF, $FF, $FF
+_b388:
+.db $08, $1C, $18, $3C, $08, $1E, $18, $3E, $08, $38, $18, $3A, $0C, $1A, $00, $FF
+
+;____________________________________________________________________________[$B398]___
+;OBJECT: moving spiked wall (Sky Base)
+
+_b398:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_b3b2
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      (ix+$11),l
 _b3ab:
-b3ab dd7412    ld      (ix+$12),h
-b3ae ddcb18c6  set     0,(ix+$18)
+	ld      (ix+$12),h
+	set     0,(ix+$18)
 _b3b2:
-b3b2 dd360d0c  ld      (ix+$0d),$0c
-b3b6 dd360e2e  ld      (ix+$0e),$2e
-b3ba dd360f5b  ld      (ix+$0f),$5b
-b3be dd3610b4  ld      (ix+$10),$b4
-b3c2 210202    ld      hl,$0202
-b3c5 2214d2    ld      ($d214),hl
+	ld      (ix+$0d),$0c
+	ld      (ix+$0e),$2e
+	ld      (ix+$0f),<_b45b
+	ld      (ix+$10),>_b45b
+	ld      hl,$0202
+	ld      ($d214),hl
 _b3c8:
-b3c8 cd5639    call    _LABEL_3956_11
-b3cb d4fd35    call    nc,_35fd
-b3ce dd6e01    ld      l,(ix+$01)
-b3d1 dd6602    ld      h,(ix+$02)
-b3d4 dd7e03    ld      a,(ix+$03)
-b3d7 118000    ld      de,$0080
-b3da 19        add     hl,de
-b3db ce00      adc     a,$00
-b3dd 6c        ld      l,h
-b3de 67        ld      h,a
-b3df 220ed2    ld      ($d20e),hl
-b3e2 dd6e05    ld      l,(ix+$05)
-b3e5 dd6606    ld      h,(ix+$06)
-b3e8 2210d2    ld      ($d210),hl
-b3eb 210000    ld      hl,$0000
-b3ee 2212d2    ld      ($d212),hl
-b3f1 21f0ff    ld      hl,$fff0
-b3f4 2214d2    ld      ($d214),hl
-b3f7 3e16      ld      a,$16
-b3f9 cd8135    call    _3581
-b3fc 210800    ld      hl,$0008
-b3ff 2212d2    ld      ($d212),hl
-b402 3e18      ld      a,$18
-b404 cd8135    call    _3581
-b407 dd6e02    ld      l,(ix+$02)
-b40a dd6603    ld      h,(ix+$03)
-b40d 118005    ld      de,$0580
-b410 af        xor     a
-b411 dd7707    ld      (ix+$07),a
-b414 dd7708    ld      (ix+$08),a
-b417 dd7709    ld      (ix+$09),a
-b41a ed52      sbc     hl,de
-b41c d0        ret     nc
-b41d dd4e05    ld      c,(ix+$05)
-b420 dd4606    ld      b,(ix+$06)
-b423 214000    ld      hl,$0040
-b426 09        add     hl,bc
-b427 ed5b5dd2  ld      de,($d25d)
-b42b a7        and     a
-b42c ed52      sbc     hl,de
-b42e 300c      jr      nc,_b43c
-b430 dd7e11    ld      a,(ix+$11)
-b433 dd7702    ld      (ix+$02),a
-b436 dd7e12    ld      a,(ix+$12)
-b439 dd7703    ld      (ix+$03),a
+	call    _LABEL_3956_11
+	call    nc,_35fd
+	ld      l,(ix+$01)
+	ld      h,(ix+$02)
+	ld      a,(ix+$03)
+	ld      de,$0080
+	add     hl,de
+	adc     a,$00
+	ld      l,h
+	ld      h,a
+	ld      ($d20e),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      ($d210),hl
+	ld      hl,$0000
+	ld      ($d212),hl
+	ld      hl,$fff0
+	ld      ($d214),hl
+	ld      a,$16
+	call    _3581
+	ld      hl,$0008
+	ld      ($d212),hl
+	ld      a,$18
+	call    _3581
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0580
+	xor     a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	sbc     hl,de
+	ret     nc
+	ld      c,(ix+$05)
+	ld      b,(ix+$06)
+	ld      hl,$0040
+	add     hl,bc
+	ld      de,($d25d)
+	and     a
+	sbc     hl,de
+	jr      nc,_b43c
+	ld      a,(ix+$11)
+	ld      (ix+$02),a
+	ld      a,(ix+$12)
+	ld      (ix+$03),a
 _b43c:
-b43c ed5b01d4  ld      de,($d401)
-b440 21e0ff    ld      hl,$ffe0
-b443 09        add     hl,bc
-b444 af        xor     a
-b445 ed52      sbc     hl,de
-b447 d0        ret     nc
-b448 212c00    ld      hl,$002c
-b44b 09        add     hl,bc
-b44c af        xor     a
-b44d ed52      sbc     hl,de
-b44f d8        ret     c
-b450 dd360780  ld      (ix+$07),$80
-b454 dd7708    ld      (ix+$08),a
-b457 dd7709    ld      (ix+$09),a
-b45a c9        ret     
-b45b 1618      ld      d,$18
-b45d ff        rst     $38
-b45e ff        rst     $38
-b45f ff        rst     $38
-b460 ff        rst     $38
-b461 1618      ld      d,$18
-b463 ff        rst     $38
-b464 ff        rst     $38
-b465 ff        rst     $38
-b466 ff        rst     $38
-b467 1618      ld      d,$18
-b469 ff        rst     $38
-b46a ff        rst     $38
-b46b ff        rst     $38
-b46c ff        rst     $38
-b46d ddcb18ee  set     5,(ix+$18)
-b471 ddcb1846  bit     0,(ix+$18)
-b475 2015      jr      nz,_b48c
-b477 010000    ld      bc,$0000
-b47a 59        ld      e,c
-b47b 50        ld      d,b
-b47c cdf936    call    _36f9
-b47f 7e        ld      a,(hl)
-b480 d63c      sub     $3c
-b482 fe04      cp      $04
-b484 d0        ret     nc
-b485 dd7711    ld      (ix+$11),a
-b488 ddcb18c6  set     0,(ix+$18)
+	ld      de,($d401)
+	ld      hl,$ffe0
+	add     hl,bc
+	xor     a
+	sbc     hl,de
+	ret     nc
+	ld      hl,$002c
+	add     hl,bc
+	xor     a
+	sbc     hl,de
+	ret     c
+	ld      (ix+$07),$80
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ret     
+
+_b45b:
+.db $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF
+.db $FF, $FF
+
+;____________________________________________________________________________[$B46D]___
+;OBJECT: fixed turret (Sky Base)
+
+_b46d:
+	set     5,(ix+$18)
+	bit     0,(ix+$18)
+	jr      nz,_b48c
+	ld      bc,$0000
+	ld      e,c
+	ld      d,b
+	call    _36f9
+	ld      a,(hl)
+	sub     $3c
+	cp      $04
+	ret     nc
+	ld      (ix+$11),a
+	set     0,(ix+$18)
 _b48c:
-b48c dd3412    inc     (ix+$12)
-b48f dd7e12    ld      a,(ix+$12)
-b492 cb77      bit     6,a
-b494 c0        ret     nz
-b495 e60f      and     $0f
-b497 c0        ret     nz
-b498 dd7e11    ld      a,(ix+$11)
-b49b 87        add     a,a
-b49c 5f        ld      e,a
-b49d 87        add     a,a
-b49e 87        add     a,a
-b49f 83        add     a,e
-b4a0 5f        ld      e,a
-b4a1 1600      ld      d,$00
-b4a3 21e6b4    ld      hl,$b4e6
-b4a6 19        add     hl,de
-b4a7 5e        ld      e,(hl)
-b4a8 23        inc     hl
-b4a9 56        ld      d,(hl)
-b4aa 23        inc     hl
-b4ab ed5312d2  ld      ($d212),de
-b4af 5e        ld      e,(hl)
-b4b0 23        inc     hl
-b4b1 56        ld      d,(hl)
-b4b2 23        inc     hl
-b4b3 ed5314d2  ld      ($d214),de
-b4b7 5e        ld      e,(hl)
-b4b8 23        inc     hl
-b4b9 56        ld      d,(hl)
-b4ba 23        inc     hl
-b4bb 4e        ld      c,(hl)
-b4bc 23        inc     hl
-b4bd 46        ld      b,(hl)
-b4be 23        inc     hl
-b4bf d9        exx     
-b4c0 dd5e02    ld      e,(ix+$02)
-b4c3 dd5603    ld      d,(ix+$03)
-b4c6 2afed3    ld      hl,($d3fe)
-b4c9 a7        and     a
-b4ca ed52      sbc     hl,de
-b4cc 7c        ld      a,h
-b4cd d9        exx     
-b4ce be        cp      (hl)
-b4cf c0        ret     nz
-b4d0 23        inc     hl
-b4d1 d9        exx     
-b4d2 dd5e05    ld      e,(ix+$05)
-b4d5 dd5606    ld      d,(ix+$06)
-b4d8 2a01d4    ld      hl,($d401)
-b4db a7        and     a
-b4dc ed52      sbc     hl,de
-b4de 7c        ld      a,h
-b4df d9        exx     
-b4e0 be        cp      (hl)
-b4e1 c0        ret     nz
-b4e2 cdc2b5    call    _b5c2
-b4e5 c9        ret     
-b4e6 80        add     a,b
-b4e7 fe80      cp      $80
-b4e9 fe00      cp      $00
-b4eb 00        nop     
-b4ec f8        ret     m
-b4ed ff        rst     $38
-b4ee ff        rst     $38
-b4ef ff        rst     $38
-b4f0 80        add     a,b
-b4f1 0180fe    ld      bc,$fe80
-b4f4 1800      jr------$b4f6
-b4f6 f8        ret     m
-b4f7 ff        rst     $38
-b4f8 00        nop     
-b4f9 ff        rst     $38
-b4fa 80        add     a,b
-b4fb fe80      cp      $80
-b4fd 010000    ld      bc,$0000
-b500 1000      djnz----$b502
-b502 ff        rst     $38
-b503 00        nop     
-b504 80        add     a,b
-b505 018001    ld      bc,$0180
-b508 1800      jr------$b50a
-b50a 1000      djnz----$b50c
-b50c 00        nop     
-b50d 00        nop     
-b50e ddcb18ee  set     5,(ix+$18)
-b512 217bb3    ld      hl,$b37b
-b515 3ad4d2    ld      a,(S1_LEVEL_SOLIDITY)
-b518 fe01      cp      $01
-b51a 2003      jr      nz,_b51f
-b51c 21b5b5    ld      hl,$b5b5
-_b51f:
-b51f dd750f    ld      (ix+$0f),l
-b522 dd7410    ld      (ix+$10),h
-b525 3e50      ld      a,$50
-b527 3216d2    ld      ($d216),a
-b52a cd3bb5    call    _b53b
-b52d dd3411    inc     (ix+$11)
-b530 dd7e11    ld      a,(ix+$11)
-b533 fea0      cp      $a0
-b535 d8        ret     c
-b536 dd361100  ld      (ix+$11),$00
-b53a c9        ret     
+	inc     (ix+$12)
+	ld      a,(ix+$12)
+	bit     6,a
+	ret     nz
+	and     $0f
+	ret     nz
+	ld      a,(ix+$11)
+	add     a,a
+	ld      e,a
+	add     a,a
+	add     a,a
+	add     a,e
+	ld      e,a
+	ld      d,$00
+	ld      hl,_b4e6
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      ($d212),de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      ($d214),de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      c,(hl)
+	inc     hl
+	ld      b,(hl)
+	inc     hl
+	exx     
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      hl,($d3fe)
+	and     a
+	sbc     hl,de
+	ld      a,h
+	exx     
+	cp      (hl)
+	ret     nz
+	inc     hl
+	exx     
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	ld      hl,($d401)
+	and     a
+	sbc     hl,de
+	ld      a,h
+	exx     
+	cp      (hl)
+	ret     nz
+	call    _b5c2
+	ret     
+
+_b4e6:
+.db $80, $FE, $80, $FE, $00, $00, $F8, $FF, $FF, $FF, $80, $01, $80, $FE, $18, $00
+.db $F8, $FF, $00, $FF, $80, $FE, $80, $01, $00, $00, $10, $00, $FF, $00, $80, $01
+.db $80, $01, $18, $00, $10, $00, $00, $00   
+
+;____________________________________________________________________________[$B50E]___
+;OBJECT: flying platform - up/down (Sky Base)
+
+_b50e:
+	set     5,(ix+$18)
+	ld      hl,_b37b
+	ld      a,(S1_LEVEL_SOLIDITY)
+	cp      $01
+	jr      nz,+
+	ld      hl,_b5b5
++	ld      (ix+$0f),l
+	ld      (ix+$10),h
+	ld      a,$50
+	ld      ($d216),a
+	call    _b53b
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $a0
+	ret     c
+	ld      (ix+$11),$00
+	ret     
 
 _b53b:
-b53b 3a16d2    ld      a,($d216)
-b53e 6f        ld      l,a
-b53f 111000    ld      de,$0010
-b542 0e00      ld      c,$00
-b544 dd7e11    ld      a,(ix+$11)
-b547 bd        cp      l
-b548 3804      jr      c,_b54e
-b54a 0d        dec     c
-b54b 11f0ff    ld      de,$fff0
+	ld      a,($d216)
+	ld      l,a
+	ld      de,$0010
+	ld      c,$00
+	ld      a,(ix+$11)
+	cp      l
+	jr      c,_b54e
+	dec     c
+	ld      de,$fff0
 _b54e:
-b54e dd6e0a    ld      l,(ix+$0a)
-b551 dd660b    ld      h,(ix+$0b)
-b554 dd7e0c    ld      a,(ix+$0c)
-b557 19        add     hl,de
-b558 89        adc     a,c
-b559 dd750a    ld      (ix+$0a),l
-b55c dd740b    ld      (ix+$0b),h
-b55f dd770c    ld      (ix+$0c),a
-b562 7c        ld      a,h
-b563 a7        and     a
-b564 f281b5    jp      p,_b581
-b567 7d        ld      a,l
-b568 2f        cpl     
-b569 6f        ld      l,a
-b56a 7c        ld      a,h
-b56b 2f        cpl     
-b56c 67        ld      h,a
-b56d 23        inc     hl
-b56e 7c        ld      a,h
-b56f fe02      cp      $02
-b571 381e      jr      c,_b591
-b573 dd360a00  ld      (ix+$0a),$00
-b577 dd360bfe  ld      (ix+$0b),$fe
-b57b dd360cff  ld      (ix+$0c),$ff
-b57f 1810      jr      _b591
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	add     hl,de
+	adc     a,c
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	ld      a,h
+	and     a
+	jp      p,_b581
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	inc     hl
+	ld      a,h
+	cp      $02
+	jr      c,_b591
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),$fe
+	ld      (ix+$0c),$ff
+	jr      _b591
 _b581:
-b581 fe02      cp      $02
-b583 380c      jr      c,_b591
-b585 dd360a00  ld      (ix+$0a),$00
-b589 dd360b02  ld      (ix+$0b),$02
-b58d dd360c00  ld      (ix+$0c),$00
+	cp      $02
+	jr      c,_b591
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),$02
+	ld      (ix+$0c),$00
 _b591:
-b591 3a08d4    ld      a,($d408)
-b594 a7        and     a
-b595 f8        ret     m
-b596 dd360d1e  ld      (ix+$0d),$1e
-b59a dd360e1c  ld      (ix+$0e),$1c
-b59e 210208    ld      hl,$0802
-b5a1 2214d2    ld      ($d214),hl
-b5a4 cd5639    call    _LABEL_3956_11
-b5a7 d8        ret     c
-b5a8 dd5e0a    ld      e,(ix+$0a)
-b5ab dd560b    ld      d,(ix+$0b)
-b5ae 011000    ld      bc,$0010
-b5b1 cdc17c    call    _LABEL_7CC1_12
-b5b4 c9        ret     
-b5b5 feff      cp      $ff
-b5b7 ff        rst     $38
-b5b8 ff        rst     $38
-b5b9 ff        rst     $38
-b5ba ff        rst     $38
-b5bb 6c        ld      l,h
-b5bc 6e        ld      l,(hl)
-b5bd 6c        ld      l,h
-b5be 6e        ld      l,(hl)
-b5bf ff        rst     $38
-b5c0 ff        rst     $38
-b5c1 ff        rst     $38
+	ld      a,($d408)
+	and     a
+	ret     m
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$1c
+	ld      hl,$0802
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	ret     c
+	ld      e,(ix+$0a)
+	ld      d,(ix+$0b)
+	ld      bc,$0010
+	call    _LABEL_7CC1_12
+	ret     
+
+_b5b5:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6C, $6E, $FF, $FF, $FF
 
 _b5c2:
-b5c2 c5        push    bc
-b5c3 d5        push    de
-b5c4 cd7b7c    call    _7c7b
-b5c7 d1        pop     de
-b5c8 c1        pop     bc
-b5c9 d8        ret     c
-b5ca dde5      push    ix
-b5cc e5        push    hl
-b5cd dd6e02    ld      l,(ix+$02)
-b5d0 dd6603    ld      h,(ix+$03)
-b5d3 19        add     hl,de
-b5d4 eb        ex      de,hl
-b5d5 dd6e05    ld      l,(ix+$05)
-b5d8 dd6606    ld      h,(ix+$06)
-b5db 09        add     hl,bc
-b5dc 4d        ld      c,l
-b5dd 44        ld      b,h
-b5de dde1      pop     ix
-b5e0 af        xor     a
-b5e1 dd36000d  ld      (ix+$00),$0d
-b5e5 dd7701    ld      (ix+$01),a
-b5e8 dd7302    ld      (ix+$02),e
-b5eb dd7203    ld      (ix+$03),d
-b5ee dd7704    ld      (ix+$04),a
-b5f1 dd7105    ld      (ix+$05),c
-b5f4 dd7006    ld      (ix+$06),b
-b5f7 dd7711    ld      (ix+$11),a
-b5fa dd7713    ld      (ix+$13),a
-b5fd dd7714    ld      (ix+$14),a
-b600 dd7715    ld      (ix+$15),a
-b603 dd7716    ld      (ix+$16),a
-b606 dd7717    ld      (ix+$17),a
-b609 2a12d2    ld      hl,($d212)
-b60c cb7c      bit     7,h
-b60e 2802      jr      z,_b612
-b610 3eff      ld      a,$ff
+	push    bc
+	push    de
+	call    _7c7b
+	pop     de
+	pop     bc
+	ret     c
+	push    ix
+	push    hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	add     hl,de
+	ex      de,hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	add     hl,bc
+	ld      c,l
+	ld      b,h
+	pop     ix
+	xor     a
+	ld      (ix+$00),$0d
+	ld      (ix+$01),a
+	ld      (ix+$02),e
+	ld      (ix+$03),d
+	ld      (ix+$04),a
+	ld      (ix+$05),c
+	ld      (ix+$06),b
+	ld      (ix+$11),a
+	ld      (ix+$13),a
+	ld      (ix+$14),a
+	ld      (ix+$15),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	ld      hl,($d212)
+	bit     7,h
+	jr      z,_b612
+	ld      a,$ff
 _b612:
-b612 dd7507    ld      (ix+$07),l
-b615 dd7408    ld      (ix+$08),h
-b618 dd7709    ld      (ix+$09),a
-b61b af        xor     a
-b61c 2a14d2    ld      hl,($d214)
-b61f cb7c      bit     7,h
-b621 2802      jr      z,_b625
-b623 3eff      ld      a,$ff
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	ld      (ix+$09),a
+	xor     a
+	ld      hl,($d214)
+	bit     7,h
+	jr      z,_b625
+	ld      a,$ff
 _b625:
-b625 dd750a    ld      (ix+$0a),l
-b628 dd740b    ld      (ix+$0b),h
-b62b dd770c    ld      (ix+$0c),a
-b62e dde1      pop     ix
-b630 3e01      ld      a,$01
-b632 ef        rst     $28
-b633 c9        ret     
-b634 dd360d1e  ld      (ix+$0d),$1e
-b638 dd360e2f  ld      (ix+$0e),$2f
-b63c ddcb18ee  set     5,(ix+$18)
-b640 ddcb1856  bit     2,(ix+$18)
-b644 c221b8    jp      nz,_b821
-b647 cda67c    call    _7ca6
-b64a cde6b7    call    _b7e6
-b64d ddcb1846  bit     0,(ix+$18)
-b651 2044      jr      nz,_b697
-b653 215003    ld      hl,$0350
-b656 112001    ld      de,$0120
-b659 cd8c7c    call    _7c8c
-b65c dd6e02    ld      l,(ix+$02)
-b65f dd6603    ld      h,(ix+$03)
-b662 110800    ld      de,$0008
-b665 19        add     hl,de
-b666 dd7502    ld      (ix+$02),l
-b669 dd7403    ld      (ix+$03),h
-b66c dd7511    ld      (ix+$11),l
-b66f dd7412    ld      (ix+$12),h
-b672 dd6e05    ld      l,(ix+$05)
-b675 dd6606    ld      h,(ix+$06)
-b678 111000    ld      de,$0010
-b67b 19        add     hl,de
-b67c dd7505    ld      (ix+$05),l
-b67f dd7406    ld      (ix+$06),h
-b682 dd7513    ld      (ix+$13),l
-b685 dd7414    ld      (ix+$14),h
-b688 af        xor     a
-b689 32ecd2    ld      ($d2ec),a
-b68c 3e0d      ld      a,$0d
-b68e df        rst     $18
-b68f fdcb08e6  set     4,(iy+$08)
-b693 ddcb18c6  set     0,(ix+$18)
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	pop     ix
+	ld      a,$01
+	rst     $28
+	ret     
+
+;____________________________________________________________________________[$B634]___
+;OBJECT: boss (Sky Base)
+
+_b634:
+	ld      (ix+$0d),$1e
+	ld      (ix+$0e),$2f
+	set     5,(ix+$18)
+	bit     2,(ix+$18)
+	jp      nz,_b821
+	call    _7ca6
+	call    _b7e6
+	bit     0,(ix+$18)
+	jr      nz,_b697
+	ld      hl,$0350
+	ld      de,$0120
+	call    _7c8c
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$0008
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$11),l
+	ld      (ix+$12),h
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0010
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$13),l
+	ld      (ix+$14),h
+	xor     a
+	ld      ($d2ec),a
+	ld      a,$0d
+	rst     $18
+	set     4,(iy+$08)
+	set     0,(ix+$18)
 _b697:
-b697 dd7e15    ld      a,(ix+$15)
-b69a a7        and     a
-b69b c2d4b6    jp      nz,_b6d4
-b69e cd9fb9    call    _b99f
-b6a1 3a23d2    ld      a,($d223)
-b6a4 e607      and     $07
-b6a6 c293b7    jp      nz,_b793
-b6a9 dd7e16    ld      a,(ix+$16)
-b6ac fe1c      cp      $1c
-b6ae 300b      jr      nc,_b6bb
-b6b0 dd3417    inc     (ix+$17)
-b6b3 dd7e17    ld      a,(ix+$17)
-b6b6 fe02      cp      $02
-b6b8 dabfb6    jp      c,_b6bf
+	ld      a,(ix+$15)
+	and     a
+	jp      nz,_b6d4
+	call    _b99f
+	ld      a,($d223)
+	and     $07
+	jp      nz,_b793
+	ld      a,(ix+$16)
+	cp      $1c
+	jr      nc,_b6bb
+	inc     (ix+$17)
+	ld      a,(ix+$17)
+	cp      $02
+	jp      c,_b6bf
 _b6bb:
-b6bb dd361700  ld      (ix+$17),$00
+	ld      (ix+$17),$00
 _b6bf:
-b6bf dd3416    inc     (ix+$16)
-b6c2 dd7e16    ld      a,(ix+$16)
-b6c5 fe28      cp      $28
-b6c7 da93b7    jp      c,_b793
-b6ca dd361600  ld      (ix+$16),$00
-b6ce dd3415    inc     (ix+$15)
-b6d1 c393b7    jp      _b793
+	inc     (ix+$16)
+	ld      a,(ix+$16)
+	cp      $28
+	jp      c,_b793
+	ld      (ix+$16),$00
+	inc     (ix+$15)
+	jp      _b793
 _b6d4:
-b6d4 3d        dec     a
-b6d5 202a      jr      nz,_b701
-b6d7 dd360a40  ld      (ix+$0a),$40
-b6db dd360bfe  ld      (ix+$0b),$fe
-b6df dd360cff  ld      (ix+$0c),$ff
-b6e3 dd3415    inc     (ix+$15)
-b6e6 dd6e11    ld      l,(ix+$11)
-b6e9 dd6612    ld      h,(ix+$12)
-b6ec 110400    ld      de,$0004
-b6ef 19        add     hl,de
-b6f0 dd7502    ld      (ix+$02),l
-b6f3 dd7403    ld      (ix+$03),h
-b6f6 dd360f1d  ld      (ix+$0f),$1d
-b6fa dd3610bb  ld      (ix+$10),$bb
-b6fe c393b7    jp      _b793
+	dec     a
+	jr      nz,_b701
+	ld      (ix+$0a),$40
+	ld      (ix+$0b),$fe
+	ld      (ix+$0c),$ff
+	inc     (ix+$15)
+	ld      l,(ix+$11)
+	ld      h,(ix+$12)
+	ld      de,$0004
+	add     hl,de
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$0f),<_bb1d
+	ld      (ix+$10),>_bb1d
+	jp      _b793
 _b701:
-b701 3d        dec     a
-b702 c25cb7    jp      nz,_b75c
-b705 dd6e0a    ld      l,(ix+$0a)
-b708 dd660b    ld      h,(ix+$0b)
-b70b dd7e0c    ld      a,(ix+$0c)
-b70e 110e00    ld      de,$000e
-b711 19        add     hl,de
-b712 ce00      adc     a,$00
-b714 4f        ld      c,a
-b715 fa20b7    jp      m,_b720
-b718 7c        ld      a,h
-b719 fe02      cp      $02
-b71b 3803      jr      c,_b720
-b71d 210002    ld      hl,$0200
+	dec     a
+	jp      nz,_b75c
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$000e
+	add     hl,de
+	adc     a,$00
+	ld      c,a
+	jp      m,_b720
+	ld      a,h
+	cp      $02
+	jr      c,_b720
+	ld      hl,$0200
 _b720:
-b720 dd750a    ld      (ix+$0a),l
-b723 dd740b    ld      (ix+$0b),h
-b726 dd710c    ld      (ix+$0c),c
-b729 dd360f1d  ld      (ix+$0f),$1d
-b72d dd3610bb  ld      (ix+$10),$bb
-b731 dd6e05    ld      l,(ix+$05)
-b734 dd6606    ld      h,(ix+$06)
-b737 2b        dec     hl
-b738 dd5e13    ld      e,(ix+$13)
-b73b dd5614    ld      d,(ix+$14)
-b73e a7        and     a
-b73f ed52      sbc     hl,de
-b741 3850      jr      c,_b793
-b743 dd7305    ld      (ix+$05),e
-b746 dd7206    ld      (ix+$06),d
-b749 af        xor     a
-b74a dd7716    ld      (ix+$16),a
-b74d dd770a    ld      (ix+$0a),a
-b750 dd770b    ld      (ix+$0b),a
-b753 dd770c    ld      (ix+$0c),a
-b756 dd3415    inc     (ix+$15)
-b759 c393b7    jp      _b793
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	ld      (ix+$0f),<_bb1d
+	ld      (ix+$10),>_bb1d
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	dec     hl
+	ld      e,(ix+$13)
+	ld      d,(ix+$14)
+	and     a
+	sbc     hl,de
+	jr      c,_b793
+	ld      (ix+$05),e
+	ld      (ix+$06),d
+	xor     a
+	ld      (ix+$16),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	inc     (ix+$15)
+	jp      _b793
 _b75c:
-b75c 3d        dec     a
-b75d c293b7    jp      nz,_b793
-b760 dd6e11    ld      l,(ix+$11)
-b763 dd6612    ld      h,(ix+$12)
-b766 dd7502    ld      (ix+$02),l
-b769 dd7403    ld      (ix+$03),h
-b76c dd7e16    ld      a,(ix+$16)
-b76f a7        and     a
-b770 ccd5b9    call    z,_b9d5
-b773 dd361702  ld      (ix+$17),$02
-b777 ddcb18ce  set     1,(ix+$18)
-b77b cd9fb9    call    _b99f
-b77e dd3416    inc     (ix+$16)
-b781 dd7e16    ld      a,(ix+$16)
-b784 fe12      cp      $12
-b786 380b      jr      c,_b793
-b788 ddcb188e  res     1,(ix+$18)
-b78c af        xor     a
-b78d dd7715    ld      (ix+$15),a
-b790 dd7716    ld      (ix+$16),a
+	dec     a
+	jp      nz,_b793
+	ld      l,(ix+$11)
+	ld      h,(ix+$12)
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      a,(ix+$16)
+	and     a
+	call    z,_b9d5
+	ld      (ix+$17),$02
+	set     1,(ix+$18)
+	call    _b99f
+	inc     (ix+$16)
+	ld      a,(ix+$16)
+	cp      $12
+	jr      c,_b793
+	res     1,(ix+$18)
+	xor     a
+	ld      (ix+$15),a
+	ld      (ix+$16),a
 _b793:
-b793 2131ba    ld      hl,$ba31
-b796 ddcb184e  bit     1,(ix+$18)
-b79a 2803      jr      z,_b79f
-b79c 213bba    ld      hl,$ba3b
+	ld      hl,$ba31
+	bit     1,(ix+$18)
+	jr      z,_b79f
+	ld      hl,_ba3b
 _b79f:
-b79f 110ed2    ld      de,$d20e
-b7a2 eda0      ldi     
-b7a4 eda0      ldi     
-b7a6 eda0      ldi     
-b7a8 eda0      ldi     
-b7aa eda0      ldi     
-b7ac eda0      ldi     
-b7ae eda0      ldi     
-b7b0 eda0      ldi     
-b7b2 7e        ld      a,(hl)
-b7b3 23        inc     hl
-b7b4 e5        push    hl
-b7b5 cd8135    call    _3581
-b7b8 2a12d2    ld      hl,($d212)
-b7bb 110800    ld      de,$0008
-b7be 19        add     hl,de
-b7bf 2212d2    ld      ($d212),hl
-b7c2 e1        pop     hl
-b7c3 7e        ld      a,(hl)
-b7c4 cd8135    call    _3581
-b7c7 3aecd2    ld      a,($d2ec)
-b7ca fe0c      cp      $0c
-b7cc d8        ret     c
-b7cd af        xor     a
-b7ce dd7711    ld      (ix+$11),a
-b7d1 dd7716    ld      (ix+$16),a
-b7d4 dd7717    ld      (ix+$17),a
-b7d7 ddcb18d6  set     2,(ix+$18)
-b7db fdcb08a6  res     4,(iy+$08)
-b7df 3e04      ld      a,$04
-b7e1 df        rst     $18
-b7e2 3e21      ld      a,$21
-b7e4 ef        rst     $28
-b7e5 c9        ret     
+	ld      de,$d20e
+	ldi     
+	ldi     
+	ldi     
+	ldi     
+	ldi     
+	ldi     
+	ldi     
+	ldi     
+	ld      a,(hl)
+	inc     hl
+	push    hl
+	call    _3581
+	ld      hl,($d212)
+	ld      de,$0008
+	add     hl,de
+	ld      ($d212),hl
+	pop     hl
+	ld      a,(hl)
+	call    _3581
+	ld      a,($d2ec)
+	cp      $0c
+	ret     c
+	xor     a
+	ld      (ix+$11),a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	set     2,(ix+$18)
+	res     4,(iy+$08)
+	ld      a,$04
+	rst     $18
+	ld      a,$21
+	rst     $28
+	ret     
 
 _b7e6:
-b7e6 3ab1d2    ld      a,($d2b1)
-b7e9 a7        and     a
-b7ea c0        ret     nz
-b7eb fdcb0546  bit     0,(iy+$05)
-b7ef c0        ret     nz
-b7f0 3a14d4    ld      a,($d414)
-b7f3 0f        rrca    
-b7f4 3803      jr      c,_b7f9
-b7f6 e602      and     $02
-b7f8 c8        ret     z
+	ld      a,($d2b1)
+	and     a
+	ret     nz
+	bit     0,(iy+$05)
+	ret     nz
+	ld      a,($d414)
+	rrca    
+	jr      c,_b7f9
+	and     $02
+	ret     z
 _b7f9:
-b7f9 2afed3    ld      hl,($d3fe)
-b7fc 111004    ld      de,$0410
-b7ff a7        and     a
-b800 ed52      sbc     hl,de
-b802 d8        ret     c
-b803 2100fd    ld      hl,$fd00
-b806 3eff      ld      a,$ff
-b808 2203d4    ld      ($d403),hl
-b80b 3205d4    ld      ($d405),a
-b80e 21b1d2    ld      hl,$d2b1
-b811 3618      ld      (hl),$18
-b813 23        inc     hl
-b814 360c      ld      (hl),$0c
-b816 23        inc     hl
-b817 363f      ld      (hl),$3f
-b819 3e01      ld      a,$01
-b81b ef        rst     $28
-b81c 21ecd2    ld      hl,$d2ec
-b81f 34        inc     (hl)
-b820 c9        ret     
+	ld      hl,($d3fe)
+	ld      de,$0410
+	and     a
+	sbc     hl,de
+	ret     c
+	ld      hl,$fd00
+	ld      a,$ff
+	ld      ($d403),hl
+	ld      ($d405),a
+	ld      hl,$d2b1
+	ld      (hl),$18
+	inc     hl
+	ld      (hl),$0c
+	inc     hl
+	ld      (hl),$3f
+	ld      a,$01
+	rst     $28
+	ld      hl,$d2ec
+	inc     (hl)
+	ret     
 _b821:
-b821 ddcb185e  bit     3,(ix+$18)
-b825 c25bb9    jp      nz,_b95b
-b828 ddcb18ae  res     5,(ix+$18)
-b82c dd7e11    ld      a,(ix+$11)
-b82f fe0f      cp      $0f
-b831 3037      jr      nc,_b86a
-b833 87        add     a,a
-b834 87        add     a,a
-b835 5f        ld      e,a
-b836 87        add     a,a
-b837 83        add     a,e
-b838 5f        ld      e,a
-b839 1600      ld      d,$00
-b83b 2145ba    ld      hl,$ba45
-b83e 19        add     hl,de
-b83f 5e        ld      e,(hl)
-b840 23        inc     hl
-b841 56        ld      d,(hl)
-b842 23        inc     hl
-b843 ed53abd2  ld      ($d2ab),de
-b847 5e        ld      e,(hl)
-b848 23        inc     hl
-b849 56        ld      d,(hl)
-b84a 23        inc     hl
-b84b ed53add2  ld      ($d2ad),de
-b84f 22afd2    ld      ($d2af),hl
-b852 dd3411    inc     (ix+$11)
-b855 dd7e11    ld      a,(ix+$11)
-b858 fe0f      cp      $0f
-b85a 200e      jr      nz,_b86a
-b85c fdcb00ee  set     5,(iy+$00)
-b860 fdcb028e  res     1,(iy+$02)
-b864 215005    ld      hl,$0550
-b867 2275d2    ld      ($d275),hl
+	bit     3,(ix+$18)
+	jp      nz,_b95b
+	res     5,(ix+$18)
+	ld      a,(ix+$11)
+	cp      $0f
+	jr      nc,_b86a
+	add     a,a
+	add     a,a
+	ld      e,a
+	add     a,a
+	add     a,e
+	ld      e,a
+	ld      d,$00
+	ld      hl,$ba45
+	add     hl,de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      ($d2ab),de
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	inc     hl
+	ld      ($d2ad),de
+	ld      ($d2af),hl
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $0f
+	jr      nz,_b86a
+	set     5,(iy+$00)
+	res     1,(iy+$02)
+	ld      hl,$0550
+	ld      ($d275),hl
 _b86a:
-b86a dd5e02    ld      e,(ix+$02)
-b86d dd5603    ld      d,(ix+$03)
-b870 21e005    ld      hl,$05e0
-b873 af        xor     a
-b874 ed52      sbc     hl,de
-b876 3005      jr      nc,_b87d
-b878 4f        ld      c,a
-b879 47        ld      b,a
-b87a c399b8    jp      _b899
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      hl,$05e0
+	xor     a
+	sbc     hl,de
+	jr      nc,_b87d
+	ld      c,a
+	ld      b,a
+	jp      _b899
 _b87d:
-b87d eb        ex      de,hl
-b87e ed5bfed3  ld      de,($d3fe)
-b882 af        xor     a
-b883 ed52      sbc     hl,de
-b885 114000    ld      de,$0040
-b888 af        xor     a
-b889 ed4b03d4  ld      bc,($d403)
-b88d cb78      bit     7,b
-b88f 2004      jr      nz,_b895
-b891 ed52      sbc     hl,de
-b893 3803      jr      c,_b898
+	ex      de,hl
+	ld      de,($d3fe)
+	xor     a
+	sbc     hl,de
+	ld      de,$0040
+	xor     a
+	ld      bc,($d403)
+	bit     7,b
+	jr      nz,_b895
+	sbc     hl,de
+	jr      c,_b898
 _b895:
-b895 0180ff    ld      bc,$ff80
+	ld      bc,$ff80
 _b898:
-b898 04        inc     b
+	inc     b
 _b899:
-b899 dd7107    ld      (ix+$07),c
-b89c dd7008    ld      (ix+$08),b
-b89f dd7709    ld      (ix+$09),a
-b8a2 dd7e17    ld      a,(ix+$17)
-b8a5 fe06      cp      $06
-b8a7 2018      jr      nz,_b8c1
-b8a9 dd7e16    ld      a,(ix+$16)
-b8ac 3d        dec     a
-b8ad 2012      jr      nz,_b8c1
-b8af ddcb187e  bit     7,(ix+$18)
-b8b3 280c      jr      z,_b8c1
-b8b5 dd360a00  ld      (ix+$0a),$00
-b8b9 dd360bff  ld      (ix+$0b),$ff
-b8bd dd360cff  ld      (ix+$0c),$ff
+	ld      (ix+$07),c
+	ld      (ix+$08),b
+	ld      (ix+$09),a
+	ld      a,(ix+$17)
+	cp      $06
+	jr      nz,_b8c1
+	ld      a,(ix+$16)
+	dec     a
+	jr      nz,_b8c1
+	bit     7,(ix+$18)
+	jr      z,_b8c1
+	ld      (ix+$0a),$00
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
 _b8c1:
-b8c1 111700    ld      de,$0017
-b8c4 013600    ld      bc,$0036
-b8c7 cdf936    call    _36f9
-b8ca 5e        ld      e,(hl)
-b8cb 1600      ld      d,$00
-b8cd 21283f    ld      hl,$3f28
-b8d0 19        add     hl,de
-b8d1 7e        ld      a,(hl)
-b8d2 e63f      and     $3f
-b8d4 a7        and     a
-b8d5 2812      jr      z,_b8e9
-b8d7 ddcb187e  bit     7,(ix+$18)
-b8db 280c      jr      z,_b8e9
-b8dd dd360a80  ld      (ix+$0a),$80
-b8e1 dd360bfd  ld      (ix+$0b),$fd
-b8e5 dd360cff  ld      (ix+$0c),$ff
+	ld      de,$0017
+	ld      bc,$0036
+	call    _36f9
+	ld      e,(hl)
+	ld      d,$00
+	ld      hl,$3f28
+	add     hl,de
+	ld      a,(hl)
+	and     $3f
+	and     a
+	jr      z,_b8e9
+	bit     7,(ix+$18)
+	jr      z,_b8e9
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$fd
+	ld      (ix+$0c),$ff
 _b8e9:
-b8e9 110000    ld      de,$0000
-b8ec 010800    ld      bc,$0008
-b8ef cdf936    call    _36f9
-b8f2 7e        ld      a,(hl)
-b8f3 fe49      cp      $49
-b8f5 2036      jr      nz,_b92d
-b8f7 ddcb187e  bit     7,(ix+$18)
-b8fb 2830      jr      z,_b92d
-b8fd af        xor     a
-b8fe dd7716    ld      (ix+$16),a
-b901 dd7717    ld      (ix+$17),a
-b904 dd7707    ld      (ix+$07),a
-b907 dd7708    ld      (ix+$08),a
-b90a dd7709    ld      (ix+$09),a
-b90d dd3611e0  ld      (ix+$11),$e0
-b911 dd361205  ld      (ix+$12),$05
-b915 dd361360  ld      (ix+$13),$60
-b919 dd361401  ld      (ix+$14),$01
-b91d 215005    ld      hl,$0550
-b920 112001    ld      de,$0120
-b923 cd8c7c    call    _7c8c
-b926 ddcb18de  set     3,(ix+$18)
-b92a c35bb9    jp      _b95b
+	ld      de,$0000
+	ld      bc,$0008
+	call    _36f9
+	ld      a,(hl)
+	cp      $49
+	jr      nz,_b92d
+	bit     7,(ix+$18)
+	jr      z,_b92d
+	xor     a
+	ld      (ix+$16),a
+	ld      (ix+$17),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      (ix+$11),$e0
+	ld      (ix+$12),$05
+	ld      (ix+$13),$60
+	ld      (ix+$14),$01
+	ld      hl,$0550
+	ld      de,$0120
+	call    _7c8c
+	set     3,(ix+$18)
+	jp      _b95b
 _b92d:
-b92d dd6e0a    ld      l,(ix+$0a)
-b930 dd660b    ld      h,(ix+$0b)
-b933 dd7e0c    ld      a,(ix+$0c)
-b936 110e00    ld      de,$000e
-b939 19        add     hl,de
-b93a ce00      adc     a,$00
-b93c 4f        ld      c,a
-b93d fa48b9    jp      m,_b948
-b940 7c        ld      a,h
-b941 fe02      cp      $02
-b943 3803      jr      c,_b948
-b945 210002    ld      hl,$0200
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	ld      de,$000e
+	add     hl,de
+	adc     a,$00
+	ld      c,a
+	jp      m,_b948
+	ld      a,h
+	cp      $02
+	jr      c,_b948
+	ld      hl,$0200
 _b948:
-b948 dd750a    ld      (ix+$0a),l
-b94b dd740b    ld      (ix+$0b),h
-b94e dd710c    ld      (ix+$0c),c
-b951 0128ba    ld      bc,$ba28
-b954 11f9ba    ld      de,$baf9
-b957 cd417c    call    _7c41
-b95a c9        ret     
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),c
+	ld      bc,_ba28
+	ld      de,_baf9
+	call    _7c41
+	ret     
 _b95b:
-b95b fd3603ff  ld      (iy+$03),$ff
-b95f cd9fb9    call    _b99f
-b962 dd7e16    ld      a,(ix+$16)
-b965 fe30      cp      $30
-b967 3021      jr      nc,_b98a
-b969 4f        ld      c,a
-b96a 3a23d2    ld      a,($d223)
-b96d e607      and     $07
-b96f 200c      jr      nz,_b97d
-b971 dd7e17    ld      a,(ix+$17)
-b974 3c        inc     a
-b975 e601      and     $01
-b977 dd7717    ld      (ix+$17),a
-b97a dd3416    inc     (ix+$16)
+	ld      (iy+$03),$ff
+	call    _b99f
+	ld      a,(ix+$16)
+	cp      $30
+	jr      nc,_b98a
+	ld      c,a
+	ld      a,($d223)
+	and     $07
+	jr      nz,_b97d
+	ld      a,(ix+$17)
+	inc     a
+	and     $01
+	ld      (ix+$17),a
+	inc     (ix+$16)
 _b97d:
-b97d 79        ld      a,c
-b97e fe2c      cp      $2c
-b980 d8        ret     c
-b981 dd360f77  ld      (ix+$0f),$77
-b985 dd3610bb  ld      (ix+$10),$bb
-b989 c9        ret     
+	ld      a,c
+	cp      $2c
+	ret     c
+	ld      (ix+$0f),<_bb77
+	ld      (ix+$10),>_bb77
+	ret     
 _b98a:
-b98a af        xor     a
-b98b dd770f    ld      (ix+$0f),a
-b98e dd7710    ld      (ix+$10),a
-b991 dd3416    inc     (ix+$16)
-b994 dd7e16    ld      a,(ix+$16)
-b997 fe70      cp      $70
-b999 d8        ret     c
-b99a dd3600ff  ld      (ix+$00),$ff
-b99e c9        ret     
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	inc     (ix+$16)
+	ld      a,(ix+$16)
+	cp      $70
+	ret     c
+	ld      (ix+$00),$ff
+	ret     
 
 _b99f:
-b99f 211cba    ld      hl,$ba1c
-b9a2 dd7e17    ld      a,(ix+$17)
-b9a5 87        add     a,a
-b9a6 87        add     a,a
-b9a7 5f        ld      e,a
-b9a8 1600      ld      d,$00
-b9aa 42        ld      b,d
-b9ab 19        add     hl,de
-b9ac 4e        ld      c,(hl)
-b9ad 23        inc     hl
-b9ae 5e        ld      e,(hl)
-b9af 23        inc     hl
-b9b0 7e        ld      a,(hl)
-b9b1 23        inc     hl
-b9b2 66        ld      h,(hl)
-b9b3 6f        ld      l,a
-b9b4 dd750f    ld      (ix+$0f),l
-b9b7 dd7410    ld      (ix+$10),h
-b9ba dd6e11    ld      l,(ix+$11)
-b9bd dd6612    ld      h,(ix+$12)
-b9c0 09        add     hl,bc
-b9c1 dd7502    ld      (ix+$02),l
-b9c4 dd7403    ld      (ix+$03),h
-b9c7 dd6e13    ld      l,(ix+$13)
-b9ca dd6614    ld      h,(ix+$14)
-b9cd 19        add     hl,de
-b9ce dd7505    ld      (ix+$05),l
-b9d1 dd7406    ld      (ix+$06),h
-b9d4 c9        ret     
+	ld      hl,_ba1c
+	ld      a,(ix+$17)
+	add     a,a
+	add     a,a
+	ld      e,a
+	ld      d,$00
+	ld      b,d
+	add     hl,de
+	ld      c,(hl)
+	inc     hl
+	ld      e,(hl)
+	inc     hl
+	ld      a,(hl)
+	inc     hl
+	ld      h,(hl)
+	ld      l,a
+	ld      (ix+$0f),l
+	ld      (ix+$10),h
+	ld      l,(ix+$11)
+	ld      h,(ix+$12)
+	add     hl,bc
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      l,(ix+$13)
+	ld      h,(ix+$14)
+	add     hl,de
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ret     
 
 _b9d5:
-b9d5 fdcb086e  bit     5,(iy+$08)
-b9d9 c0        ret     nz
-b9da cd7b7c    call    _7c7b
-b9dd d8        ret     c
-b9de dde5      push    ix
-b9e0 e5        push    hl
-b9e1 dde1      pop     ix
-b9e3 af        xor     a
-b9e4 dd360047  ld      (ix+$00),$47
-b9e8 dd7701    ld      (ix+$01),a
-b9eb 212004    ld      hl,$0420
-b9ee dd7502    ld      (ix+$02),l
-b9f1 dd7403    ld      (ix+$03),h
-b9f4 dd7704    ld      (ix+$04),a
-b9f7 212f01    ld      hl,$012f
-b9fa dd7505    ld      (ix+$05),l
-b9fd dd7406    ld      (ix+$06),h
-ba00 dd7711    ld      (ix+$11),a
-ba03 dd7718    ld      (ix+$18),a
-ba06 dd7707    ld      (ix+$07),a
-ba09 dd7708    ld      (ix+$08),a
-ba0c dd7709    ld      (ix+$09),a
-ba0f dd770a    ld      (ix+$0a),a
-ba12 dd770b    ld      (ix+$0b),a
-ba15 dd770c    ld      (ix+$0c),a
-ba18 dde1      pop     ix
-ba1a c9        ret     
-ba1b c9        ret     
-ba1c 00        nop     
-ba1d 00        nop     
-ba1e f9        ld      sp,hl
-ba1f ba        cp      d
-ba20 00        nop     
-ba21 02        ld      (bc),a
-ba22 0b        dec     bc
-ba23 bb        cp      e
-ba24 00        nop     
-ba25 07        rlca    
-ba26 0b        dec     bc
-ba27 bb        cp      e
-ba28 03        inc     bc
-ba29 08        ex      af,af'
-ba2a 04        inc     b
-ba2b 07        rlca    
-ba2c 05        dec     b
-ba2d 08        ex      af,af'
-ba2e 04        inc     b
-ba2f 07        rlca    
-ba30 ff        rst     $38
-ba31 3004      jr      nc,_ba37
-ba33 a0        and     b
-ba34 010000    ld      bc,$0000
+	bit     5,(iy+$08)
+	ret     nz
+	call    _7c7b
+	ret     c
+	push    ix
+	push    hl
+	pop     ix
+	xor     a
+	ld      (ix+$00),$47
+	ld      (ix+$01),a
+	ld      hl,$0420
+	ld      (ix+$02),l
+	ld      (ix+$03),h
+	ld      (ix+$04),a
+	ld      hl,$012f
+	ld      (ix+$05),l
+	ld      (ix+$06),h
+	ld      (ix+$11),a
+	ld      (ix+$18),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	pop     ix
+	ret     
+
+_ba1b:
+.db $C9					;unused?
+_ba1c:    
+.db $00, $00, $F9, $BA, $00, $02, $0B, $BB, $00, $07, $0B, $BB
+_ba28:
+.db $03, $08, $04, $07, $05, $08, $04, $07, $FF, $30, $04, $A0, $01, $00, $00
 _ba37:
-ba37 00        nop     
-ba38 00        nop     
-ba39 2022      jr------nz,$ba5d
-ba3b 3004      jr------nc,$ba41
-ba3d a0        and     b
-ba3e 010000    ld      bc,$0000
-ba41 00        nop     
-ba42 00        nop     
-ba43 24        inc     h
-ba44 2620      ld      h,$20
-ba46 04        inc     b
-ba47 60        ld      h,b
-ba48 013710    ld      bc,$1037
-ba4b 3810      jr------c,$ba5d
-ba4d 4a        ld      c,d
-ba4e 104b      djnz----$ba9b
-ba50 1030      djnz----$ba82
-ba52 04        inc     b
-ba53 60        ld      h,b
-ba54 012810    ld      bc,$1028
-ba57 19        add     hl,de
-ba58 104c      djnz----$baa6
-ba5a 104d      djnz----$baa9
-ba5c 1040      djnz----$ba9e
-ba5e 04        inc     b
-ba5f 60        ld      h,b
-ba60 010010    ld      bc,$1000
-ba63 2d        dec     l
-ba64 104e      djnz----$bab4
-ba66 104f      djnz----$bab7
-ba68 1020      djnz----$ba8a
-ba6a 04        inc     b
-ba6b 70        ld      (hl),b
-ba6c 010000    ld      bc,$0000
-ba6f 00        nop     
-ba70 00        nop     
-ba71 00        nop     
-ba72 00        nop     
-ba73 00        nop     
-ba74 00        nop     
-ba75 3004      jr------nc,$ba7b
-ba77 70        ld      (hl),b
-ba78 010000    ld      bc,$0000
-ba7b 00        nop     
-ba7c 00        nop     
-ba7d 00        nop     
-ba7e 00        nop     
-ba7f 00        nop     
-ba80 00        nop     
-ba81 40        ld      b,b
-ba82 04        inc     b
-ba83 70        ld      (hl),b
-ba84 010000    ld      bc,$0000
-ba87 00        nop     
-ba88 00        nop     
-ba89 00        nop     
-ba8a 00        nop     
-ba8b 00        nop     
-ba8c 00        nop     
-ba8d 2004      jr------nz,$ba93
-ba8f 80        add     a,b
-ba90 010000    ld      bc,$0000
-ba93 00        nop     
-ba94 00        nop     
-ba95 00        nop     
-ba96 00        nop     
-ba97 00        nop     
-ba98 00        nop     
-ba99 3004      jr------nc,$ba9f
-ba9b 80        add     a,b
-ba9c 010000    ld      bc,$0000
-ba9f 00        nop     
-baa0 00        nop     
-baa1 00        nop     
-baa2 00        nop     
-baa3 00        nop     
-baa4 00        nop     
-baa5 40        ld      b,b
-baa6 04        inc     b
-baa7 80        add     a,b
-baa8 010000    ld      bc,$0000
-baab 00        nop     
-baac 00        nop     
-baad 00        nop     
-baae 00        nop     
-baaf 00        nop     
-bab0 00        nop     
-bab1 2004      jr------nz,$bab7
-bab3 90        sub     b
-bab4 010000    ld      bc,$0000
-bab7 00        nop     
-bab8 00        nop     
-bab9 00        nop     
-baba 00        nop     
-babb 00        nop     
-babc 00        nop     
-babd 3004      jr------nc,$bac3
-babf 90        sub     b
-bac0 010000    ld      bc,$0000
-bac3 00        nop     
-bac4 00        nop     
-bac5 00        nop     
-bac6 00        nop     
-bac7 00        nop     
-bac8 00        nop     
-bac9 40        ld      b,b
-baca 04        inc     b
-bacb 90        sub     b
-bacc 010000    ld      bc,$0000
-bacf 00        nop     
-bad0 00        nop     
-bad1 00        nop     
-bad2 00        nop     
-bad3 00        nop     
-bad4 00        nop     
-bad5 2004      jr------nz,$badb
-bad7 a0        and     b
-bad8 015a10    ld      bc,$105a
-badb 5b        ld      e,e
-badc 1037      djnz----$bb15
-bade 103b      djnz----$bb1b
-bae0 1030      djnz----$bb12
-bae2 04        inc     b
-bae3 a0        and     b
-bae4 015c10    ld      bc,$105c
-bae7 5d        ld      e,l
-bae8 103c      djnz----$bb26
-baea 1000      djnz----$baec
-baec 1040      djnz----$bb2e
-baee 04        inc     b
-baef a0        and     b
-baf0 015e10    ld      bc,$105e
-baf3 5f        ld      e,a
-baf4 1000      djnz----$baf6
-baf6 102d      djnz----$bb25
-baf8 10fe      djnz----$baf8
-bafa 0a        ld      a,(bc)
-bafb 0c        inc     c
-bafc 0eff      ld      c,$ff
-bafe ff        rst     $38
-baff 282a      jr------z,$bb2b
-bb01 2c        inc     l
-bb02 2eff      ld      l,$ff
-bb04 ff        rst     $38
-bb05 fe4a      cp      $4a
-bb07 4c        ld      c,h
-bb08 4e        ld      c,(hl)
-bb09 ff        rst     $38
-bb0a ff        rst     $38
-bb0b fe0a      cp      $0a
-bb0d 0c        inc     c
-bb0e 0eff      ld      c,$ff
-bb10 ff        rst     $38
-bb11 282a      jr------z,$bb3d
-bb13 2c        inc     l
-bb14 2eff      ld      l,$ff
-bb16 ff        rst     $38
-bb17 fe02      cp      $02
-bb19 04        inc     b
-bb1a 06ff      ld      b,$ff
-bb1c ff        rst     $38
-bb1d 1012      djnz----$bb31
-bb1f 14        inc     d
-bb20 16ff      ld      d,$ff
-bb22 ff        rst     $38
-bb23 3032      jr------nc,$bb57
-bb25 34        inc     (hl)
-bb26 feff      cp      $ff
-bb28 ff        rst     $38
-bb29 50        ld      d,b
-bb2a 52        ld      d,d
-bb2b 54        ld      d,h
-bb2c feff      cp      $ff
-bb2e ff        rst     $38
-bb2f 181a      jr------$bb4b
-bb31 1c        inc     e
-bb32 1eff      ld      e,$ff
-bb34 ff        rst     $38
-bb35 fe3a      cp      $3a
-bb37 3c        inc     a
-bb38 3eff      ld      a,$ff
-bb3a ff        rst     $38
-bb3b fe64      cp      $64
-bb3d 66        ld      h,(hl)
-bb3e 68        ld      l,b
-bb3f ff        rst     $38
-bb40 ff        rst     $38
-bb41 181a      jr------$bb5d
-bb43 1c        inc     e
-bb44 1eff      ld      e,$ff
-bb46 ff        rst     $38
-bb47 fe3a      cp      $3a
-bb49 3c        inc     a
-bb4a 3eff      ld      a,$ff
-bb4c ff        rst     $38
-bb4d fe6a      cp      $6a
-bb4f 6c        ld      l,h
-bb50 6e        ld      l,(hl)
-bb51 ff        rst     $38
-bb52 ff        rst     $38
-bb53 181a      jr------$bb6f
-bb55 1c        inc     e
-bb56 1eff      ld      e,$ff
-bb58 ff        rst     $38
-bb59 fe3a      cp      $3a
-bb5b 3c        inc     a
-bb5c 3eff      ld      a,$ff
-bb5e ff        rst     $38
-bb5f 70        ld      (hl),b
-bb60 72        ld      (hl),d
-bb61 5a        ld      e,d
-bb62 5c        ld      e,h
-bb63 5e        ld      e,(hl)
-bb64 ff        rst     $38
-bb65 00        nop     
-bb66 0a        ld      a,(bc)
-bb67 0c        inc     c
-bb68 0eff      ld      c,$ff
-bb6a ff        rst     $38
-bb6b 282a      jr------z,$bb97
-bb6d 2c        inc     l
-bb6e 2eff      ld      l,$ff
-bb70 ff        rst     $38
-bb71 00        nop     
-bb72 4a        ld      c,d
-bb73 4c        ld      c,h
-bb74 4e        ld      c,(hl)
-bb75 ff        rst     $38
-bb76 ff        rst     $38
-bb77 feff      cp      $ff
-bb79 ff        rst     $38
-bb7a ff        rst     $38
-bb7b ff        rst     $38
-bb7c ff        rst     $38
-bb7d fe44      cp      $44
-bb7f 46        ld      b,(hl)
-bb80 ff        rst     $38
-bb81 ff        rst     $38
-bb82 ff        rst     $38
-bb83 ff        rst     $38
+.db $00, $00, $20, $22
+_ba3b:
+.db $30, $04, $A0, $01, $00, $00, $00, $00, $24, $26, $20, $04, $60, $01, $37, $10
+.db $38, $10, $4A, $10, $4B, $10, $30, $04, $60, $01, $28, $10, $19, $10, $4C, $10
+.db $4D, $10, $40, $04, $60, $01, $00, $10, $2D, $10, $4E, $10, $4F, $10, $20, $04
+.db $70, $01, $00, $00, $00, $00, $00, $00, $00, $00, $30, $04, $70, $01, $00, $00
+.db $00, $00, $00, $00, $00, $00, $40, $04, $70, $01, $00, $00, $00, $00, $00, $00
+.db $00, $00, $20, $04, $80, $01, $00, $00, $00, $00, $00, $00, $00, $00, $30, $04
+.db $80, $01, $00, $00, $00, $00, $00, $00, $00, $00, $40, $04, $80, $01, $00, $00
+.db $00, $00, $00, $00, $00, $00, $20, $04, $90, $01, $00, $00, $00, $00, $00, $00
+.db $00, $00, $30, $04, $90, $01, $00, $00, $00, $00, $00, $00, $00, $00, $40, $04
+.db $90, $01, $00, $00, $00, $00, $00, $00, $00, $00, $20, $04, $A0, $01, $5A, $10
+.db $5B, $10, $37, $10, $3B, $10, $30, $04, $A0, $01, $5C, $10, $5D, $10, $3C, $10
+.db $00, $10, $40, $04, $A0, $01, $5E, $10, $5F, $10, $00, $10, $2D, $10
+_baf9:
+.db $FE, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $4A, $4C, $4E
+.db $FF, $FF, $FE, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $02
+.db $04, $06, $FF, $FF
+_bb1d:
+.db $10, $12, $14, $16, $FF, $FF, $30, $32, $34, $FE, $FF, $FF, $50, $52, $54, $FE
+.db $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E, $FF, $FF, $FE, $64
+.db $66, $68, $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E, $FF, $FF
+.db $FE, $6A, $6C, $6E, $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E
+.db $FF, $FF, $70, $72, $5A, $5C, $5E, $FF, $00, $0A, $0C, $0E, $FF, $FF, $28, $2A
+.db $2C, $2E, $FF, $FF, $00, $4A, $4C, $4E, $FF, $FF
+_bb77:
+.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $44, $46, $FF, $FF, $FF, $FF
 
-bb84 ddcb18ee  set     5,(ix+$18)
-bb88 210800    ld      hl,$0008
-bb8b 226bd2    ld      ($d26b),hl
-bb8e ddcb1846  bit     0,(ix+$18)
-bb92 2013      jr      nz,_bba7
+;____________________________________________________________________________[$BB84]___
+;OBJECT: boss - electric beam (Sky Base)
 
-		;UNKNOWN
-bb94 213fef    ld      hl,$ef3f
-bb97 110020    ld      de,$2000
-bb9a 3e0c      ld      a,$0c
-bb9c cd0504    call    decompressArt
+_bb84:
+	set     5,(ix+$18)
+	ld      hl,$0008
+	ld      ($d26b),hl
+	bit     0,(ix+$18)
+	jr      nz,_bba7
 
-bb9f dd361201  ld      (ix+$12),$01
-bba3 ddcb18c6  set     0,(ix+$18)
+	;UNKNOWN
+	ld      hl,$ef3f
+	ld      de,$2000
+	ld      a,$0c
+	call    decompressArt
+
+	ld      (ix+$12),$01
+	set     0,(ix+$18)
 _bba7:
-bba7 219003    ld      hl,$0390
-bbaa 220ed2    ld      ($d20e),hl
-bbad dd6e11    ld      l,(ix+$11)
-bbb0 2600      ld      h,$00
-bbb2 2212d2    ld      ($d212),hl
-bbb5 6c        ld      l,h
-bbb6 2214d2    ld      ($d214),hl
-bbb9 111a01    ld      de,$011a
-bbbc 21ddbc    ld      hl,$bcdd
-bbbf cda5bc    call    _bca5
-bbc2 dd5e11    ld      e,(ix+$11)
-bbc5 1600      ld      d,$00
-bbc7 ed5312d2  ld      ($d212),de
-bbcb 11d201    ld      de,$01d2
-bbce 21ddbc    ld      hl,$bcdd
-bbd1 cda5bc    call    _bca5
-bbd4 fdcb0866  bit     4,(iy+$08)
-bbd8 c8        ret     z
-bbd9 ddcb184e  bit     1,(ix+$18)
-bbdd 284c      jr      z,_bc2b
-bbdf 3a23d2    ld      a,($d223)
-bbe2 cb47      bit     0,a
-bbe4 c0        ret     nz
-bbe5 e602      and     $02
-bbe7 5f        ld      e,a
-bbe8 1600      ld      d,$00
-bbea 21c7bc    ld      hl,$bcc7
-bbed 19        add     hl,de
-bbee 060a      ld      b,$0a
-bbf0 113001    ld      de,$0130
+	ld      hl,$0390
+	ld      ($d20e),hl
+	ld      l,(ix+$11)
+	ld      h,$00
+	ld      ($d212),hl
+	ld      l,h
+	ld      ($d214),hl
+	ld      de,$011a
+	ld      hl,_bcdd
+	call    _bca5
+	ld      e,(ix+$11)
+	ld      d,$00
+	ld      ($d212),de
+	ld      de,$01d2
+	ld      hl,_bcdd
+	call    _bca5
+	bit     4,(iy+$08)
+	ret     z
+	bit     1,(ix+$18)
+	jr      z,_bc2b
+	ld      a,($d223)
+	bit     0,a
+	ret     nz
+	and     $02
+	ld      e,a
+	ld      d,$00
+	ld      hl,_bcc7
+	add     hl,de
+	ld      b,$0a
+	ld      de,$0130
 _bbf3:
-bbf3 c5        push    bc
-bbf4 d5        push    de
-bbf5 cda5bc    call    _bca5
-bbf8 d1        pop     de
-bbf9 e5        push    hl
-bbfa 211000    ld      hl,$0010
-bbfd 19        add     hl,de
-bbfe eb        ex      de,hl
-bbff e1        pop     hl
-bc00 c1        pop     bc
-bc01 10f0      djnz    _bbf3
-bc03 219003    ld      hl,$0390
-bc06 dd4e11    ld      c,(ix+$11)
-bc09 0600      ld      b,$00
-bc0b 09        add     hl,bc
-bc0c 4d        ld      c,l
-bc0d 44        ld      b,h
-bc0e 210c00    ld      hl,$000c
-bc11 09        add     hl,bc
-bc12 ed5bfed3  ld      de,($d3fe)
-bc16 a7        and     a
-bc17 ed52      sbc     hl,de
-bc19 3810      jr      c,_bc2b
-bc1b 210e00    ld      hl,$000e
-bc1e 19        add     hl,de
-bc1f a7        and     a
-bc20 ed42      sbc     hl,bc
-bc22 3807      jr      c,_bc2b
-bc24 fdcb0546  bit     0,(iy+$05)
-bc28 ccfd35    call    z,_35fd
+	push    bc
+	push    de
+	call    _bca5
+	pop     de
+	push    hl
+	ld      hl,$0010
+	add     hl,de
+	ex      de,hl
+	pop     hl
+	pop     bc
+	djnz    _bbf3
+	ld      hl,$0390
+	ld      c,(ix+$11)
+	ld      b,$00
+	add     hl,bc
+	ld      c,l
+	ld      b,h
+	ld      hl,$000c
+	add     hl,bc
+	ld      de,($d3fe)
+	and     a
+	sbc     hl,de
+	jr      c,_bc2b
+	ld      hl,$000e
+	add     hl,de
+	and     a
+	sbc     hl,bc
+	jr      c,_bc2b
+	bit     0,(iy+$05)
+	call    z,_35fd
 _bc2b
-bc2b 3aecd2    ld      a,($d2ec)
-bc2e fe06      cp      $06
-bc30 3033      jr      nc,_bc65
-bc32 ddcb184e  bit     1,(ix+$18)
-bc36 2016      jr      nz,_bc4e
-bc38 dd7e11    ld      a,(ix+$11)
-bc3b 3c        inc     a
-bc3c dd7711    ld      (ix+$11),a
-bc3f fe80      cp      $80
-bc41 d8        ret     c
-bc42 3a23d2    ld      a,($d223)
-bc45 4f        ld      c,a
-bc46 e601      and     $01
-bc48 c0        ret     nz
-bc49 ddcb18ce  set     1,(ix+$18)
-bc4d c9        ret     
+	ld      a,($d2ec)
+	cp      $06
+	jr      nc,_bc65
+	bit     1,(ix+$18)
+	jr      nz,_bc4e
+	ld      a,(ix+$11)
+	inc     a
+	ld      (ix+$11),a
+	cp      $80
+	ret     c
+	ld      a,($d223)
+	ld      c,a
+	and     $01
+	ret     nz
+	set     1,(ix+$18)
+	ret     
 _bc4e:
-bc4e 3a23d2    ld      a,($d223)
-bc51 e60f      and     $0f
-bc53 2003      jr      nz,_bc58
-bc55 3e13      ld      a,$13
-bc57 ef        rst     $28
+	ld      a,($d223)
+	and     $0f
+	jr      nz,_bc58
+	ld      a,$13
+	rst     $28
 _bc58:
-bc58 dd3511    dec     (ix+$11)
-bc5b c0        ret     nz
-bc5c dd361100  ld      (ix+$11),$00
-bc60 ddcb188e  res     1,(ix+$18)
-bc64 c9        ret     
+	dec     (ix+$11)
+	ret     nz
+	ld      (ix+$11),$00
+	res     1,(ix+$18)
+	ret     
 _bc65:
-bc65 2afed3    ld      hl,($d3fe)
-bc68 dd5e02    ld      e,(ix+$02)
-bc6b dd5603    ld      d,(ix+$03)
-bc6e a7        and     a
-bc6f ed52      sbc     hl,de
-bc71 300b      jr      nc,_bc7e
-bc73 dd7e11    ld      a,(ix+$11)
-bc76 a7        and     a
-bc77 280f      jr      z,_bc88
-bc79 dd3511    dec     (ix+$11)
-bc7c 180a      jr      _bc88
+	ld      hl,($d3fe)
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	and     a
+	sbc     hl,de
+	jr      nc,_bc7e
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_bc88
+	dec     (ix+$11)
+	jr      _bc88
 _bc7e:
-bc7e dd7e11    ld      a,(ix+$11)
-bc81 fe80      cp      $80
-bc83 3003      jr      nc,_bc88
-bc85 dd3411    inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $80
+	jr      nc,_bc88
+	inc     (ix+$11)
 _bc88:
-bc88 ddcb188e  res     1,(ix+$18)
-bc8c 3a23d2    ld      a,($d223)
-bc8f 4f        ld      c,a
-bc90 e640      and     $40
-bc92 c0        ret     nz
-bc93 3aecd2    ld      a,($d2ec)
-bc96 fe06      cp      $06
-bc98 c8        ret     z
-bc99 ddcb18ce  set     1,(ix+$18)
-bc9d 79        ld      a,c
-bc9e e61f      and     $1f
-bca0 c0        ret     nz
-bca1 3e13      ld      a,$13
-bca3 ef        rst     $28
-bca4 c9        ret     
+	res     1,(ix+$18)
+	ld      a,($d223)
+	ld      c,a
+	and     $40
+	ret     nz
+	ld      a,($d2ec)
+	cp      $06
+	ret     z
+	set     1,(ix+$18)
+	ld      a,c
+	and     $1f
+	ret     nz
+	ld      a,$13
+	rst     $28
+	ret     
 
 _bca5:
-bca5 ed5310d2  ld      ($d210),de
-bca9 7e        ld      a,(hl)
-bcaa 23        inc     hl
-bcab e5        push    hl
-bcac cd8135    call    _3581
-bcaf e1        pop     hl
-bcb0 7e        ld      a,(hl)
-bcb1 23        inc     hl
-bcb2 e5        push    hl
-bcb3 2a12d2    ld      hl,($d212)
-bcb6 e5        push    hl
-bcb7 110800    ld      de,$0008
-bcba 19        add     hl,de
-bcbb 2212d2    ld      ($d212),hl
-bcbe cd8135    call    _3581
-bcc1 e1        pop     hl
-bcc2 2212d2    ld      ($d212),hl
-bcc5 e1        pop     hl
-bcc6 c9        ret     
-bcc7 3638      ld      (hl),$38
-bcc9 56        ld      d,(hl)
-bcca 58        ld      e,b
-bccb 3638      ld      (hl),$38
-bccd 56        ld      d,(hl)
-bcce 58        ld      e,b
-bccf 3638      ld      (hl),$38
-bcd1 56        ld      d,(hl)
-bcd2 58        ld      e,b
-bcd3 3638      ld      (hl),$38
-bcd5 56        ld      d,(hl)
-bcd6 58        ld      e,b
-bcd7 3638      ld      (hl),$38
-bcd9 56        ld      d,(hl)
-bcda 58        ld      e,b
-bcdb 3638      ld      (hl),$38
-bcdd 40        ld      b,b
-bcde 42        ld      b,d
-bcdf ddcb18ee  set     5,(ix+$18)
-bce3 fdcb08ee  set     5,(iy+$08)
-bce7 210202    ld      hl,$0202
-bcea 2214d2    ld      ($d214),hl
-bced cd5639    call    _LABEL_3956_11
-bcf0 380a      jr      c,_bcfc
-bcf2 fdcb0546  bit     0,(iy+$05)
-bcf6 ccfd35    call    z,_35fd
-bcf9 c3bebd    jp      _bdbe
-_bcfc:
-bcfc dd7e11    ld      a,(ix+$11)
-bcff fec8      cp      $c8
-bd01 daadbd    jp      c,_bdad
-bd04 dd5e02    ld      e,(ix+$02)
-bd07 dd5603    ld      d,(ix+$03)
-bd0a 2a5ad2    ld      hl,($d25a)
-bd0d 01f4ff    ld      bc,$fff4
-bd10 09        add     hl,bc
-bd11 a7        and     a
-bd12 ed52      sbc     hl,de
-bd14 d2bebd    jp      nc,_bdbe
-bd17 2a5ad2    ld      hl,($d25a)
-bd1a 24        inc     h
-bd1b a7        and     a
-bd1c ed52      sbc     hl,de
-bd1e dabebd    jp      c,_bdbe
-bd21 2afed3    ld      hl,($d3fe)
-bd24 a7        and     a
-bd25 ed52      sbc     hl,de
-bd27 dd6e07    ld      l,(ix+$07)
-bd2a dd6608    ld      h,(ix+$08)
-bd2d dd7e09    ld      a,(ix+$09)
-bd30 300e      jr      nc,_bd40
-bd32 0eff      ld      c,$ff
-bd34 11f4ff    ld      de,$fff4
-bd37 cb7f      bit     7,a
-bd39 2011      jr      nz,_bd4c
-bd3b 11e8ff    ld      de,$ffe8
-bd3e 180c      jr      _bd4c
-_bd40:
-bd40 0e00      ld      c,$00
-bd42 110c00    ld      de,$000c
-bd45 cb7f      bit     7,a
-bd47 2803      jr      z,_bd4c
-bd49 111800    ld      de,$0018
-_bd4c:
-bd4c 19        add     hl,de
-bd4d 89        adc     a,c
-bd4e dd7507    ld      (ix+$07),l
-bd51 dd7408    ld      (ix+$08),h
-bd54 dd7709    ld      (ix+$09),a
-bd57 dd5e05    ld      e,(ix+$05)
-bd5a dd5606    ld      d,(ix+$06)
-bd5d 2a5dd2    ld      hl,($d25d)
-bd60 01f4ff    ld      bc,$fff4
-bd63 09        add     hl,bc
-bd64 a7        and     a
-bd65 ed52      sbc     hl,de
-bd67 3055      jr      nc,_bdbe
-bd69 2a5dd2    ld      hl,($d25d)
-bd6c 01c000    ld      bc,$00c0
-bd6f 19        add     hl,de
-bd70 a7        and     a
-bd71 ed52      sbc     hl,de
-bd73 3849      jr      c,_bdbe
-bd75 2a01d4    ld      hl,($d401)
-bd78 a7        and     a
-bd79 ed52      sbc     hl,de
-bd7b dd6e0a    ld      l,(ix+$0a)
-bd7e dd660b    ld      h,(ix+$0b)
-bd81 dd7e0c    ld      a,(ix+$0c)
-bd84 300e      jr      nc,_bd94
-bd86 0eff      ld      c,$ff
-bd88 11f6ff    ld      de,$fff6
-bd8b cb7f      bit     7,a
-bd8d 2011      jr      nz,_bda0
-bd8f 11fbff    ld      de,$fffb
-bd92 180c      jr      _bda0
-_bd94:
-bd94 110a00    ld      de,$000a
-bd97 0e00      ld      c,$00
-bd99 cb7f      bit     7,a
-bd9b 2803      jr      z,_bda0
-bd9d 110500    ld      de,$0005
-_bda0:
-bda0 19        add     hl,de
-bda1 89        adc     a,c
-bda2 dd750a    ld      (ix+$0a),l
-bda5 dd740b    ld      (ix+$0b),h
-bda8 dd770c    ld      (ix+$0c),a
-bdab 1803      jr      _bdb0
-_bdad:
-bdad dd3411    inc     (ix+$11)
-_bdb0:
-bdb0 01c7bd    ld      bc,$bdc7
-bdb3 11cebd    ld      de,$bdce
-bdb6 cd417c    call    _7c41
-bdb9 fdcb0866  bit     4,(iy+$08)
-bdbd c0        ret     nz
-_bdbe:
-bdbe dd3600ff  ld      (ix+$00),$ff
-bdc2 fdcb08ae  res     5,(iy+$08)
-bdc6 c9        ret     
-bdc7 00        nop     
-bdc8 010101    ld      bc,$0101
-bdcb 02        ld      (bc),a
-bdcc 01ff44    ld      bc,$44ff
-bdcf 46        ld      b,(hl)
-bdd0 ff        rst     $38
-bdd1 ff        rst     $38
-bdd2 ff        rst     $38
-bdd3 ff        rst     $38
-bdd4 ff        rst     $38
-bdd5 ff        rst     $38
-bdd6 ff        rst     $38
-bdd7 ff        rst     $38
-bdd8 ff        rst     $38
-bdd9 ff        rst     $38
-bdda ff        rst     $38
-bddb ff        rst     $38
-bddc ff        rst     $38
-bddd ff        rst     $38
-bdde ff        rst     $38
-bddf ff        rst     $38
-bde0 48        ld      c,b
-bde1 08        ex      af,af'
-bde2 ff        rst     $38
-bde3 ff        rst     $38
-bde4 ff        rst     $38
-bde5 ff        rst     $38
-bde6 ff        rst     $38
-bde7 ff        rst     $38
-bde8 ff        rst     $38
-bde9 ff        rst     $38
-bdea ff        rst     $38
-bdeb ff        rst     $38
-bdec ff        rst     $38
-bded ff        rst     $38
-bdee ff        rst     $38
-bdef ff        rst     $38
-bdf0 ff        rst     $38
-bdf1 ff        rst     $38
-bdf2 60        ld      h,b
-bdf3 62        ld      h,d
-bdf4 ff        rst     $38
-bdf5 ff        rst     $38
-bdf6 ff        rst     $38
-bdf7 ff        rst     $38
-bdf8 ff        rst     $38
-bdf9 ddcb18ee  set     5,(ix+$18)
-bdfd fd3603ff  ld      (iy+$03),$ff
-be01 ddcb184e  bit     1,(ix+$18)
-be05 201f      jr      nz,_be26
-be07 211c73    ld      hl,S1_BossPalette
-be0a 3e02      ld      a,$02
-be0c cd3303    call    loadPaletteOnInterrupt
-be0f 3eff      ld      a,$ff
-be11 32fcd3    ld      ($d3fc),a
-be14 210000    ld      hl,$0000
-be17 2201d4    ld      ($d401),hl
-be1a dd3612ff  ld      (ix+$12),$ff
-be1e fdcb07f6  set     6,(iy+$07)
-be22 ddcb18ce  set     1,(ix+$18)
-_be26:
-be26 3a23d2    ld      a,($d223)
-be29 0f        rrca    
-be2a 3830      jr      c,_be5c
-be2c dd7e12    ld      a,(ix+$12)
-be2f a7        and     a
-be30 282a      jr      z,_be5c
-be32 dd3512    dec     (ix+$12)
-be35 2025      jr      nz,_be5c
-be37 dd6e02    ld      l,(ix+$02)
-be3a dd6603    ld      h,(ix+$03)
-be3d 113c00    ld      de,$003c
-be40 19        add     hl,de
-be41 22fed3    ld      ($d3fe),hl
-be44 dd6e05    ld      l,(ix+$05)
-be47 dd6606    ld      h,(ix+$06)
-be4a 11c0ff    ld      de,$ffc0
-be4d 19        add     hl,de
-be4e 2201d4    ld      ($d401),hl
-be51 af        xor     a
-be52 32fcd3    ld      ($d3fc),a
-be55 fdcb08f6  set     6,(iy+$08)
-be59 3e06      ld      a,$06
-be5b ef        rst     $28
-_be5c:
-be5c dd360d20  ld      (ix+$0d),$20
-be60 dd360e1c  ld      (ix+$0e),$1c
-be64 af        xor     a
-be65 dd7707    ld      (ix+$07),a
-be68 dd360801  ld      (ix+$08),$01
-be6c dd7709    ld      (ix+$09),a
-be6f dd770a    ld      (ix+$0a),a
-be72 dd770b    ld      (ix+$0b),a
-be75 dd770c    ld      (ix+$0c),a
-be78 fdcb0776  bit     6,(iy+$07)
-be7c 2818      jr      z,_be96
-be7e ed5b5ad2  ld      de,($d25a)
-be82 214000    ld      hl,$0040
-be85 19        add     hl,de
-be86 dd4e02    ld      c,(ix+$02)
-be89 dd4603    ld      b,(ix+$03)
-be8c a7        and     a
-be8d ed42      sbc     hl,bc
-be8f 3005      jr      nc,_be96
-be91 13        inc     de
-be92 ed535ad2  ld      ($d25a),de
-_be96:
-be96 dd360f21  ld      (ix+$0f),$21
-be9a dd3610bf  ld      (ix+$10),$bf
-be9e ddcb1846  bit     0,(ix+$18)
-bea2 2033      jr      nz,_bed7
-bea4 210810    ld      hl,$1008
-bea7 2214d2    ld      ($d214),hl
-beaa cd5639    call    _LABEL_3956_11
-bead 3828      jr      c,_bed7
-beaf 110100    ld      de,$0001
-beb2 2a06d4    ld      hl,($d406)
-beb5 7d        ld      a,l
-beb6 2f        cpl     
-beb7 6f        ld      l,a
-beb8 7c        ld      a,h
-beb9 2f        cpl     
-beba 67        ld      h,a
-bebb 3a08d4    ld      a,($d408)
-bebe 2f        cpl     
-bebf 19        add     hl,de
-bec0 ce00      adc     a,$00
-bec2 2206d4    ld      ($d406),hl
-bec5 3208d4    ld      ($d408),a
-bec8 fdcb07b6  res     6,(iy+$07)
-becc ddcb18c6  set     0,(ix+$18)
-bed0 dd361101  ld      (ix+$11),$01
-bed4 3e01      ld      a,$01
-bed6 ef        rst     $28
-_bed7:
-bed7 cdfa79    call    _79fa
-beda ddcb1846  bit     0,(ix+$18)
-bede c8        ret     z
-bedf af        xor     a
-bee0 dd360a40  ld      (ix+$0a),$40
-bee4 dd770b    ld      (ix+$0b),a
-bee7 dd770c    ld      (ix+$0c),a
-beea dd360f33  ld      (ix+$0f),$33
-beee dd3610bf  ld      (ix+$10),$bf
-bef2 dd3511    dec     (ix+$11)
-bef5 c0        ret     nz
-bef6 cd3a7a    call    _7a3a
-bef9 dd361118  ld      (ix+$11),$18
-befd dd3413    inc     (ix+$13)
-bf00 dd7e13    ld      a,(ix+$13)
-bf03 fe0a      cp      $0a
-bf05 d8        ret     c
-bf06 3a7fd2    ld      a,($d27f)
-bf09 fe06      cp      $06
-bf0b 3805      jr      c,_bf12
-bf0d fdcb08fe  set     7,(iy+$08)
-bf11 c9        ret     
-_bf12:
-bf12 3a89d2    ld      a,($d289)
-bf15 a7        and     a
-bf16 c0        ret     nz
-bf17 3e20      ld      a,$20
-bf19 3289d2    ld      ($d289),a
-bf1c fdcb0dd6  set     2,(iy+$0d)
-bf20 c9        ret     
-bf21 2a2c2e    ld      hl,($2e2c)
-bf24 3032      jr------nc,$bf58
-bf26 ff        rst     $38
-bf27 4a        ld      c,d
-bf28 4c        ld      c,h
-bf29 4e        ld      c,(hl)
-bf2a 50        ld      d,b
-bf2b 52        ld      d,d
-bf2c ff        rst     $38
-bf2d 6a        ld      l,d
-bf2e 6c        ld      l,h
-bf2f 6e        ld      l,(hl)
-bf30 70        ld      (hl),b
-bf31 72        ld      (hl),d
-bf32 ff        rst     $38
-bf33 2a3436    ld      hl,($3634)
-bf36 3832      jr------c,$bf6a
-bf38 ff        rst     $38
-bf39 4a        ld      c,d
-bf3a 4c        ld      c,h
-bf3b 4e        ld      c,(hl)
-bf3c 50        ld      d,b
-bf3d 52        ld      d,d
-bf3e ff        rst     $38
-bf3f 6a        ld      l,d
-bf40 6c        ld      l,h
-bf41 6e        ld      l,(hl)
-bf42 70        ld      (hl),b
-bf43 72        ld      (hl),d
-bf44 ff        rst     $38
-bf45 5c        ld      e,h
-bf46 5e        ld      e,(hl)
-bf47 ff        rst     $38
-bf48 ff        rst     $38
-bf49 ff        rst     $38
-bf4a ff        rst     $38
-bf4b ff        rst     $38
+	ld      ($d210),de
+	ld      a,(hl)
+	inc     hl
+	push    hl
+	call    _3581
+	pop     hl
+	ld      a,(hl)
+	inc     hl
+	push    hl
+	ld      hl,($d212)
+	push    hl
+	ld      de,$0008
+	add     hl,de
+	ld      ($d212),hl
+	call    _3581
+	pop     hl
+	ld      ($d212),hl
+	pop     hl
+	ret     
 
-bf4c ddcb18ee  set     5,(ix+$18)
-bf50 210054    ld      hl,$5400
-bf53 cd1d0c    call    _c1d
-bf56 ddcb1846  bit     0,(ix+$18)
-bf5a 2022      jr      nz,_bf7e
-bf5c af        xor     a
-bf5d dd770f    ld      (ix+$0f),a
-bf60 dd7710    ld      (ix+$10),a
-bf63 dd7707    ld      (ix+$07),a
-bf66 dd7708    ld      (ix+$08),a
-bf69 dd7709    ld      (ix+$09),a
-bf6c dd3411    inc     (ix+$11)
-bf6f dd7e11    ld      a,(ix+$11)
-bf72 fe50      cp      $50
-bf74 d8        ret     c
-bf75 ddcb18c6  set     0,(ix+$18)
-bf79 dd361164  ld      (ix+$11),$64
-bf7d c9        ret   
+_bcc7:
+.db $36, $38, $56, $58, $36, $38, $56, $58, $36, $38, $56, $58, $36, $38, $56, $58
+.db $36, $38, $56, $58, $36, $38
+_bcdd:
+.db $40, $42
+
+;____________________________________________________________________________[$BCDF]___
+;OBJECT: UNKNOWN
+
+_bcdf:
+	set     5,(ix+$18)
+	set     5,(iy+$08)
+	ld      hl,$0202
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_bcfc
+	bit     0,(iy+$05)
+	call    z,_35fd
+	jp      _bdbe
+_bcfc:
+	ld      a,(ix+$11)
+	cp      $c8
+	jp      c,_bdad
+	ld      e,(ix+$02)
+	ld      d,(ix+$03)
+	ld      hl,($d25a)
+	ld      bc,$fff4
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jp      nc,_bdbe
+	ld      hl,($d25a)
+	inc     h
+	and     a
+	sbc     hl,de
+	jp      c,_bdbe
+	ld      hl,($d3fe)
+	and     a
+	sbc     hl,de
+	ld      l,(ix+$07)
+	ld      h,(ix+$08)
+	ld      a,(ix+$09)
+	jr      nc,_bd40
+	ld      c,$ff
+	ld      de,$fff4
+	bit     7,a
+	jr      nz,_bd4c
+	ld      de,$ffe8
+	jr      _bd4c
+_bd40:
+	ld      c,$00
+	ld      de,$000c
+	bit     7,a
+	jr      z,_bd4c
+	ld      de,$0018
+_bd4c:
+	add     hl,de
+	adc     a,c
+	ld      (ix+$07),l
+	ld      (ix+$08),h
+	ld      (ix+$09),a
+	ld      e,(ix+$05)
+	ld      d,(ix+$06)
+	ld      hl,($d25d)
+	ld      bc,$fff4
+	add     hl,bc
+	and     a
+	sbc     hl,de
+	jr      nc,_bdbe
+	ld      hl,($d25d)
+	ld      bc,$00c0
+	add     hl,de
+	and     a
+	sbc     hl,de
+	jr      c,_bdbe
+	ld      hl,($d401)
+	and     a
+	sbc     hl,de
+	ld      l,(ix+$0a)
+	ld      h,(ix+$0b)
+	ld      a,(ix+$0c)
+	jr      nc,_bd94
+	ld      c,$ff
+	ld      de,$fff6
+	bit     7,a
+	jr      nz,_bda0
+	ld      de,$fffb
+	jr      _bda0
+_bd94:
+	ld      de,$000a
+	ld      c,$00
+	bit     7,a
+	jr      z,_bda0
+	ld      de,$0005
+_bda0:
+	add     hl,de
+	adc     a,c
+	ld      (ix+$0a),l
+	ld      (ix+$0b),h
+	ld      (ix+$0c),a
+	jr      _bdb0
+_bdad:
+	inc     (ix+$11)
+_bdb0:
+	ld      bc,_bdc7
+	ld      de,_bdce
+	call    _7c41
+	bit     4,(iy+$08)
+	ret     nz
+_bdbe:
+	ld      (ix+$00),$ff
+	res     5,(iy+$08)
+	ret     
+
+_bdc7:
+.db $00, $01, $01, $01, $02, $01, $FF
+_bdce:
+.db $44, $46, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $48, $08, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $60, $62, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$BDF9]___
+;OBJECT: final animation
+
+_bdf9:
+	set     5,(ix+$18)
+	ld      (iy+$03),$ff
+	bit     1,(ix+$18)
+	jr      nz,_be26
+	ld      hl,S1_BossPalette
+	ld      a,$02
+	call    loadPaletteOnInterrupt
+	ld      a,$ff
+	ld      ($d3fc),a
+	ld      hl,$0000
+	ld      ($d401),hl
+	ld      (ix+$12),$ff
+	set     6,(iy+$07)
+	set     1,(ix+$18)
+_be26:
+	ld      a,($d223)
+	rrca    
+	jr      c,_be5c
+	ld      a,(ix+$12)
+	and     a
+	jr      z,_be5c
+	dec     (ix+$12)
+	jr      nz,_be5c
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      de,$003c
+	add     hl,de
+	ld      ($d3fe),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$ffc0
+	add     hl,de
+	ld      ($d401),hl
+	xor     a
+	ld      ($d3fc),a
+	set     6,(iy+$08)
+	ld      a,$06
+	rst     $28
+_be5c:
+	ld      (ix+$0d),$20
+	ld      (ix+$0e),$1c
+	xor     a
+	ld      (ix+$07),a
+	ld      (ix+$08),$01
+	ld      (ix+$09),a
+	ld      (ix+$0a),a
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	bit     6,(iy+$07)
+	jr      z,_be96
+	ld      de,($d25a)
+	ld      hl,$0040
+	add     hl,de
+	ld      c,(ix+$02)
+	ld      b,(ix+$03)
+	and     a
+	sbc     hl,bc
+	jr      nc,_be96
+	inc     de
+	ld      ($d25a),de
+_be96:
+	ld      (ix+$0f),<_bf21
+	ld      (ix+$10),>_bf21
+	bit     0,(ix+$18)
+	jr      nz,_bed7
+	ld      hl,$1008
+	ld      ($d214),hl
+	call    _LABEL_3956_11
+	jr      c,_bed7
+	ld      de,$0001
+	ld      hl,($d406)
+	ld      a,l
+	cpl     
+	ld      l,a
+	ld      a,h
+	cpl     
+	ld      h,a
+	ld      a,($d408)
+	cpl     
+	add     hl,de
+	adc     a,$00
+	ld      ($d406),hl
+	ld      ($d408),a
+	res     6,(iy+$07)
+	set     0,(ix+$18)
+	ld      (ix+$11),$01
+	ld      a,$01
+	rst     $28
+_bed7:
+	call    _79fa
+	bit     0,(ix+$18)
+	ret     z
+	xor     a
+	ld      (ix+$0a),$40
+	ld      (ix+$0b),a
+	ld      (ix+$0c),a
+	ld      (ix+$0f),<_bf33
+	ld      (ix+$10),>_bf33
+	dec     (ix+$11)
+	ret     nz
+	call    _7a3a
+	ld      (ix+$11),$18
+	inc     (ix+$13)
+	ld      a,(ix+$13)
+	cp      $0a
+	ret     c
+	ld      a,($d27f)
+	cp      $06
+	jr      c,_bf12
+	set     7,(iy+$08)
+	ret     
+_bf12:
+	ld      a,($d289)
+	and     a
+	ret     nz
+	ld      a,$20
+	ld      ($d289),a
+	set     2,(iy+$0d)
+	ret     
+
+_bf21:
+.db $2A, $2C, $2E, $30, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70
+.db $72, $FF
+_bf33:
+.db $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70
+.db $72, $FF, $5C, $5E, $FF, $FF, $FF, $FF, $FF
+
+;____________________________________________________________________________[$BF4C]___
+;OBJECT: all emeralds animation
+
+_bf4c:
+	set     5,(ix+$18)
+	ld      hl,$5400
+	call    _c1d
+	bit     0,(ix+$18)
+	jr      nz,_bf7e
+	xor     a
+	ld      (ix+$0f),a
+	ld      (ix+$10),a
+	ld      (ix+$07),a
+	ld      (ix+$08),a
+	ld      (ix+$09),a
+	inc     (ix+$11)
+	ld      a,(ix+$11)
+	cp      $50
+	ret     c
+	set     0,(ix+$18)
+	ld      (ix+$11),$64
+	ret   
 _bf7e:  
-bf7e dd7e11    ld      a,(ix+$11)
-bf81 a7        and     a
-bf82 2805      jr      z,_bf89
-bf84 dd3511    dec     (ix+$11)
-bf87 180c      jr      _bf95
+	ld      a,(ix+$11)
+	and     a
+	jr      z,_bf89
+	dec     (ix+$11)
+	jr      _bf95
 _bf89:
-bf89 dd360a80  ld      (ix+$0a),$80
-bf8d dd360bff  ld      (ix+$0b),$ff
-bf91 dd360cff  ld      (ix+$0c),$ff
+	ld      (ix+$0a),$80
+	ld      (ix+$0b),$ff
+	ld      (ix+$0c),$ff
 _bf95:
-bf95 21f1bf    ld      hl,$bff1
-bf98 3a23d2    ld      a,($d223)
-bf9b 0f        rrca    
-bf9c 3037      jr      nc,_bfd5
-bf9e fd7e0a    ld      a,(iy+$0a)
-bfa1 2a3cd2    ld      hl,($d23c)
-bfa4 f5        push    af
-bfa5 e5        push    hl
-bfa6 2100d0    ld      hl,$d000
-bfa9 223cd2    ld      ($d23c),hl
-bfac dd6e05    ld      l,(ix+$05)
-bfaf dd6606    ld      h,(ix+$06)
-bfb2 ed5b5dd2  ld      de,($d25d)
-bfb6 a7        and     a
-bfb7 ed52      sbc     hl,de
-bfb9 eb        ex      de,hl
-bfba dd6e02    ld      l,(ix+$02)
-bfbd dd6603    ld      h,(ix+$03)
-bfc0 ed4b5ad2  ld      bc,($d25a)
-bfc4 a7        and     a
-bfc5 ed42      sbc     hl,bc
-bfc7 01f1bf    ld      bc,$bff1
-bfca cd0f35    call    _LABEL_350F_95
-bfcd e1        pop     hl
-bfce f1        pop     af
-bfcf 223cd2    ld      ($d23c),hl
-bfd2 fd770a    ld      (iy+$0a),a
+	ld      hl,_bff1
+	ld      a,($d223)
+	rrca    
+	jr      nc,_bfd5
+	ld      a,(iy+$0a)
+	ld      hl,($d23c)
+	push    af
+	push    hl
+	ld      hl,$d000
+	ld      ($d23c),hl
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,($d25d)
+	and     a
+	sbc     hl,de
+	ex      de,hl
+	ld      l,(ix+$02)
+	ld      h,(ix+$03)
+	ld      bc,($d25a)
+	and     a
+	sbc     hl,bc
+	ld      bc,_bff1
+	call    _LABEL_350F_95
+	pop     hl
+	pop     af
+	ld      ($d23c),hl
+	ld      (iy+$0a),a
 _bfd5:
-bfd5 dd6e05    ld      l,(ix+$05)
-bfd8 dd6606    ld      h,(ix+$06)
-bfdb 112000    ld      de,$0020
-bfde 19        add     hl,de
-bfdf ed5b5dd2  ld      de,($d25d)
-bfe3 a7        and     a
-bfe4 ed52      sbc     hl,de
-bfe6 d0        ret     nc
-bfe7 3e01      ld      a,$01
-bfe9 3289d2    ld      ($d289),a
-bfec fdcb0dd6  set     2,(iy+$0d)
-bff0 c9        ret     
-bff1 5c        ld      e,h
-bff2 5e        ld      e,(hl)
-bff3 ff        rst     $38
-bff4 ff        rst     $38
-bff5 ff        rst     $38
-bff6 ff        rst     $38
-bff7 ff        rst     $38
-bff8 49        ld      c,c
-bff9 43        ld      b,e
-bffa 2054      jr------nz,$c050
-bffc 48        ld      c,b
-bffd 45        ld      b,l
-bffe 2048      jr------nz,$c048
-.ASM
+	ld      l,(ix+$05)
+	ld      h,(ix+$06)
+	ld      de,$0020
+	add     hl,de
+	ld      de,($d25d)
+	and     a
+	sbc     hl,de
+	ret     nc
+	ld      a,$01
+	ld      ($d289),a
+	set     2,(iy+$0d)
+	ret     
+
+_bff1:
+.db $5C, $5E, $FF, $FF, $FF, $FF, $FF, $49, $43, $20, $54, $48, $45, $20, $48
 
 ;======================================================================================
 ;music code and song data
