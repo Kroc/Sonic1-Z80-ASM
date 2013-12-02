@@ -29,9 +29,9 @@
  ;(this had to all be manually labelled!). that was largely wasted time as I later got
  ;help from the author of:
  
-;emulicious: <emulicious.net>
+;Emulicious: <emulicious.net>
  ;which was able to provide a far superior disassembly that filled in all the gaps
- ;through a specific configuration file provided kindle by the author to assist me
+ ;through a specific configuration file provided kindly by the author to assist me
  
 ;WLA DX <villehelin.com/wla.html>
  ;I was intending to write my own Z80 assembler (in VB6!), but I have found -- after
@@ -77,8 +77,14 @@
 	BANKS 16
 .ENDRO
 
-;NOTE: YOU WILL NEED TO PROVIDE YOUR OWN SONIC 1 ROM HERE TO FILL IN THE DATA BANKS
-.BACKGROUND "ROM.sms"
+
+.IFEXISTS "ROM.sms"
+	.BACKGROUND "ROM.sms"
+.ELSE
+	.PRINTT "Please provide a Sonic 1 ROM "
+	.PRINTT "named 'ROM.sms' to fill in the data banks\n"
+	.FAIL
+.ENDIF
 
 ;======================================================================================
 
@@ -153,7 +159,7 @@ _RST_20:				;[$0020]
 
 .ORGA $0028
 _RST_28:				;[$0028]
-	jp _2fe
+	jp   _2fe
 
 .ORGA $0038
 _RST_38:				;[$0038]
@@ -614,9 +620,9 @@ _RST18Handler:
 	ei				;enable interrupts
 	ret
 
-;______________________________________________________________________________________
+;____________________________________________________________________________[$02ED]___
 
-_LABEL_2ED_7:				;[$02E7]
+_LABEL_2ED_7:
 	di				;disable interrupts
 	
 	;switch page 1 (Z80:$4000-$7FFF) to bank 3 (ROM:$0C000-$0FFFF)
@@ -641,11 +647,11 @@ _2fe:
 	ei      
 	ret  
 
-;--------------------------------------------------------------------------------------
+;____________________________________________________________________________[$031B]___
 
-_InitVDPRegisterValues:			;[$031B]				cache:
+_InitVDPRegisterValues:							;	cache:
 .db %00100110   ;VDP Register 0:						$D218
-    ;......x.    stretch screen (33 columns)
+    ;......x.    stret     ch screen (33 columns)
     ;.....x..    unknown
     ;..x.....    hide left column (for scrolling)
 .db %10100010	;vDP Register 1:						$D219
@@ -784,7 +790,7 @@ _0397:
 	or      c
 	jp      nz,-
 	
-	ret     
+	ret
 	
 ;___ UNUSED! ________________________________________________________________[$03AC]___
 
@@ -812,44 +818,44 @@ _03ac:
 	ld      (SMS_PAGE_2),a
 	ld      (S1_PAGE_2),a
 	ei      
-_03ca:
-	ld      a,(hl)
+
+---	ld      a,(hl)
 	cpl     
 	ld      e,a
-_03cd:
-	ld      a,(hl)
+
+--	ld      a,(hl)
 	cp      e
-	jr      z,_03dd
+	jr      z,+
 	out     (SMS_VDP_DATA),a
 	ld      e,a
 	inc     hl
 	dec     bc
 	ld      a,b
 	or      c
-	jp      nz,_03cd
-	jr      _03f5
-_03dd:
-	ld      d,a
+	jp      nz,--
+	jr      ++
+
++	ld      d,a
 	inc     hl
 	dec     bc
 	ld      a,b
 	or      c
-	jr      z,_03f5
+	jr      z,++
 	ld      a,d
 	ld      e,(hl)
-_03e6:
+-:
 	out     (SMS_VDP_DATA),a
 	dec     e
 	nop     
 	nop     
-	jp      nz,_03e6
+	jp      nz,-
 	inc     hl
 	dec     bc
 	ld      a,b
 	or      c
-	jp      nz,_03ca
-_03f5:
-	di      
+	jp      nz,---
+
+++	di      
 	;restore bank numbers
 	pop     de
 	ld      (S1_PAGE_1),de
@@ -1172,8 +1178,7 @@ decompressScreen:
  ;are multiple of in a row are listed as two repeating bytes, followed by another byte
  ;specifying the remaining number of times to repeat
 	
-_LABEL_50B_83:
-	;the current byte is stored in E to be able to check when two bytes in a row
+---	;the current byte is stored in E to be able to check when two bytes in a row
 	 ;occur (the marker for a compressed byte). it's actually stored inverted
 	 ;so that the first data byte doesn't trigger an immediate repeat
 	
@@ -1181,8 +1186,7 @@ _LABEL_50B_83:
 	cpl				;invert the bits ("NOT")
 	ld   e, a			;move this to E
 	
-_LABEL_50E_79:
-	ld   a, (hl)			;read the current byte from the screen data
+--	ld   a, (hl)			;read the current byte from the screen data
 	cp   e				;is this equal to the previous byte?
 	jr   z, +			;if yes, decompress the byte
 	
@@ -1200,8 +1204,8 @@ _LABEL_50E_79:
 	dec  bc				;decrease the remaining bytes to read
 	ld   a, b			;check if remaining bytes is zero
 	or   c
-	jp   nz, _LABEL_50E_79		;if remaining bytes, loop
-	jr   _LABEL_548_80		;otherwise end
+	jp   nz, --			;if remaining bytes, loop
+	jr   ++				;otherwise end
 	
 	;--- decompress byte ----------------------------------------------------------
 +	ld   d, a			;put the current data byte into D
@@ -1209,7 +1213,7 @@ _LABEL_50E_79:
 	dec  bc				;decrease the remaining bytes to read
 	ld   a, b			;check if remaining bytes is zero
 	or   c
-	jr   z, _LABEL_548_80		;if no bytes left, finish
+	jr   z, ++			;if no bytes left, finish
 					 ;(couldn't I just put `ret z` here?)
 	
 	ld   a, d			;return the data byte back to A
@@ -1226,16 +1230,17 @@ _LABEL_50E_79:
 	dec  e
 	jp   nz, -
 	
-_LABEL_541_84:
+-	;move to the next byte in the data
 	inc  hl
 	dec  bc
 	
 	;any remaining bytes?
 	ld   a, b
 	or   c
-	jp   nz, _LABEL_50B_83		;if yes start checking duplicate bytes again
-_LABEL_548_80:
-	ret
+	jp   nz, ---			;if yes start checking duplicate bytes again
+	
+	;all bytes processed - we're done!
+++	ret
 	
 _decompressScreen_skip:
 	ld   e, a
@@ -1247,7 +1252,7 @@ _decompressScreen_skip:
 	
 	ld   a, b
 	or   c
-	jp   nz, _LABEL_50E_79
+	jp   nz, --
 	
 	ei
 	ret
@@ -1260,7 +1265,7 @@ _decompressScreen_multiSkip:
 	nop
 	dec  e
 	jp   nz, _decompressScreen_multiSkip
-	jp   _LABEL_541_84
+	jp   -
 
 ;____________________________________________________________________________[$0566]___
 
@@ -1486,49 +1491,49 @@ _LABEL_625_57:
 	pop  hl
 	ret
 
+;____________________________________________________________________________[$063E]___
+
 _063e:
 	ld      bc,($d251)
 	ld      hl,($d25a)
 	ld      de,($d26f)
 	and     a
 	sbc     hl,de
-	jr      c,_0658
+	jr      c,+
 	ld      a,l
 	add     a,c
 	ld      c,a
 	res     6,(iy+$00)
-	jp      _065f
-_0658:
-	ld      a,l
+	jp      ++
+	
++	ld      a,l
 	add     a,c
 	ld      c,a
 	set     6,(iy+$00)
-_065f:
-	ld      hl,($d25d)
+	
+++	ld      hl,($d25d)
 	ld      de,($d271)
 	and     a
 	sbc     hl,de
-	jr      c,_067b
+	jr      c,++
 	ld      a,l
 	add     a,b
 	cp      $e0
-	jr      c,_0673
+	jr      c,+
 	add     a,$20
-_0673:
-	ld      b,a
++	ld      b,a
 	res     7,(iy+$00)
-	jp      _0688
-_067b:
-	ld      a,l
+	jp      +++
+
+++	ld      a,l
 	add     a,b
 	cp      $e0
-	jr      c,_0683
+	jr      c,+
 	sub     $20
-_0683:
-	ld      b,a
++	ld      b,a
 	set     7,(iy+$00)
-_0688:
-	ld      ($d251),bc
+
++++	ld      ($d251),bc
 	ld      hl,($d25a)
 	sla     l
 	rl      h
@@ -1550,11 +1555,14 @@ _0688:
 	ld      ($d26f),hl
 	ld      hl,($d25d)
 	ld      ($d271),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$06BD]___
+
 _06bd:
 	bit     5,(iy+$00)
 	ret     z
-_06c2:
+	
 	di      
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
 	ld      a,4
@@ -1583,16 +1591,16 @@ _06c2:
 	;store the solidity data address in RAM
 	ld      ($d210),hl
 	bit     0,(iy+$02)
-	jp      z,_0772
+	jp      z,+++
 	
 	bit     6,(iy+$00)
-	jr      nz,_06fa
+	jr      nz,+
 	
 	ld      b,$00
 	ld      c,$08
-	jp      _070b
-_06fa:
-	ld      a,($d251)
+	jp      ++
+
++	ld      a,($d251)
 	and     %00011111
 	add     a,$08
 	rrca    
@@ -1603,14 +1611,13 @@ _06fa:
 	and     %00000001
 	ld      b,$00
 	ld      c,a
-_070b:
-	call    _08d5
+
+++	call    _08d5
 	ld      a,($d251)
 	bit     6,(iy+$00)
-	jr      z,_0719
+	jr      z,+
 	add     a,$08
-_0719:
-	and     %00011111
++	and     %00011111
 	srl     a
 	srl     a
 	srl     a
@@ -1668,19 +1675,19 @@ _0719:
 	exx     
 	add     hl,de
 	djnz    -
-_0772:
-	bit     1,(iy+$02)
-	jp      z,_07da
+	
++++	bit     1,(iy+$02)
+	jp      z,+++
 	bit     7,(iy+$00)
-	jr      nz,_0786
+	jr      nz,+
 	ld      b,$06
 	ld      c,$00
-	jp      _0789
-_0786:
-	ld      b,$00
+	jp      ++
+	
++	ld      b,$00
 	ld      c,b
-_0789:
-	call    _08d5
+	
+++	call    _08d5
 	ld      a,($d252)
 	and     $1f
 	srl     a
@@ -1692,8 +1699,8 @@ _0789:
 	ld      de,$d100
 	exx     
 	ld      b,$09
-_07a3:
-	ld      a,(hl)
+
+-	ld      a,(hl)
 	exx     
 	ld      c,a
 	ld      b,$00
@@ -1732,15 +1739,15 @@ _07a3:
 	inc     e
 	exx     
 	inc     hl
-	djnz    _07a3
-_07da:
-	ret
+	djnz    -
+
++++	ret
 
 ;____________________________________________________________________________[$07DB]___
 
 _LABEL_7DB_26:
 	bit  0, (iy+$02)
-	jp   z, _LABEL_849_27
+	jp   z, ++
 	
 	exx
 	push hl
@@ -1787,8 +1794,8 @@ _LABEL_7DB_26:
 	add  hl, bc
 	ld   b, $32
 	ld   c, $BE
-_LABEL_82F_30:
-	exx
+
+-	exx
 	ld   a, l
 	out  (SMS_VDP_CONTROL), a
 	ld   a, h
@@ -1796,34 +1803,32 @@ _LABEL_82F_30:
 	add  hl, bc
 	ld   a, h
 	cp   d
-	jp   nc, _LABEL_8D0_29
-_LABEL_83C_37:
-	exx
+	jp   nc, +++
+	
+--	exx
 	outi
 	outi
-	jp   nz, _LABEL_82F_30
+	jp   nz, -
 	exx
 	pop  bc
 	pop  de
 	pop  hl
 	exx
-_LABEL_849_27:
-	bit  1, (iy+$02)
-	jp   z, _LABEL_8CF_31
+
+++	bit  1, (iy+$02)
+	jp   z, ++
 	ld   a, ($D252)
 	ld   b, $00
 	srl  a
 	srl  a
 	srl  a
 	bit  7, (iy+$00)
-	jr   nz, _LABEL_863_32
+	jr   nz, +
 	add  a, $18
-_LABEL_863_32:
-	cp   $1C
-	jr   c, _LABEL_869_33
++	cp   $1C
+	jr   c, +
 	sub  $1C
-_LABEL_869_33:
-	add  a, a
++	add  a, a
 	add  a, a
 	add  a, a
 	add  a, a
@@ -1866,45 +1871,45 @@ _LABEL_869_33:
 	out  (SMS_VDP_CONTROL), a
 	ld   b, $3E
 	ld   c, $BE
-_LABEL_8B2_35:
-	bit  6, e
-	jr   nz, _LABEL_8C0_34
+
+-	bit  6, e
+	jr   nz, +
 	inc  e
 	inc  e
 	outi
 	outi
-	jp   nz, _LABEL_8B2_35
+	jp   nz, -
 	ret
 
-_LABEL_8C0_34:				;[$08C0]
-	ld   a, ($D20E)
++	ld   a, ($D20E)
 	out  (SMS_VDP_CONTROL), a
 	ld   a, d
 	out  (SMS_VDP_CONTROL), a
-_LABEL_8C8_36:
+-	outi
 	outi
-	outi
-	jp   nz, _LABEL_8C8_36
-_LABEL_8CF_31:
-	ret
+	jp   nz, -
 
-_LABEL_8D0_29:				;[$08D0]
-	sub  e
+++	ret
+
++++	sub  e
 	ld   h, a
-	jp   _LABEL_83C_37
+	jp   --
+
+;____________________________________________________________________________[$08D5]___
+
 _08d5:
 	ld      a,(S1_LEVEL_FLOORWIDTH)	;get width of the level's floor layout
 	rlca    			;double it (x2)
-	jr      c,_08e7
+	jr      c,+
 	rlca    			;double it again (x4)
-	jr      c,_08fd
+	jr      c,++
 	rlca    			;double it again (x8)
-	jr      c,_0917
+	jr      c,+++
 	rlca    			;double it again (x16)
-	jr      c,_0935
-	jp      _0957
-_08e7:
-	ld      a,($d258)
+	jr      c,++++
+	jp      +++++
+	
++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
 	srl     a
@@ -1916,10 +1921,9 @@ _08e7:
 	ld      e,a
 	ld      hl,$c000
 	add     hl,de
-	ret     
+	ret
 
-_08fd:
-	ld      a,($d258)
+++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
 	srl     a
@@ -1933,33 +1937,11 @@ _08fd:
 	ld      e,a
 	ld      hl,$c000
 	add     hl,de
-	ret     
+	ret
 
-_0917:
-	ld      a,($d258)
++++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
-	srl     a
-	rr      e
-	srl     a
-	rr      e
-	srl     a
-	rr      e
-	ld      d,a
-	ld      a,($d257)
-	add     a,c
-	add     a,e
-	ld      e,a
-	ld      hl,$c000
-	add     hl,de
-	ret     
-
-_0935:
-	ld      a,($d258)
-	add     a,b
-	ld      e,$00
-	srl     a
-	rr      e
 	srl     a
 	rr      e
 	srl     a
@@ -1973,10 +1955,29 @@ _0935:
 	ld      e,a
 	ld      hl,$c000
 	add     hl,de
-	ret     
+	ret
 
-_0957:
-	ld      a,($d258)
+++++	ld      a,($d258)
+	add     a,b
+	ld      e,$00
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	ld      d,a
+	ld      a,($d257)
+	add     a,c
+	add     a,e
+	ld      e,a
+	ld      hl,$c000
+	add     hl,de
+	ret
+
++++++	ld      a,($d258)
 	add     a,b
 	ld      d,a
 	ld      a,($d257)
@@ -1984,7 +1985,9 @@ _0957:
 	ld      e,a
 	ld      hl,$c000
 	add     hl,de
-	ret     
+	ret
+
+;____________________________________________________________________________[$0966]___
 
 _0966:
 	di      			;disable interrupts
@@ -1999,12 +2002,13 @@ _0966:
 	call    _08d5
 	ld      de,$3800
 	ld      b,$06
-_0982:
-	push    bc
+
+---	push    bc
 	push    hl
 	push    de
 	ld      b,$08
-_0987:	;look up solidity value?
+
+--	;look up solidity value?
 	push    bc
 	push    hl
 	push    de
@@ -2040,8 +2044,8 @@ _0987:	;look up solidity value?
 	add     hl,bc
 	ex      de,hl
 	ld      b,$04
-_09b6:
-	ld      a,l
+
+-	ld      a,l
 	out     (SMS_VDP_CONTROL),a
 	ld      a,h
 	or      $40
@@ -2084,7 +2088,8 @@ _09b6:
 	ld      bc,$0040
 	add     hl,bc
 	ld      b,a
-	djnz    _09b6
+	djnz    -
+	
 	pop     de
 	pop     hl
 	inc     hl
@@ -2093,7 +2098,8 @@ _09b6:
 	add     hl,bc
 	ex      de,hl
 	pop     bc
-	djnz    _0987
+	djnz    --
+	
 	pop     de
 	pop     hl
 	ld      bc,(S1_LEVEL_FLOORWIDTH)
@@ -2104,9 +2110,9 @@ _09b6:
 	ex      de,hl
 	pop     bc
 	dec     b
-	jp      nz,_0982
+	jp      nz,---
 	ei      
-	ret     
+	ret
 
 ;____________________________________________________________________________[$0A10]___
 
@@ -2134,7 +2140,7 @@ loadFloorLayout:
 	ld      a,b			;are there remaining bytes?
 	or      c
 	jp      nz,-			;if so continue
-	ret     			;otherwise, finish
+	ret			;otherwise, finish
 	;if the last two bytes of the data are duplicates, don't try decompress
 	 ;further when there is no more data to be read!
 +	dec     bc			;reduce count of remaining bytes
@@ -2160,9 +2166,9 @@ loadFloorLayout:
 	jp      nz,--
 	ret
 
-;______________________________________________________________________________________
+;____________________________________________________________________________[$0A40]___
 	
-_LABEL_A40_121:				;[$0A40]
+_LABEL_A40_121:
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
 	ld   (S1_PAGE_1), a
@@ -2174,54 +2180,56 @@ _LABEL_A40_121:				;[$0A40]
 	call wait
 	ld   (iy+$0a), a
 	ld   b, $04
-_LABEL_A5F_127:
-	push bc
+	
+--	push bc
 	ld   hl, ($D230)
 	ld   de, $D3BC
 	ld   b, $10
-	call _LABEL_A90_122
+	call _f
 	ld   hl, ($D232)
 	ld   b, $10
-	call _LABEL_A90_122
+	call _f
 	ld   hl, $D3BC
 	ld   a, $03
 	call loadPaletteOnInterrupt
 	ld   b, $0A
-_LABEL_A7D_126:
-	ld   a, (iy+$0a)
+
+-	ld   a, (iy+$0a)
 	res  0, (iy+$00)
 	call wait
 	ld   (iy+$0a), a
-	djnz _LABEL_A7D_126
+	djnz -
+	
 	pop  bc
-	djnz _LABEL_A5F_127
+	djnz --
+	
 	ret
-_LABEL_A90_122:				;[$0A90]
-	ld   a, (hl)
+
+__	ld   a, (hl)
 	and  $03
-	jr   z, _LABEL_A96_123
+	jr   z, +
 	dec  a
-_LABEL_A96_123:
-	ld   c, a
++	ld   c, a
 	ld   a, (hl)
 	and  $0C
-	jr   z, _LABEL_A9E_124
+	jr   z, +
 	sub  $04
-_LABEL_A9E_124:
-	or   c
++	or   c
 	ld   c, a
 	ld   a, (hl)
 	and  $30
-	jr   z, _LABEL_AA7_125
+	jr   z, +
 	sub  $10
-_LABEL_AA7_125:
-	or   c
++	or   c
 	ld   (de), a
 	inc  hl
 	inc  de
-	djnz _LABEL_A90_122
+	djnz _b
 	ret
-_aae:					;[$0AAE]
+
+;____________________________________________________________________________[$0AAE]___
+
+_aae:
 	ld      ($d214),hl
 	ld      hl,($d230)
 	ld      de,$d3bc
@@ -2244,40 +2252,38 @@ _aae:					;[$0AAE]
 	call    wait
 	ld      (iy+$0a),c
 	ld      b,$09
-_aeb:
-	ld      a,(iy+$0a)
+	
+-	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),a
-	djnz    _aeb
+	djnz    -
 	ld      b,$04
-_afc:
-	push    bc
+
+--	push    bc
 	ld      hl,($d214)
 	ld      de,$d3bc
 	ld      b,$20
-_b05:
-	push    bc
+
+-	push    bc
 	ld      a,(hl)
 	and     $03
 	ld      b,a
 	ld      a,(de)
 	and     $03
 	cp      b
-	jr      z,_b11
+	jr      z,+
 	dec     a
-_b11:
-	ld      c,a
++	ld      c,a
 	ld      a,(hl)
 	and     $0c
 	ld      b,a
 	ld      a,(de)
 	and     $0c
 	cp      b
-	jr      z,_b1e
+	jr      z,+
 	sub     $04
-_b1e:
-	or      c
++	or      c
 	ld      c,a
 	ld      a,(hl)
 	and     $30
@@ -2285,45 +2291,49 @@ _b1e:
 	ld      a,(de)
 	and     $30
 	cp      b
-	jr      z,_b2c
+	jr      z,+
 	sub     $10
-_b2c:
-	or      c
++	or      c
 	ld      (de),a
 	inc     hl
 	inc     de
 	pop     bc
-	djnz    _b05
+	djnz    -
 	ld      hl,$d3bc
 	ld      a,$03
 	call loadPaletteOnInterrupt
 	ld      b,$0a
-_b3d:
-	ld      a,(iy+$0a)
+
+-	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),a
-	djnz    _b3d
+	djnz    -
+	
 	pop     bc
-	djnz    _afc
-	ret     
-_b50:					;[$0B50]
+	djnz    --
+	ret
+
+;____________________________________________________________________________[$0B50]___
+
+_b50:
 	ld      ($d214),hl
 	ld      hl,$d3bc
 	ld      b,$20
-_b58:
-	ld      (hl),$00
+	
+-	ld      (hl),$00
 	inc     hl
-	djnz    _b58
-	jp      _b6e
+	djnz    -
+	jp      +
+
 _b60:					;[$0B60]	
 	ld      ($d214),hl
 	ld      hl,($d230)
 	ld      de,$d3bc
 	ld      bc,$0020
 	ldir    
-_b6e:
-	ld      a,1
+	
++	ld      a,1
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
 	ld      a,2
@@ -2340,40 +2350,41 @@ _b6e:
 	call wait
 	ld      (iy+$0a),c
 	ld      b,$09
-_b9d:
-	ld      a,(iy+$0a)
+	
+-	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call wait
 	ld      (iy+$0a),a
-	djnz _b9d
+	djnz -
+	
 	ld      b,$04
-_bae:
-	push    bc
+	
+--	push    bc
 	ld      hl,($d214)
 	ld      de,$d3bc
 	ld      b,$20
-_bb7:
-	push    bc
+	
+-	push    bc
 	ld      a,(hl)
 	and     $03
 	ld      b,a
 	ld      a,(de)
 	and     $03
 	cp      b
-	jr      nc,_bc3
+	jr      nc,+
 	inc     a
-_bc3:
-	ld      c,a
+	
++	ld      c,a
 	ld      a,(hl)
 	and     $0c
 	ld      b,a
 	ld      a,(de)
 	and     $0c
 	cp      b
-	jr      nc,_bd0
+	jr      nc,+
 	add     a,$04
-_bd0:
-	or      c
+	
++	or      c
 	ld      c,a
 	ld      a,(hl)
 	and     $30
@@ -2381,32 +2392,34 @@ _bd0:
 	ld      a,(de)
 	and     $30
 	cp      b
-	jr      nc,_bde
+	jr      nc,+
 	add     a,$10
-_bde:
-	or      c
+	
++	or      c
 	ld      (de),a
 	inc     hl
 	inc     de
 	pop     bc
-	djnz    _bb7
+	djnz    -
+	
 	ld      hl,$d3bc
 	ld      a,$03
 	call loadPaletteOnInterrupt
 	ld      b,$0a
-_bef:
-	ld      a,(iy+$0a)
+	
+-	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call wait
 	ld      (iy+$0a),a
-	djnz    _bef
+	djnz    -
+	
 	pop     bc
-	djnz    _bae
+	djnz    --
 	ret
 
-;______________________________________________________________________________________
+;____________________________________________________________________________[$0C02]___
 	
-_LABEL_C02_135:				;[$0C02]
+_LABEL_C02_135:
 ;HL : e.g. $D311
 	ld   a, (S1_CURRENT_LEVEL)
 	ld   c, a
@@ -2434,9 +2447,9 @@ _LABEL_C02_135:				;[$0C02]
 	ld   c, a			;return via C
 	ret
 
-;______________________________________________________________________________________
+;____________________________________________________________________________[$0C1D]___
 	
-_c1d:					;[$0C1D]
+_c1d:
 	di      
 	ld      a,5
 	ld      (SMS_PAGE_1),a
@@ -2458,8 +2471,8 @@ _c1d:					;[$0C1D]
 	or      $40
 	out     (SMS_VDP_CONTROL),a
 	ld      b,$04
-_c3e:
-	ld      a,(de)
+
+-	ld      a,(de)
 	out     (SMS_VDP_DATA),a
 	nop     
 	nop     
@@ -2467,13 +2480,16 @@ _c3e:
 	ld      a,(de)
 	out     (SMS_VDP_DATA),a
 	inc     de
-	djnz    _c3e
+	djnz    -
+	
 	ld      a,(S1_PAGE_1)
 	ld      (SMS_PAGE_1),a
 	ei      
 	ret
 
-_LABEL_C52_106:				;[$0C52]
+;____________________________________________________________________________[$0C52]___
+
+_LABEL_C52_106:
 	xor  a				;set A to 0
 	ld   ($D251), a			;set horizontal scroll to 0 (done on IRQ)
 	ld   ($D252), a			;set vertical scroll to 0 (done on IRQ)
@@ -2485,16 +2501,15 @@ _LABEL_C52_106:				;[$0C52]
 	cp   18
 	ret  nc
 	cp   9
-	jr   c, _LABEL_C6C_107
+	jr   c, +
 	ld   c, $02
-_LABEL_C6C_107:
-	ld   a, ($D216)
++	ld   a, ($D216)
 	cp   c
-	jp   z, _LABEL_D3F_108
+	jp   z, +++
 	ld   a, c
 	ld   ($D216), a
 	dec  a
-	jr   nz, _LABEL_CDC_109
+	jr   nz, +
 	ld   a, (S1_VDPREGISTER_1)
 	and  %10111111
 	ld   (S1_VDPREGISTER_1), a
@@ -2542,10 +2557,9 @@ _LABEL_C6C_107:
 	
 	ld      hl,S1_MapScreen1_Palette
 	call    _b50
-	jr      _d3c
+	jr      ++
 	
-_LABEL_CDC_109:
-	;turn the screen off
++	;turn the screen off
 	ld   a, (S1_VDPREGISTER_1)
 	and  %10111111			;remove bit 6 of VDP register 1
 	ld   (S1_VDPREGISTER_1), a
@@ -2594,12 +2608,11 @@ _LABEL_CDC_109:
 	
 	ld      hl,S1_MapScreen2_Palette
 	call    _b50
-_d3c:					;[$0D3C]
-	ld      a,$07
+
+++	ld      a,$07
 	rst     $18
 	
-_LABEL_D3F_108:				;[$0D3F]
-	call _LABEL_E86_110
++++	call _LABEL_E86_110
 	ld   a, (S1_CURRENT_LEVEL)
 	add  a, a
 	ld   c, a
@@ -2630,33 +2643,32 @@ _LABEL_D3F_108:				;[$0D3F]
 	ld   ($D210), de
 	ld   a, (hl)
 	and  a
-	jr   z, _LABEL_D80_119
+	jr   z, _f
 	
 	dec  a
 	add  a, a
 	ld   e, a
 	ld   d, $00
-	ld   hl, $1201
+	ld   hl, _1201
 	add  hl, de
 	ld   a, (hl)
 	inc  hl
 	ld   h, (hl)
 	ld   l, a
 	jp   (hl)
-_LABEL_D80_119:
-	ld   a, $01
+
+__	ld   a, $01
 	ld      ($d20e),a
 	ld      bc,$012c
-_0d88:
-	push    bc
+
+--	push    bc
 	call    _LABEL_E86_110
 	ld      a,($d20e)
 	dec     a
 	ld      ($d20e),a
-	jr      nz,_0db7
+	jr      nz,++
 	ld      hl,($d210)
-_0d98:
-	ld      e,(hl)
+-	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
@@ -2668,15 +2680,15 @@ _0d98:
 	ld      a,(hl)
 	inc     hl
 	and     a
-	jr      nz,_0dad
+	jr      nz,+
 	ex      de,hl
-	jp      _0d98
-_0dad:
-	ld      ($d20e),a
+	jp      -
+	
++	ld      ($d20e),a
 	ld      ($d210),hl
 	ld      ($d212),de
-_0db7:
-	ld      hl,($d214)
+	
+++	ld      hl,($d214)
 	push    hl
 	ld      e,h
 	ld      h,$00
@@ -2692,91 +2704,104 @@ _0db7:
 	ret     z
 	
 	bit     5,(iy+$03)
-	jp      nz,_0d88
+	jp      nz,--
 	ret     nz
 	scf     
-_0dd8:
-	ret     
+	ret
+
+;____________________________________________________________________________[$0DD9]___
+;referenced by table at $1201
+
 _0dd9:
 	ld      hl,$0000
 	ld      ($d20e),hl
 	ld      hl,$00dc
 	ld      de,$003c
 	ld      b,$00
-_0de7:
-	call    _LABEL_E86_110
+	
+-	call    _LABEL_E86_110
 	ld      a,(iy+$03)
 	cp      $ff
-	jp      nz,_LABEL_D80_119
+	jp      nz,_b
 	push    bc
-	ld      bc,$0e72
+	ld      bc,_0e72
 	call    _0edd
 	pop     bc
 	dec     hl
-	djnz    _0de7
+	djnz    -
+	
 	ld      hl,$0000
 	ld      ($d20e),hl
 	ld      hl,$ffd8
 	ld      de,$0058
 	ld      b,$80
-_0e0b:
-	call    _LABEL_E86_110
+	
+-	call    _LABEL_E86_110
 	ld      a,(iy+$03)
 	cp      $ff
-	jp      nz,_LABEL_D80_119
+	jp      nz,_b
 	push    bc
 	ld      bc,$0e7a
 	call    _0edd
 	pop     bc
 	inc     hl
-	djnz    _0e0b
-	jp      _LABEL_D80_119
+	djnz    -
+	
+	jp      _b
+
+;____________________________________________________________________________[$0E24]___
+;referenced by table at $1201
+
+_0e24:
 	ld      hl,$0000
 	ld      ($d20e),hl
 	ld      hl,$0080
 	ld      de,$00c0
 	ld      b,$78
-_0e32:
-	call    _LABEL_E86_110
+	
+-	call    _LABEL_E86_110
 	ld      a,(iy+$03)
 	cp      $ff
-	jp      nz,_LABEL_D80_119
+	jp      nz,_b
 	push    bc
 	ld      bc,_0e82
 	call    _0edd
 	pop     bc
 	dec     de
-	djnz    _0e32
-	jp      _LABEL_D80_119
+	djnz    -
+	
+	jp      _b
+
+;____________________________________________________________________________[$0E4B]___
+;referenced by table at $1201
+
+_0e4b:
 	ld      hl,$0000
 	ld      ($d20e),hl
 	ld      hl,$0078
 	ld      de,$0000
 	ld      b,$30
-_0e59:
-	call    _LABEL_E86_110
+	
+-	call    _LABEL_E86_110
 	ld      a,(iy+$03)
 	cp      $ff
-	jp      nz,_LABEL_D80_119
+	jp      nz,_b
 	push    bc
 	ld      bc,_0e82
 	call    _0edd
 	pop     bc
 	inc     de
-	djnz    _0e59
-	jp      _LABEL_D80_119
-	add     hl,hl
-	ld      de,$0104
-	dec     sp
-	ld      de,$0004
-	ld      c,l
-	ld      de,$0104
-	ld      e,a
-	ld      de,$0004
+	djnz    -
+	jp      _b
+
+_0e72:	
+.db $29, $11, $04, $01, $3B, $11, $04, $00, $4D, $11, $04, $01, $5F, $11, $04, $00
 _0e82:
-	add     a,e
-	ld      de,$0004
-_LABEL_E86_110:				;[$0E86]
+.db $83, $11, $04, $00
+
+;____________________________________________________________________________[$0E86]___
+
+_LABEL_E86_110:
 	push hl
 	push de
 	push bc
@@ -2820,7 +2845,9 @@ _LABEL_E86_110:				;[$0E86]
 	pop  de
 	pop  hl
 	ret
-	
+
+;____________________________________________________________________________[$0EDD]___
+
 _0edd:
 	push    hl
 	push    de
@@ -2838,14 +2865,13 @@ _0edd:
 	inc     hl
 	ld      a,($d20e)
 	cp      (hl)
-	jr      c,_0efd
+	jr      c,+
 	inc     hl
 	ld      a,(hl)
 	ld      ($d20f),a
 	xor     a
 	ld      ($d20e),a
-_0efd:
-	pop     de
++	pop     de
 	pop     hl
 	push    hl
 	push    de
@@ -2855,7 +2881,7 @@ _0efd:
 	ld      ($d20e),a
 	pop     de
 	pop     hl
-	ret     
+	ret
 ;______________________________________________________________________________________
 
 S1_MapScreen1_Palette:			;[$0F0E]
@@ -2868,27 +2894,27 @@ S1_MapScreen2_Palette:			;[$0F2E]
 
 ;--------------------------------------------------------------------------------------
 
-;$0F4E-$1208: UNKNOWN
 _f4e:
-.db $84, $0F, $00			;Green Hill Act 1
-.db $93, $0F, $00			;Green Hill Act 2
-.db $DE, $0F, $01			;Green Hill Act 3
-.db $A2, $0F, $00			;Bridge Act 1
-.db $B1, $0F, $00			;Bridge Act 2
-.db $7E, $10, $02			;Bridge Act 3
-.db $C0, $0F, $00			;Jungle Act 1
-.db $CF, $0F, $00			;Jungle Act 2
-.db $88, $10, $03			;Jungle Act 3
-.db $0B, $10, $00			;Labyrinth Act 1
-.db $1A, $10, $00			;Labyrinth Act 2
-.db $92, $10, $00			;Labyrinth Act 3
-.db $29, $10, $00			;Scrap Brain Act 1
-.db $38, $10, $00			;Scrap Brain Act 2
-.db $9C, $10, $00			;Scrap Brain Act 3
-.db $47, $10, $00			;Sky Base Act 1
-.db $56, $10, $00			;Sky Base Act 2
-.db $56, $10, $00			;Sky Base Act 3
+.db <_f84, >_f84, $00			;Green Hill Act 1
+.db <_f93, >_f93, $00			;Green Hill Act 2
+.db <_fde, >_fde, $01			;Green Hill Act 3
+.db <_fa2, >_fa2, $00			;Bridge Act 1
+.db <_fb1, >_fb1, $00			;Bridge Act 2
+.db <_107e, >_107e, $02			;Bridge Act 3
+.db <_fc0, >_fc0, $00			;Jungle Act 1
+.db <_fcf, >_fcf, $00			;Jungle Act 2
+.db <_1088, >_1088, $03			;Jungle Act 3
+.db <_100b, >_100b, $00			;Labyrinth Act 1
+.db <_101a, >_101a, $00			;Labyrinth Act 2
+.db <_1092, >_1092, $00			;Labyrinth Act 3
+.db <_1029, >_1029, $00			;Scrap Brain Act 1
+.db <_1038, >_1038, $00			;Scrap Brain Act 2
+.db <_109c, >_109c, $00			;Scrap Brain Act 3
+.db <_1047, >_1047, $00			;Sky Base Act 1
+.db <_1056, >_1056, $00			;Sky Base Act 2
+.db <_1056, >_1056, $00			;Sky Base Act 3
 
+;$0F84-$1208: UNKNOWN
 _f84:					;Green Hill Act 1
 .db $BD, $10, $50, $68, $1E, $AB, $10, $50, $68, $1E, $84, $0F, $00, $00, $00
 _f93:					;Green Hill Act 2
@@ -2928,6 +2954,7 @@ _1092:					;Labyrinth Act 3
 _109c:					;Scrap Brain Act 3
 .db $29, $11, $68, $40, $08, $3B, $11, $68, $40, $08, $9C, $10, $00, $00, $00
 
+;unknown, probably referenced above -- "$AB, $10"
 _10ab:
 .db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 .db $FF, $FF, $00, $02, $FF, $FF, $FF, $FF, $FE, $22, $24, $26, $28, $FF, $FF, $FF
@@ -2950,11 +2977,17 @@ _10ab:
 .db $06, $08, $4A, $4C, $FF, $FF, $FE, $FE, $4E, $3E, $FF, $FF, $FE, $40, $42, $44
 .db $FF, $FF, $60, $62, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 .db $FF, $FF, $FF, $FF, $46, $48, $26, $28, $FF, $FF, $1A, $1C, $3A, $3C, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $D9, $0D, $24, $0E, $4B, $0E, $D9, $0D
+.db $FF, $FF, $FF, $FF, $FF, $FF, 
 
-;______________________________________________________________________________________
+_1201:
+.dw _0dd9
+.dw _0e24
+.dw _0e4b
+.dw _0dd9
 
-S1_ZoneTitle_Pointers:			;[$1209]
+;____________________________________________________________________________[$1209]___
+
+S1_ZoneTitle_Pointers:
 
 .dw S1_ZoneTitle_1			;Green Hill Act 1
 .dw S1_ZoneTitle_1			;Green Hill Act 2
@@ -3046,8 +3079,8 @@ titleScreen:
 	ld   ($D20F), a
 	ld   hl, _1372
 	ld   ($D210), hl
-_LABEL_12EA_102:
-	ld   a, (S1_VDPREGISTER_1)
+	
+-	ld   a, (S1_VDPREGISTER_1)
 	or   $40
 	ld   (S1_VDPREGISTER_1), a
 	
@@ -3057,23 +3090,21 @@ _LABEL_12EA_102:
 	ld   a, ($D216)
 	inc  a
 	cp   $64
-	jr   c, _LABEL_1302_89
+	jr   c, +
 	xor  a
-_LABEL_1302_89:
-	ld   ($D216), a
++	ld   ($D216), a
 	ld   hl, _1352
 	cp   $40
-	jr   c, _LABEL_130F_90
+	jr   c, +
 	ld   hl, _1362
-_LABEL_130F_90:
-	xor  a				;set A to 0
++	xor  a				;set A to 0
 	ld   ($D20E), a
 	call print
 	
 	ld   a, ($D20F)
 	dec  a
 	ld   ($D20F), a
-	jr   nz, _LABEL_1335_93
+	jr   nz, +
 	ld   hl, ($D210)
 	ld   e, (hl)
 	inc  hl
@@ -3082,24 +3113,25 @@ _LABEL_130F_90:
 	ld   a, (hl)
 	inc  hl
 	and  a
-	jr   z, _LABEL_1350_94
+	jr   z, ++
 	ld   ($D20F), a
 	ld   ($D210), hl
 	ld   ($D212), de
-_LABEL_1335_93:
-	ld   hl, $D000
+
++	ld   hl, $D000
 	ld   ($D23C), hl
 	ld   hl, $0080
 	ld   de, $0018
 	ld   bc, ($D212)
 	call _LABEL_350F_95
 	bit  5, (iy+$03)
-	jp   nz, _LABEL_12EA_102
+	jp   nz, -
 	scf
-_LABEL_1350_94:
-	rst  $20
+
+++	rst  $20
 	ret
 
+;"PRESS  BUTTON" text
 _1352:					;text
 .db $09, $12
 .db $E3, $E4, $E5, $E6, $E6, $F1, $F1, $E9, $EB, $E7, $E7, $EA, $EC, $FF
@@ -3116,13 +3148,11 @@ _1372:					;unknown
 .db $FF, $20, $22, $24, $FF, $FF, $FF, $40, $42, $44, $FF, $FF, $FF, $06, $08, $FF
 .db $FF, $FF, $FF, $26, $28, $FF, $FF, $FF, $FF, $46, $48, $FF, $FF, $FF, $FF
 
-;______________________________________________________________________________________
-
 S1_TitleScreen_Palette			;[$13E1]
 .db $00, $10, $34, $38, $06, $1B, $2F, $3F, $3D, $3E, $01, $03, $0B, $0F, $00, $3F
 .db $00, $10, $34, $38, $06, $1B, $2F, $3F, $3D, $3E, $01, $03, $0B, $0F, $00, $3F
 
-;______________________________________________________________________________________
+;____________________________________________________________________________[$1401]___
 
 _1401:
 	;turn off the screen
@@ -3161,8 +3191,8 @@ _1401:
 	call    loadPaletteOnInterrupt
 	ei      
 	ld      b,$78
-_1447:
-	;turn the screen on
+	
+-	;turn the screen on
 	ld      a,(S1_VDPREGISTER_1)
 	or      %01000000		;enable bit 6 on VDP register 1
 	ld      (S1_VDPREGISTER_1),a
@@ -3170,15 +3200,14 @@ _1447:
 	res     0,(iy+$00)
 	call    wait
 	
-	djnz    _1447
+	djnz    -
 	
 	ld      a,($d284)
 	and     a
-	jr      nz,_1477
+	jr      nz,+
 	
 	ld      bc,$00b4
-_1461:
-	push    bc
+-	push    bc
 	
 	res     0,(iy+$00)
 	call    wait
@@ -3190,12 +3219,12 @@ _1461:
 	ret     z
 	
 	bit     5,(iy+$03)
-	jp      nz,_1461
+	jp      nz,-
 	
 	and     a
-	ret     
-_1477:
-	ld      hl,_14de
+	ret
+
++	ld      hl,_14de
 	ld      c,$0b
 	call    _16d9
 	ld      hl,_14e6
@@ -3204,10 +3233,9 @@ _1477:
 	call    print
 	ld      a,$09
 	ld      ($d216),a
-_1490:
-	ld      b,$3c
-_1492:
-	push    bc
+--	ld      b,$3c
+	
+-	push    bc
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),$00
@@ -3223,8 +3251,9 @@ _1492:
 	ld      ($d23c),hl
 	pop     bc
 	bit     5,(iy+$03)
-	jr      z,_14cc
-	djnz    _1492
+	jr      z,+
+	djnz    -
+	
 	ld      a,$1a
 	rst     $28
 	ld      hl,$d216
@@ -3232,9 +3261,9 @@ _1492:
 	and     a
 	ret     z
 	dec     (hl)
-	jr      _1490
-_14cc:
-	ld      hl,$d311
+	jr      --
+
++	ld      hl,$d311
 	call    _LABEL_C02_135
 	ld      a,c
 	cpl     
@@ -3245,7 +3274,7 @@ _14cc:
 	ld      hl,$d284
 	dec     (hl)
 	scf     
-	ret     
+	ret
 
 _14de:
 .db $0f, $80, $81, $ff
@@ -3265,6 +3294,8 @@ _14fc:
 .db $00, $00, $05, $00, $03, $00, $02, $30, $02, $00, $01, $30, $01, $00, $00, $30
 .db $00, $00, $1E, $15, $22, $15, $26, $15, $2A, $15, $2E, $15, $32, $15, $36, $15
 .db $3A, $15
+
+;____________________________________________________________________________[$155E]___
 
 _155e:
 	ld	a, (S1_CURRENT_LEVEL)
@@ -3301,14 +3332,14 @@ _155e:
 	ld      de,$3800
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      28
-	jr      c,_15ac
+	jr      c,+
 	
 	;UNKNOWN
 	ld      hl,$61e9		;$161E9?
 	ld      bc,$0095
 	ld      de,$3800
-_15ac:
-	xor     a
+
++	xor     a
 	ld      ($d20e),a
 	call    decompressScreen
 	
@@ -3320,7 +3351,7 @@ _15ac:
 	
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      nc,_15fd
+	jr      nc,+
 	
 	ld      a,$15
 	ld      ($d2be),a
@@ -3335,8 +3366,8 @@ _15ac:
 	ld      hl,_1b51
 	add     hl,de
 	ld      b,$04
-_15e1:
-	push    bc
+	
+-	push    bc
 	push    hl
 	ld      de,$d2bf
 	ld      a,(de)
@@ -3353,9 +3384,9 @@ _15e1:
 	pop     bc
 	inc     hl
 	inc     hl
-	djnz    _15e1
-_15fd:
-	xor     a
+	djnz    -
+	
++	xor     a
 	ld      ($d251),a
 	ld      ($d252),a
 	ld      hl,$1b8d
@@ -3363,64 +3394,62 @@ _15fd:
 	call    loadPaletteOnInterrupt
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_1625
+	jr      c,+
 	ld      hl,$d281
 	inc     (hl)
 	bit     2,(iy+$09)
-	jr      nz,_1625
+	jr      nz,+
 	ld      hl,$d282
 	inc     (hl)
 	ld      hl,$d285
 	inc     (hl)
-_1625:
-	bit     2,(iy+$09)
+
++	bit     2,(iy+$09)
 	call    nz,_1719
 	bit     3,(iy+$09)
 	call    nz,_1726
 	ld      hl,$153e
 	ld      de,$154e
 	ld      b,$08
-_163b:
-	ld      a,($d2ce)
+	
+-	ld      a,($d2ce)
 	cp      (hl)
-	jr      nz,_164b
+	jr      nz,+
 	inc     hl
 	ld      a,($d2cf)
 	cp      (hl)
-	jr      nc,_1658
+	jr      nc,+++
 	inc     hl
-	jr      _164f
-_164b:
-	jr      nc,_1658
+	jr      ++
+
++	jr      nc,+++
 	inc     hl
 	inc     hl
-_164f:
+++	inc     de
 	inc     de
-	inc     de
-	djnz    _163b
+	djnz    -
+	
 	ld      de,$151e
-	jr      _165c
-_1658:
-	ex      de,hl
+	jr      ++++
+	
++++	ex      de,hl
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-_165c:
-	ld      hl,$d212
+++++	ld      hl,$d212
 	ex      de,hl
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_166a
+	jr      c,+
 	ld      hl,_1a14
-_166a:
-	ldi     
++	ldi     
 	ldi     
 	ldi     
 	ldi     
 	set     1,(iy+$00)
 	ld      b,$78
-_1678:
-	push    bc
+	
+-	push    bc
 	ld      a,(S1_VDPREGISTER_1)
 	or      $40
 	ld      (S1_VDPREGISTER_1),a
@@ -3430,9 +3459,9 @@ _1678:
 	
 	call    _1a18
 	pop     bc
-	djnz    _1678
-_168e:
-	res     0,(iy+$00)
+	djnz    -
+	
+-	res     0,(iy+$00)
 	call    wait
 	
 	call    _1a18
@@ -3444,30 +3473,33 @@ _168e:
 	inc     a
 	ld      ($d216),a
 	and     $03
-	jr      nz,_16b1
+	jr      nz,+
 	ld      a,$02
 	rst     $28
-_16b1:
-	ld      hl,($d212)
+
++	ld      hl,($d212)
 	ld      de,($d214)
 	ld      a,(S1_RINGS)
 	or      h
 	or      l
 	or      d
 	or      e
-	jp      nz,_168e
+	jp      nz,-
 	ld      b,$b4
-_16c4:
-	push    bc
+	
+-	push    bc
 	res     0,(iy+$00)
 	call    wait
 	call    _1a18
 	pop     bc
 	bit     5,(iy+$03)
-	jr      z,_16d8
-	djnz    _16c4
-_16d8:
-	ret     
+	jr      z,+
+	djnz    -
+
++	ret
+
+;____________________________________________________________________________[$16D9]___
+
 _16d9:
 	ld      b,a
 	push    bc
@@ -3487,8 +3519,8 @@ _16d9:
 	pop     bc
 	xor     a
 	ld      ($d20e),a
-_16f6:
-	push    bc
+	
+-	push    bc
 	ld      hl,$d2be
 	call    print
 	ld      hl,$d2c3
@@ -3500,73 +3532,79 @@ _16f6:
 	inc     (hl)
 	inc     (hl)
 	pop     bc
-	djnz    _16f6
-	ret     
+	djnz    -
+	
+	ret
+
 _1711:
 .db $14, $ad, $ae, $ff, $15, $bd, $be, $ff
+
+;____________________________________________________________________________[$1719]___
+
 _1719:
 	xor     a
 	ld      (S1_RINGS),a
 	res     3,(iy+$09)
 	res     2,(iy+$09)
-	ret     
+	ret
+
+;____________________________________________________________________________[$1726]___
+
 _1726:
 	ld      hl,$d284
 	inc     (hl)
 	res     3,(iy+$09)
-	ret     
+	ret
+
+;____________________________________________________________________________[$172F]___
+;jumped to from $155E
+
 _172f:
 	ld      a,$ff
 	ld      ($d2fd),a
 	ld      c,$00
 	ld      a,($d27f)
 	cp      $06
-	jr      c,_173f
+	jr      c,+
 	ld      c,$05
-_173f:
-	ld      a,($d280)
++	ld      a,($d280)
 	cp      $12
-	jr      c,_174b
+	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-_174b:
-	ld      a,($d281)
++	ld      a,($d281)
 	cp      $08
-	jr      c,_1757
+	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-_1757:
-	ld      a,($d282)
++	ld      a,($d282)
 	cp      $08
-	jr      c,_1763
+	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-_1763:
-	ld      a,($d283)
++	ld      a,($d283)
 	and     a
-	jr      nz,_176e
+	jr      nz,+
 	ld      a,c
 	add     a,$0a
 	daa     
 	ld      c,a
-_176e:
-	ld      a,c
++	ld      a,c
 	cp      $30
-	jr      nz,_177b
+	jr      nz,+
 	ld      a,c
 	add     a,$0a
 	daa     
 	add     a,$0a
 	daa     
 	ld      c,a
-_177b:
-	ld      hl,$d2ff
++	ld      hl,$d2ff
 	ld      (hl),c
 	inc     hl
 	ld      (hl),$00
@@ -3592,12 +3630,12 @@ _177b:
 	ld      ($d216),a
 	ld      bc,$00b4
 	call    _1860
-_17bf:
-	ld      bc,$003c
+	
+-	ld      bc,$003c
 	call    _1860
 	ld      a,($d27f)
 	and     a
-	jr      z,_17dd
+	jr      z,+
 	dec     a
 	ld      ($d27f),a
 	ld      de,$0000
@@ -3605,9 +3643,9 @@ _17bf:
 	call    _39d8
 	ld      a,$02
 	rst     $28
-	jp      _17bf
-_17dd:
-	ld      bc,$00b4
+	jp      -
+	
++	ld      bc,$00b4
 	call    _1860
 	ld      a,$01
 	ld      ($d216),a
@@ -3615,12 +3653,12 @@ _17dd:
 	call    print
 	ld      bc,$00b4
 	call    _1860
-_17f4:
-	ld      bc,$001e
+	
+-	ld      bc,$001e
 	call    _1860
 	ld      a,(S1_LIVES)
 	and     a
-	jr      z,_1812
+	jr      z,+
 	dec     a
 	ld      (S1_LIVES),a
 	ld      de,$5000
@@ -3628,9 +3666,9 @@ _17f4:
 	call    _39d8
 	ld      a,$02
 	rst     $28
-	jp      _17f4
-_1812:
-	ld      bc,$00b4
+	jp      -
+	
++	ld      bc,$00b4
 	call    _1860
 	ld      a,$02
 	ld      ($d216),a
@@ -3640,33 +3678,35 @@ _1812:
 	call    print
 	ld      bc,$00b4
 	call    _1860
-_182f:
-	ld      bc,$001e
+
+-	ld      bc,$001e
 	call    _1860
 	ld      a,($d2ff)
 	and     a
-	jr      z,_1859
+	jr      z,++
 	dec     a
 	ld      c,a
 	and     $0f
 	cp      $0a
-	jr      c,_1847
+	jr      c,+
 	ld      a,c
 	sub     $06
 	ld      c,a
-_1847:
-	ld      a,c
++	ld      a,c
 	ld      ($d2ff),a
 	ld      de,$0000
 	ld      c,$01
 	call    _39d8
 	ld      a,$02
 	rst     $28
-	jp      _182f
-_1859:
-	ld      bc,$01e0
+	jp      -
+	
+++	ld      bc,$01e0
 	call    _1860
-	ret     
+	ret
+
+;____________________________________________________________________________[$1860]___
+
 _1860:
 	push    bc
 	res     0,(iy+$00)
@@ -3686,7 +3726,7 @@ _1860:
 	ld      ($d23c),hl
 	ld      a,($d216)
 	and     a
-	jr      nz,_18c5
+	jr      nz,+
 	ld      hl,$d27f
 	ld      de,$d2be
 	ld      b,$01
@@ -3707,10 +3747,10 @@ _1860:
 	ld      b,$60
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	jr      _18ff
-_18c5:
-	dec     a
-	jr      nz,_18e6
+	jr      ++
+	
++	dec     a
+	jr      nz,+
 	call    _1aca
 	ld      hl,_19b1
 	ld      de,$d2be
@@ -3722,9 +3762,9 @@ _18c5:
 	ld      b,$60
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	jr      _18ff
-_18e6:
-	ld      hl,$d2ff
+	jr      ++
+	
++	ld      hl,$d2ff
 	ld      de,$d2be
 	ld      b,$03
 	call    _1b13
@@ -3734,13 +3774,13 @@ _18e6:
 	ld      b,$60
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-_18ff:
-	pop     bc
+	
+++	pop     bc
 	dec     bc
 	ld      a,b
 	or      c
 	jp      nz,_1860
-	ret     
+	ret
 
 ;these look like text boxes
 _1907:
@@ -3776,6 +3816,8 @@ _19ae:
 _19b1:
 .db $00, $50, $00
 
+;____________________________________________________________________________[$19B4]___
+
 _19b4:
 	ld      hl,S1_RINGS
 	ld      a,(hl)
@@ -3785,24 +3827,25 @@ _19b4:
 	ld      c,a
 	and     $0f
 	cp      $0a
-	jr      c,_19c6
+	jr      c,+
 	ld      a,c
 	sub     $06
 	ld      c,a
-_19c6:
-	ld      (hl),c
++	ld      (hl),c
 	ld      de,$0100
 	ld      c,$00
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_19db
+	jr      c,+
 	ld      a,($d285)
 	ld      d,a
 	ld      a,($d286)
 	ld      e,a
-_19db:
-	call    _39d8
-	ret     
++	call    _39d8
+	ret
+
+;____________________________________________________________________________[$19DF]___
+
 _19df:
 	ld      hl,($d212)
 	ld      de,($d214)
@@ -3814,32 +3857,35 @@ _19df:
 	ld      b,$03
 	ld      hl,$d214
 	scf     
-_19f1:
-	ld      a,(hl)
+	
+-	ld      a,(hl)
 	sbc     a,$00
 	ld      c,a
 	and     $0f
 	cp      $0a
-	jr      c,_19ff
+	jr      c,+
 	ld      a,c
 	sub     $06
 	ld      c,a
-_19ff:
-	ld      a,c
++	ld      a,c
 	cp      $a0
-	jr      c,_1a06
+	jr      c,+
 	sub     $60
-_1a06:
-	ld      (hl),a
++	ld      (hl),a
 	ccf     
 	dec     hl
-	djnz    _19f1
+	djnz    -
+	
 	ld      de,$0100
 	ld      c,$00
 	call    _39d8
-	ret     
+	ret
+
 _1a14:
 .db $00, $00, $00, $00
+
+;____________________________________________________________________________[$1A18]___
+
 _1a18:
 	ld      (iy+$0a),$00
 	ld      hl,$d000
@@ -3864,28 +3910,27 @@ _1a18:
 	ld      b,$80
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_1a57
+	jr      c,+
 	ld      b,$68
-_1a57:
-	call    _LABEL_35CC_117
+	
++	call    _LABEL_35CC_117
 	ld      ($d23c),hl
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_1a73
+	jr      c,+
 	ld      hl,$d285
 	ld      de,$d2be
 	ld      b,$02
 	call    _1b13
 	ld      b,$68
-	jr      _1a80
-_1a73:
-	ld      hl,$151c
+	jr      ++
+	
++	ld      hl,$151c
 	ld      de,$d2be
 	ld      b,$02
 	call    _1b13
 	ld      b,$80
-_1a80
-	ld      c,$c0
+++	ld      c,$c0
 	ex      de,hl
 	ld      hl,($d23c)
 	call    _LABEL_35CC_117
@@ -3893,7 +3938,7 @@ _1a80
 	call    _1aca
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      nc,_1ab0
+	jr      nc,+
 	ld      hl,$d212
 	ld      de,$d2be
 	ld      b,$04
@@ -3904,9 +3949,9 @@ _1a80
 	ld      b,$68
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ret     
-_1ab0:
-	ld      hl,$d284
+	ret
+	
++	ld      hl,$d284
 	ld      de,$d2be
 	ld      b,$01
 	call    _1b13
@@ -3916,7 +3961,10 @@ _1ab0:
 	ld      b,$80
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1ACA]___
+
 _1aca:
 	ld      a,(S1_LIVES)
 	ld      l,a
@@ -3945,25 +3993,27 @@ _1aca:
 	ld      b,$9f
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $13
-	jr      nz,_1b06
+	jr      nz,+
 	ld      b,$60
 	ld      c,$90
-_1b06:
-	ld      hl,($d23c)
++	ld      hl,($d23c)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1B13]___
+
 _1b13:
 	ld      a,(hl)
 	and     $f0
-	jr      nz,_1b33
+	jr      nz,_f
 	ld      a,$fe
 	ld      (de),a
 	inc     de
 	ld      a,(hl)
 	and     $0f
-	jr      nz,_1b3f
+	jr      nz,+
 	ld      a,$fe
 	ld      (de),a
 	inc     hl
@@ -3975,9 +4025,9 @@ _1b13:
 	ld      a,$80
 	ld      (de),a
 	ld      hl,$d2be
-	ret     
-_1b33:
-	ld      a,(hl)
+	ret
+	
+__	ld      a,(hl)
 	rrca    
 	rrca    
 	rrca    
@@ -3987,19 +4037,21 @@ _1b33:
 	add     a,$80
 	ld      (de),a
 	inc     de
-_1b3f:
-	ld      a,(hl)
++	ld      a,(hl)
 	and     $0f
 	add     a,a
 	add     a,$80
 	ld      (de),a
 	inc     hl
 	inc     de
-	djnz    _1b33
+	djnz    _b
 	ld      a,$ff
 	ld      (de),a
 	ld      hl,$d2be
-	ret     
+	ret
+
+;____________________________________________________________________________[$1B51]___
+;UNKNOWN
 
 _1b51:
 .db $83, $84, $93, $94, $A3, $A4, $B3, $B4, $85, $86, $95, $96, $A5, $A6, $B5, $B6
@@ -4030,7 +4082,7 @@ _1bad:
 	ld      hl,($d2b5)
 	inc     hl
 	ld      ($d2b5),hl
-	ret     
+	ret
 
 _1bc6:
 .db $F7, $F7, $F7, $F7, $DF, $F7, $FF, $FF, $D7, $F7, $F7, $F7, $FF, $DF, $F7, $F7
@@ -4043,15 +4095,15 @@ _1bc6:
 .db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 .db $FF, $FF, $00
 
-;--------------------------------------------------------------------------------------
+;____________________________________________________________________________[$1C49]___
 
-_LABEL_1C49_62:				;[$1C49]
+_LABEL_1C49_62:
 	;set bit 0 of the parameter address (IY=$D200); when `wait` is called,
 	 ;execution will pause until an interrupt event switches bit 0 of $D200 on?
 	set  0, (iy+$00)			
 	ei				;enable interrupts
-_LABEL_1C4E_105:
-	ld   a, $03
+	
+--	ld   a, $03
 	ld   (S1_LIVES), a
 	
 	ld   a, $05
@@ -4094,7 +4146,7 @@ _LABEL_1C9F_104:
 	;are we on the end sequence?
 	ld   a, (S1_CURRENT_LEVEL)
 	cp   19
-	jr   nc, _LABEL_1C4E_105
+	jr   nc, --
 	
 	res  0, (iy+$02)
 	res  1, (iy+$02)
@@ -4102,25 +4154,24 @@ _LABEL_1C9F_104:
 	call _LABEL_C52_106
 	bit  1, (iy+$05)
 	jr   z, _LABEL_1CBD_120
-	jp   c, _LABEL_1C4E_105
+	jp   c, --
 _LABEL_1CBD_120:
 	call _LABEL_A40_121
 	call hideSprites
 	bit  0, (iy+$05)
-	jr   nz, _LABEL_1CCF_128
+	jr   nz, +
 	bit  4, (iy+$06)
-	jr   nz, _LABEL_1CDB_129
-_LABEL_1CCF_128:
-	ld   b, $3C
-_LABEL_1CD1_130:
-	res  0, (iy+$00)
+	jr   nz, ++
++	ld   b, $3C
+	
+-	res  0, (iy+$00)
 	call wait
-	djnz _LABEL_1CD1_130
+	djnz -
 	rst  $20
-_LABEL_1CDB_129:
-	call _LABEL_1CED_131
+	
+++	call _LABEL_1CED_131
 	and     a
-	jp      z,_LABEL_1C4E_105
+	jp      z,--
 	dec     a
 	jr	z,_LABEL_1C9F_104
 	jp      _LABEL_1CBD_120
@@ -4185,8 +4236,7 @@ _LABEL_1CED_131:
 	call    nz,_1ed8		;if yes, skip way ahead
 	
 	ld      b,$10
-_1d42:
-	push    bc
+-	push    bc
 	
 	res     0,(iy+$00)
 	call    wait
@@ -4234,7 +4284,7 @@ _1d42:
 	set     5,(iy+$00)		
 	
 	pop     bc
-	djnz    _1d42
+	djnz    -
 	
 	bit     1,(iy+$05)
 	jr      z,_1dae
@@ -4259,37 +4309,37 @@ _1dae:
 	
 	ld      a,($d223)
 	and     %00000001
-	jr      nz,_1ddb
+	jr      nz,+
 	
 	ld      a,($d289)
 	and     a
 	call    nz,_1fa9
 	
-	jr      _1df0
-_1ddb:
-	ld      a,($d287)
+	jr      ++
+	
++	ld      a,($d287)
 	and     a
 	jp      nz,_2067
-_1de2:
+_1de2:					;jump to here from _2067
 	ld      a,($d2b1)
 	and     a
 	call    nz,_1f06
 	
 	bit     1,(iy+$07)		;is lightning effect enabled?
 	call    nz,_1f49		;if so, handle that
-_1df0:
-	bit     1,(iy+$06)
-	call    nz,_1e78
+	
+++	bit     1,(iy+$06)
+	call    nz,++
 	
 	bit     1,(iy+$05)		;demo mode?
-	jr      z,_1e07
+	jr      z,+
 	
 	bit     5,(iy+$03)		;Button B?
 	jp      z,_20b8
 	
 	call    _1bad
-_1e07:
-	ld      hl,($d223)
+	
++	ld      hl,($d223)
 	inc     hl
 	ld      ($d223),hl
 	
@@ -4317,14 +4367,14 @@ _1e07:
 	ld      b,$07
 	ld      de,$0003
 	ld      a,$e0
-_1e48:
-	ld      (hl),a
+	
+-	ld      (hl),a
 	add     hl,de
 	ld      (hl),a
 	add     hl,de
 	ld      (hl),a
 	add     hl,de
-	djnz    _1e48
+	djnz    -
 	
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
 	ld      a,1
@@ -4346,8 +4396,7 @@ _1e48:
 	
 	jp      _1dae
 
-_1e78:
-	ld      (iy+$03),$f7
+++	ld      (iy+$03),$f7
 	ld      hl,(S1_LEVEL_CROPLEFT)
 	ld      de,$0112
 	add     hl,de
@@ -4363,13 +4412,16 @@ _1e78:
 	ld      ($d405),a
 	ld      ($d406),hl
 	ld      ($d408),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$1E9E]___
+
 _1e9e:
 	bit     1,(iy+$05)		;demo mode?
 	ret     nz
 	rst     $20
-_1ea4:
-	ld      a,(iy+$0a)
+	
+-	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),a
@@ -4381,41 +4433,54 @@ _1ea4:
 	call    _23c9
 	call    _239c
 	bit     3,(iy+$07)		;paused?
-	jr      nz,_1ea4
+	jr      nz,-
 	
 	ld      a,:_c009
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
 	call    _c009
-	ret     
+	ret
+
+;____________________________________________________________________________[$1ED8]___
+
 _1ed8:
 	ld      hl,($d25a)
 	ld      (S1_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1EE2]___
+
 _1ee2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-_1ee7:
 	ld      hl,(S1_LEVEL_CROPLEFT)
 	inc     hl
 	ld      (S1_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1EF2]___
+
 _1ef2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-_1ef7:
 	ld      hl,(S1_LEVEL_EXTENDHEIGHT)
 	dec     hl
 	ld      (S1_LEVEL_EXTENDHEIGHT),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1EFF]___
+
 _1eff:
 	ld      hl,($d25d)
 	ld      (S1_LEVEL_EXTENDHEIGHT),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$1F06]___
+
 _1f06:
 	dec     a
 	ld      ($d2b1),a
@@ -4431,12 +4496,11 @@ _1f06:
 	ld      a,($d2b2)
 	ld      hl,($d230)
 	and     a
-	jp      p,_1f2f
+	jp      p,+
 	and     $7f
 	ld      hl,($d232)
 	ld      e,$10
-_1f2f:
-	ld      c,a
++	ld      c,a
 	ld      b,$00
 	add     hl,bc
 	add     a,e
@@ -4446,43 +4510,45 @@ _1f2f:
 	ld      a,($d2b1)
 	and     $01
 	ld      a,(hl)
-	jr      z,_1f45
+	jr      z,+
 	ld      a,($d2b3)
-_1f45:
-	out     (SMS_VDP_DATA),a
++	out     (SMS_VDP_DATA),a
 	ei      
-	ret     
+	ret
+
+;____________________________________________________________________________[$1F49]___
+
 _1f49:	;lightning is enabled...
 	ld      de,($d2e9)
 	ld      hl,$00aa
 	xor     a
 	sbc     hl,de
-	jr      nc,_1f5d
+	jr      nc,+
 	ld      bc,_1f9d
 	ld      e,a
 	ld      d,a
-	jp      _1f80
-_1f5d:
-	ld      bc,_1fa5
+	jp      ++
+	
++	ld      bc,_1fa5
 	ld      hl,$0082
 	sbc     hl,de
-	jr      z,_1f7b
+	jr      z,+
 	ld      bc,$1fa1
 	ld      hl,$0064
 	sbc     hl,de
-	jr      z,_1f80
+	jr      z,++
 	ld      bc,$1f9d
 	ld      a,e
 	or      d
-	jr      z,_1f80
-	jp      _1f97
-_1f7b:
-	push    bc
+	jr      z,++
+	jp      +++
+	
++	push    bc
 	ld      a,$13
 	rst     $28
 	pop     bc
-_1f80:
-	ld      hl,$d2a4
+	
+++	ld      hl,$d2a4
 	ld      a,(bc)
 	ld      (hl),a
 	inc     hl
@@ -4500,8 +4566,7 @@ _1f80:
 	ld      a,(bc)
 	ld      h,a
 	ld      ($d2a8),hl
-_1f97:
-	inc     de
++++	inc     de
 	ld      ($d2e9),de
 	ret    
 	
@@ -4513,10 +4578,12 @@ _1fa1:
 _1fa5:
 .db $02, $04, $de, $64
 
+;____________________________________________________________________________[$1FA9]___
+
 _1fa9:
 	dec     a
 	ld      ($d289),a
-	jr      z,_1fc4
+	jr      z,+
 	cp      $88
 	ret     nz
 	ld      a,($d288)
@@ -4532,14 +4599,14 @@ _1fa9:
 	or      h
 	ret     z
 	jp      (hl)
-_1fc4:
-	call    _LABEL_A40_121
+	
++	call    _LABEL_A40_121
 	pop     hl
 	res     5,(iy+$00)
 	bit     2,(iy+$0d)
-	jr      nz,_201c
+	jr      nz,+++
 	bit     4,(iy+$06)
-	jr      nz,_2020
+	jr      nz,++++
 	rst     $20
 	bit     7,(iy+$06)
 	call    nz,_20a4
@@ -4547,9 +4614,9 @@ _1fc4:
 	call    _155e
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1a
-	jr      nc,_2015
+	jr      nc,++
 	bit     0,(iy+$07)
-	jr      z,_200e
+	jr      z,+
 	ld      hl,$2047
 	call    _b60
 	ld      a,(S1_CURRENT_LEVEL)
@@ -4561,41 +4628,54 @@ _1fc4:
 	call    _LABEL_1CED_131
 	pop     af
 	ld      (S1_CURRENT_LEVEL),a
-_200e:
-	ld      hl,$d23e
++	ld      hl,$d23e
 	inc     (hl)
 	ld      a,$01
-	ret     
-_2015:
-	res     0,(iy+$07)
+	ret
+	
+++	res     0,(iy+$07)
 	ld      a,$ff
-	ret     
-_201c:
-	ld      hl,$d23e
+	ret
+	
++++	ld      hl,$d23e
 	inc     (hl)
-_2020:
-	ld      a,$ff
-	ret     
+++++	ld      a,$ff
+	ret
+
+;____________________________________________________________________________[$2023]___
+
 _2023:
-.db $00, $00, $2d, $20, $31, $20, $39, $20, $3f, $20, $3e, $0e, $ef, $c9
+.dw $0000, _202d, _2031, _2039, _203f
+
+_202d:
+	ld a, $0E
+	rst $28
+	ret
+
 _2031:
 	ld      hl,S1_LIVES
 	inc     (hl)
 	ld      a,$09
 	rst     $28
-	ret     
+	ret
 _2039:
 	ld      a,$10
 	call    _39ac
-	ret     
-_203f
+	ret
+_203f:
 	ld      a,$07
 	rst     $28
 	set     0,(iy+$07)
-	ret     
+	ret
+
+;____________________________________________________________________________[$2047]___
+
 _2047:
 .db $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
 .db $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+
+;____________________________________________________________________________[$2067]___
+
 _2067:
 	dec	a
 	ld      ($d287),a
@@ -4603,10 +4683,9 @@ _2067:
 	bit     1,(iy+$05)		;demo mode?
 	jr      nz,_20b8
 	bit     4,(iy+$0c)
-	jr      z,_207e
+	jr      z,+
 	set     4,(iy+$06)
-_207e:
-	bit     7,(iy+$06)
++	bit     7,(iy+$06)
 	call    nz,_20a4
 	ld      a,(S1_LIVES)
 	and     a
@@ -4621,7 +4700,10 @@ _207e:
 	ld      a,$03
 	ld      (S1_LIVES),a
 	ld      a,$01
-	ret     
+	ret
+
+;____________________________________________________________________________[$20A4]___
+
 _20a4:
 	ld      a,($d247)
 	and     a
@@ -4632,14 +4714,19 @@ _20a4:
 	ld      ($d248),a
 	ld      ($d2db),a
 	ei      
-	ret     
+	ret
+
+;____________________________________________________________________________[$20B8]___
+
 _20b8:
 	ld      a,:_c00c
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
+	
 	ld      hl,$0028
 	call    _c00c
 	call    _LABEL_A40_121
+	
 	xor     a
 	ret
 	
@@ -4722,21 +4809,20 @@ loadLevel:
 	ld   hl, $23FF
 	
 	bit  4, (iy+$06)
-	jr   z, _LABEL_2155_139
+	jr   z, +
 	
 	bit  0, (iy+$05)
-	jr   z, _LABEL_2172_140
+	jr   z, ++
 	
 	ld   hl, _2402
 	
-_LABEL_2155_139:
-	xor  a				;set A to 0
++	xor  a				;set A to 0
 	ld   (S1_RINGS), a
 	
 	;is this a special stage? (level number 28+)
 	ld   a, (S1_CURRENT_LEVEL)
 	sub  $1C
-	jr   c, _LABEL_216A_141
+	jr   c, +
 	ld   c, a
 	add  a, a
 	add  a, c
@@ -4745,13 +4831,11 @@ _LABEL_2155_139:
 	ld   hl, _2405
 	add  hl, de
 	
-_LABEL_216A_141:
-	ld   de, $D2CE
++	ld   de, $D2CE
 	ld   bc, $0003
 	ldir
 	
-_LABEL_2172_140:
-	;load HUD sprite set
+++	;load HUD sprite set
 	ld   hl, $B92E			;$2F92E
 	ld   de, $3000
 	ld   a, 9
@@ -4908,7 +4992,7 @@ _LABEL_2172_140:
 	ld      a,h			;look at the hi-byte of the Floor Layout
 	di      
 	cp      $40			;is it $40xx or above?
-	jr      c,_222e
+	jr      c,+
 	sub     $40
 	ld      h,a
 	ld      a,6
@@ -4917,16 +5001,16 @@ _LABEL_2172_140:
 	ld      a,7
 	ld      (SMS_PAGE_2),a
 	ld      (S1_PAGE_2),a
-	jr      _223e
-_222e:
-	ld      a,5
+	jr      ++
+	
++	ld      a,5
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
 	ld      a,6
 	ld      (SMS_PAGE_2),a
 	ld      (S1_PAGE_2),a
-_223e:
-	ei      			;enable interrupts
+	
+++	ei      			;enable interrupts
 	
 	;load the Floor Layout into RAM
 	ld      de,$4000		;re-base the Floor Layout address to Page 1
@@ -5163,7 +5247,7 @@ _223e:
 	ret     z
 	set     5,(iy+$06)
 	
-	ret     
+	ret
 	
 ;____________________________________________________________________________[$232B]___
 
@@ -5204,7 +5288,7 @@ _232b:
 -	ld      (ix+$00),$ff
 	add     ix,de
 	djnz    -
-	ret     
+	ret
 
 ;__________________________________________________________________________[$235E]_____
 
@@ -5259,7 +5343,7 @@ _235e:
 	;add 7 to the original IX value
 	inc     hl
 	add     ix,de
-	ret     
+	ret
 
 ;______________________________________________________________________________________
 
@@ -5293,11 +5377,13 @@ _239c:
 	ld      a,(hl)
 	inc     a
 	cp      $06
-	jr      c,_23c7
+	jr      c,+
 	xor     a
-_23c7:
-	ld      (hl),a
-	ret     
++	ld      (hl),a
+	ret
+
+;____________________________________________________________________________[$23C9]___
+
 _23c9:
 	ld      a,($d2a4)		;palette Cycle Speed
 	dec     a
@@ -5319,14 +5405,13 @@ _23c9:
 	ld      a,l
 	inc     a
 	cp      h
-	jr      c,_23ee
+	jr      c,+
 	xor     a
-_23ee:
-	ld      l,a
++	ld      l,a
 	ld      ($d2a6),hl
 	ld      a,($d2a5)
 	ld      ($d2a4),a
-	ret     
+	ret
 
 _23f9:
 .db $05, $04, $03, $02, $01, $00
@@ -5335,37 +5420,36 @@ _23ff:
 _2402:
 .db $01, $30, $00
 _2405:
-.db $01, $00, $00
+.db $01, $00, $00, $01, $00, $00, $00, $45, $00, $00, $50, $00, $00, $45, $00, $00
+.db $50, $00, $00, $50, $00, $00, $30, $00, $01, $00, $00, $01, $00, $01, $02, $00
+.db $01, $02, $FF, $02, $03, $01, $01, $03, $FE, $02, $04, $01, $01, $04, $FD, $03
+.db $05, $02, $01, $06, $FB, $03, $06, $03, $00, $07, $FA, $03, $06, $05, $FF, $08
+.db $F9, $03, $07, $06, $FE, $09, $F7, $03, $07, $08, $FD, $0A, $F6, $02, $07, $09
+.db $FB, $0B, $F4, $01, $06, $0B, $FA, $0B, $F3, $00, $06, $0D, $F8, $0B, $F2, $FF
+.db $05, $0E, $F6, $0B, $F1, $FD, $03, $10, $F4, $0B, $F0, $FB, $02, $12, $F2, $0A
+.db $F0, $F9, $00, $13, $F0, $09, $F0, $F7, $FE, $14, $EE, $08, $F0, $F4, $FC, $15
+.db $EC, $07, $F0, $F2, $F9, $15, $EA, $05, $F1, $EF, $F6, $16, $E9, $02, $F2, $ED
+.db $F4, $15, $E7, $00, $F4, $EB, $F1, $15, $E6, $FD, $F5, $E8, $EE, $14, $E5, $FA
+.db $F8, $E6, $EB, $13, $E5, $F7, $FA, $E4, $E8, $11, $E5, $F4, $FD, $E3, $E5, $0F
+.db $E5, $F1, $00, $E1, $E3, $0D, $E6, $ED, $03, $E0, $E0, $0A, $E7, $EA, $07, $E0
+.db $DE, $07, $E9, $E6, $0B, $DF, $DD, $04, $EB, $E3, $0E, $DF, $DB, $00, $EE, $E0
+.db $12, $E0, $DA, $FC, $F1, $DD, $16, $E1, $DA, $F8, $F4, $DB, $1A, $E3, $DA, $F4
+.db $F8, $D8, $1E, $E5, $DA, $EF, $FC, $D7, $22, $E8, $DB, $EB, $00, $D5, $25, $EB
+.db $DC, $E6, $05, $D4, $28, $EE, $DE, $E2, $09, $D4, $2B, $F2, $E1, $DE, $0E, $D4
+.db $2D, $F6, $E4, $D9, $13, $D5, $2F, $FB, $E8, $D6, $18, $D6, $31, $00, $EC, $D2
+.db $1D, $D8, $32, $05, $F0, $CF, $22, $DA, $32, $0B, $F5, $CD, $27, $DD, $32, $10
+.db $FA, $CB, $2B, $E0, $31, $16, $00, $C9, $2F, $E5, $2F, $1B, $06, $C8, $33, $E9
+.db $2D, $21, $0C, $C8, $36, $EE, $2B, $26, $12, $C8, $39, $F4, $27, $2B, $18, $CA
+.db $3B, $FA, $23, $30, $1E, $CB, $3D, $00, $1E, $35, $24, $CE, $3E, $06, $19, $39
+.db $2A, $D1, $3E, $0D, $14, $3C, $30, $D5, $3D, $14, $0D, $3F, $35, $D9, $3C, $1B
+.db $07, $41, $3A, $DF, $3A, $21, $00, $43, $3E, $E4, $37, $28, $F9, $44, $42, $EB
+.db $33, $2E, $F2, $44, $45, $F1, $2F, $34, $EA, $43, $47, $F9, $2A, $3A, $E3, $41
+.db $49, $00, $24, $3F, $DC, $3F
 
-.db $01
-.db $00, $00, $00, $45, $00, $00, $50, $00, $00, $45, $00, $00, $50, $00, $00, $50
-.db $00, $00, $30, $00, $01, $00, $00, $01, $00, $01, $02, $00, $01, $02, $FF, $02
-.db $03, $01, $01, $03, $FE, $02, $04, $01, $01, $04, $FD, $03, $05, $02, $01, $06
-.db $FB, $03, $06, $03, $00, $07, $FA, $03, $06, $05, $FF, $08, $F9, $03, $07, $06
-.db $FE, $09, $F7, $03, $07, $08, $FD, $0A, $F6, $02, $07, $09, $FB, $0B, $F4, $01
-.db $06, $0B, $FA, $0B, $F3, $00, $06, $0D, $F8, $0B, $F2, $FF, $05, $0E, $F6, $0B
-.db $F1, $FD, $03, $10, $F4, $0B, $F0, $FB, $02, $12, $F2, $0A, $F0, $F9, $00, $13
-.db $F0, $09, $F0, $F7, $FE, $14, $EE, $08, $F0, $F4, $FC, $15, $EC, $07, $F0, $F2
-.db $F9, $15, $EA, $05, $F1, $EF, $F6, $16, $E9, $02, $F2, $ED, $F4, $15, $E7, $00
-.db $F4, $EB, $F1, $15, $E6, $FD, $F5, $E8, $EE, $14, $E5, $FA, $F8, $E6, $EB, $13
-.db $E5, $F7, $FA, $E4, $E8, $11, $E5, $F4, $FD, $E3, $E5, $0F, $E5, $F1, $00, $E1
-.db $E3, $0D, $E6, $ED, $03, $E0, $E0, $0A, $E7, $EA, $07, $E0, $DE, $07, $E9, $E6
-.db $0B, $DF, $DD, $04, $EB, $E3, $0E, $DF, $DB, $00, $EE, $E0, $12, $E0, $DA, $FC
-.db $F1, $DD, $16, $E1, $DA, $F8, $F4, $DB, $1A, $E3, $DA, $F4, $F8, $D8, $1E, $E5
-.db $DA, $EF, $FC, $D7, $22, $E8, $DB, $EB, $00, $D5, $25, $EB, $DC, $E6, $05, $D4
-.db $28, $EE, $DE, $E2, $09, $D4, $2B, $F2, $E1, $DE, $0E, $D4, $2D, $F6, $E4, $D9
-.db $13, $D5, $2F, $FB, $E8, $D6, $18, $D6, $31, $00, $EC, $D2, $1D, $D8, $32, $05
-.db $F0, $CF, $22, $DA, $32, $0B, $F5, $CD, $27, $DD, $32, $10, $FA, $CB, $2B, $E0
-.db $31, $16, $00, $C9, $2F, $E5, $2F, $1B, $06, $C8, $33, $E9, $2D, $21, $0C, $C8
-.db $36, $EE, $2B, $26, $12, $C8, $39, $F4, $27, $2B, $18, $CA, $3B, $FA, $23, $30
-.db $1E, $CB, $3D, $00, $1E, $35, $24, $CE, $3E, $06, $19, $39, $2A, $D1, $3E, $0D
-.db $14, $3C, $30, $D5, $3D, $14, $0D, $3F, $35, $D9, $3C, $1B, $07, $41, $3A, $DF
-.db $3A, $21, $00, $43, $3E, $E4, $37, $28, $F9, $44, $42, $EB, $33, $2E, $F2, $44
-.db $45, $F1, $2F, $34, $EA, $43, $47, $F9, $2A, $3A, $E3, $41, $49, $00, $24, $3F
-.db $DC, $3F
+;____________________________________________________________________________[$258B]___
 
 ;skip null level / do end sequence?
-_LABEL_258B_133:			;[$258B]
+_LABEL_258B_133:
 	ld   a, (S1_VDPREGISTER_1)
 	and  %10111111
 	ld   (S1_VDPREGISTER_1), a
@@ -5412,10 +5496,10 @@ _LABEL_258B_133:			;[$258B]
 	ld      (S1_PAGE_1),a
 	ld      a,($d27f)
 	cp      $06
-	jp      c,_2693
+	jp      c,+
 	ld      b,$3c
-_25ed:
-	push    bc
+	
+-	push    bc
 	
 	res     0,(iy+$00)
 	call    wait
@@ -5427,13 +5511,14 @@ _25ed:
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
 	pop     bc
-	djnz    _25ed
+	djnz    -
+	
 	ld      a,$13
 	rst     $18
 	ld      hl,$241d
 	ld      b,$3d
-_2610:
-	push    bc
+	
+--	push    bc
 	ld      c,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
@@ -5443,8 +5528,8 @@ _2610:
 	ld      de,$d000
 	ld      ($d23c),de
 	ld      b,$03
-_262e:
-	push    bc
+	
+-	push    bc
 	push    hl
 	ld      a,$70
 	add     a,(hl)
@@ -5478,9 +5563,10 @@ _262e:
 	ld      ($d23c),hl
 	pop     hl
 	pop     bc
-	djnz    _262e
+	djnz    -
+	
 	pop     bc
-	djnz    _2610
+	djnz    --
 	ld      hl,_2047
 	call    _b60
 	ld      (iy+$0a),$00
@@ -5499,8 +5585,8 @@ _262e:
 	
 	ld      hl,_2828
 	call    _aae
-_2693:
-	ld      bc,$00f0
+	
++	ld      bc,$00f0
 	call    _2745
 	call    _155e
 	ld      bc,$00f0
@@ -5572,13 +5658,14 @@ _2693:
 _2715:					;infinite loop!?
 	jp      _2715
 
+;____________________________________________________________________________[$2718]___
+
 _2718:
 	push    af
 	push    hl
 	push    de
 	push    bc
-_271c:
-	push    bc
+--	push    bc
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),$00
@@ -5586,21 +5673,24 @@ _271c:
 	ld      ($d23c),hl
 	ld      hl,$d322
 	ld      b,$04
-_2733:
-	push    bc
+	
+-	push    bc
 	call    _275a
 	pop     bc
-	djnz    _2733
+	djnz    -
 	pop     bc
 	dec     bc
 	ld      a,b
 	or      c
-	jr      nz,_271c
+	jr      nz,--
 	pop     bc
 	pop     de
 	pop     hl
 	pop     af
-	ret     
+	ret
+
+;____________________________________________________________________________[$2745]___
+
 _2745:
 	push    bc
 	ld      a,(iy+$0a)
@@ -5612,7 +5702,10 @@ _2745:
 	ld      a,b
 	or      c
 	jr      nz,_2745
-	ret     
+	ret
+
+;____________________________________________________________________________[$275A]___
+
 _275a:
 	ld      e,(hl)
 	inc     hl
@@ -5621,7 +5714,7 @@ _275a:
 	inc     (hl)
 	ld      a,(de)
 	cp      (hl)
-	jr      nc,_277e
+	jr      nc,+
 	ld      (hl),$00
 	inc     de
 	inc     de
@@ -5634,7 +5727,7 @@ _275a:
 	inc     hl
 	ld      a,(de)
 	cp      $ff
-	jr      nz,_277e
+	jr      nz,+
 	inc     de
 	ld      a,(de)
 	ld      b,a
@@ -5645,8 +5738,8 @@ _275a:
 	dec     hl
 	ld      (hl),b
 	jr      _275a
-_277e:
-	inc     hl
+	
++	inc     hl
 	inc     de
 	push    hl
 	ex      de,hl
@@ -5665,7 +5758,9 @@ _277e:
 	ld      d,h
 	call    _LABEL_350F_95
 	pop     hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$2795]___
 
 _2795:
 	ld      de,$d2be
@@ -5674,25 +5769,24 @@ _2795:
 	inc     de
 	ld      a,$ff
 	ld      (de),a
-_27a0:
-	ld      a,(hl)
+__	ld      a,(hl)
 	inc     hl
 	cp      $ff
 	ret     z
 	cp      $fe
 	jr      z,_2795
 	cp      $fc
-	jr      z,_27d1
+	jr      z,++
 	cp      $fd
-	jr      nz,_27ba
+	jr      nz,+
 	ld      c,(hl)
 	inc     hl
 	ld      b,(hl)
 	inc     hl
 	call    _2718
-	jr      _27a0
-_27ba:
-	push    hl
+	jr      _b
+	
++	push    hl
 	ld      ($d2c0),a
 	ld      bc,$0008
 	call    _2718
@@ -5701,25 +5795,24 @@ _27ba:
 	ld      hl,$d2be
 	inc     (hl)
 	pop     hl
-	jr      _27a0
-_27d1:
-	ld      b,(hl)
+	jr      _b
+	
+++	ld      b,(hl)
 	inc     hl
 	push    hl
-_27d4:
-	push    bc
+---	push    bc
 	ld      bc,$000c
 	call    _2718
 	ld      de,$3aa4
 	ld      hl,$3ae4
 	ld      b,$09
-_27e3:
-	push    bc
+	
+--	push    bc
 	push    hl
 	push    de
 	ld      b,$14
-_27e8:
-	di      
+	
+-	di      
 	ld      a,l
 	out     (SMS_VDP_CONTROL),a
 	ld      a,h
@@ -5744,7 +5837,8 @@ _27e8:
 	ei      
 	inc     hl
 	inc     de
-	djnz    _27e8
+	djnz    -
+	
 	pop     de
 	pop     hl
 	ld      bc,$0040
@@ -5753,11 +5847,12 @@ _27e8:
 	add     hl,bc
 	ex      de,hl
 	pop     bc
-	djnz    _27e3
+	djnz    --
+	
 	pop     bc
-	djnz    _27d4
+	djnz    ---
 	pop     hl
-	jp      _27a0
+	jp      _b
 
 _2825:
 .db $5c, $5e, $ff
@@ -5998,6 +6093,8 @@ _2e52:
 _2e55:
 .db $A0, $A2, $A4, $00, $FF
 
+;____________________________________________________________________________[$2E5A]___
+
 _2e5a:
 	res     7,(iy+$07)
 	
@@ -6008,10 +6105,9 @@ _2e5a:
 	
 	ld      a,(S1_LIVES)
 	cp      $09
-	jr      c,_2e72
+	jr      c,+
 	ld      a,$09
-_2e72:
-	add     a,a
++	add     a,a
 	add     a,$80
 	ld      ($d2c1),a
 	ld      c,$10
@@ -6045,10 +6141,9 @@ _2e72:
 	inc     hl
 	ld      de,$0070
 	bit     6,(iy+$05)
-	jr      z,_2ec3
+	jr      z,+
 	ld      de,$0080
-_2ec3:
-	ld      a,(hl)
++	ld      a,(hl)
 	inc     hl
 	or      (hl)
 	call    z,_311a
@@ -6061,7 +6156,9 @@ _2ec3:
 	ld      ($d26d),hl
 	call    _31e6
 	call    _329b
-	ret     
+	ret
+
+;____________________________________________________________________________[$2EE6]___
 
 _2ee6:
 	ld      a,(S1_RINGS)
@@ -6091,7 +6188,9 @@ _2ee6:
 	ld      de,$d2be
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$2F1F]___
 
 _2f1f:
 	ld      hl,$d2be
@@ -6124,15 +6223,16 @@ _2f1f:
 	ld      b,$10
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $1c
-	jr      c,_2f59
+	jr      c,+
 	ld      c,$70
 	ld      b,$38
-_2f59:
-	ld      hl,($d23c)
++	ld      hl,($d23c)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$2F66]___
 
 _2f66:
 	bit     6,(iy+$07)
@@ -6175,36 +6275,34 @@ _2f66:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_2ffa
+	jr      c,+++
 	ld      a,h
 	and     a
-	jr      nz,_2fd9
+	jr      nz,+
 	ld      a,l
 	cp      $09
-	jr      c,_2fdc
-_2fd9:
-	ld      hl,$0008
-_2fdc:
-	bit     3,(iy+$05)
-	jr      nz,_3033
+	jr      c,++
+	
++	ld      hl,$0008
+++	bit     3,(iy+$05)
+	jr      nz,_f
 	bit     5,(iy+$05)
-	jr      z,_2feb
+	jr      z,+
 	ld      hl,$0001
-_2feb:
-	ex      de,hl
++	ex      de,hl
 	ld      hl,($d25a)
 	and     a
 	sbc     hl,de
-	jr      c,_3033
+	jr      c,_f
 	ld      ($d25a),hl
-	jp      _3033
-_2ffa:
-	ld      bc,($d261)
+	jp      _f
+	
++++	ld      bc,($d261)
 	ld      hl,($d25a)
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_3033
+	jr      nc,_f
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -6214,40 +6312,35 @@ _2ffa:
 	inc     hl
 	ld      a,h
 	and     a
-	jr      nz,_3017
+	jr      nz,+
 	ld      a,l
 	cp      $09
-	jr      c,_301a
-_3017:
-	ld      hl,$0008
-_301a:
-	bit     3,(iy+$05)
-	jr      nz,_3033
+	jr      c,++	
++	ld      hl,$0008
+++	bit     3,(iy+$05)
+	jr      nz,_f
 	bit     5,(iy+$05)
-	jr      z,_3029
+	jr      z,+
 	ld      hl,$0001
-_3029:
-	ld      de,($d25a)
++	ld      de,($d25a)
 	add     hl,de
-	jr      c,_3033
+	jr      c,_f
 	ld      ($d25a),hl
-_3033:
-	ld      hl,($d25a)
+__	ld      hl,($d25a)
 	ld      de,(S1_LEVEL_CROPLEFT)
 	and     a
 	sbc     hl,de
-	jr      nc,_3045
+	jr      nc,+
 	ld      ($d25a),de
-	jr      _3055
-_3045:
-	ld      hl,($d25a)
+	jr      ++
+	
++	ld      hl,($d25a)
 	ld      de,($d275)
 	and     a
 	sbc     hl,de
-	jr      c,_3055
+	jr      c,++
 	ld      ($d25a),de
-_3055:
-	bit     6,(iy+$05)
+++	bit     6,(iy+$05)
 	call    nz,_3164
 	ld      bc,($d263)
 	ld      de,($d401)
@@ -6261,45 +6354,42 @@ _3055:
 	call    z,_31db
 	and     a
 	sbc     hl,de
-	jr      c,_30b9
+	jr      c,+++
 	ld      c,$09
 	ld      a,h
 	and     a
-	jr      nz,_3093
+	jr      nz,+
 	bit     6,(iy+$05)
 	call    nz,_311f
 	ld      a,l
 	cp      c
-	jr      c,_3097
-_3093:
-	dec     c
+	jr      c,++
++	dec     c
 	ld      l,c
 	ld      h,$00
-_3097:
-	bit     7,(iy+$05)
-	jr      z,_30aa
+++	bit     7,(iy+$05)
+	jr      z,+
 	srl     h
 	rr      l
 	bit     1,(iy+$08)
-	jr      nz,_30aa
+	jr      nz,+
 	ld      hl,$0000
-_30aa:
-	ex      de,hl
++	ex      de,hl
 	ld      hl,($d25d)
 	and     a
 	sbc     hl,de
-	jr      c,_30f9
+	jr      c,_f
 	ld      ($d25d),hl
-	jp      _30f9
-_30b9:
-	ld      bc,($d265)
+	jp      _f
+	
++++	ld      bc,($d265)
 	ld      hl,($d25d)
 	add     hl,bc
 	bit     7,(iy+$05)
 	call    z,_31db
 	and     a
 	sbc     hl,de
-	jr      nc,_30f9
+	jr      nc,_f
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -6310,91 +6400,98 @@ _30b9:
 	ld      c,$09
 	ld      a,h
 	and     a
-	jr      nz,_30e5
+	jr      nz,+
 	bit     6,(iy+$05)
 	call    nz,_311f
 	ld      a,l
 	cp      c
-	jr      c,_30e9
-_30e5:
-	dec     c
+	jr      c,++
++	dec     c
 	ld      l,c
 	ld      h,$00
-_30e9:
-	bit     4,(iy+$05)
-	jr      nz,_30f9
+++	bit     4,(iy+$05)
+	jr      nz,_f
 	ld      de,($d25d)
 	add     hl,de
-	jr      c,_30f9
+	jr      c,_f
 	ld      ($d25d),hl
-_30f9:
-	ld      hl,($d25d)
+__	ld      hl,($d25d)
 	ld      de,(S1_LEVEL_CROPTOP)
 	and     a
 	sbc     hl,de
-	jr      nc,_3109
+	jr      nc,+
 	ld      ($d25d),de
-_3109:
-	ld      hl,($d25d)
++	ld      hl,($d25d)
 	ld      de,(S1_LEVEL_EXTENDHEIGHT)
 	and     a
 	sbc     hl,de
-	jr      c,_3119
+	jr      c,+
 	ld      ($d25d),de
-_3119:
-	ret     
++	ret
+
+;____________________________________________________________________________[$311A]___
 
 _311a:
 	ld      (hl),d
 	dec     hl
 	ld      (hl),e
 	inc     hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$311F]___
 
 _311f:
 	ld      c,$08
-	ret     
+	ret
+
+;____________________________________________________________________________[$3122]___
 
 _3122:
 	ld      de,(S1_LEVEL_CROPTOP)
 	and     a
 	sbc     hl,de
 	ret     z
-	jr      c,_3136
+	jr      c,+
 	inc     de
 	ld      (S1_LEVEL_CROPTOP),de
 	ld      (S1_LEVEL_EXTENDHEIGHT),de
-	ret     
-_3136:
-	dec     de
+	ret
+	
++	dec     de
 	ld      (S1_LEVEL_CROPTOP),de
 	ld      (S1_LEVEL_EXTENDHEIGHT),de
-	ret     
+	ret
+
+;____________________________________________________________________________[$3140]___
 
 _3140:
 	ld      de,(S1_LEVEL_CROPLEFT)
 	and     a
 	sbc     hl,de
 	ret     z
-	jr      c,_3154
+	jr      c,+
 	inc     de
 	ld      (S1_LEVEL_CROPLEFT),de
 	ld      ($d275),de
-	ret     
-_3154:
-	dec     de
+	ret
+	
++	dec     de
 	ld      (S1_LEVEL_CROPLEFT),de
 	ld      ($d275),de
-	ret     
+	ret
+
+;____________________________________________________________________________[$315E]___
 
 _315e:
-	jr      c,_3162
+	jr      c,+
 	inc     de
-	ret     
-_3162:
-	dec     de
-	ret     
+	ret
+	
++	dec     de
+	ret
 
+;____________________________________________________________________________[$3164]___
+	
 _3164:
 	ld      hl,($d29d)
 	ld      de,(S1_TIME)
@@ -6402,16 +6499,14 @@ _3164:
 	ld      bc,$0200
 	ld      a,h
 	and     a
-	jp      p,_3179
+	jp      p,+
 	neg     
 	ld      bc,$fe00
-_3179:
-	cp      $02
-	jr      c,_317f
++	cp      $02
+	jr      c,+
 	ld      l,c
 	ld      h,b
-_317f:
-	ld      ($d29d),hl
++	ld      ($d29d),hl
 	ld      c,l
 	ld      b,h
 	ld      hl,($d25c)
@@ -6419,10 +6514,9 @@ _317f:
 	add     hl,bc
 	ld      e,$00
 	bit     7,b
-	jr      z,_3193
+	jr      z,+
 	ld      e,$ff
-_3193:
-	adc     a,e
++	adc     a,e
 	ld      ($d25c),hl
 	ld      ($d25e),a
 	ld      hl,($d2a1)
@@ -6433,40 +6527,49 @@ _3193:
 	ld      ($d2a3),a
 	ld      hl,($d2a2)
 	bit     7,h
-	jr      z,_31be
+	jr      z,+
 	ld      bc,$ffe0
 	and     a
 	sbc     hl,bc
-	jr      nc,_31be
+	jr      nc,+
 	ld      hl,$0002
 	ld      (S1_TIME),hl
-	ret     
-_31be:
-	ld      hl,($d2a2)
+	ret
+	
++	ld      hl,($d2a2)
 	ld      bc,$0020
 	and     a
 	sbc     hl,bc
 	ret     c
 	ld      hl,$fffe
 	ld      (S1_TIME),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$31CF]___
 
 _31cf:
 	ld      bc,$0020
-	ret     
+	ret
+
+;____________________________________________________________________________[$31D3]___
 
 _31d3:
 	ld      bc,$0070
-	ret     
+	ret
 	ld      bc,$0070
-	ret     
+	ret
+
+;____________________________________________________________________________[$31DB]___
 
 _31db:
 	bit     6,(iy+$05)
 	ret     nz
 	ld      bc,($d2b7)
 	add     hl,bc
-	ret     
+	ret
+
+;____________________________________________________________________________[$31E6]___
+
 _31e6:
 	ld      a,($d223)
 	and     $07
@@ -6487,10 +6590,9 @@ _31e6:
 	add     hl,bc
 	ld      c,b
 	ld      b,$04
-_3209:
-	ld      a,(de)
+-	ld      a,(de)
 	cp      $56
-	jp      nc,_328b
+	jp      nc,+++
 	push    de
 	pop     ix
 	exx     
@@ -6515,39 +6617,37 @@ _3209:
 	ld      hl,($d25a)
 	xor     a
 	sbc     hl,bc
-	jr      nc,_323b
+	jr      nc,+
 	ld      l,a
 	ld      h,a
 	xor     a
-_323b:
-	ld      e,(ix+$02)
++	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	sbc     hl,de
-	jp      nc,_328a
+	jp      nc,++
 	ld      hl,($d20e)
 	ld      bc,($d25a)
 	add     hl,bc
 	xor     a
 	sbc     hl,de
-	jp      c,_328a
+	jp      c,++
 	ld      hl,($d25d)
 	ld      bc,($d210)
 	sbc     hl,bc
-	jr      nc,_3262
+	jr      nc,+
 	ld      l,a
 	ld      h,a
 	xor     a
-_3262:
-	ld      e,(ix+$05)
++	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	sbc     hl,de
-	jp      nc,_328a
+	jp      nc,++
 	ld      hl,($d212)
 	ld      bc,($d25d)
 	add     hl,bc
 	xor     a
 	sbc     hl,de
-	jp      c,_328a
+	jp      c,++
 	exx     
 	ld      (hl),e
 	inc     hl
@@ -6558,12 +6658,13 @@ _3262:
 	add     hl,de
 	ex      de,hl
 	pop     hl
-	djnz    _3209
-	ret     
-_328a:
-	exx     
-_328b:
-	ld      (hl),c
+	djnz    -
+	
+	ret
+	
+++	exx     
+	
++++	ld      (hl),c
 	inc     hl
 	ld      (hl),c
 	inc     hl
@@ -6573,7 +6674,7 @@ _328b:
 	ex      de,hl
 	pop     hl
 	dec     b
-	jp      nz,_3209
+	jp      nz,-
 	ret    
 
 ;____________________________________________________________________________[$392B]___
@@ -6613,7 +6714,7 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	pop     af
 	ld      ($d23c),hl
 	ld      (iy+$0a),a
-	ret     
+	ret
 	
 +	ld      a,(de)			;get object from the list
 	cp      $ff			;ignore object #$FF
@@ -6637,53 +6738,24 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	ld      h,(hl)
 	ld      l,a
 	
-	ld      de,$32e2
+	ld      de,_32e2
 	push    de
 	
 	jp      (hl)			;run object code?
 	
-;--- this is probably data?
 _32e2:
-	ld      e,(ix+$07)
-	ld      d,(ix+$08)
-	ld      c,(ix+$09)
-	ld      l,(ix+$01)
-	ld      h,(ix+$02)
-	ld      a,(ix+$03)
-	add     hl,de
-	adc     a,c
-	ld      (ix+$01),l
-	ld      (ix+$02),h
-	ld      (ix+$03),a
-	ld      e,(ix+$0a)
-	ld      d,(ix+$0b)
-	ld      c,(ix+$0c)
-	ld      l,(ix+$04)
-	ld      h,(ix+$05)
-	ld      a,(ix+$06)
-	add     hl,de
-	adc     a,c
-	ld      (ix+$04),l
-	ld      (ix+$05),h
-	ld      (ix+$06),a
-;---
-_331c:
-	bit     5,(ix+$18)
-	jp      nz,_34e6
-	ld      b,$00
-	ld      d,b
-	ld      e,(ix+$0e)
-	srl     e
-	bit     7,(ix+$08)
-	jr      nz,_333a
-	ld      c,(ix+$0d)
-	ld      hl,$411e			;data?
-	jp      _333f
-_333a:
-	ld      c,$00
-	ld      hl,$4020			;data?
-_333f:
-	ld      ($d210),bc
+.db $DD, $5E, $07, $DD, $56, $08, $DD, $4E, $09, $DD, $6E, $01, $DD, $66, $02, $DD
+.db $7E, $03, $19, $89, $DD, $75, $01, $DD, $74, $02, $DD, $77, $03, $DD, $5E, $0A
+.db $DD, $56, $0B, $DD, $4E, $0C, $DD, $6E, $04, $DD, $66, $05, $DD, $7E, $06, $19
+.db $89, $DD, $75, $04, $DD, $74, $05, $DD, $77, $06, $DD, $CB, $18, $6E, $C2, $E6
+.db $34, $06, $00, $50, $DD, $5E, $0E, $CB, $3B, $DD, $CB, $08, $7E, $20, $09, $DD
+.db $4E, $0D, $21, $1E, $41, $C3, $3F, $33, $0E, $00, $21, $20, $40, $ED, $43, $10
+.db $D2
+
+;______________________________________________________________________________________
+
+;not referenced. wrong data boundary above?
+_3343:
 	res     6,(ix+$18)
 	push    de
 	push    hl
@@ -6707,7 +6779,7 @@ _333f:
 	pop     hl
 	pop     de
 	and     $3f
-	jp      z,_33f6
+	jp      z,+++
 	ld      a,($d214)
 	add     a,a
 	ld      c,a
@@ -6725,34 +6797,32 @@ _333f:
 	add     hl,de
 	ld      a,(hl)
 	cp      $80
-	jp      z,_33f6
+	jp      z,+++
 	ld      e,a
 	and     a
-	jp      p,_338d
+	jp      p,+
 	ld      d,$ff
-_338d:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      bc,($d210)
 	add     hl,bc
 	bit     7,(ix+$09)
-	jr      nz,_33ab
+	jr      nz,+
 	and     a
-	jp      m,_33b5
+	jp      m,++
 	ld      a,l
 	and     $1f
 	cp      e
-	jr      nc,_33b5
-	jp      _33f6
-_33ab:
-	and     a
-	jp      m,_33b5
+	jr      nc,++
+	jp      +++
+	
++	and     a
+	jp      m,++
 	ld      a,l
 	and     $1f
 	cp      e
-	jr      nc,_33f6
-_33b5:
-	set     6,(ix+$18)
+	jr      nc,+++
+++	set     6,(ix+$18)
 	ld      a,l
 	and     $e0
 	ld      l,a
@@ -6773,34 +6843,31 @@ _33b5:
 	ld      a,d
 	ld      b,d
 	bit     7,c
-	jr      z,_33e3
+	jr      z,+
 	dec     a
 	dec     b
-_33e3:
-	ld      l,(ix+$0a)
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	add     hl,bc
 	adc     a,(ix+$0c)
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-_33f6:
-	ld      b,$00
++++	ld      b,$00
 	ld      d,b
 	bit     7,(ix+$0b)
-	jr      nz,_340d
+	jr      nz,+
 	ld      c,(ix+$0d)
 	srl     c
 	ld      e,(ix+$0e)
 	ld      hl,$448a		;data?
-	jp      _3417
-_340d:
-	ld      c,(ix+$0d)
+	jp      ++
+	
++	ld      c,(ix+$0d)
 	srl     c
 	ld      e,$00
 	ld      hl,$41ec		;data?
-_3417:
-	ld      ($d210),de
+++	ld      ($d210),de
 	res     7,(ix+$18)
 	push    bc
 	push    hl
@@ -6824,7 +6891,7 @@ _3417:
 	pop     hl
 	pop     bc
 	and     $3f
-	jp      z,_34e6
+	jp      z,+++
 	ld      a,($d214)
 	add     a,a
 	ld      e,a
@@ -6842,20 +6909,19 @@ _3417:
 	add     hl,bc
 	ld      a,(hl)
 	cp      $80
-	jp      z,_34e6
+	jp      z,+++
 	ld      c,a
 	and     a
-	jp      p,_3465
+	jp      p,+
 	ld      b,$ff
-_3465:
-	ld      l,(ix+$05)
++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,($d210)
 	add     hl,de
 	bit     7,(ix+$0c)
-	jr      nz,_3493
+	jr      nz,+
 	and     a
-	jp      m,_34a9
+	jp      m,++
 	ld      a,l
 	and     $1f
 	exx     
@@ -6866,12 +6932,12 @@ _3465:
 	add     a,(hl)
 	exx     
 	cp      c
-	jr      c,_34e6
+	jr      c,+++
 	set     7,(ix+$18)
-	jp      _34a9
-_3493:
-	and     a
-	jp      m,_34a9
+	jp      ++
+	
++	and     a
+	jp      m,++
 	ld      a,l
 	and     $1f
 	exx     
@@ -6882,9 +6948,8 @@ _3493:
 	add     a,(hl)
 	exx     
 	cp      c
-	jr      nc,_34e6
-_34a9:
-	ld      a,l
+	jr      nc,+++
+++	ld      a,l
 	and     $e0
 	ld      l,a
 	add     hl,bc
@@ -6904,19 +6969,17 @@ _34a9:
 	ld      a,d
 	ld      b,d
 	bit     7,c
-	jr      z,_34d3
+	jr      z,+
 	dec     a
 	dec     b
-_34d3:
-	ld      l,(ix+$07)
++	ld      l,(ix+$07)
 	ld      h,(ix+$08)
 	add     hl,bc
 	adc     a,(ix+$09)
 	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
-_34e6:
-	ld      l,(ix+$05)
++++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,($d25d)
 	and     a
@@ -6936,7 +6999,10 @@ _34e6:
 	pop     bc
 	ret
 
-_LABEL_350F_95:				;[$350F]
+;____________________________________________________________________________[$350F]___
+;the Emulicious disassembly starts code here and everything above (from _32e2) as data
+
+_LABEL_350F_95:
 	ld   ($D214), hl
 	push bc
 	exx
@@ -6944,8 +7010,7 @@ _LABEL_350F_95:				;[$350F]
 	exx
 	ld   b, $00
 	ld   c, $03
-_LABEL_351A_101:
-	exx
+--	exx
 	ld   hl, ($D214)
 	ld   a, (bc)
 	exx
@@ -6953,27 +7018,26 @@ _LABEL_351A_101:
 	ret  z
 	ld   a, d
 	cp   $FF
-	jr   nz, _LABEL_3530_96
+	jr   nz, +
 	ld   a, e
 	cp   $F0
-	jr   c, _LABEL_356C_97
-	jp   _LABEL_3537_98
-_LABEL_3530_96:				;[$3530]
-	and  a
-	jr   nz, _LABEL_356C_97
+	jr   c, +++
+	jp   ++
+	
++	and  a
+	jr   nz, +++
 	ld   a, e
 	cp   $C0
 	ret  nc
-_LABEL_3537_98:				;[$3537]
-	ld   b, $06
-_LABEL_3539_100:
-	exx
+++	ld   b, $06
+	
+-	exx
 	ld   a, h
 	and  a
-	jr   nz, _LABEL_3559_99
+	jr   nz, +
 	ld   a, (bc)
 	cp   $FE
-	jr   nc, _LABEL_3559_99
+	jr   nc, +
 	ld   de, ($D23C)
 	ld   a, l
 	ld   (de), a
@@ -6988,12 +7052,12 @@ _LABEL_3539_100:
 	inc  e
 	ld   ($D23C), de
 	inc  (iy+10)
-_LABEL_3559_99:
-	inc  bc
++	inc  bc
 	ld   de, $0008
 	add  hl, de
 	exx
-	djnz _LABEL_3539_100
+	djnz -
+	
 	ld   a, c
 	ex   de, hl
 	ld   c, $10
@@ -7001,11 +7065,10 @@ _LABEL_3559_99:
 	ex   de, hl
 	ld   c, a
 	dec  c
-	jr   nz, _LABEL_351A_101
+	jr   nz, --
 	ret
 
-_LABEL_356C_97:				;[$356C]
-	exx
++++	exx
 	ex   de, hl
 	ld   hl, $0006
 	add  hl, bc
@@ -7020,8 +7083,10 @@ _LABEL_356C_97:				;[$356C]
 	ex   de, hl
 	ld   c, a
 	dec  c
-	jr   nz, _LABEL_351A_101
+	jr   nz, --
 	ret
+
+;____________________________________________________________________________[$3581]___
 
 _3581:
 	ld      hl,($d210)
@@ -7043,19 +7108,18 @@ _3581:
 	ret     nz
 	ld      a,d
 	cp      $ff
-	jr      nz,_35b0
+	jr      nz,+
 	ld      a,e
 	cp      $f0
 	ret     c
-	jp      _35b6
-_35b0:
-	and     a
+	jp      ++
+	
++	and     a
 	ret     nz
 	ld      a,e
 	cp      $c0
 	ret     nc
-_35b6:
-	ld      h,c
+++	ld      h,c
 	ld      bc,($d23c)
 	ld      a,l
 	ld      (bc),a
@@ -7068,13 +7132,16 @@ _35b6:
 	inc     c
 	ld      ($d23c),bc
 	inc     (iy+$0a)
-	ret     
-_LABEL_35CC_117:			;[$35CC]
+	ret
+
+;____________________________________________________________________________[$35CC]___
+
+_LABEL_35CC_117:
 	ld   a, (de)
 	cp   $FF
 	ret  z
 	cp   $FE
-	jr   z, _LABEL_35DD_118
+	jr   z, +
 	ld   (hl), c
 	inc  l
 	ld   (hl), b
@@ -7082,17 +7149,17 @@ _LABEL_35CC_117:			;[$35CC]
 	ld   (hl), a
 	inc  l
 	inc  (iy+10)
-_LABEL_35DD_118:
-	inc  de
++	inc  de
 	ld   a, c
 	add  a, $08
 	ld   c, a
 	jp   _LABEL_35CC_117
 
+;____________________________________________________________________________[$35E5]___
+
 _35e5:
 	bit     0,(iy+$05)
 	ret     nz
-_35ea:
 	bit     0,(iy+$08)
 	jp      nz,_36be
 	ld      a,($d414)
@@ -7101,21 +7168,21 @@ _35ea:
 	and     $02
 	jp      nz,_36be
 
+;----------------------------------------------------------------------------[$35FD]---
 _35fd:
 	bit     0,(iy+$09)
 	ret     nz
-_3602:
 	bit     6,(iy+$06)
 	ret     nz
-_3607:
 	bit     0,(iy+$08)
 	ret     nz
-_360c:
 	bit     5,(iy+$06)
 	jr      nz,_367e
 	ld      a,(S1_RINGS)
 	and     a
 	jr      nz,_3644
+
+;----------------------------------------------------------------------------[$3618]---
 _3618:
 	set     0,(iy+$05)
 	ld      hl,$d414
@@ -7132,7 +7199,8 @@ _3618:
 	res     0,(iy+$08)
 	ld      a,$0a
 	rst     $18
-	ret     
+	ret
+
 _3644:
 	xor     a
 	ld      (S1_RINGS),a
@@ -7159,32 +7227,32 @@ _367e:
 	ld      de,$fffc
 	xor     a
 	bit     4,(hl)
-	jr      z,_368c
+	jr      z,+
 	ld      de,$fffe
-_368c:
-	ld      ($d406),a
++	ld      ($d406),a
 	ld      ($d407),de
 	bit     1,(hl)
-	jr      z,_36a1
+	jr      z,+
 	ld      a,(hl)
 	or      $12
 	ld      (hl),a
 	xor     a
 	ld      de,$0002
-	jr      _36a7
-_36a1:
-	res     1,(hl)
+	jr      ++
+	
++	res     1,(hl)
 	xor     a
 	ld      de,$fffe
-_36a7:
-	ld      ($d403),a
+++	ld      ($d403),a
 	ld      ($d404),de
 	res     5,(iy+$06)
 	set     6,(iy+$06)
 	ld      (iy+$03),$ff
 	ld      a,$11
 	rst     $28
-	ret     
+	ret
+
+;----------------------------------------------------------------------------[$36BE]---
 _36be:
 	ld      (ix+$00),$0a
 	ld      a,($d20e)
@@ -7210,21 +7278,23 @@ _36be:
 	ld      de,$0100
 	ld      c,$00
 	call    _39d8
-	ret     
+	ret
+
+;____________________________________________________________________________[$36F9]___
 
 _36f9:
 	ld      a,(S1_LEVEL_FLOORWIDTH)
 	cp      $80
-	jr      z,_370f
+	jr      z,+
 	cp      $40
-	jr      z,_373b
+	jr      z,++
 	cp      $20
-	jr      z,_3764
+	jr      z,+++
 	cp      $10
-	jr      z,_378a
-	jp      _37b3
-_370f:
-	ld      l,(ix+$05)
+	jr      z,++++
+	jp      +++++
+	
++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,de
 	ld      a,l
@@ -7250,9 +7320,9 @@ _370f:
 	add     hl,de
 	ld      de,$c000
 	add     hl,de
-	ret     
-_373b:
-	ld      l,(ix+$05)
+	ret
+	
+++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,de
 	ld      a,l
@@ -7276,9 +7346,9 @@ _373b:
 	add     hl,de
 	ld      de,$c000
 	add     hl,de
-	ret     
-_3764:
-	ld      l,(ix+$05)
+	ret
+	
++++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,de
 	ld      a,l
@@ -7300,9 +7370,9 @@ _3764:
 	add     hl,de
 	ld      de,$c000
 	add     hl,de
-	ret     
-_378a:
-	ld      l,(ix+$05)
+	ret
+	
+++++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,de
 	ld      a,l
@@ -7326,9 +7396,9 @@ _378a:
 	add     hl,de
 	ld      de,$c000
 	add     hl,de
-	ret     
-_37b3:
-	ld      l,(ix+$05)
+	ret
+	
++++++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,de
 	ld      a,l
@@ -7355,9 +7425,11 @@ _37b3:
 	add     hl,de
 	ld      de,$c000
 	add     hl,de
-	ret     
+	ret
 
-_LABEL_37E0_41:				;[$37E0]
+;____________________________________________________________________________[$37E0]___
+
+_LABEL_37E0_41:
 	ld   de, ($D28F)
 	ld   hl, ($D291)
 	and  a
@@ -7366,7 +7438,7 @@ _LABEL_37E0_41:				;[$37E0]
 	ld   hl, $3680
 	ex   de, hl
 	bit  0, (iy+6)
-	jp   nz, _LABEL_382E_42
+	jp   nz, +
 	ld   a, e
 	out  (SMS_VDP_CONTROL), a
 	ld   a, d
@@ -7375,8 +7447,8 @@ _LABEL_37E0_41:				;[$37E0]
 	xor  a
 	ld   c, $BE
 	ld   e, $18
-_LABEL_3803_43:
-	outi
+	
+-	outi
 	outi
 	outi
 	out  (SMS_VDP_DATA), a
@@ -7393,12 +7465,13 @@ _LABEL_3803_43:
 	outi
 	out  (SMS_VDP_DATA), a
 	dec  e
-	jp   nz, _LABEL_3803_43
+	jp   nz, -
+	
 	ld   hl, ($D28F)
 	ld   ($D291), hl
 	ret
-_LABEL_382E_42:				;[$382E]
-	ld   bc, $011D
+	
++	ld   bc, $011D
 	add  hl, bc
 	ld   a, e
 	out  (SMS_VDP_CONTROL), a
@@ -7412,8 +7485,8 @@ _LABEL_382E_42:				;[$382E]
 	ld   de, $FFFA
 	ld   c, $BE
 	xor  a
-_LABEL_3845_44:
-	outi
+	
+-	outi
 	outi
 	outi
 	out  (SMS_VDP_DATA), a
@@ -7436,13 +7509,17 @@ _LABEL_3845_44:
 	exx
 	dec  b
 	exx
-	jp   nz, _LABEL_3845_44
+	jp   nz, -
+	
 	exx
 	pop  bc
 	exx
 	ld   hl, ($D28F)
 	ld   ($D291), hl
 	ret
+
+;____________________________________________________________________________[$3879]___
+
 _3879:
 	ld      de,($d293)
 	ld      hl,($d295)
@@ -7458,8 +7535,8 @@ _3879:
 	or      $40
 	out     (SMS_VDP_CONTROL),a
 	ld      b,$20
-_3893:
-	ld      a,(hl)
+	
+-	ld      a,(hl)
 	out     (SMS_VDP_DATA),a
 	nop     
 	inc     hl
@@ -7474,11 +7551,12 @@ _3893:
 	ld      a,(hl)
 	out     (SMS_VDP_DATA),a
 	inc     hl
-	djnz    _3893
+	djnz    -
+	
 	ei      
 	ld      hl,($d293)
 	ld      ($d295),hl
-	ret     
+	ret
 
 ;____________________________________________________________________________[$38B0]___
 
@@ -7548,10 +7626,9 @@ _LABEL_38B0_51:
 	rr   l
 	ld   a, l
 	cp   $1C
-	jr   c, _LABEL_3917_52
+	jr   c, +
 	sub  $1C
-_LABEL_3917_52:
-	ld   l, a
++	ld   l, a
 	ld   h, $00
 	ld   b, h
 	rrca
@@ -7646,6 +7723,9 @@ _LABEL_3956_11:
 	xor  a
 	sbc  hl, de
 	ret
+
+;____________________________________________________________________________[$39AC]___
+
 _39ac:
 	ld      c,a
 	ld      a,(S1_RINGS)
@@ -7653,14 +7733,13 @@ _39ac:
 	ld      c,a
 	and     $0f
 	cp      $0a
-	jr      c,_39bc
+	jr      c,+
 	ld      a,c
 	add     a,$06
 	ld      c,a
-_39bc:
-	ld      a,c
++	ld      a,c
 	cp      $a0
-	jr      c,_39d1
+	jr      c,+
 	sub     $a0
 	ld      (S1_RINGS),a
 	ld      a,(S1_LIVES)
@@ -7668,12 +7747,14 @@ _39bc:
 	ld      (S1_LIVES),a
 	ld      a,$09
 	rst     $28
-	ret     
-_39d1:
-	ld      (S1_RINGS),a
+	ret
+	
++	ld      (S1_RINGS),a
 	ld      a,$02
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$39D8]___
 _39d8:
 	ld      hl,$d2bd
 	ld      a,e
@@ -7709,77 +7790,73 @@ _39d8:
 	inc     (hl)
 	ld      a,$09
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$3A03]___
 
 _3a03:
 	bit     0,(iy+$05)
 	ret     nz	
 	ld      hl,$d2d0
 	bit     0,(iy+$07)
-	jr      nz,_3a37
+	jr      nz,++
 	ld      a,(hl)
 	inc     a
 	cp      $3c
-	jr      c,_3a18
+	jr      c,+
 	xor     a
-_3a18:
-	ld      (hl),a
++	ld      (hl),a
 	dec     hl
 	ccf     
 	ld      a,(hl)
 	adc     a,$00
 	daa     
 	cp      $60
-	jr      c,_3a24
+	jr      c,+
 	xor     a
-_3a24:
-	ld      (hl),a
++	ld      (hl),a
 	dec     hl
 	ccf     
 	ld      a,(hl)
 	adc     a,$00
 	daa     
 	cp      $10
-	jr      c,_3a35
+	jr      c,+
 	push    hl
 	call    _3618
 	pop     hl
 	xor     a
-_3a35:
-	ld      (hl),a
-	ret     
-_3a37:
-	ld      a,(hl)
++	ld      (hl),a
+	ret
+	
+++	ld      a,(hl)
 	inc     a
 	cp      $3c
-	jr      c,_3a3e
+	jr      c,+
 	xor     a
-_3a3e:
-	ld      (hl),a
++	ld      (hl),a
 	dec     hl
 	ccf     
 	ld      a,(hl)
 	sbc     a,$00
 	daa     
 	cp      $60
-	jr      c,_3a4b
+	jr      c,+
 	ld      a,$59
-_3a4b:
-	ld      (hl),a
++	ld      (hl),a
 	dec     hl
 	ccf     
 	ld      a,(hl)
 	sbc     a,$00
 	daa     
 	cp      $60
-	jr      c,_3a60
+	jr      c,+
 	ld      a,$01
 	ld      ($d289),a
 	set     2,(iy+$09)
 	xor     a
-_3a60:
-	ld      (hl),a
-	ret     
++	ld      (hl),a
+	ret
 
 _3a62:
 .db $01, $30, $00
@@ -8072,7 +8149,7 @@ _48c8:
 	bit     7,(iy+$08)
 	call    nz,_529c
 	bit     4,(ix+$18)
-	jp      z,_494f
+	jp      z,+
 	ld      hl,_4ddd
 	ld      de,$d20e
 	ld      bc,$0009
@@ -8083,16 +8160,14 @@ _48c8:
 	ld      ($d242),hl
 	ld      hl,$0010
 	ld      ($d244),hl
-	jp      _49d9
-
-_494f:
-	ld      a,(ix+$15)
+	jp      +++
+	
++	ld      a,(ix+$15)
 	and     a
-	jr      nz,_49ad
+	jr      nz,++
 	bit     0,(iy+$07)
-	jr      nz,_4981
-_495b:
-	ld      hl,_4dcb
+	jr      nz,+
+-	ld      hl,_4dcb
 	ld      de,$d20e
 	ld      bc,$0009
 	ldir    
@@ -8104,10 +8179,10 @@ _495b:
 	ld      ($d244),hl
 	ld      hl,($dc0c)
 	ld      ($dc0a),hl
-	jp      _49d9
-_4981:
-	bit     7,(ix+$18)
-	jr      nz,_495b
+	jp      +++
+	
++	bit     7,(ix+$18)
+	jr      nz,-
 	ld      hl,_4dd4
 	ld      de,$d20e
 	ld      bc,$0009
@@ -8120,10 +8195,9 @@ _4981:
 	ld      ($d244),hl
 	ld      hl,($dc0c)
 	ld      ($dc0a),hl
-	jp      _49d9
-
-_49ad:
-	ld      hl,_4de6
+	jp      +++
+	
+++	ld      hl,_4de6
 	ld      de,$d20e
 	ld      bc,$0009
 	ldir    
@@ -8139,8 +8213,7 @@ _49ad:
 	ld      a,($d223)
 	and     $03
 	call    z,_4fec
-_49d9:
-	bit     1,(iy+$03)
++++	bit     1,(iy+$03)
 	call    z,_50c1
 	bit     1,(iy+$03)
 	call    nz,_50e3
@@ -8166,7 +8239,7 @@ _49d9:
 	add     hl,bc
 	ld      a,(hl)
 	cp      $1c
-	jr      nc,_4a28
+	jr      nc,+
 	add     a,a
 	ld      l,a
 	ld      h,d
@@ -8182,8 +8255,8 @@ _49d9:
 	ld      (S1_PAGE_2),a
 	push    de
 	jp      (hl)
-_4a28:
-	ld      hl,($d401)
+	
++	ld      hl,($d401)
 	ld      de,$0024
 	add     hl,de
 	ex      de,hl
@@ -8196,18 +8269,17 @@ _4a28:
 	ld      hl,$0000
 	ld      a,(iy+$03)
 	cp      $ff
-	jr      nz,_4a59
+	jr      nz,+
 	ld      de,($d403)
 	ld      a,e
 	or      d
-	jr      nz,_4a59
+	jr      nz,+
 	ld      a,($d414)
 	rlca    
-	jr      nc,_4a59
+	jr      nc,+
 	ld      hl,($d299)
 	inc     hl
-_4a59:
-	ld      ($d299),hl
++	ld      ($d299),hl
 	bit     7,(iy+$06)
 	call    nz,_50e8
 	ld      (ix+$14),$05
@@ -8225,13 +8297,12 @@ _4a59:
 	jp      nz,_532e
 	ld      a,(ix+$0e)
 	cp      $20
-	jr      z,_4a9a
+	jr      z,+
 	ld      hl,($d401)
 	ld      de,$fff8
 	add     hl,de
 	ld      ($d401),hl
-_4a9a:
-	ld      (ix+$0d),$18
++	ld      (ix+$0d),$18
 	ld      (ix+$0e),$20
 	ld      hl,($d403)
 	ld      b,(ix+$09)
@@ -8248,7 +8319,7 @@ _4a9a:
 	jr      z,_4b1b
 	ld      (ix+$14),$01
 	bit     7,b
-	jr      nz,_4af7
+	jr      nz,+
 	ld      de,($d212)
 	ld      a,e
 	cpl     
@@ -8278,8 +8349,8 @@ _4a9a:
 	ld      a,($d216)
 	ld      (ix+$14),a
 	jp      _4b1b
-_4af7:
-	ld      de,($d212)
+	
++	ld      de,($d212)
 	ld      c,$00
 	push    hl
 	push    de
@@ -8302,29 +8373,28 @@ _4af7:
 _4b1b:
 	ld      a,b
 	and     a
-	jp      m,_4b38
+	jp      m,+
 	add     hl,de
 	adc     a,c
 	ld      c,a
-	jp      p,_4b42
+	jp      p,++
 	ld      a,($d403)
 	or      (ix+$08)
 	or      (ix+$09)
-	jr      z,_4b42
+	jr      z,++
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-	jp      _4b42
-_4b38:
-	add     hl,de
+	jp      ++
+	
++	add     hl,de
 	adc     a,c
 	ld      c,a
-	jp      m,_4b42
+	jp      m,++
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-_4b42:
-	ld      a,c
+++	ld      a,c
 	ld      ($d403),hl
 	ld      ($d405),a
 _4b49:
@@ -8339,16 +8409,15 @@ _4b49:
 	jp      nz,_5407
 	ld      a,($d28e)
 	and     a
-	jr      nz,_4b79
+	jr      nz,+
 	bit     7,(ix+$18)
-	jr      z,_4b9d
+	jr      z,++
 	bit     3,(ix+$18)
-	jr      nz,_4b79
+	jr      nz,+
 	bit     5,(iy+$03)
-	jr      z,_4b9d
-_4b79:
-	bit     5,(iy+$03)
-	jr      nz,_4ba4
+	jr      z,++
++	bit     5,(iy+$03)
+	jr      nz,+++
 _4b7f:
 	ld      a,($d28e)
 	and     a
@@ -8362,28 +8431,25 @@ _4b7f:
 	dec     a
 	ld      ($d28e),a
 	set     2,(ix+$18)
-	jp      _4bbe
-_4b9d:
-	res     3,(ix+$18)
-	jp      _4ba8
-_4ba4:
-	set     3,(ix+$18)
-_4ba8:
-	xor     a
+	jp      +++++
+	
+++	res     3,(ix+$18)
+	jp      ++++
+	
++++	set     3,(ix+$18)
+++++	xor     a
 	ld      ($d28e),a
 _4bac:
 	bit     7,h
-	jr      nz,_4bb8
+	jr      nz,+
 	ld      a,($d215)
 	cp      h
-	jr      z,_4bbe
-	jr      c,_4bbe
-_4bb8:
-	ld      de,($d244)
+	jr      z,+++++
+	jr      c,+++++
++	ld      de,($d244)
 	ld      c,$00
-_4bbe:
-	bit     0,(iy+$06)
-	jr      z,_4bd6
++++++	bit     0,(iy+$06)
+	jr      z,+
 	push    hl
 	ld      a,e
 	cpl     
@@ -8399,8 +8465,7 @@ _4bbe:
 	adc     a,$00
 	ld      c,a
 	pop     hl
-_4bd6:
-	add     hl,de
++	add     hl,de
 	ld      a,b
 	adc     a,c
 	ld      ($d406),hl
@@ -8424,7 +8489,7 @@ _4bd6:
 	call    nz,_5280
 	ld      a,h
 	and     a
-	jp      p,_4c08
+	jp      p,+
 	ld      a,h
 	cpl     
 	ld      h,a
@@ -8432,23 +8497,20 @@ _4bd6:
 	cpl     
 	ld      l,a
 	inc     hl
-_4c08:
-	ld      de,$0100
++	ld      de,$0100
 	ex      de,hl
 	and     a
 	sbc     hl,de
-	jr      nc,_4c28
+	jr      nc,++
 	ld      a,($d414)
 	and     $85
-	jr      nz,_4c28
+	jr      nz,++
 	bit     7,(ix+$0c)
-	jr      z,_4c24
+	jr      z,+
 	ld      (ix+$14),$13
-	jr      _4c28
-_4c24:
-	ld      (ix+$14),$01
-_4c28:
-	ld      bc,$000c
+	jr      ++
++	ld      (ix+$14),$01
+++	ld      bc,$000c
 	ld      de,$0008
 	call    _36f9
 	ld      a,(hl)
@@ -8480,25 +8542,24 @@ _4c39:
 	sub     c
 	call    nz,_521f
 	ld      a,($d40f)
-_4c72:
-	ld      h,$00
+	
+-	ld      h,$00
 	ld      l,a
 	add     hl,de
 	ld      a,(hl)
 	and     a
-	jp      p,_4c83
+	jp      p,+
 	inc     hl
 	ld      a,(hl)
 	ld      ($d40f),a
-	jp      _4c72
-_4c83:
-	ld      d,a
+	jp      -
+	
++	ld      d,a
 	ld      bc,_c000
 	bit     1,(ix+$18)
-	jr      z,_4c90
+	jr      z,+
 	ld      bc,_7000
-_4c90:
-	bit     5,(iy+$06)
++	bit     5,(iy+$06)
 	call    nz,_5206
 	ld      a,($d302)
 	and     a
@@ -8529,36 +8590,31 @@ _4c90:
 	ld      c,$10
 	ld      a,($d404)
 	and     a
-	jp      p,_4cd8
+	jp      p,+
 	neg     
 	ld      c,$f0
-_4cd8:
-	cp      $10
-	jr      c,_4ce0
++	cp      $10
+	jr      c,+
 	ld      a,c
 	ld      ($d404),a
-_4ce0:
-	ld      c,$10
++	ld      c,$10
 	ld      a,($d407)
 	and     a
-	jp      p,_4ced
+	jp      p,+
 	neg     
 	ld      c,$f0
-_4ced:
-	cp      $10
-	jr      c,_4cf5
++	cp      $10
+	jr      c,+
 	ld      a,c
 	ld      ($d407),a
-_4cf5:
-	ld      de,($d401)
++	ld      de,($d401)
 	ld      hl,$0010
 	and     a
 	sbc     hl,de
-	jr      c,_4d05
+	jr      c,+
 	add     hl,de
 	ld      ($d401),hl
-_4d05:
-	bit     7,(iy+$06)
++	bit     7,(iy+$06)
 	call    nz,_5224
 	bit     0,(iy+$08)
 	call    nz,_4e8d
@@ -8569,7 +8625,7 @@ _4d05:
 	and     a
 	call    nz,_4e51
 	bit     1,(iy+$06)
-	jr      nz,_4d81
+	jr      nz,++
 	ld      hl,(S1_LEVEL_CROPLEFT)
 	ld      bc,$0008
 	add     hl,bc
@@ -8577,18 +8633,18 @@ _4d05:
 	ld      hl,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      nc,_4d4f
+	jr      nc,+
 	ld      ($d3fe),de
 	ld      a,($d405)
 	and     a
-	jp      p,_4d81
+	jp      p,++
 	xor     a
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-	jp      _4d81
-_4d4f:
-	ld      hl,($d275)
+	jp      ++
+	
++	ld      hl,($d275)
 	ld      de,$00f8
 	add     hl,de
 	ex      de,hl
@@ -8597,43 +8653,42 @@ _4d4f:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_4d81
+	jr      c,++
 	ex      de,hl
 	scf     
 	sbc     hl,bc
 	ld      ($d3fe),hl
 	ld      a,($d405)
 	and     a
-	jp      m,_4d81
+	jp      m,++
 	ld      hl,($d404)
 	or      h
 	or      l
-	jr      z,_4d81
+	jr      z,++
 	xor     a
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-_4d81:
-	ld      a,($d414)
+++	ld      a,($d414)
 	ld      ($d2b9),a
 	ld      a,($d410)
 	ld      ($d2df),a
 	ld      d,$01
 	ld      c,$30
 	cp      $01
-	jr      z,_4da1
+	jr      z,+
 	ld      d,$06
 	ld      c,$50
 	cp      $09
-	jr      z,_4da1
+	jr      z,+
 	inc     (ix+$13)
-	ret     
-_4da1:
-	ld      a,($d2e0)
+	ret
+	
++	ld      a,($d2e0)
 	ld      b,a
 	ld      hl,($d403)
 	bit     7,h
-	jr      z,_4db3
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -8641,8 +8696,7 @@ _4da1:
 	cpl     
 	ld      h,a
 	inc     hl
-_4db3:
-	srl     h
++	srl     h
 	rr      l
 	ld      a,l
 	add     a,b
@@ -8655,7 +8709,7 @@ _4db3:
 	ret     c
 	sub     c
 	ld      ($d40f),a
-	ret     
+	ret
 
 _4dcb:
 .db $10, $00, $30, $00, $08, $00, $00, $08, $02
@@ -8665,6 +8719,8 @@ _4ddd:
 .db $04, $00, $0c, $00, $02, $00, $00, $02, $01
 _4de6:
 .db $10, $00, $30, $00, $08, $00, $00, $08, $02
+
+;____________________________________________________________________________[$4DEF]___
 
 _4def:
 	ex      de,hl
@@ -8716,16 +8772,22 @@ _4def:
 	ld      ($d2af),hl
 	ld      a,$01
 	call    _39ac
-	ret     
+	ret
+
+;____________________________________________________________________________[$4E48]___
 
 _4e48:
 	ld      d,a
 	ld      bc,_7000
-	ret     
+	ret
+
+;____________________________________________________________________________[$4E4D]___
 
 _4e4d:
 	ld      hl,$0000
-	ret     
+	ret
+
+;____________________________________________________________________________[$4E51]___
 
 _4e51:
 	dec     a
@@ -8739,21 +8801,24 @@ _4e51:
 	ld      hl,$fffe
 	ld      ($d214),hl
 	cp      $03
-	jr      c,_4e82
+	jr      c,+
 	ld      a,$b2
 	call    _3581
 	ld      hl,$0008
 	ld      ($d212),hl
 	ld      hl,$0002
 	ld      ($d214),hl
-_4e82:
-	ld      a,$5a
++	ld      a,$5a
 	call    _3581
-	ret     
+	ret
+
+;____________________________________________________________________________[$4E88]___
 
 _4e88:
 	set     1,(iy+$08)
-	ret     
+	ret
+
+;____________________________________________________________________________[$4E8D]___
 
 _4e8d:
 	ld      hl,($d3fe)
@@ -8764,20 +8829,18 @@ _4e8d:
 	ld      a,($d223)
 	rrca    
 	rrca    
-	jr      nc,_4ea6
+	jr      nc,+
 	ld      hl,$d2f7
-_4ea6:
-	ld      de,$d212
++	ld      de,$d212
 	ldi     
 	ldi     
 	ldi     
 	ldi     
 	rrca    
 	ld      a,$94
-	jr      nc,_4eb8
+	jr      nc,+
 	ld      a,$96
-_4eb8:
-	call    _3581
++	call    _3581
 	ld      a,($d223)
 	ld      c,a
 	and     $07
@@ -8785,10 +8848,9 @@ _4eb8:
 	ld      b,$02
 	ld      hl,$d2f3
 	bit     3,c
-	jr      z,_4ece
+	jr      z,_f
 	ld      hl,$d2f7
-_4ece:
-	push    hl
+__	push    hl
 	call    _LABEL_625_57
 	pop     hl
 	and     $0f
@@ -8796,8 +8858,10 @@ _4ece:
 	inc     hl
 	ld      (hl),$00
 	inc     hl
-	djnz    _4ece
-	ret     
+	djnz    _b
+	ret
+
+;____________________________________________________________________________[$4EDD]___
 
 _4edd:
 	ld      hl,($d403)
@@ -8810,20 +8874,19 @@ _4edd:
 	ld      (ix+$14),$0c
 	ld      de,($d2b7)
 	bit     7,d
-	jr      nz,_4efb
+	jr      nz,+
 	ld      hl,$002c
 	and     a
 	sbc     hl,de
 	ret     c
-_4efb:
-	inc     de
++	inc     de
 	ld      ($d2b7),de
-	ret     
+	ret
 
 _4f01:
 	res     1,(ix+$18)
 	bit     7,b
-	jr      nz,_4f31
+	jr      nz,+
 	ld      de,($d20e)
 	ld      c,$00
 	ld      (ix+$14),$01
@@ -8843,8 +8906,8 @@ _4f01:
 	ld      a,($d216)
 	ld      (ix+$14),a
 	jp      _4b1b
-_4f31:
-	set     1,(ix+$18)
+	
++	set     1,(ix+$18)
 	ld      (ix+$14),$0a
 	push    hl
 	ld      a,l
@@ -8868,11 +8931,10 @@ _4f5c:
 	set     1,(ix+$18)
 	ld      a,l
 	or      h
-	jr      z,_4f68
+	jr      z,+
 	bit     7,b
 	jr      z,_4fa6
-_4f68:
-	ld      de,($d20e)
++	ld      de,($d20e)
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -8936,6 +8998,8 @@ _4fa6:
 	ld      (ix+$14),$01
 	jp      _4b1b
 
+;____________________________________________________________________________[$4FD3]___
+
 _4fd3:
 	bit     0,(ix+$18)
 	ret     nz
@@ -8944,24 +9008,29 @@ _4fd3:
 	or      l
 	ret     z
 	bit     7,h
-	jr      z,_4fe7
+	jr      z,+
 	inc     hl
 	ld      ($d2b7),hl
-	ret     
-
-_4fe7:
-	dec     hl
+	ret
+	
++	dec     hl
 	ld      ($d2b7),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$4FEC]___
 
 _4fec:
 	dec     (ix+$15)
-	ret     
+	ret
+
+;____________________________________________________________________________[$4FF0]___
 
 _4ff0:
 	dec     a
 	ld      ($d412),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$4FF5]___
 
 _4ff5:
 	ld      a,($d223)
@@ -8973,7 +9042,9 @@ _4ff5:
 	res     0,(iy+$08)
 	ld      a,($d2fc)
 	rst     $18
-	ret     
+	ret
+
+;____________________________________________________________________________[$5009]___
 
 _5009:
 	ld      a,(S1_LEVEL_SOLIDITY)
@@ -8991,7 +9062,7 @@ _5009:
 	ret     c
 	ld      a,$05
 	sub     h
-	jr      nc,_5051
+	jr      nc,+
 	res     5,(iy+$06)
 	res     6,(iy+$06)
 	res     0,(iy+$08)
@@ -9006,8 +9077,7 @@ _5009:
 	call    _91eb
 	call    _91eb
 	xor     a
-_5051:
-	ld      e,a
++	ld      e,a
 	add     a,a
 	add     a,$80
 	ld      ($d2be),a
@@ -9018,11 +9088,10 @@ _5051:
 	add     hl,de
 	ld      a,($d223)
 	and     (hl)
-	jr      nz,_506c
+	jr      nz,+
 	ld      a,$1a
 	rst     $28
-_506c:
-	ld      a,($d223)
++	ld      a,($d223)
 	rrca    
 	ret     nc
 	ld      hl,($d3fe)
@@ -9042,23 +9111,28 @@ _506c:
 	ld      hl,$d03c
 	ld      de,$d2be
 	call    _LABEL_35CC_117
-	ret     
+	ret
 
 _5097:
 .db $01, $07, $0f, $1f, $3f, $7f
+
+;____________________________________________________________________________[$509D]___
 
 _509d:
 	ld      a,$10
 	ld      ($d28e),a
 	ld      a,$00
 	rst     $28
-	ret     
+	ret
 
+;unreferenced?
 _50a6:
 	xor     a
 	ld      ($d3fd),a
 	ld      ($d3fe),de
-	ret     
+	ret
+
+;____________________________________________________________________________[$50AF]___
 
 _50af:
 	exx     
@@ -9068,7 +9142,9 @@ _50af:
 	bit     2,(ix+$18)
 	ret     z
 	res     2,(ix+$18)
-	ret     
+	ret
+
+;____________________________________________________________________________[$50C1]___
 
 _50c1:
 	bit     2,(ix+$18)
@@ -9081,16 +9157,19 @@ _50c1:
 	ld      hl,($d403)
 	ld      a,l
 	or      h
-	jr      z,_50de
+	jr      z,+
 	ld      a,$06
 	rst     $28
-_50de:
-	set     2,(iy+$07)
-	ret     
++	set     2,(iy+$07)
+	ret
+
+;____________________________________________________________________________[$50E3]___
 
 _50e3:
 	res     2,(iy+$07)
-	ret     
+	ret
+
+;____________________________________________________________________________[$50E8]___
 
 _50e8:
 	ld      hl,($d2dc)
@@ -9101,29 +9180,38 @@ _50e8:
 	ld      hl,$0000
 	ld      ($d29b),hl
 	res     4,(ix+$18)
-	ret     
+	ret
+
+;____________________________________________________________________________[$5100]___
 
 _5100:
 	set     2,(ix+$18)
-	ret     
+	ret
+
+;____________________________________________________________________________[$5105]___
 
 _5105:
 	ld      (ix+$14),$0d
-	ret     
+	ret
+
+;____________________________________________________________________________[$510A]___
 
 _510a:
 	ld      (iy+$03),$ff
 	ld      a,($d414)
 	and     $fa
 	ld      ($d414),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$5117]___
+;jumped to here from _48c8 (OBJECT: Sonic)
 
 _5117:
 	dec     a
 	ld      ($d28a),a
-	jr      z,_5142
+	jr      z,++
 	cp      $14
-	jr      c,_5137
+	jr      c,+
 	xor     a
 	ld      l,a
 	ld      h,a
@@ -9133,38 +9221,36 @@ _5117:
 	ld      ($d407),hl
 	ld      (ix+$14),$0f
 	jp      _4c39
-_5137:
-	res     1,(ix+$18)
+	
++	res     1,(ix+$18)
 	ld      (ix+$14),$0e
 	jp      _4c39
-_5142:
-	ld      hl,($d2d5)
+	
+++	ld      hl,($d2d5)
 	ld      b,(hl)
 	inc     hl
 	ld      c,(hl)
 	inc     hl
 	ld      a,(hl)
 	and     a
-	jr      z,_5163
-	jp      m,_5159
+	jr      z,+++
+	jp      m,+
 	ld      ($d2d3),a
 	set     4,(iy+$06)
-	jr      _515d
-_5159:
-	set     2,(iy+$0d)
-_515d:
-	ld      a,$01
+	jr      ++	
++	set     2,(iy+$0d)
+++	ld      a,$01
 	ld      ($d289),a
-	ret     
-
-_5163:
-	ld      a,b
+	ret
+	
++++	ld      a,b
 	ld      h,$00
 	ld      b,$05
-_5168:
-	add     a,a
+	
+-	add     a,a
 	rl      h
-	djnz    _5168
+	djnz    -
+	
 	ld      l,a
 	ld      de,$0008
 	add     hl,de
@@ -9186,7 +9272,10 @@ _5168:
 	xor     a
 	ld      ($d3fd),a
 	ld      ($d400),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$5193]___
+;jumped to from _48c8 (OBJECT: Sonic)
 
 _5193:
 	xor     a
@@ -9202,11 +9291,15 @@ _5193:
 	set     2,(ix+$18)
 	jp      _4c39
 
+;____________________________________________________________________________[$51B3]___
+
 _51b3:
 	dec     a
 	ld      ($d28c),a
 	ld      (ix+$14),$11
-	ret     
+	ret
+
+;____________________________________________________________________________[$51BC]___
 
 _51bc:
 	ld      (ix+$0d),$1c
@@ -9220,7 +9313,9 @@ _51bc:
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$51DD]___
 
 _51dd:
 	ld      a,($d414)
@@ -9231,7 +9326,9 @@ _51dd:
 	dec     (hl)
 	ret     nz
 	res     2,(iy+$08)
-	ret     
+	ret
+
+;____________________________________________________________________________[$51F3]___
 
 _51f3:
 	ld      a,($d412)
@@ -9243,29 +9340,39 @@ _51f3:
 	rst     $28
 	ld      a,$3c
 	ld      ($d412),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$5206]___
 
 _5206:
 	ld      a,($d223)
 	and     $01
 	ret     nz
 	ld      d,$18
-	ret     
+	ret
+
+;____________________________________________________________________________[$520F]___
 
 _520f:
 	ld      hl,_592b
-	ret     
+	ret
+
+;____________________________________________________________________________[$5213]___
 
 _5213:
 	ld      hl,_5939
 	bit     1,(ix+$18)
 	ret     z
 	ld      hl,_594b
-	ret     
+	ret
+
+;____________________________________________________________________________[$521F]___
 
 _521f:
 	ld      (ix+$13),$00
-	ret     
+	ret
+
+;____________________________________________________________________________[$5224]___
 
 _5224:
 	bit     4,(ix+$18)
@@ -9273,17 +9380,18 @@ _5224:
 	ld      a,($d223)
 	and     a
 	call    z,_91eb
-	ret     
+	ret
+
+;____________________________________________________________________________[$5231]___
 
 _5231:
 	dec     a
 	ld      ($d2e1),a
 	cp      $06
-	jr      c,_523c
+	jr      c,+
 	cp      $0a
 	ret     c
-_523c:
-	ld      a,(iy+$0a)
++	ld      a,(iy+$0a)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -9304,15 +9412,19 @@ _523c:
 	pop     af
 	ld      ($d23c),hl
 	ld      (iy+$0a),a
-	ret     
+	ret
 
 _526e:
 .db $00, $02, $04, $06, $ff, $ff, $20, $22, $24, $26, $ff, $ff, $ff, $ff, $ff, $ff
 .db $ff, $ff
 
+;____________________________________________________________________________[$5280]___
+
 _5280:
 	ld      (ix+$14),$09
-	ret     
+	ret
+
+;____________________________________________________________________________[$5285]___
 
 _5285:
 	dec     a
@@ -9323,9 +9435,10 @@ _5285:
 	ld      c,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
-_5298:
 	ld      (iy+$0a),c
-	ret     
+	ret
+
+;____________________________________________________________________________[$529C]___
 
 _529c:
 	ld      (iy+$03),$fb
@@ -9345,7 +9458,7 @@ _529c:
 	ld      (ix+$14),$18
 	ld      hl,$d2fe
 	bit     0,(iy+$0d)
-	jr      nz,_530b
+	jr      nz,+
 	ld      (hl),$50
 	call    _7c7b
 	jp      c,_4c39
@@ -9371,34 +9484,35 @@ _529c:
 	pop     ix
 	set     0,(iy+$0d)
 	jp      _4c39
-_530b:
-	bit     1,(iy+$0d)
-	jr      nz,_531b
+	
++	bit     1,(iy+$0d)
+	jr      nz,+
 	dec     (hl)
 	jp      nz,_4c39
 	set     1,(iy+$0d)
 	ld      (hl),$8c
-_531b:
-	ld      (ix+$14),$17
++	ld      (ix+$14),$17
 	ld      a,(hl)
 	and     a
-	jr      z,_5327
+	jr      z,+
 	dec     (hl)
 	jp      _4c39
-_5327:
-	ld      (ix+$14),$19
+	
++	ld      (ix+$14),$19
 	jp      _4c39
+
+;____________________________________________________________________________[$532E]___
+;jumped to from _48c8 (OBJECT: Sonic)
 
 _532e:
 	ld      a,(ix+$0e)
 	cp      $18
-	jr      z,_533f
+	jr      z,+
 	ld      hl,($d401)
 	ld      de,$0008
 	add     hl,de
 	ld      ($d401),hl
-_533f:
-	ld      (ix+$0d),$18
++	ld      (ix+$0d),$18
 	ld      (ix+$0e),$18
 	ld      hl,($d403)
 	ld      b,(ix+$09)
@@ -9408,39 +9522,39 @@ _533f:
 	ld      a,h
 	or      l
 	or      b
-	jp      z,_53b9
+	jp      z,++++
 	ld      (ix+$14),$09
 	bit     2,(iy+$03)
-	jr      nz,_5381
+	jr      nz,++
 	bit     1,(iy+$03)
-	jr      z,_5381
+	jr      z,++
 	bit     7,(ix+$18)
-	jp      z,_5379
+	jp      z,+
 	bit     7,b
-	jr      nz,_53a7
+	jr      nz,+++
 	res     0,(ix+$18)
 	jp      _4fa6
-_5379:
-	ld      de,$fff0
+	
++	ld      de,$fff0
 	ld      c,$ff
 	jp      _4b1b
-_5381:
-	bit     3,(iy+$03)
-	jr      nz,_53a7
+	
+++	bit     3,(iy+$03)
+	jr      nz,+++
 	bit     1,(iy+$03)
-	jr      z,_53a7
+	jr      z,+++
 	bit     7,(ix+$18)
-	jp      z,_539f
+	jp      z,+
 	bit     7,b
-	jr      z,_53a7
+	jr      z,+++
 	res     0,(ix+$18)
 	jp      _4fa6
-_539f:
-	ld      de,$0010
+	
++	ld      de,$0010
 	ld      c,$00
 	jp      _4b1b
-_53a7:
-	ld      de,$0004
+	
++++	ld      de,$0004
 	ld      c,$00
 	ld      a,b
 	and     a
@@ -9448,29 +9562,27 @@ _53a7:
 	ld      de,$fffc
 	ld      c,$ff
 	jp      _4b1b
-
-_53b9:
-	bit     7,(ix+$18)
-	jr      z,_53e0
+	
+++++	bit     7,(ix+$18)
+	jr      z,++
 	ld      (ix+$14),$07
 	res     0,(ix+$18)
 	ld      de,($d2b7)
 	bit     7,d
-	jr      z,_53d8
+	jr      z,+
 	ld      hl,$ffb0
 	and     a
 	sbc     hl,de
 	jp      nc,_4b49
-_53d8:
-	dec     de
++	dec     de
 	ld      ($d2b7),de
 	jp      _4b49
-_53e0:
-	ld      (ix+$14),$09
+	
+++	ld      (ix+$14),$09
 	push    de
 	push    hl
 	bit     7,b
-	jr      z,_53f1
+	jr      z,++
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -9478,8 +9590,7 @@ _53e0:
 	cpl     
 	ld      h,a
 	inc     hl
-_53f1:
-	ld      de,($d240)
+++	ld      de,($d240)
 	xor     a
 	sbc     hl,de
 	pop     hl
@@ -9490,27 +9601,32 @@ _53f1:
 	ld      d,c
 	ld      (ix+$14),$09
 	jp      _4b1b
+
+;____________________________________________________________________________[$5407]___
+;jumped to from _48c8 (OBJECT: Sonic)
+
 _5407:
 	bit     7,(ix+$18)
-	jr      z,_542e
+	jr      z,++
 	bit     3,(ix+$18)
-	jr      nz,_5419
+	jr      nz,+
 	bit     5,(iy+$03)
-	jr      z,_542e
-_5419:
-	bit     5,(iy+$03)
-	jr      nz,_5435
+	jr      z,++
++	bit     5,(iy+$03)
+	jr      nz,+++
 	res     0,(ix+$18)
 	ld      a,($d403)
 	and     $f8
 	ld      ($d403),a
 	jp      _4b7f
-_542e:
-	res     3,(ix+$18)
+	
+++	res     3,(ix+$18)
 	jp      _4bac
-_5435:
-	set     3,(ix+$18)
++++	set     3,(ix+$18)
 	jp      _4bac
+
+;____________________________________________________________________________[$543C]___
+;jumped to from _48c8 (OBJECT: Sonic)
 
 _543c:
 	set     5,(ix+$18)
@@ -9522,51 +9638,50 @@ _543c:
 	add     hl,de
 	ld      de,($d401)
 	sbc     hl,de
-	jr      nc,_546c
+	jr      nc,+
 	bit     2,(iy+$06)
-	jr      nz,_546c
+	jr      nz,+
 	ld      a,$01
 	ld      ($d283),a
 	ld      hl,S1_LIVES
 	dec     (hl)
 	set     2,(iy+$06)
 	jp      _54aa
-_546c:
-	xor     a
+	
++	xor     a
 	ld      hl,$0080
 	bit     3,(iy+$08)
-	jr      nz,_549b
+	jr      nz,+++
 	ld      de,($d406)
 	bit     7,d
-	jr      nz,_5486
+	jr      nz,+
 	ld      hl,$0600
 	and     a
 	sbc     hl,de
-	jr      c,_54a1
-_5486:
-	ex      de,hl
+	jr      c,++++
++	ex      de,hl
 	ld      b,(ix+$0c)
 	ld      a,h
 	cp      $80
-	jr      nc,_5493
+	jr      nc,+
 	cp      $08
-	jr      nc,_5498
-_5493:
-	ld      de,$0030
+	jr      nc,++
++	ld      de,$0030
 	ld      c,$00
-_5498:
-	add     hl,de
+++	add     hl,de
 	ld      a,b
 	adc     a,c
-_549b:
-	ld      ($d406),hl
++++	ld      ($d406),hl
 	ld      ($d408),a
-_54a1:
-	xor     a
+++++	xor     a
 	ld      l,a
 	ld      h,a
 	ld      ($d403),hl
 	ld      ($d405),a
+
+;____________________________________________________________________________[$54AA]___
+;jumped to from _48c8 (OBJECT: Sonic)
+
 _54aa:
 	ld      (ix+$14),$0b
 	bit     3,(iy+$08)
@@ -9574,14 +9689,24 @@ _54aa:
 	ld      (ix+$14),$15
 	jp      _4c39
 
+;____________________________________________________________________________[$54BC]___
+;referenced by table at _58e5
+_54bc:
 	bit     7,(iy+$06)
 	ret     nz
 	res     4,(ix+$18)
-	ret     
+	ret
 
+;____________________________________________________________________________[$54C6]___
+;referenced by table at _58e5
+
+_54c6:
 	bit     0,(iy+$05)
 	jp      z,_35fd
-	ret     
+	ret
+
+;____________________________________________________________________________[$54CE]___
+;referenced by table at _58e5	
 
 _54ce:
 	ld      a,(ix+$02)
@@ -9591,11 +9716,10 @@ _54ce:
 	ret     c
 	ld      a,($d414)
 	rrca    
-	jr      c,_54e1
+	jr      c,+
 	and     $02
 	ret     z
-_54e1:
-	ld      l,(ix+$07)
++	ld      l,(ix+$07)
 	ld      h,(ix+$08)
 	bit     7,(ix+$09)
 	ret     nz
@@ -9618,7 +9742,10 @@ _54e1:
 	ld      (ix+$0c),h
 	ld      a,$05
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$550F]___
+;referenced by table at _58e5
 
 _550f:
 	ld      a,(ix+$02)
@@ -9632,7 +9759,10 @@ _550f:
 	set     1,(ix+$18)
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$552D]___
+;referenced by table at _58e5
 
 _552d:
 	ld      a,(ix+$02)
@@ -9651,7 +9781,10 @@ _552d:
 	ld      (ix+$0c),$ff
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5556]___
+;referenced by table at _58e5
 
 _5556:
 	ld      a,(ix+$02)
@@ -9666,7 +9799,10 @@ _5556:
 	res     1,(ix+$18)
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5578]___
+;referenced by table at _58e5
 
 _5578:
 	bit     7,(ix+$18)
@@ -9678,7 +9814,10 @@ _5578:
 	adc     a,$ff
 	ld      ($d3fd),hl
 	ld      ($d3ff),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$5590]___
+;referenced by table at _58e5
 
 _5590:
 	bit     7,(ix+$18)
@@ -9690,16 +9829,21 @@ _5590:
 	adc     a,$00
 	ld      ($d3fd),hl
 	ld      ($d3ff),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$55A8]___
+;referenced by table at _58e5
 
 _55a8:
 	bit     4,(ix+$18)
-	jr      nz,_55b1
+	jr      nz,+
 	ld      a,$12
 	rst     $28
-_55b1:
-	set     4,(ix+$18)
-	ret     
++	set     4,(ix+$18)
+	ret
+
+;____________________________________________________________________________[$55B6]___
+;referenced by table at _58e5
 
 _55b6:
 	ld      a,(ix+$02)
@@ -9720,14 +9864,20 @@ _55b6:
 	ld      (ix+$0c),$ff
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$55E2]___
+;referenced by table at _58e5
 
 _55e2:
 	bit     7,(ix+$0c)
 	ret     nz
 	ld      a,$05
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$55EB]___
+;referenced by table at _58e5
 
 _55eb:
 	bit     4,(iy+$06)
@@ -9763,33 +9913,36 @@ _55eb:
 	ld      d,h
 	ld      hl,_5643
 	ld      b,$05
-_5626:
-	ld      a,(hl)
+	
+-	ld      a,(hl)
 	inc     hl
 	cp      e
-	jr      nz,_563c
+	jr      nz,+
 	ld      a,(hl)
 	cp      d
-	jr      nz,_563c
+	jr      nz,+
 	inc     hl
 	ld      ($d2d5),hl
 	ld      a,$50
 	ld      ($d28a),a
 	ld      a,$06
 	rst     $28
-	ret     
+	ret
 
-_563c:
++	inc     hl
 	inc     hl
 	inc     hl
 	inc     hl
-	inc     hl
-	djnz    _5626
-	ret     
+	djnz    -
+	
+	ret
 
 _5643:
 .db $34, $3c, $34, $2f, $00, $19, $3a, $19, $04, $00, $0e, $3a, $00, $00, $16, $1b
 .db $32, $00, $00, $17, $2f, $0c, $00, $00, $ff
+
+;____________________________________________________________________________[$565C]___
+;referenced by table at _58e5
 
 _565c:
 	ld      hl,($d403)
@@ -9800,12 +9953,16 @@ _565c:
 	ld      ($d403),hl
 	ld      ($d405),a
 	bit     4,(ix+$18)
-	jr      nz,_5677
+	jr      nz,+
 	ld      a,$12
 	rst     $28
-_5677:
-	set     4,(ix+$18)
-	ret     
++	set     4,(ix+$18)
+	ret
+
+;____________________________________________________________________________[$567C]___
+;referenced by table at _58e5
+
+_567c:
 	xor     a
 	ld      hl,$0005
 	ld      ($d403),a
@@ -9814,6 +9971,10 @@ _5677:
 _568a:
 	ld      a,$06
 	ld      ($d28c),a
+
+;____________________________________________________________________________[$568F]___
+;called by _48c8 (OBJECT: Sonic)
+
 _568f:
 	ld      a,(iy+$03)
 	or      $0f
@@ -9822,25 +9983,45 @@ _568f:
 	ld      ($d407),hl
 	res     0,(ix+$18)
 	res     2,(ix+$18)
-	ret     
+	ret
+
+;____________________________________________________________________________[$56A6]___
+;referenced by table at _58e5
+
+_56a6:
 	xor     a
 	ld      hl,$0006
 	ld      ($d403),a
 	ld      ($d404),hl
 	res     1,(ix+$18)
 	jr      _568a
+
+;____________________________________________________________________________[$56B6]___
+;referenced by table at _58e5
+
+_56b6:
 	xor     a
 	ld      hl,$fffb
 	ld      ($d403),a
 	ld      ($d404),hl
 	set     1,(ix+$18)
 	jr      _568a
+
+;____________________________________________________________________________[$56C6]___
+;referenced by table at _58e5
+
+_56c6:
 	xor     a
 	ld      hl,$fffa
 	ld      ($d403),a
 	ld      ($d404),hl
 	set     1,(ix+$18)
 	jr      _568a
+	
+;____________________________________________________________________________[$56D6]___
+;referenced by table at _58e5
+
+_56d6:
 	ld      a,($d2e1)
 	cp      $08
 	ret     nc
@@ -9858,12 +10039,11 @@ _568f:
 	add     hl,de
 	adc     a,$00
 	and     a
-	jp      p,_56fc
+	jp      p,+
 	ld      de,$ffc8
 	add     hl,de
 	adc     a,$ff
-_56fc:
-	ld      ($d406),hl
++	ld      ($d406),hl
 	ld      ($d408),a
 	ld      bc,$000c
 	ld      hl,($d3fe)
@@ -9883,7 +10063,9 @@ _56fc:
 	ld      ($d2e1),a
 	ld      a,$07
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5727]___
 
 _5727:
 	ld      hl,($d403)
@@ -9897,7 +10079,7 @@ _5727:
 	sub     $10
 	and     $80
 	cp      b
-	jr      z,_5748
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -9907,8 +10089,7 @@ _5727:
 	ld      a,c
 	cpl     
 	ld      c,a
-_5748:
-	ld      de,$0001
++	ld      de,$0001
 	ld      a,c
 	add     hl,de
 	adc     a,$00
@@ -9922,25 +10103,45 @@ _5748:
 	adc     a,c
 	ld      ($d403),hl
 	ld      ($d405),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$5761]___
+;referenced by table at _58e5
+
+_5761:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$f6
 	ld      (ix+$0c),$ff
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5771]___
+;referenced by table at _58e5
+
+_5771:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5781]___
+;referenced by table at _58e5
+
+_5781:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$f2
 	ld      (ix+$0c),$ff
 	ld      a,$04
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$5791]___
+;referenced by table at _58e5
+
+_5791:
 	ld      a,($d2b1)
 	and     a
 	ret     nz
@@ -9958,11 +10159,10 @@ _5748:
 	adc     a,$00
 	ld      de,$ff00
 	ld      c,$ff
-	jp      m,_57b6
+	jp      m,+
 	ld      de,$0100
 	ld      c,$00
-_57b6:
-	add     hl,de
++	add     hl,de
 	adc     a,c
 	ld      ($d403),hl
 	ld      ($d405),a
@@ -9975,7 +10175,12 @@ _57be:
 	ld      (hl),$3f
 	ld      a,$07
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$57CD]___
+;referenced by table at _58e5
+
+_57cd:
 	call    _5727
 	ld      de,$0001
 	ld      hl,($d406)
@@ -9990,14 +10195,18 @@ _57be:
 	add     hl,de
 	adc     a,$00
 	and     a
-	jp      p,_57ed
+	jp      p,+
 	ld      de,$ffc8
 	add     hl,de
 	adc     a,$ff
-_57ed:
-	ld      ($d406),hl
++	ld      ($d406),hl
 	ld      ($d408),a
 	jp      _57be
+
+;____________________________________________________________________________[$57F6]___
+;referenced by table at _58e5
+
+_57f6:
 	ld      hl,($d2e9)
 	ld      de,$0082
 	and     a
@@ -10005,7 +10214,12 @@ _57ed:
 	ret     c
 	bit     0,(iy+$05)
 	jp      z,_35fd
-	ret     
+	ret
+
+;____________________________________________________________________________[$5808]___
+;referenced by table at _58e5
+
+_5808:
 	ld      a,($d414)
 	rlca    
 	ret     nc
@@ -10043,7 +10257,12 @@ _581b:
 	ld      c,$89
 _5849:
 	ld      (hl),c
-	ret     
+	ret
+
+;____________________________________________________________________________[$584B]___
+;referenced by table at _58e5
+
+_584b:
 	ld      hl,($d3fe)
 	ld      bc,$000c
 	add     hl,bc
@@ -10075,7 +10294,12 @@ _5858:
 	jr      z,_5849
 	ld      c,$8a
 	ld      (hl),c
-	ret     
+	ret
+
+;____________________________________________________________________________[$5883]___
+;referenced by table at _58e5
+
+_5883:
 	ld      hl,($d3fe)
 	ld      bc,$000c
 	add     hl,bc
@@ -10084,6 +10308,8 @@ _5858:
 	cp      $10
 	ret     nc
 	jp      _581b
+
+;____________________________________________________________________________[$5893]___
 
 _5893:
 	push    bc
@@ -10112,7 +10338,12 @@ _5893:
 	ld      (ix+$18),a
 	pop     ix
 	and     a
-	ret     
+	ret
+
+;____________________________________________________________________________[$58D0]___
+;referenced by table at _58e5
+
+_58d0:
 	bit     7,(ix+$18)
 	ret     z
 	ld      hl,($d401)
@@ -10121,13 +10352,16 @@ _5893:
 	sbc     hl,de
 	ret     nc
 	ld      (iy+$03),$ff
-	ret  
-   
-_58e5:					;lookup table?
-.db $BC, $54, $C6, $54, $CE, $54, $0F, $55, $2D, $55, $56, $55, $78, $55, $90, $55
-.db $A8, $55, $B6, $55, $E2, $55, $EB, $55, $5C, $56, $7C, $56, $A6, $56, $B6, $56
-.db $C6, $56, $D6, $56, $61, $57, $71, $57, $81, $57, $91, $57, $CD, $57, $F6, $57
-.db $08, $58, $4B, $58, $83, $58, $D0, $58
+	ret
+
+;lookup table to the functions above
+ ;(these are probably handle the different solidity values)
+_58e5:
+.dw _54bc, _54c6, _54ce, _550f, _552d, _5556, _5578, _5590
+.dw _55a8, _55b6, _55e2, _55eb, _565c, _567c, _56a6, _56b6
+.dw _56c6, _56d6, _5761, _5771, _5781, _5791, _57cd, _57f6
+.dw _5808, _584b, _5883, _58d0
+
 _591d:
 .db $B4, $B6, $B8, $FF, $FF, $FF, $BA, $BC, $BE, $FF, $FF, $FF, $FF, $FF
 _592b:
@@ -10151,9 +10385,9 @@ _5b09:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5b31
+	jr      c,+
 	call    _5deb
-	jr      c,_5b31
+	jr      c,+
 _5b24:	
 	ld      a,$10
 	call    _39ac
@@ -10162,9 +10396,8 @@ _5b29:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ret  
-
-_5b31:   
-	ld      hl,$5180
+	
++	ld      hl,$5180
 _5b34:
 	call    _c1d
 	ld      (ix+$0f),<_5bbf
@@ -10189,13 +10422,12 @@ _5b34:
 	ld      h,(ix+$05)
 	ld      a,(ix+$06)
 	bit     7,(ix+$18)
-	jr      nz,_5b80
+	jr      nz,+
 	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	add     hl,de
 	adc     a,(ix+$0c)
-_5b80:
-	ld      l,h
++	ld      l,h
 	ld      h,a
 	ld      ($d210),hl
 	ld      hl,$0004
@@ -10219,7 +10451,7 @@ _5b80:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	ret     
+	ret
 
 _5bbf:
 .db $54, $56, $58, $FF, $FF, $FF, $AA, $AC, $AE, $FF, $FF, $FF, $FF
@@ -10236,16 +10468,16 @@ _5bd9:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5bff
+	jr      c,+
 	call    _5deb
-	jr      c,_5bff
+	jr      c,+
 	ld      a,$f0
 	ld      ($d411),a
 	ld      a,$02
 	rst     $28
 	jp      _5b29
-_5bff:
-	ld      hl,$5200
+	
++	ld      hl,$5200
 	jp      _5b34
 
 ;____________________________________________________________________________[$5C05]___
@@ -10259,16 +10491,16 @@ _5c05:
 	call    _LABEL_C02_135
 	ld      a,(hl)
 	and     c
-	jr      z,_5c21
+	jr      z,+
 	ld      (ix+$00),$ff
 	jp      _5b29
-_5c21:
-	ld      hl,$0003
+	
++	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5c5a
+	jr      c,+
 	call    _5deb
-	jr      c,_5c5a
+	jr      c,+
 	bit     2,(ix+$18)
 	jp      nz,_5b24
 	ld      hl,S1_LIVES
@@ -10288,42 +10520,38 @@ _5c21:
 	ret     nc
 	ld      hl,$d280
 	inc     (hl)
-	ret     
-
-_5c5a:
-	ld      a,(S1_CURRENT_LEVEL)
+	ret
+	
++	ld      a,(S1_CURRENT_LEVEL)
 	cp      4			;level 4 (Bridge Act 2)?
-	jr      z,_5c73
+	jr      z,+
 	cp      $09			;level 9 (Labyrinth Act 1)?
-	jr      z,_5c9c
+	jr      z,++
 	cp      $0c			;level 12 (Scrap Brain Act 1)?
-	jr      z,_5cb8
+	jr      z,+++
 	cp      $11			;level 11 (Labyrinth Act 3)?
-	jr      z,_5cca
-_5c6d:
-	ld      hl,$5280
+	jr      z,++++
+-	ld      hl,$5280
 	jp      _5b34
 
-_5c73:
-	ld      c,$00
++	ld      c,$00
 	ld      de,$0040
 	ld      a,(ix+$13)
 	cp      $3c
-	jr      c,_5c83
+	jr      c,+
 	dec     c
 	ld      de,$ffc0
-_5c83:
-	ld      (ix+$0a),e
++	ld      (ix+$0a),e
 	ld      (ix+$0b),d
 	ld      (ix+$0c),c
 	inc     (ix+$13)
 	ld      a,(ix+$13)
 	cp      $50
-	jr      c,_5c6d
+	jr      c,-
 	ld      (ix+$13),$28
-	jr      _5c6d
-_5c9c:
-	set     2,(ix+$18)
+	jr      -
+	
+++	set     2,(ix+$18)
 	ld      hl,$d317
 	call    _LABEL_C02_135
 	ld      a,(hl)
@@ -10333,18 +10561,18 @@ _5c9c:
 	res     2,(ix+$18)
 	ld      hl,$5280
 	jp      _5b34
-_5cb8:
-	set     1,(ix+$18)
+	
++++	set     1,(ix+$18)
 	ld      (ix+$07),$80
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
-	jr      _5c6d
-_5cca:
-	ld      a,($d280)
+	jr      -
+	
+++++	ld      a,($d280)
 	cp      $11
-	jr      nc,_5c6d
+	jr      nc,-
 	ld      (ix+$00),$ff
-	jr      _5c6d
+	jr      -
 
 ;____________________________________________________________________________[$5CD7]___
 
@@ -10356,13 +10584,13 @@ _5cd7:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5cf9
+	jr      c,+
 	call    _5deb
-	jr      c,_5cf9
+	jr      c,+
 	set     5,(iy+$06)
 	jp      _5b29
-_5cf9:
-	ld      hl,$5300
+	
++	ld      hl,$5300
 	jp      _5b34
 
 ;____________________________________________________________________________[$5CFF]___
@@ -10375,17 +10603,17 @@ _5cff:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5d29
+	jr      c,+
 	call    _5deb
-	jr      c,_5d29
+	jr      c,+
 	set     0,(iy+$08)
 	ld      a,$f0
 	ld      ($d28d),a
 	ld      a,$08
 	rst     $18
 	jp      _5b29
-_5d29:
-	ld      hl,$5380
+	
++	ld      hl,$5380
 	jp      _5b34
 
 ;____________________________________________________________________________[$5D2F]___
@@ -10398,9 +10626,9 @@ _5d2f:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5d7a
+	jr      c,+
 	call    _5deb
-	jr      c,_5d7a
+	jr      c,+
 	ld      hl,$d311
 	call    _LABEL_C02_135
 	ld      a,(hl)
@@ -10430,8 +10658,8 @@ _5d2f:
 	dec     a
 	ld      (de),a
 	jp      _5b29
-_5d7a:
-	ld      hl,$5480
+	
++	ld      hl,$5480
 	jp      _5b34
 	
 ;____________________________________________________________________________[$5D80]___
@@ -10444,21 +10672,23 @@ _5d80:
 	ld      hl,$0003
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5da2
+	jr      c,+
 	call    _5deb
-	jr      c,_5da2
+	jr      c,+
 	set     3,(iy+$09)
 	jp      _5b29
-_5da2:
-	ld      hl,$5500
+	
++	ld      hl,$5500
 	jp      _5b34
+
+;____________________________________________________________________________[$5DA8]___
 
 _5da8:
 	bit     0,(ix+$18)
 	ret     nz
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      nz,_5dc6
+	jr      nz,+
 	ld      bc,$0000
 	ld      e,c
 	ld      d,b
@@ -10467,12 +10697,10 @@ _5da8:
 	ld      bc,$0012
 	ld      a,(hl)
 	cp      $ab
-	jr      z,_5dcc
-_5dc6:
-	ld      de,$0004
+	jr      z,++
++	ld      de,$0004
 	ld      bc,$0000
-_5dcc:
-	ld      l,(ix+$02)
+++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      (ix+$02),l
@@ -10483,14 +10711,16 @@ _5dcc:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	set     0,(ix+$18)
-	ret     
+	ret
+
+;____________________________________________________________________________[$5DEB]___
 
 _5deb:
 	ld      hl,$0804
 	ld      ($d20e),hl
 	ld      a,($d414)
 	and     $01
-	jr      nz,_5e49
+	jr      nz,++
 	ld      de,($d3fe)
 	ld      c,(ix+$02)
 	ld      b,(ix+$03)
@@ -10498,15 +10728,15 @@ _5deb:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_5e6d
+	jr      nc,+++
 	ld      hl,$0010
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_5e6d
+	jr      c,+++
 	ld      a,($d414)
 	and     $04
-	jr      nz,_5e42
+	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      a,($d40a)
@@ -10523,19 +10753,16 @@ _5deb:
 	ld      hl,$d414
 	set     7,(hl)
 	scf     
-	ret     
+	ret
 
-_5e42:
-	ld      a,($d408)
++	ld      a,($d408)
 	and     a
-	jp      m,_5e4e
-_5e49:
-	call    _36be
+	jp      m,+
+++	call    _36be
 	and     a
-	ret     
+	ret
 
-_5e4e:
-	ld      (ix+$0a),$80
++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$fe
 	ld      (ix+$0c),$ff
 	ld      hl,$0400
@@ -10545,10 +10772,9 @@ _5e4e:
 	ld      ($d28e),a
 	set     1,(ix+$18)
 	scf     
-	ret     
+	ret
 
-_5e6d:
-	ld      hl,($d3fe)
++++	ld      hl,($d3fe)
 	ld      de,$000c
 	add     hl,de
 	ex      de,hl
@@ -10559,10 +10785,9 @@ _5e6d:
 	ld      bc,$ffeb
 	and     a
 	sbc     hl,de
-	jr      nc,_5e8a
+	jr      nc,+
 	ld      bc,$0015
-_5e8a:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,bc
 	ld      ($d3fe),hl
@@ -10583,7 +10808,7 @@ _5ea2:
 	call    _LABEL_C02_135
 	ld      a,(hl)
 	and     c
-	jr      nz,_5ede
+	jr      nz,+
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$11
 	call    _5da8
@@ -10593,7 +10818,7 @@ _5ea2:
 	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_5ee3
+	jr      c,++
 	ld      hl,$d30b
 	call    _LABEL_C02_135
 	ld      a,(hl)
@@ -10605,18 +10830,15 @@ _5ea2:
 	ld      ($d28b),a
 	ld      a,$14
 	rst     $18
-_5ede:
-	ld      (ix+$00),$ff
-	ret     
++	ld      (ix+$00),$ff
+	ret
 
-_5ee3:
-	ld      a,($d223)
+++	ld      a,($d223)
 	rrca    
-	jr      c,_5ef1
+	jr      c,+
 	ld      (ix+$0f),<_5f10
 	ld      (ix+$10),>_5f10
-_5ef1:
-	ld      l,(ix+$0a)
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$0020
@@ -10627,7 +10849,7 @@ _5ef1:
 	ld      (ix+$0c),a
 	ld      hl,$5400
 	call    _c1d
-	ret     
+	ret
 
 _5f10:
 .db $5C, $5E, $FF, $FF, $FF, $FF, $FF
@@ -10639,7 +10861,7 @@ _5f17:
 	ld      (ix+$0d),$18
 	ld      (ix+$0e),$30
 	bit     0,(ix+$11)
-	jr      nz,_5f44
+	jr      nz,+
 	res     7,(iy+$06)
 	res     3,(iy+$05)
 	
@@ -10653,8 +10875,7 @@ _5f17:
 	ld      a,$02
 	call    loadPaletteOnInterrupt
 	set     0,(ix+$11)
-_5f44:
-	ld      hl,($d25a)
++	ld      hl,($d25a)
 	ld      (S1_LEVEL_CROPLEFT),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -10669,18 +10890,18 @@ _5f44:
 	ld      a,($d414)
 	and     $80
 	ld      (ix+$13),a
-	jr      z,_5fa4
+	jr      z,++
 	cp      c
-	jr      z,_5fa4
+	jr      z,++
 	bit     7,(ix+$18)
-	jr      z,_5fa4
+	jr      z,++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      hl,($d3fe)
 	and     a
 	sbc     hl,de
 	bit     7,h
-	jr      z,_5f90
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -10688,16 +10909,14 @@ _5f44:
 	cpl     
 	ld      h,a
 	inc     hl
-_5f90:
-	ld      de,$0064
++	ld      de,$0064
 	and     a
 	sbc     hl,de
-	jr      nc,_5fa4
+	jr      nc,++
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fe
 	ld      (ix+$0c),$ff
-_5fa4:
-	ld      l,(ix+$0a)
+++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$001a
@@ -10707,11 +10926,11 @@ _5fa4:
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
 	bit     3,(ix+$11)
-	jr      nz,_6030
+	jr      nz,++
 	bit     2,(ix+$11)
-	jr      z,_5fe8
+	jr      z,+
 	bit     7,(ix+$18)
-	jr      z,_6030
+	jr      z,++
 	ld      a,$09
 	rst     $18
 	ld      a,$0c
@@ -10721,19 +10940,19 @@ _5fa4:
 	ld      a,$a0
 	ld      ($d289),a
 	set     1,(iy+$06)
-	jp      _6030
-_5fe8:
-	ld      hl,$0a0a
+	jp      ++
+	
++	ld      hl,$0a0a
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_6030
+	jr      c,++
 	bit     7,(ix+$0c)
-	jr      nz,_6030
+	jr      nz,++
 	bit     1,(ix+$11)
-	jr      nz,_6030
+	jr      nz,++
 	ld      de,($d403)
 	bit     7,d
-	jr      z,_600e
+	jr      z,+
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -10741,14 +10960,12 @@ _5fe8:
 	cpl     
 	ld      d,a
 	inc     de
-_600e:
-	ld      hl,$0300
++	ld      hl,$0300
 	and     a
 	sbc     hl,de
-	jr      nc,_6019
+	jr      nc,+
 	ld      de,$0300
-_6019:
-	ex      de,hl
++	ex      de,hl
 	add     hl,hl
 	ld      (ix+$14),l
 	ld      (ix+$15),h
@@ -10757,38 +10974,35 @@ _6019:
 	res     3,(iy+$06)
 	ld      a,$0b
 	rst     $28
-_6030:
-	ld      de,_6157
+++	ld      de,_6157
 	bit     1,(ix+$11)
-	jr      nz,_6096
+	jr      nz,_f
 	bit     2,(ix+$11)
-	jr      nz,_6096
+	jr      nz,_f
 	ld      de,$6171
 	bit     3,(ix+$11)
-	jr      z,_6096
+	jr      z,_f
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $0c
-	jr      c,_605a
+	jr      c,+
 	cp      $1c
-	jr      c,_6066
+	jr      c,++
 	ld      de,$618e
 	ld      c,$01
-	jr      _6092
-_605a:
-	ld      de,$61a8
+	jr      +++
+	
++	ld      de,$61a8
 	ld      c,$04
 	ld      a,(S1_RINGS)
 	cp      $50
-	jr      nc,_6092
-_6066:
-	cp      $40
-	jr      z,_6073
+	jr      nc,+++
+++	cp      $40
+	jr      z,+
 	ld      de,$61c2
 	ld      c,$03
 	and     $0f
-	jr      z,_6092
-_6073:
-	ld      a,(S1_RINGS)
+	jr      z,+++
++	ld      a,(S1_RINGS)
 	srl     a
 	srl     a
 	srl     a
@@ -10800,25 +11014,23 @@ _6073:
 	ld      de,$6174
 	ld      c,$02
 	cp      b
-	jr      z,_6092
+	jr      z,+++
 	ld      de,$618e
 	ld      c,$01
-_6092:
-	ld      a,c
++++	ld      a,c
 	ld      ($d288),a
-_6096:
-	ld      l,(ix+$12)
+__	ld      l,(ix+$12)
 	ld      h,$00
 	add     hl,de
 	ld      a,(hl)
 	cp      $ff
-	jr      nz,_60a9
+	jr      nz,+
 	inc     hl
 	ld      a,(hl)
 	ld      (ix+$12),a
-	jp      _6096
-_60a9:
-	ld      l,a
+	jp      _b
+	
++	ld      l,a
 	ld      h,$00
 	add     hl,hl
 	ld      e,l
@@ -10832,11 +11044,11 @@ _60a9:
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	bit     1,(ix+$11)
-	jr      nz,_60c7
+	jr      nz,+
 	inc     (ix+$12)
-	ret     
-_60c7:
-	ld      a,(ix+$14)
+	ret
+	
++	ld      a,(ix+$14)
 	add     a,(ix+$16)
 	ld      (ix+$16),a
 	ld      a,(ix+$15)
@@ -10846,20 +11058,18 @@ _60c7:
 	pop     af
 	adc     a,(ix+$12)
 	cp      $18
-	jr      c,_60e3
+	jr      c,+
 	xor     a
-_60e3:
-	ld      (ix+$12),a
++	ld      (ix+$12),a
 	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	ld      a,(ix+$0c)
 	and     a
-	jp      p,_60f9
+	jp      p,+
 	ld      hl,$fc00
 	sbc     hl,de
 	ret     nc
-_60f9:
-	ex      de,hl
++	ex      de,hl
 	ld      e,(ix+$14)
 	ld      d,(ix+$15)
 	ld      c,e
@@ -10885,7 +11095,7 @@ _60f9:
 	xor     a
 	ld      de,$0008
 	sbc     hl,de
-	jr      c,_6141
+	jr      c,+
 	ld      l,c
 	ld      h,b
 	ld      de,$0010
@@ -10894,14 +11104,13 @@ _60f9:
 	ld      (ix+$14),l
 	ld      (ix+$15),h
 	ret     nc
-_6141:
-	ld      (ix+$0a),a
++	ld      (ix+$0a),a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	res     1,(ix+$11)
 	set     2,(ix+$11)
 	ld      (ix+$12),$00
-	ret     
+	ret
 
 _6157:
 .db $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $04, $04, $FF, $00, $00, $FF, $00, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $01, $01, $01, $01, $01, $01, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $05, $05, $05, $05, $05, $05, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $06, $06, $06, $06, $06, $06, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $07, $07, $07, $07, $07, $07, $FF, $12, $4E, $50, $52, $54, $FF, $FF, $6E, $70, $72, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $08, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $FE, $12, $14, $FF, $FF, $FF, $FE, $32, $34, $FF, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $16, $18, $1A, $1C, $FF, $FF, $36, $38, $3A, $3C, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $56, $58, $5A, $5C, $FF, $FF, $76, $78, $7A, $7C, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $00, $02, $04, $06, $FF, $FF, $20, $22, $24, $26, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $4E, $4A, $4C, $54, $FF, $FF, $6E, $6A, $6C, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $4E, $46, $48, $54, $FF, $FF, $6E, $66, $68, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF
@@ -11011,46 +11220,45 @@ _65ee:
 	ld      (ix+$0e),$1f
 	ld      e,(ix+$12)
 	ld      d,$00
-_65fb:
-	ld      hl,_66c5
+-	ld      hl,_66c5
 	add     hl,de
 	ld      ($d214),hl
 	ld      a,(hl)
 	and     a
-	jr      nz,_660d
+	jr      nz,+
 	ld      (ix+$12),a
 	ld      e,a
-	jp      _65fb
-_660d:
-	dec     a
-	jr      nz,_6618
+	jp      -
+	
++	dec     a
+	jr      nz,+
 	ld      c,$00
 	ld      h,c
 	ld      l,$28
-	jp      _666f
-_6618:
-	dec     a
-	jr      nz,_6623
+	jp      ++
+	
++	dec     a
+	jr      nz,+
 	ld      c,$ff
 	ld      hl,$ffd8
-	jp      _666f
-_6623:
-	dec     a
-	jr      nz,_662d
+	jp      ++
+	
++	dec     a
+	jr      nz,+
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-	jp      _666f
-_662d:
-	ld      a,(ix+$11)
+	jp      ++
+	
++	ld      a,(ix+$11)
 	cp      $20
-	jp      nz,_6678
+	jp      nz,+
 	ld      hl,$ffff
 	ld      ($d212),hl
 	ld      hl,$fffc
 	ld      ($d214),hl
 	call    _7c7b
-	jp      c,_6678
+	jp      c,+
 	ld      de,$0000
 	ld      c,e
 	ld      b,d
@@ -11060,19 +11268,18 @@ _662d:
 	ld      hl,$fffc
 	ld      ($d214),hl
 	call    _7c7b
-	jr      c,_6678
+	jr      c,+
 	ld      de,$000e
 	ld      bc,$0000
 	call    _ac96
 	ld      a,$0a
 	rst     $28
-	jp      _6678
-_666f:
-	ld      (ix+$07),l
+	jp      +
+	
+++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
-_6678:
-	ld      l,(ix+$11)
++	ld      l,(ix+$11)
 	ld      h,(ix+$12)
 	ld      de,$0008
 	add     hl,de
@@ -11104,7 +11311,7 @@ _6678:
 	ld      hl,$0804
 	ld      ($d20e),hl
 	call    nc,_35e5
-	ret     
+	ret
 
 _66c5:
 .db $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $03, $03, $04, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $03, $03, $04, $00
@@ -11127,7 +11334,7 @@ _673c:
 	ld      hl,$0030
 	ld      ($d26d),hl
 	bit     0,(ix+$18)
-	jr      nz,_6782
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (ix+$12),l
@@ -11139,8 +11346,7 @@ _673c:
 	ld      (ix+$11),$e0
 	set     0,(ix+$18)
 	set     1,(ix+$18)
-_6782:
-	ld      (ix+$0d),$1a
++	ld      (ix+$0d),$1a
 	ld      (ix+$0e),$10
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -11153,10 +11359,9 @@ _6782:
 	ld      b,h
 	ld      a,(bc)
 	and     a
-	jp      p,_67a4
+	jp      p,+
 	dec     d
-_67a4:
-	ld      e,a
++	ld      e,a
 	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	add     hl,de
@@ -11170,10 +11375,9 @@ _67a4:
 	ld      d,$00
 	ld      a,(bc)
 	and     a
-	jp      p,_67c5
+	jp      p,+
 	dec     d
-_67c5:
-	ld      e,a
++	ld      e,a
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
 	add     hl,de
@@ -11181,11 +11385,11 @@ _67c5:
 	ld      (ix+$06),h
 	ld      a,($d408)
 	and     a
-	jp      m,_67f9
+	jp      m,+
 	ld      hl,$0806
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_67f9
+	jr      c,+
 	ld      hl,($d3fe)
 	ld      de,($d20e)
 	add     hl,de
@@ -11193,17 +11397,15 @@ _67c5:
 	ld      bc,$0010
 	ld      de,$0000
 	call    _LABEL_7CC1_12
-_67f9:
-	ld      hl,$6911
++	ld      hl,$6911
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      z,_6805
+	jr      z,+
 	ld      hl,_6923
-_6805:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	bit     1,(ix+$18)
-	jr      nz,_6821
+	jr      nz,+
 	ld      a,(ix+$11)
 	inc     a
 	inc     a
@@ -11211,15 +11413,15 @@ _6805:
 	cp      $e0
 	ret     c
 	set     1,(ix+$18)
-	ret     
-_6821:
-	ld      a,(ix+$11)
+	ret
+	
++	ld      a,(ix+$11)
 	dec     a
 	dec     a
 	ld      (ix+$11),a
 	ret     nz
 	res     1,(ix+$18)
-	ret     
+	ret
 
 _682f:
 .db $B3, $00, $B3, $01, $B3, $02, $B3, $02, $B3, $03, $B3, $04, $B3, $05, $B3, $06, $B4, $07, $B4, $08, $B4, $09, $B4, $0B, $B4, $0C, $B4, $0D, $B5, $0E, $B5, $0F, $B5, $11, $B5, $12, $B6, $13, $B6, $15, $B7, $16, $B7, $18, $B8, $19, $B8, $1B, $B9, $1D, $B9, $1E, $BA, $20, $BB, $22, $BC, $23, $BD, $25, $BE, $27, $BF, $29, $C0, $2B, $C2, $2D, $C3, $2F, $C4, $31, $C6, $32, $C8, $34, $CA, $36, $CC, $38, $CE, $3A, $D0, $3C, $D2, $3E, $D4, $3F, $D7, $41, $DA, $43, $DC, $44, $DF, $45, $E2, $47, $E5, $48, $E8, $49, $EC, $4A, $EF, $4B, $F2, $4C, $F6, $4C, $F9, $4C, $FC, $4D, $00, $4D, $03, $4D, $07, $4C, $0A, $4C, $0E, $4C, $11, $4B, $14, $4A, $18, $49, $1B, $48, $1E, $47, $21, $45, $24, $44, $27, $42, $29, $41, $2C, $3F, $2E, $3D, $31, $3B, $33, $3A, $35, $38, $37, $36, $39, $34, $3A, $32, $3C, $30, $3E, $2E, $3F, $2C, $40, $2A, $41, $28, $43, $26, $44, $24, $45, $23, $45, $21, $46, $1F, $47, $1D, $48, $1C, $48, $1A, $49, $18, $49, $17, $4A, $15, $4A, $14, $4B, $12, $4B, $11, $4B, $0F, $4B, $0E, $4C, $0D, $4C, $0C, $4C, $0A, $4C, $09, $4C, $08, $4C, $07, $4D, $06, $4D, $05, $4D, $04, $4D, $03, $4D, $02, $4D, $01, $4D, $00
@@ -11238,20 +11440,20 @@ _693f:
 	set     5,(ix+$18)
 	ld      a,(ix+$15)
 	cp      $aa
-	jr      z,_698d
+	jr      z,+
 	xor     a
 	ld      (ix+$11),a
 	ld      (ix+$15),$aa
 	ld      (ix+$16),a
 	ld      (ix+$17),a
 	bit     5,(iy+$00)
-	jr      z,_698d
+	jr      z,+
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $12
-	jr      z,_698d
+	jr      z,+
 	ld      a,($d414)
 	rlca    
-	jr      c,_698d
+	jr      c,+
 	ld      a,($d2e8)
 	ld      de,($d2e6)
 	inc     de
@@ -11265,14 +11467,13 @@ _693f:
 	ld      h,a
 	ld      a,($d408)
 	and     a
-	jp      m,_698d
+	jp      m,+
 	cpl     
 	add     hl,de
 	adc     a,c
 	ld      ($d406),hl
 	ld      ($d408),a
-_698d:
-	xor     a
++	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
@@ -11287,7 +11488,7 @@ _698d:
 	cp      $18
 	ret     c
 	ld      (ix+$00),$ff
-	ret     
+	ret
 
 _69b7:
 .db $00, $08, $01, $08, $02, $08, $ff
@@ -11305,38 +11506,36 @@ _69e9:
 	ld      (ix+$10),>_6911
 	ld      a,($d408)
 	and     a
-	jp      m,_6a2e
+	jp      m,++
 	ld      hl,$0806
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_6a2e
+	jr      c,++
 	ld      de,$0000
 	ld      a,(ix+$05)
 	and     $1f
 	cp      $10
-	jr      nc,_6a1d
+	jr      nc,+
 	ld      e,$80
-_6a1d:
-	ld      (ix+$0a),e
++	ld      (ix+$0a),e
 	ld      (ix+$0b),d
 	ld      (ix+$0c),$00
 	ld      bc,$0010
 	call    _LABEL_7CC1_12
-	ret   
-_6a2e:  
-	ld      c,$00
+	ret
+	
+++	ld      c,$00
 	ld      l,c
 	ld      h,c
 	ld      a,(ix+$05)
 	and     $1f
-	jr      z,_6a3d
+	jr      z,+
 	ld      hl,$ffc0
 	dec     c
-_6a3d:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
-	ret     
+	ret
 
 ;____________________________________________________________________________[$6A47]___
 
@@ -11347,7 +11546,7 @@ _6a47:
 	add     a,(ix+$17)
 	ld      (ix+$17),a
 	cp      $18
-	jr      c,_6a6f
+	jr      c,+
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
@@ -11357,29 +11556,26 @@ _6a47:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-_6a6f:
-	ld      (ix+$0d),$1a
++	ld      (ix+$0d),$1a
 	ld      (ix+$0e),$10
 	ld      a,($d408)
 	and     a
-	jp      m,_6a99
+	jp      m,+
 	ld      hl,$0806
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_6a99
+	jr      c,+
 	ld      (ix+$16),$01
 	ld      bc,$0010
 	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	call    _LABEL_7CC1_12
-_6a99:
-	ld      hl,$6911
++	ld      hl,$6911
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      z,_6aa5
+	jr      z,+
 	ld      hl,_6923
-_6aa5:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($d25d)
 	ld      de,$00c0
@@ -11390,7 +11586,7 @@ _6aa5:
 	sbc     hl,de
 	ret     nc
 	ld      (ix+$00),$ff
-	ret     
+	ret
 
 ;____________________________________________________________________________[$6AC1]___
 
@@ -11427,12 +11623,11 @@ _6ac1:
 	ld      hl,_6b72
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $05
-	jr      z,_6b26
+	jr      z,+
 	cp      $0b
-	jr      z,_6b26
+	jr      z,+
 	ld      hl,_6b70
-_6b26:
-	ld      a,($d223)
++	ld      a,($d223)
 	and     $01
 	ld      e,a
 	ld      d,$00
@@ -11448,11 +11643,11 @@ _6b26:
 	ld      de,($d25a)
 	and     a
 	sbc     hl,de
-	jr      c,_6b6b
+	jr      c,+
 	inc     d
 	ex      de,hl
 	sbc     hl,bc
-	jr      c,_6b6b
+	jr      c,+
 	ld      c,(ix+$05)
 	ld      b,(ix+$06)
 	ld      l,c
@@ -11462,14 +11657,13 @@ _6b26:
 	ld      de,($d25d)
 	and     a
 	sbc     hl,de
-	jr      c,_6b6b
+	jr      c,+
 	ld      hl,$00c0
 	add     hl,de
 	and     a
 	sbc     hl,bc
 	ret     nc
-_6b6b:
-	ld      (ix+$00),$ff
++	ld      (ix+$00),$ff
 	ret   
 
 _6b70:
@@ -11483,7 +11677,7 @@ _6b72:
 _6b74:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_6bab
+	jr      nz,+
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      (ix+$14),e
@@ -11501,38 +11695,35 @@ _6b74:
 	sbc     hl,de
 	ret     nc
 	set     0,(ix+$18)
-_6bab:
-	ld      (ix+$0d),$14
++	ld      (ix+$0d),$14
 	ld      (ix+$0e),$20
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      c,_6bd4
+	jr      c,+
 	ld      de,$0040
 	sbc     hl,de
-	jr      nc,_6bd4
+	jr      nc,+
 	ld      a,(ix+$12)
 	cp      $05
-	jr      nc,_6bd4
+	jr      nc,+
 	ld      (ix+$12),$05
-_6bd4:
-	ld      e,(ix+$12)
++	ld      e,(ix+$12)
 	ld      d,$00
-_6bd9:
-	ld      hl,$6cd7
+-	ld      hl,$6cd7
 	add     hl,de
 	ld      ($d214),hl
 	ld      a,(hl)
 	and     a
-	jr      nz,_6beb
+	jr      nz,+
 	ld      (ix+$12),a
 	ld      e,a
-	jp      _6bd9
-_6beb:
-	dec     a
-	jr      nz,_6c20
+	jp      -
+	
++	dec     a
+	jr      nz,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0030
@@ -11540,7 +11731,7 @@ _6beb:
 	ld      de,($d25a)
 	xor     a
 	sbc     hl,de
-	jr      nc,_6c18
+	jr      nc,+
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      a,(ix+$14)
@@ -11548,24 +11739,24 @@ _6beb:
 	ld      a,(ix+$15)
 	ld      (ix+$03),a
 	res     0,(ix+$18)
-	ret   
-_6c18:  
-	ld      c,$ff
+	ret
+	
++	ld      c,$ff
 	ld      hl,$fe00
-	jp      _6c98
-_6c20:
-	dec     a
-	jr      nz,_6c2a
+	jp      +++
+	
+++	dec     a
+	jr      nz,+
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-	jp      _6c98
-_6c2a:
-	ld      a,(ix+$11)
+	jp      +++
+	
++	ld      a,(ix+$11)
 	cp      $20
-	jp      nz,_6ca1
+	jp      nz,+
 	call    _7c7b
-	jp      c,_6ca1
+	jp      c,+
 	push    bc
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
@@ -11603,12 +11794,10 @@ _6c2a:
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-_6c98:
-	ld      (ix+$07),l
++++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
-_6ca1:
-	ld      l,(ix+$11)
++	ld      l,(ix+$11)
 	ld      h,(ix+$12)
 	ld      de,$0008
 	add     hl,de
@@ -11631,7 +11820,7 @@ _6ca1:
 	ld      hl,$1004
 	ld      ($d20e),hl
 	call    nc,_35e5
-	ret     
+	ret
 
 _6cd7:
 .db $01, $01, $01, $01, $00, $02, $02, $03, $01, $01, $00
@@ -11647,7 +11836,7 @@ _6d65:
 	set     5,(ix+$18)
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $07
-	jr      z,_6d88
+	jr      z,+
 	ld      hl,$0020
 	ld      ($d267),hl
 	ld      hl,$0048
@@ -11656,24 +11845,22 @@ _6d65:
 	ld      ($d26b),hl
 	ld      hl,$0030
 	ld      ($d26d),hl
-_6d88:
-	ld      (ix+$0d),$1a
++	ld      (ix+$0d),$1a
 	ld      (ix+$0e),$10
 	ld      c,$00
 	ld      a,($d408)
 	and     a
-	jp      m,_6db1
+	jp      m,+
 	ld      hl,$0806
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	ld      c,$00
-	jr      c,_6db1
+	jr      c,+
 	ld      bc,$0010
 	ld      de,$0000
 	call    _LABEL_7CC1_12
 	ld      c,$01
-_6db1:
-	ld      l,(ix+$12)
++	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	inc     hl
 	ld      (ix+$12),l
@@ -11681,40 +11868,36 @@ _6db1:
 	ld      de,$00a0
 	xor     a
 	sbc     hl,de
-	jr      c,_6dcf
+	jr      c,+
 	ld      (ix+$12),a
 	ld      (ix+$13),a
 	inc     (ix+$14)
-_6dcf:
-	ld      de,$0001
++	ld      de,$0001
 	bit     0,(ix+$14)
-	jr      z,_6ddb
+	jr      z,+
 	ld      de,$ffff
-_6ddb:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	ld      a,c
 	and     a
-	jr      z,_6df3
+	jr      z,+
 	ld      hl,($d3fe)
 	add     hl,de
 	ld      ($d3fe),hl
-_6df3:
-	ld      hl,$6911
++	ld      hl,$6911
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      z,_6e05
+	jr      z,+
 	ld      hl,$6931
 	dec     a
-	jr      z,_6e05
+	jr      z,+
 	ld      hl,_6923
-_6e05:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ret     
+	ret
 
 ;____________________________________________________________________________[$6E0C]___
 
@@ -11725,34 +11908,31 @@ _6e0c:
 	ld      (ix+$0e),$10
 	ld      e,(ix+$12)
 	ld      d,$00
-_6e1d:
-	ld      hl,_6e96
+-	ld      hl,_6e96
 	add     hl,de
 	ld      ($d214),hl
 	ld      a,(hl)
 	and     a
-	jr      nz,_6e2f
+	jr      nz,+
 	ld      (ix+$12),a
 	ld      e,a
-	jp      _6e1d
-_6e2f:
-	dec     a
-	jr      nz,_6e3a
+	jp      -
+	
++	dec     a
+	jr      nz,+
 	ld      c,$ff
 	ld      hl,$ff00
-	jp      _6e49
-_6e3a:
-	dec     a
-	jr      nz,_6e45
+	jp      ++
+	
++	dec     a
+	jr      nz,+
 	ld      c,$00
 	ld      hl,$0100
-	jp      _6e49
-_6e45:
-	ld      c,$00
+	jp      ++
++	ld      c,$00
 	ld      l,c
 	ld      h,c
-_6e49:
-	ld      (ix+$07),l
+++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
 	ld      l,(ix+$11)
@@ -11782,7 +11962,7 @@ _6e49:
 	ld      hl,$0000
 	ld      ($d20e),hl
 	call    nc,_35e5
-	ret     
+	ret
 
 _6e96
 .db $01, $01, $01, $01, $01, $01, $01, $01, $01, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $00  
@@ -11800,34 +11980,31 @@ _6f08:
 	ld      (ix+$0e),$14
 	ld      a,(ix+$11)
 	cp      $02
-	jr      z,_6f1e
+	jr      z,+
 	and     a
-	jr      nz,_6f42
-_6f1e:
-	ld      a,($d223)
+	jr      nz,+++
++	ld      a,($d223)
 	and     $01
-	jr      z,_6f2a
+	jr      z,+
 	ld      bc,$0000
-	jr      _6f2d
-_6f2a:
-	ld      bc,_6fed
-_6f2d:
-	inc     (ix+$17)
+	jr      ++
++	ld      bc,_6fed
+++	inc     (ix+$17)
 	ld      a,(ix+$17)
 	cp      $3c
-	jp      c,_6fd4
+	jp      c,++++
 	ld      (ix+$17),$00
 	inc     (ix+$11)
-	jp      _6fd4
-_6f42:
-	cp      $01
-	jp      nz,_6fc1
+	jp      ++++
+	
++++	cp      $01
+	jp      nz,++
 	inc     (ix+$17)
 	ld      a,(ix+$17)
 	cp      $64
-	jr      nz,_6fb1
+	jr      nz,+
 	call    _7c7b
-	jp      c,_6fb1
+	jp      c,+
 	push    bc
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
@@ -11862,24 +12039,22 @@ _6f42:
 	pop     bc
 	ld      a,$0a
 	rst     $28
-_6fb1:
-	ld      bc,_6fed
++	ld      bc,_6fed
 	cp      $78
-	jr      c,_6fd4
+	jr      c,++++
 	ld      (ix+$17),$00
 	inc     (ix+$11)
-	jr      _6fd4
-_6fc1:
-	cp      $03
-	jr      nz,_6fd4
+	jr      ++++
+	
+++	cp      $03
+	jr      nz,++++
 	ld      bc,$0000
 	inc     (ix+$17)
 	ld      a,(ix+$17)
 	and     a
-	jr      nz,_6fd4
+	jr      nz,++++
 	ld      (ix+$11),c
-_6fd4:
-	ld      (ix+$0f),c
+++++	ld      (ix+$0f),c
 	ld      (ix+$10),b
 	ld      hl,$0202
 	ld      ($d214),hl
@@ -11903,7 +12078,7 @@ _700c:
 	ld      (ix+$0e),$1c
 	call    _7ca6
 	bit     0,(ix+$11)
-	jr      nz,_7063
+	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$fff8
@@ -11931,8 +12106,7 @@ _700c:
 	ld      de,$00e8
 	call    _7c8c
 	set     0,(ix+$11)
-_7063:
-	ld      a,(ix+$13)
++	ld      a,(ix+$13)
 	and     $3f
 	ld      e,a
 	ld      d,$00
@@ -11940,17 +12114,14 @@ _7063:
 	add     hl,de
 	ld      a,(hl)
 	and     a
-	jp      p,_7078
+	jp      p,+
 	ld      c,$ff
-	jr      _707a
-_7078:
-	ld      c,$00
-_707a:
-	ld      (ix+$0a),a
+	jr      ++
++	ld      c,$00
+++	ld      (ix+$0a),a
 	ld      (ix+$0b),c
 	ld      (ix+$0c),c
-_7083:
-	ld      e,(ix+$12)
+-	ld      e,(ix+$12)
 	ld      d,$00
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
@@ -11958,13 +12129,13 @@ _7083:
 	ld      ($d214),hl
 	ld      a,(hl)
 	and     a
-	jr      nz,_709e
+	jr      nz,+
 	inc     hl
 	ld      a,(hl)
 	ld      (ix+$12),a
-	jp      _7083
-_709e:
-	dec     a
+	jp      -
+	
++	dec     a
 	add     a,a
 	ld      e,a
 	ld      d,$00
@@ -11984,19 +12155,19 @@ _709e:
 	sbc     hl,de
 	ld      c,$ff
 	ld      hl,$ff00
-	jp      c,_7205
+	jp      c,++
 	ld      (ix+$12),$00
 	bit     1,(ix+$11)
-	jr      nz,_70dd
+	jr      nz,+
 	ld      (ix+$14),$a4
 	ld      (ix+$15),$72
 	set     1,(ix+$11)
-	jp      _7205
-_70dd:
-	ld      (ix+$14),$a7
+	jp      ++
+	
++	ld      (ix+$14),$a7
 	ld      (ix+$15),$72
 	res     1,(ix+$11)
-	jp      _7205
+	jp      ++
 	ld      hl,(S1_LEVEL_CROPLEFT)
 	ld      de,$00e0
 	add     hl,de
@@ -12006,19 +12177,19 @@ _70dd:
 	sbc     hl,de
 	ld      c,$00
 	ld      hl,$0100
-	jp      nc,_7205
+	jp      nc,++
 	ld      (ix+$12),$00
 	bit     2,(ix+$11)
-	jr      nz,_711d
+	jr      nz,+
 	ld      (ix+$14),$a1
 	ld      (ix+$15),$72
 	set     2,(ix+$11)
-	jp      _7205
-_711d:
-	ld      (ix+$14),$aa
+	jp      ++
+	
++	ld      (ix+$14),$aa
 	ld      (ix+$15),$72
 	res     2,(ix+$11)
-	jp      _7205
+	jp      ++
 	ld      (ix+$0a),$60
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
@@ -12032,14 +12203,14 @@ _711d:
 	ld      c,a
 	ld      l,c
 	ld      h,c
-	jp      nc,_7205
+	jp      nc,++
 	ld      (ix+$12),$00
 	ld      (ix+$14),$b0
 	ld      (ix+$15),$72
-	jp      _7205
+	jp      ++
 	ld      c,$00
 	ld      hl,$0400
-	jp      _7205
+	jp      ++
 	ld      (ix+$0a),$60
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
@@ -12053,18 +12224,18 @@ _711d:
 	ld      c,a
 	ld      l,c
 	ld      h,c
-	jp      nc,_7205
+	jp      nc,++
 	ld      (ix+$12),$00
 	ld      (ix+$14),$bc
 	ld      (ix+$15),$72
-	jp      _7205
+	jp      ++
 	ld      c,$ff
 	ld      hl,$fc00
-	jr      _7205
+	jr      ++
 	ld      c,$00
 	ld      l,c
 	ld      h,c
-	jr      _7205
+	jr      ++
 	ld      c,$00
 	ld      l,c
 	ld      h,c
@@ -12072,7 +12243,7 @@ _711d:
 	ld      (ix+$15),$72
 	ld      (ix+$12),c
 	ld      (ix+$13),c
-	jr      _7205
+	jr      ++
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
@@ -12086,7 +12257,7 @@ _711d:
 	ld      c,a
 	ld      l,c
 	ld      h,c
-	jp      c,_7205
+	jp      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,(S1_LEVEL_CROPLEFT)
@@ -12095,18 +12266,17 @@ _711d:
 	ld      c,a
 	ld      l,c
 	ld      h,c
-	jr      c,_71f8
+	jr      c,+
 	ld      (ix+$14),$a1
 	ld      (ix+$15),$72
 	ld      (ix+$12),a
-	jr      _7205
-_71f8:
-	ld      (ix+$14),$a4
+	jr      ++
+	
++	ld      (ix+$14),$a4
 	ld      (ix+$15),$72
 	ld      (ix+$12),a
-	jr      _7205
-_7205:
-	ld      (ix+$07),l
+	jr      ++			;this doesn't look right
+++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
 	ld      hl,($d214)
@@ -12117,10 +12287,9 @@ _7205:
 	ld      a,(hl)
 	ld      hl,_72f8
 	and     a
-	jr      z,_7222
+	jr      z,+
 	ld      hl,_730a
-_7222:
-	ld      e,a
++	ld      e,a
 	ld      a,(ix+$18)
 	and     $fd
 	or      e
@@ -12160,7 +12329,7 @@ S1_BossPalette:				;[$731C]
 _732c:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_734a
+	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$0010
@@ -12168,21 +12337,18 @@ _732c:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	set     0,(ix+$18)
-_734a:
-	ld      (ix+$0d),$1c
++	ld      (ix+$0d),$1c
 	ld      (ix+$0e),$40
 	ld      hl,_7564
 	bit     1,(ix+$18)
-	jr      z,_735e
+	jr      z,+
 	ld      hl,_757c
-_735e:
-	ld      a,($d223)
++	ld      a,($d223)
 	rrca    
-	jr      nc,_7368
+	jr      nc,+
 	ld      de,$000c
 	add     hl,de
-_7368:
-	ld      c,(hl)
++	ld      c,(hl)
 	inc     hl
 	ld      b,(hl)
 	inc     hl
@@ -12204,10 +12370,9 @@ _7368:
 	ld      hl,_752e
 	ld      a,($d223)
 	and     $10
-	jr      z,_7396
+	jr      z,+
 	ld      hl,_7552
-_7396:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($d25a)
 	ld      (S1_LEVEL_CROPLEFT),hl
@@ -12219,16 +12384,16 @@ _7396:
 	ld      hl,$0002
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jp      c,_745b
+	jp      c,+++
 	ld      a,($d408)
 	and     a
-	jp      m,_745b
+	jp      m,+++
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	ld      hl,($d401)
 	and     a
 	sbc     hl,de
-	jr      c,_73f6
+	jr      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0010
@@ -12237,16 +12402,15 @@ _7396:
 	ld      bc,($d3fe)
 	and     a
 	sbc     hl,bc
-	jr      nc,_73e9
+	jr      nc,+
 	ld      de,$001d
-_73e9:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      ($d3fe),hl
-	jp      _7452
-_73f6:
-	ld      hl,($d3fe)
+	jp      +
+	
+++	ld      hl,($d3fe)
 	ld      bc,$000c
 	add     hl,bc
 	ld      c,l
@@ -12287,21 +12451,18 @@ _73f6:
 	ld      (ix+$0f),<_7540
 	ld      (ix+$10),>_7540
 	bit     1,(iy+$06)
-	jr      nz,_7460
+	jr      nz,++
 	set     1,(iy+$06)
-_7452:
-	xor     a
++	xor     a
 	ld      l,a
 	ld      h,a
 	ld      ($d403),hl
 	ld      ($d405),a
-_745b:
-	bit     1,(iy+$06)
++++	bit     1,(iy+$06)
 	ret     z
-_7460:
-	ld      a,(ix+$12)
+++	ld      a,(ix+$12)
 	cp      $08
-	jr      nc,_747b
+	jr      nc,+
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $14
@@ -12309,17 +12470,16 @@ _7460:
 	ld      (ix+$11),$00
 	call    _7a3a
 	inc     (ix+$12)
-	ret     
-_747b:
-	bit     1,(ix+$18)
-	jr      nz,_748d
+	ret
+	
++	bit     1,(ix+$18)
+	jr      nz,+
 	ld      a,$a0
 	ld      ($d289),a
 	ld      a,$09
 	rst     $18
 	set     1,(ix+$18)
-_748d:
-	xor     a
++	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	res     5,(iy+$00)
@@ -12335,7 +12495,9 @@ _748d:
 	cp      $0c
 	ret     c
 	ld      (ix+$00),$ff
-	ret     
+	ret
+
+;____________________________________________________________________________[$74B6]___
 
 _74b6:
 	ld      ($d216),a
@@ -12402,52 +12564,47 @@ _7594:
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$10
 	bit     7,(ix+$18)
-	jr      z,_75b2
+	jr      z,+
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fd
 	ld      (ix+$0c),$ff
-_75b2:
-	ld      de,$0012
++	ld      de,$0012
 	ld      a,(S1_LEVEL_SOLIDITY)
 	cp      $03
-	jr      nz,_75bf
+	jr      nz,+
 	ld      de,$0038
-_75bf:
-	ld      l,(ix+$0a)
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	add     hl,de
 	adc     a,$00
 	ld      c,a
-	jp      m,_75d9
+	jp      m,+
 	ld      a,h
 	cp      $02
-	jr      c,_75d9
+	jr      c,+
 	ld      hl,$0200
 	ld      c,$00
-_75d9:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      hl,$fe00
 	ld      a,(S1_LEVEL_SOLIDITY)
 	cp      $03
-	jr      nz,_75ef
+	jr      nz,+
 	ld      hl,$fe80
-_75ef:
-	ld      (ix+$07),l
++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),$ff
 	ld      bc,_7629
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      z,_760c
+	jr      z,+
 	ld      bc,_762e
 	cp      $03
-	jr      nz,_760c
+	jr      nz,+
 	ld      bc,_7633
-_760c:
-	ld      de,_7638
++	ld      de,_7638
 	call    _7c41
 _7612:
 	ld      l,(ix+$02)
@@ -12480,19 +12637,18 @@ _7699:
 	ld      hl,_7760
 	ld      a,(S1_LEVEL_SOLIDITY)
 	and     a
-	jr      z,_76bd
+	jr      z,+
 	ld      hl,_777b
 	dec     a
-	jr      z,_76bd
+	jr      z,+
 	ld      hl,$7796
 	dec     a
-	jr      z,_76bd
+	jr      z,+
 	ld      hl,_77b1
-_76bd:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	bit     7,(ix+$18)
-	jr      z,_7719
+	jr      z,++
 	xor     a
 	ld      (ix+$0a),a
 	ld      (ix+$0b),$01
@@ -12504,16 +12660,15 @@ _76bd:
 	ld      a,(S1_LEVEL_SOLIDITY)
 	ld      c,a
 	and     a
-	jr      z,_76f6
+	jr      z,+
 	ld      hl,_776d
 	dec     a
-	jr      z,_76f6
+	jr      z,+
 	ld      hl,_7788
 	dec     a
-	jr      z,_76f6
+	jr      z,+
 	ld      hl,_77a3
-_76f6:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	inc     (ix+$11)
 	ld      a,(ix+$11)
@@ -12522,28 +12677,25 @@ _76f6:
 	ld      hl,$fffc
 	ld      a,c
 	and     a
-	jr      z,_770f
+	jr      z,+
 	ld      hl,$fffe
-_770f:
-	ld      (ix+$0a),$00
++	ld      (ix+$0a),$00
 	ld      (ix+$0b),l
 	ld      (ix+$0c),h
-_7719:
-	ld      l,(ix+$0a)
+++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$0028
 	add     hl,de
 	adc     a,$00
 	ld      c,a
-	jp      m,_7736
+	jp      m,+
 	ld      a,h
 	cp      $02
-	jr      c,_7736
+	jr      c,+
 	ld      hl,$0200
 	ld      c,$00
-_7736:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      (ix+$07),$80
@@ -12567,13 +12719,15 @@ _77a3:
 _77b1:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $18, $1A, $FF, $FF, $FF, $FF, $FF
 
+;____________________________________________________________________________[$77BE]___
+
 _77be:
 	ld      a,($d2ec)
 	cp      $08
-	jr      nc,_7841
+	jr      nc,+++
 	ld      a,($d2b1)
 	and     a
-	jp      nz,_7821
+	jp      nz,++
 	ld      hl,$0c08
 	ld      ($d214),hl
 	call    _LABEL_3956_11
@@ -12582,11 +12736,10 @@ _77be:
 	ret     nz
 	ld      a,($d414)
 	rrca    
-	jr      c,_77e6
+	jr      c,+
 	and     $02
 	jp      z,_35fd
-_77e6:
-	ld      de,$0001
++	ld      de,$0001
 	ld      hl,($d406)
 	ld      a,l
 	cpl     
@@ -12616,24 +12769,22 @@ _77e6:
 	ld      a,($d2ec)
 	inc     a
 	ld      ($d2ec),a
-_7821:
-	ld      hl,($d216)
+++	ld      hl,($d216)
 	ld      de,_7922
 	add     hl,de
 	bit     1,(ix+$18)
-	jr      z,_7832
+	jr      z,+
 	ld      de,$0012
 	add     hl,de
-_7832:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,$d2ed
 	ld      (hl),$18
 	inc     hl
 	ld      (hl),$00
-	ret     
-_7841:
-	xor     a
+	ret
+	
++++	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
@@ -12643,10 +12794,9 @@ _7841:
 	ld      de,$0024
 	ld      hl,($d216)
 	bit     1,(ix+$18)
-	jr      z,_7863
+	jr      z,+
 	ld      de,$0036
-_7863:
-	add     hl,de
++	add     hl,de
 	ld      de,_7922
 	add     hl,de
 	ld      (ix+$0f),l
@@ -12654,7 +12804,7 @@ _7863:
 	ld      hl,$d2ee
 	ld      a,(hl)
 	cp      $0a
-	jp      nc,_7882
+	jp      nc,+
 	dec     hl
 	dec     (hl)
 	ret     nz
@@ -12662,11 +12812,11 @@ _7863:
 	inc     hl
 	inc     (hl)
 	call    _7a3a
-	ret     
-_7882:
-	ld      a,($d2ee)
+	ret
+	
++	ld      a,($d2ee)
 	cp      $3a
-	jr      nc,_78a1
+	jr      nc,+
 	ld      l,(ix+$04)
 	ld      h,(ix+$05)
 	ld      a,(ix+$06)
@@ -12676,15 +12826,14 @@ _7882:
 	ld      (ix+$04),l
 	ld      (ix+$05),h
 	ld      (ix+$06),a
-_78a1:
-	ld      hl,$d2ee
++	ld      hl,$d2ee
 	ld      a,(hl)
 	cp      $5a
-	jr      nc,_78ab
+	jr      nc,+
 	inc     (hl)
-	ret     
-_78ab:
-	jr      nz,_78c0
+	ret
+	
++	jr      nz,+
 	ld      (hl),$5b
 	ld      a,($d2fc)
 	rst     $18
@@ -12692,8 +12841,7 @@ _78ab:
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),a
-_78c0:
-	ld      (ix+$07),$00
++	ld      (ix+$07),$00
 	ld      (ix+$08),$03
 	ld      (ix+$09),$00
 	ld      (ix+$0a),$60
@@ -12718,10 +12866,9 @@ _78c0:
 	res     1,(iy+$02)
 	ld      a,(S1_CURRENT_LEVEL)
 	cp      $0b
-	jr      nz,_7916
+	jr      nz,+
 	set     1,(iy+$09)
-_7916:	
-	;UNKNOWN
++	;UNKNOWN
 	ld      hl,$da28
 	ld      de,$2000
 	ld      a,12
@@ -12730,6 +12877,8 @@ _7916:
     
 _7922:
 .db $2A, $2C, $2E, $30, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $10, $12, $14, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $2A, $16, $18, $1A, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $3A, $3C, $3E, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $10, $12, $14, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $54, $56, $66, $68, $FF, $2A, $16, $18, $1A, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $5A, $5C, $70, $72, $FF, $20, $3A, $3C, $3E, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $54, $56, $66, $68, $FF, $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $5A, $5C, $70, $72, $FF, $20, $06, $08, $0A, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $20, $06, $08, $0A, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $0E, $10, $12, $14, $16, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF
+
+;____________________________________________________________________________[$79FA]___
 
 _79fa:
 	ld      a,(ix+$07)
@@ -12749,15 +12898,16 @@ _79fa:
 	ld      de,$0010
 	ld      c,$04
 	bit     7,(ix+$09)
-	jr      z,_7a2e
+	jr      z,+
 	ld      hl,$0028
 	ld      c,$00
-_7a2e:
-	ld      ($d212),hl
++	ld      ($d212),hl
 	ld      ($d214),de
 	add     a,c
 	call    _3581
-	ret     
+	ret
+
+;____________________________________________________________________________[$7A3A]___
 
 _7a3a:
 	call    _7c7b
@@ -12805,7 +12955,7 @@ _7a3a:
 	pop     ix
 	ld      a,$01
 	rst     $28
-	ret     
+	ret
 	
 ;____________________________________________________________________________[$7AA7]___
 ;OBJECT: trip zone (Green Hill)
@@ -12837,7 +12987,7 @@ _7aa7:
 	ld      (iy+$03),$ff
 	ld      a,$11
 	rst     $28
-	ret     
+	ret
 
 ;____________________________________________________________________________[$7AED]___
 ;OBJECT: flower (Green Hill)
@@ -12845,12 +12995,11 @@ _7aa7:
 _7aed:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_7b03
+	jr      nz,+
 	ld      (ix+$11),$32
 	ld      (ix+$12),$00
 	set     0,(ix+$18)
-_7b03:
-	ld      bc,$0000
++	ld      bc,$0000
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d2ab),hl
@@ -12858,12 +13007,11 @@ _7b03:
 	ld      h,(ix+$06)
 	ld      a,($d223)
 	rrca    
-	jr      nc,_7b20
+	jr      nc,+
 	ld      de,$0010
 	add     hl,de
 	inc     bc
-_7b20:
-	ld      ($d2ad),hl
++	ld      ($d2ad),hl
 	ld      a,(ix+$12)
 	add     a,a
 	add     a,a
@@ -12907,12 +13055,12 @@ _7b85:
 ;____________________________________________________________________________[$7B95]___
 ;OBJECT: "make Sonic blink"
 
-_7b95  
+_7b95:
 	set     5,(ix+$18)
 	set     0,(iy+$09)
 	ld      a,($d223)
 	and     $01
-	jp      z,_7bc2
+	jp      z,+
 	ld      a,(ix+$12)
 	ld      c,a
 	add     a,a
@@ -12929,12 +13077,11 @@ _7b95
 	ld      (ix+$0f),e
 	ld      (ix+$10),d
 	ld      ($d302),a
-	jr      _7bc8
-_7bc2:
-	ld      (ix+$0f),a
+	jr      ++
+	
++	ld      (ix+$0f),a
 	ld      (ix+$10),a
-_7bc8:
-	ld      l,(ix+$0a)
+++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$0020
@@ -12949,12 +13096,12 @@ _7bc8:
 	inc     h
 	xor     a
 	sbc     hl,de
-	jr      nc,_7bf8
+	jr      nc,+
 	ld      (ix+$00),$ff
 	res     0,(iy+$09)
-	ret     
-_7bf8:
-	ld      (ix+$07),a
+	ret
+	
++	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
 	dec     (ix+$11)
@@ -12965,7 +13112,7 @@ _7bf8:
 	cp      $06
 	ret     c
 	ld      (ix+$12),$00
-	ret     
+	ret
 
 _7c17:
 .db <_7c29, >_7c29, $1C
@@ -12992,12 +13139,12 @@ _7c41:
 	add     hl,bc
 	ld      a,(hl)
 	cp      $ff
-	jr      nz,_7c54
+	jr      nz,+
 	ld      l,$00
 	ld      (ix+$17),l
 	jp      -
-_7c54:
-	inc     hl
+	
++	inc     hl
 	push    hl
 	ld      l,a
 	ld      h,$00
@@ -13019,7 +13166,7 @@ _7c54:
 	ld      (ix+$16),$00
 	inc     (ix+$17)
 	inc     (ix+$17)
-	ret     
+	ret
 
 
 ;____________________________________________________________________________[$7C7B]___	
@@ -13028,14 +13175,17 @@ _7c7b:
 	ld      hl,$d416
 	ld      de,$001a
 	ld      b,$1f
-_7c83:
-	ld      a,(hl)
+	
+-	ld      a,(hl)
 	cp      $ff
 	ret     z
 	add     hl,de
-	djnz    _7c83
+	djnz    -
+	
 	scf     
-	ret     
+	ret
+
+;____________________________________________________________________________[$7C8C]___
 
 _7c8c:
 	ld      ($d27b),hl
@@ -13046,7 +13196,9 @@ _7c8c:
 	ld      hl,($d25d)
 	ld      (S1_LEVEL_CROPTOP),hl
 	ld      (S1_LEVEL_EXTENDHEIGHT),hl
-	ret     
+	ret
+
+;____________________________________________________________________________[$7CA6]___
 
 _7ca6:
 	ld      hl,($d27b)
@@ -13062,17 +13214,18 @@ _7ca6:
 	res     5,(iy+$00)
 	ret 
 
-_LABEL_7CC1_12:				;[$7CC1]
+;____________________________________________________________________________[$7CC1]___
+
+_LABEL_7CC1_12:
 	bit  6, (iy+6)
 	ret  nz
 	ld   l, (ix+4)
 	ld   h, (ix+5)
 	xor  a
 	bit  7, d
-	jr   z, _LABEL_7CD2_13
+	jr   z, +
 	dec  a
-_LABEL_7CD2_13:
-	add  hl, de
++	add  hl, de
 	adc  a, (ix+6)
 	ld   l, h
 	ld   h, a
@@ -13100,17 +13253,17 @@ _7cf6:
 	ld      (ix+$0e),$0c
 	ld      a,(ix+$14)
 	and     a
-	jr      z,_7d13
+	jr      z,+
 	dec     (ix+$14)
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	ret     
-_7d13:
-	bit     0,(ix+$18)
-	jr      nz,_7d5c
+	ret
+	
++	bit     0,(ix+$18)
+	jr      nz,++
 	bit     1,(ix+$18)
-	jr      nz,_7d43
+	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$fff4
@@ -13124,17 +13277,16 @@ _7d13:
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	set     1,(ix+$18)
-_7d43:
-	ld      (ix+$0a),$00
++	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fc
 	ld      (ix+$0c),$ff
 	set     0,(ix+$18)
 	ld      a,$12
 	rst     $28
 	ld      (ix+$11),$03
-	jr      _7daf
-_7d5c:
-	ld      l,(ix+$0a)
+	jr      +++
+	
+++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$0010
@@ -13142,14 +13294,13 @@ _7d5c:
 	adc     a,$00
 	ex      de,hl
 	and     a
-	jp      m,_7d7b
+	jp      m,+
 	ld      hl,$0400
 	and     a
 	sbc     hl,de
-	jr      nc,_7d7b
+	jr      nc,+
 	ld      de,$0400
-_7d7b:
-	ld      (ix+$0a),e
++	ld      (ix+$0a),e
 	ld      (ix+$0b),d
 	ld      (ix+$0c),a
 	ld      e,(ix+$12)
@@ -13158,7 +13309,7 @@ _7d7b:
 	ld      h,(ix+$06)
 	xor     a
 	sbc     hl,de
-	jr      c,_7daf
+	jr      c,+++
 	ld      (ix+$04),a
 	ld      (ix+$05),e
 	ld      (ix+$06),d
@@ -13167,24 +13318,22 @@ _7d7b:
 	ld      (ix+$0c),a
 	ld      (ix+$14),$1e
 	res     0,(ix+$18)
-_7daf:
-	ld      de,_7de1
++++	ld      de,_7de1
 	ld      bc,_7ddc
 	call    _7c41
 	ld      a,(ix+$11)
 	and     a
-	jr      z,_7dc9
+	jr      z,+
 	dec     (ix+$11)
 	ld      (ix+$0f),<_7df7
 	ld      (ix+$10),>_7df7
-_7dc9:
-	ld      hl,$0204
++	ld      hl,$0204
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
 	ld      ($d20e),hl
 	call    nc,_35e5
-	ret     
+	ret
 
 _7ddc:
 .db $00, $04, $01, $04, $FF
@@ -13218,23 +13367,20 @@ _7e02:
 _7e3c:
 	ld      (ix+$0a),$80
 	xor     a
-
-_LABEL_7E41_9:				;[$7E41]
 	ld   (ix+11), a
 	ld   (ix+12), a
 	ld   a, ($D408)
 	and  a
-	jp   m, _LABEL_7E65_10
+	jp   m, +
 	ld   hl, $0806
 	ld   ($D214), hl
 	call _LABEL_3956_11
-	jr   c, _LABEL_7E65_10
+	jr   c, +
 	ld   bc, $0010
 	ld   e, (ix+10)
 	ld   d, (ix+11)
 	call _LABEL_7CC1_12
-_LABEL_7E65_10:
-	ld   a, ($D223)
++	ld   a, ($D223)
 	and  $03
 	ret  nz
 	inc  (ix+17)
@@ -13254,7 +13400,10 @@ _7e89:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $18, $1A, $FF, $FF, $FF, $FF, $28, $2E, $FF, $FF
 .db $FF, $FF
 
-_7e9b
+;____________________________________________________________________________[$7E9B]___
+;OBJECT: log - horizontal (Jungle)
+
+_7e9b:
 	set     5,(ix+$18)
 	ld      hl,$0030
 	ld      ($d267),hl
@@ -13285,7 +13434,7 @@ _7ee6:
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$10
 	bit     0,(ix+$18)
-	jr      nz,_7f0c
+	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$ffe8
@@ -13293,19 +13442,17 @@ _7ee6:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	set     0,(ix+$18)
-_7f0c:
-	ld      (ix+$0a),$40
++	ld      (ix+$0a),$40
 	xor     a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	ld      a,(ix+$11)
 	cp      $14
-	jr      c,_7f2a
+	jr      c,+
 	ld      (ix+$0a),$c0
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-_7f2a:
-	ld      a,($d408)
++	ld      a,($d408)
 	and     a
 	jp      m,_8003
 	ld      hl,$0806
@@ -13319,13 +13466,12 @@ _7f2a:
 	ld      hl,($d403)
 	ld      a,l
 	or      h
-	jr      z,_7f79
+	jr      z,++
 	ld      bc,$0012
 	bit     7,h
-	jr      z,_7f5a
+	jr      z,+
 	ld      bc,$fffe
-_7f5a:
-	ld      de,$0000
++	ld      de,$0000
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
@@ -13344,15 +13490,13 @@ _7f5a:
 	and     $3f
 	ld      a,d
 	ld      e,d
-	jr      nz,_7f85
-_7f79:
-	ld      a,($d403)
+	jr      nz,+
+++	ld      a,($d403)
 	ld      de,($d404)
 	sra     d
 	rr      e
 	rra     
-_7f85:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     a,(ix+$01)
 	adc     hl,de
@@ -13365,7 +13509,7 @@ _7f85:
 	ld      ($d3fe),hl
 	ld      de,($d403)
 	bit     7,d
-	jr      z,_7fb2
+	jr      z,+
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -13373,17 +13517,15 @@ _7f85:
 	cpl     
 	ld      d,a
 	inc     de
-_7fb2:
-	ld      l,(ix+$12)
++	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	add     hl,de
 	ld      a,h
 	cp      $09
-	jr      c,_7fc1
+	jr      c,+
 	sub     $09
 	ld      h,a
-_7fc1:
-	ld      (ix+$12),l
++	ld      (ix+$12),l
 	ld      (ix+$13),h
 	ld      e,a
 	ld      d,$00
@@ -13417,6 +13559,7 @@ _7fc1:
 .ORGA $8000
 .db $00, $00, $00
 
+;jumped to by _7ee6, OBJECT: log - floating (Jungle)
 _8003:   
 	ld      (ix+$0f),<_8022
 	ld      (ix+$10),>_8022
@@ -13426,7 +13569,7 @@ _800b:
 	cp      $28
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _8019:
 .db $00, $00, $00, $12, $12, $12, $24, $24, $24
@@ -13441,7 +13584,7 @@ _8053:
 	ld      (ix+$0d),$20
 	ld      (ix+$0e),$1c
 	bit     0,(ix+$18)
-	jr      nz,_80b0
+	jr      nz,+
 	ld      hl,($d401)
 	ld      de,$00e0
 	and     a
@@ -13474,10 +13617,9 @@ _8053:
 	ld      hl,$0048
 	ld      ($d27d),hl
 	set     0,(ix+$18)
-_80b0:
-	call    _7ca6
++	call    _7ca6
 	bit     0,(ix+$11)
-	jr      nz,_80e7
+	jr      nz,+
 	ld      (ix+$0f),<_81f4
 	ld      (ix+$10),>_81f4
 	ld      (ix+$0a),$80
@@ -13493,14 +13635,13 @@ _80b0:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	set     0,(ix+$11)
-_80e7:
-	ld      a,(ix+$12)
++	ld      a,(ix+$12)
 	and     a
-	jp      nz,_814a
+	jp      nz,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	bit     1,(ix+$11)
-	jr      nz,_8122
+	jr      nz,+
 	ld      (ix+$0f),<_81f4
 	ld      (ix+$10),>_81f4
 	res     1,(ix+$18)
@@ -13510,11 +13651,11 @@ _80e7:
 	ld      de,$021c
 	and     a
 	sbc     hl,de
-	jp      nc,_81e7
+	jp      nc,++++
 	ld      (ix+$12),$67
-	jp      _81e7
-_8122:
-	ld      (ix+$0f),<_8206
+	jp      ++++
+	
++	ld      (ix+$0f),<_8206
 	ld      (ix+$10),>_8206
 	set     1,(ix+$18)
 	ld      (ix+$07),$00
@@ -13523,39 +13664,37 @@ _8122:
 	ld      de,$02aa
 	and     a
 	sbc     hl,de
-	jp      c,_81e7
+	jp      c,++++
 	ld      (ix+$12),$67
-	jp      _81e7
-_814a:
-	xor     a
+	jp      ++++
+	
+++	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
 	ld      hl,$0001
 	dec     (ix+$12)
-	jr      z,_816e
+	jr      z,+
 	ld      a,(ix+$12)
 	cp      $40
-	jr      nc,_8171
+	jr      nc,++
 	ld      hl,$ffff
 	cp      $28
-	jr      c,_8171
+	jr      c,++
 	cp      $34
-	jr      z,_817d
-_816e:
-	ld      hl,$0000
-_8171:
-	ld      (ix+$0a),$00
+	jr      z,+++
++	ld      hl,$0000
+++	ld      (ix+$0a),$00
 	ld      (ix+$0b),l
 	ld      (ix+$0c),h
-	jr      _81e7
-_817d:
-	ld      a,(ix+$11)
+	jr      ++++
+	
++++	ld      a,(ix+$11)
 	xor     $02
 	ld      (ix+$11),a
 	ld      a,($d2ec)
 	cp      $08
-	jr      nc,_81e7
+	jr      nc,++++
 	call    _7c7b
 	ret     c
 	ld      e,(ix+$02)
@@ -13591,12 +13730,11 @@ _817d:
 	add     a,$64
 	ld      (ix+$12),a
 	pop     ix
-_81e7:
-	ld      hl,$005a
+++++	ld      hl,$005a
 	ld      ($d216),hl
 	call    _77be
 	call    _79fa
-	ret     
+	ret
 
 _81f4:
 .db $20, $22, $24, $26, $28, $FF
@@ -13624,11 +13762,10 @@ _8218:
 	ld      de,$0002
 	ld      c,$00
 	and     a
-	jp      m,_8246
+	jp      m,+
 	dec     c
 	ld      de,$fffe
-_8246:
-	add     hl,de
++	add     hl,de
 	adc     a,c
 	ld      (ix+$07),l
 	ld      (ix+$08),h
@@ -13642,11 +13779,10 @@ _8246:
 	ld      c,a
 	ld      a,h
 	cp      $03
-	jr      c,_826b
+	jr      c,+
 	ld      hl,$0300
 	ld      c,$00
-_826b:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      a,($d223)
@@ -13655,21 +13791,20 @@ _826b:
 	ld      (ix+$11),a
 	ld      a,(ix+$11)
 	cp      (ix+$12)
-	jr      nc,_8291
+	jr      nc,+
 	ld      bc,_82c1
 	ld      de,_82cd
 	call    _7c41
-	ret     
-_8291:
-	jr      nz,_82a0
+	ret
+	
++	jr      nz,+
 	ld      a,($d223)
 	and     $01
 	ret     z
 	ld      (ix+$16),$00
 	ld      a,$01
 	rst     $28
-_82a0:
-	xor     a
++	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
@@ -13681,7 +13816,7 @@ _82a0:
 	cp      (ix+$11)
 	ret     nc
 	ld      (ix+$00),$ff
-	ret     
+	ret
 
 _82c1:
 .db $00, $04, $01, $04, $FF
@@ -13720,23 +13855,22 @@ _82e6:
 	ld      (ix+$0c),a
 	ld      a,(ix+$11)
 	cp      $50
-	jr      c,_834b
+	jr      c,+
 	ld      (ix+$07),$40
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	ld      de,_837e
 	ld      bc,_8379
 	call    _7c41
-	jp      _8360
-_834b:
-	ld      (ix+$07),$c0
+	jp      ++
+	
++	ld      (ix+$07),$c0
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
 	ld      de,_837e
 	ld      bc,_8374
 	call    _7c41
-_8360:
-	ld      a,($d223)
+++	ld      a,($d223)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -13744,7 +13878,7 @@ _8360:
 	cp      $a0
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _8374:
 .db $00, $06, $01, $06, $FF
@@ -13765,7 +13899,7 @@ _83c1:
 	ld      (ix+$0d),$0e
 	ld      (ix+$0e),$08
 	bit     0,(ix+$18)
-	jr      nz,_8427
+	jr      nz,++
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -13773,19 +13907,18 @@ _83c1:
 	ld      h,a
 	ld      ($d20e),hl
 	bit     1,(ix+$18)
-	jr      nz,_83f2
+	jr      nz,+
 	call    _LABEL_625_57
 	and     $1f
 	inc     a
 	ld      (ix+$11),a
 	set     1,(ix+$18)
-_83f2:
-	dec     (ix+$11)
-	jp      nz,_8467
++	dec     (ix+$11)
+	jp      nz,++++
 	ld      (ix+$11),$01
 	ld      a,($d2ac)
 	and     $80
-	jp      z,_8467
+	jp      z,++++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d2ab),hl
@@ -13799,8 +13932,7 @@ _83f2:
 	set     0,(ix+$18)
 	ld      a,$20
 	rst     $28
-_8427:
-	ld      (ix+$0f),<_8481
+++	ld      (ix+$0f),<_8481
 	ld      (ix+$10),>_8481
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
@@ -13811,10 +13943,9 @@ _8427:
 	ld      c,a
 	ld      a,h
 	cp      $04
-	jr      c,_8446
+	jr      c,++
 	ld      h,$04
-_8446:
-	ld      (ix+$0a),l
+++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      ($d20e),hl
@@ -13824,11 +13955,11 @@ _8446:
 	ld      h,(ix+$06)
 	and     a
 	sbc     hl,de
-	jr      c,_8467
+	jr      c,++++
 	ld      (ix+$00),$ff
-	ret     
-_8467:
-	ld      hl,$0402
+	ret
+	
+++++	ld      hl,$0402
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	ret     c
@@ -13838,7 +13969,7 @@ _8467:
 	ld      de,($d20e)
 	ld      bc,$0010
 	call    _LABEL_7CC1_12
-	ret     
+	ret
 _8481:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF, $FF, $00, $00, $00
 .db $00, $00, $00, $00, $00
@@ -13854,7 +13985,7 @@ _8496:
 	ld      (ix+$0f),<_865a
 	ld      (ix+$10),>_865a
 	bit     0,(ix+$18)
-	jr      nz,_84da
+	jr      nz,+
 	ld      hl,$03a0
 	ld      de,$0300
 	call    _7c8c
@@ -13873,10 +14004,9 @@ _8496:
 	ld      a,$0b
 	rst     $18
 	set     0,(ix+$18)
-_84da:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	and     a
-	jr      nz,_8508
+	jr      nz,+
 	call    _LABEL_625_57
 	and     $01
 	add     a,a
@@ -13898,10 +14028,10 @@ _84da:
 	inc     hl
 	ld      (ix+$06),a
 	inc     (ix+$11)
-	jp      _85c7
-_8508:
-	dec     a
-	jr      nz,_852f
+	jp      +++
+	
++	dec     a
+	jr      nz,+
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
@@ -13910,13 +14040,13 @@ _8508:
 	ld      d,(ix+$06)
 	xor     a
 	sbc     hl,de
-	jp      c,_85c7
+	jp      c,+++
 	inc     (ix+$11)
 	ld      (ix+$12),a
-	jp      _85c7
-_852f:
-	dec     a
-	jr      nz,_85aa
+	jp      +++
+	
++	dec     a
+	jr      nz,++
 	xor     a
 	ld      (ix+$0a),a
 	ld      (ix+$0b),a
@@ -13924,21 +14054,20 @@ _852f:
 	inc     (ix+$12)
 	ld      a,(ix+$12)
 	cp      $64
-	jp      nz,_85c7
+	jp      nz,+++
 	inc     (ix+$11)
 	ld      a,($d2ec)
 	cp      $08
-	jr      nc,_85c7
+	jr      nc,+++
 	ld      hl,($d3fe)
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	and     a
 	sbc     hl,de
 	ld      hl,_863a
-	jr      c,_8565
+	jr      c,+
 	ld      hl,_864a
-_8565:
-	ld      e,(hl)
++	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
@@ -13957,8 +14086,8 @@ _8565:
 	ld      ($d210),hl
 	pop     hl
 	ld      b,$03
-_8585:
-	push    bc
+	
+-	push    bc
 	ld      a,(hl)
 	ld      ($d212),a
 	inc     hl
@@ -13976,12 +14105,13 @@ _8585:
 	call    _85d1
 	pop     hl
 	pop     bc
-	djnz    _8585
+	djnz    -
+	
 	ld      a,$01
 	rst     $28
-	jp      _85c7
-_85aa:
-	ld      (ix+$0a),$80
+	jp      +++
+	
+++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
 	ld      hl,$03c0
@@ -13989,13 +14119,14 @@ _85aa:
 	ld      d,(ix+$06)
 	xor     a
 	sbc     hl,de
-	jr      nc,_85c7
+	jr      nc,+++
 	ld      (ix+$11),a
-_85c7:
-	ld      hl,$00a2
++++	ld      hl,$00a2
 	ld      ($d216),hl
 	call    _77be
-	ret     
+	ret
+
+;____________________________________________________________________________[$85D1]___
 
 _85d1:
 	push    bc
@@ -14024,23 +14155,21 @@ _85d1:
 	ld      hl,($d212)
 	xor     a
 	bit     7,h
-	jr      z,_8614
+	jr      z,+
 	dec     a
-_8614:
-	ld      (ix+$07),l
++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
 	ld      hl,($d214)
 	xor     a
 	bit     7,h
-	jr      z,_8626
+	jr      z,+
 	dec     a
-_8626:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
 	pop     ix
-	ret     
+	ret
 
 _8632:
 .db $D4, $03, $C0, $03, $44, $04, $C0, $03
@@ -14059,7 +14188,7 @@ _865a:
 _866c:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_868e
+	jr      nz,+
 	ld      (ix+$11),$1c
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -14068,18 +14197,16 @@ _866c:
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	set     0,(ix+$18)
-_868e:
-	ld      l,(ix+$14)
++	ld      l,(ix+$14)
 	ld      h,(ix+$15)
 	ld      a,(ix+$16)
 	ld      e,(ix+$12)
 	ld      d,(ix+$13)
 	ld      c,$00
 	bit     7,d
-	jr      z,_86a4
+	jr      z,+
 	dec     c
-_86a4:
-	add     hl,de
++	add     hl,de
 	adc     a,c
 	ld      (ix+$14),l
 	ld      (ix+$15),h
@@ -14091,24 +14218,24 @@ _86a4:
 	ld      (ix+$12),l
 	ld      (ix+$13),h
 	bit     7,h
-	jr      nz,_871b
+	jr      nz,++++
 	rlca    
-	jr      c,_871b
+	jr      c,++++
 	ld      a,(ix+$11)
 	and     a
-	jr      z,_8707
+	jr      z,+++
 	bit     1,(ix+$18)
-	jr      z,_86f4
+	jr      z,++
 	ld      a,l
 	or      h
-	jr      nz,_86e0
+	jr      nz,+
 	ld      a,($d2e8)
 	ld      hl,($d2e6)
 	ld      ($d406),hl
 	ld      ($d408),a
-	jr      _86f4
-_86e0:
-	ld      a,l
+	jr      ++
+	
++	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
@@ -14120,27 +14247,23 @@ _86e0:
 	ld      ($d406),hl
 	ld      a,$ff
 	ld      ($d408),a
-_86f4:
-	ld      a,$1c
+++	ld      a,$1c
 	sub     c
 	ld      (ix+$11),a
-	jr      z,_86fe
-	jr      nc,_871b
-_86fe:
-	bit     1,(ix+$18)
-	jr      z,_8707
+	jr      z,+
+	jr      nc,++++
++	bit     1,(ix+$18)
+	jr      z,+++
 	ld      a,$04
 	rst     $28
-_8707:
-	xor     a
++++	xor     a
 	ld      (ix+$11),a
 	ld      (ix+$12),a
 	ld      (ix+$13),a
 	ld      (ix+$14),a
 	ld      (ix+$15),$1c
 	ld      (ix+$16),a
-_871b:
-	ld      l,(ix+$02)
+++++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -14184,7 +14307,7 @@ _871b:
 	add     a,$04
 	ld      ($d215),a
 	call    _LABEL_3956_11
-	jr      nc,_87bc
+	jr      nc,+
 	ld      a,($d408)
 	and     a
 	ret     m
@@ -14200,16 +14323,16 @@ _871b:
 	add     a,$04
 	ld      ($d215),a
 	call    _LABEL_3956_11
-	jr      nc,_87ed
-	ret     
-_87bc:
-	set     1,(ix+$18)
+	jr      nc,++
+	ret
+	
++	set     1,(ix+$18)
 	ld      a,($d408)
 	and     a
 	ret     m
 	ld      a,(ix+$11)
 	cp      $1c
-	jr      z,_87ed
+	jr      z,++
 	ld      hl,($d406)
 	ld      a,l
 	cpl     
@@ -14224,15 +14347,13 @@ _87bc:
 	add     a,(ix+$11)
 	ld      (ix+$11),a
 	cp      $1c
-	jr      c,_87f9
+	jr      c,+
 	ld      (ix+$11),$1c
-_87ed:
-	ld      a,($d2e8)
+++	ld      a,($d2e8)
 	ld      hl,($d2e6)
 	ld      ($d406),hl
 	ld      ($d408),a
-_87f9:
-	ld      l,(ix+$05)
++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0010
 	add     hl,bc
@@ -14247,7 +14368,9 @@ _87f9:
 	ld      ($d401),hl
 	ld      hl,$d414
 	set     7,(hl)
-	ret     
+	ret
+
+;____________________________________________________________________________[$881A]___
 
 _881a:
 	ld      a,(hl)
@@ -14275,7 +14398,7 @@ _8837:
 	set     5,(ix+$18)
 	ld      a,(ix+$11)
 	cp      $80
-	jr      nc,_8873
+	jr      nc,+
 	ld      (ix+$07),$20
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
@@ -14290,9 +14413,9 @@ _8837:
 	ld      de,_88be
 	ld      bc,_88b4
 	call    _7c41
-	jr      _88a2
-_8873:
-	ld      (ix+$07),$e0
+	jr      ++
+	
++	ld      (ix+$07),$e0
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
 	ld      (ix+$0d),$0c
@@ -14306,15 +14429,14 @@ _8873:
 	ld      de,_88be
 	ld      bc,_88b9
 	call    _7c41
-_88a2:
-	ld      a,($d223)
+++	ld      a,($d223)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
 	call    _LABEL_625_57
 	and     $1e
 	call    z,_91eb
-	ret     
+	ret
 
 _88b4:
 .db $00, $04, $01, $04, $FF
@@ -14334,7 +14456,7 @@ _88fb:
 	ld      (ix+$0d),$08
 	ld      (ix+$0e),$0c
 	bit     0,(ix+$18)
-	jr      nz,_8931
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0008
@@ -14348,8 +14470,7 @@ _88fb:
 	ld      (ix+$14),l
 	ld      (ix+$15),h
 	set     0,(ix+$18)
-_8931:
-	ld      l,(ix+$11)
++	ld      l,(ix+$11)
 	ld      h,$00
 	add     hl,hl
 	ld      de,_898e
@@ -14360,14 +14481,12 @@ _8931:
 	ld      d,$00
 	ld      b,d
 	bit     7,e
-	jr      z,_8946
+	jr      z,+
 	dec     d
-_8946:
-	bit     7,c
-	jr      z,_894b
++	bit     7,c
+	jr      z,+
 	dec     b
-_894b:
-	ld      l,(ix+$12)
++	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	add     hl,de
 	ld      (ix+$02),l
@@ -14388,7 +14507,7 @@ _894b:
 	cp      $b4
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _8987:
 .db $60, $62, $FF, $FF, $FF, $FF, $FF
@@ -14582,7 +14701,7 @@ _898e:
 _8af6:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_8b14
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$000c
@@ -14590,8 +14709,7 @@ _8af6:
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	set     0,(ix+$18)
-_8b14:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -14603,39 +14721,38 @@ _8b14:
 	rlca    
 	rlca    
 	and     $03
-	jr      nz,_8b49
+	jr      nz,+
 	ld      hl,_8bbc
 	ld      a,($d223)
 	and     $3f
 	ld      e,a
 	cp      $08
-	jr      c,_8b71
+	jr      c,++
 	ld      hl,_8bcd
 	ld      e,$00
-	jr      _8b71
-_8b49:
-	cp      $01
-	jr      nz,_8b54
+	jr      ++
+	
++	cp      $01
+	jr      nz,+
 	ld      hl,_8bcd
 	ld      e,$00
-	jr      _8b71
-_8b54:
-	cp      $02
-	jr      nz,_8b6c
+	jr      ++
+	
++	cp      $02
+	jr      nz,+
 	ld      hl,_8bc4
 	ld      a,($d223)
 	and     $3f
 	ld      e,a
 	cp      $08
-	jr      c,_8b71
+	jr      c,++
 	ld      hl,_8bcc
 	ld      e,$00
-	jr      _8b71
-_8b6c:
-	ld      hl,_8bcc
+	jr      ++
+	
++	ld      hl,_8bcc
 	ld      e,$00
-_8b71:
-	ld      d,$00
+++	ld      d,$00
 	add     hl,de
 	ld      a,(hl)
 	ld      hl,_8bce
@@ -14645,22 +14762,21 @@ _8b71:
 	ld      e,a
 	add     hl,de
 	ld      b,$03
-_8b7f:
-	push    bc
+	
+-	push    bc
 	ld      a,(hl)
 	inc     hl
 	ld      e,(hl)
 	inc     hl
 	and     a
-	jp      m,_8b93
+	jp      m,+
 	push    hl
 	ld      d,$00
 	ld      ($d214),de
 	call    _3581
 	pop     hl
-_8b93:
-	pop     bc
-	djnz    _8b7f
++	pop     bc
+	djnz    -
 	ld      (ix+$0f),b
 	ld      (ix+$10),b
 	ld      d,(hl)
@@ -14677,7 +14793,7 @@ _8b93:
 	ret     nz
 	ld      a,$1d
 	rst     $28
-	ret     
+	ret
 
 _8bbc:
 .db $00 $01 $02 $03 $04 $05 $06 $07
@@ -14702,7 +14818,7 @@ _8c16:
 	ld      (ix+$0d),$04
 	ld      (ix+$0e),$0a
 	bit     0,(ix+$18)
-	jr      nz,_8c6e
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$000a
@@ -14726,49 +14842,45 @@ _8c16:
 	call    _36f9
 	ld      a,(hl)
 	cp      $52
-	jr      z,_8c6e
+	jr      z,+
 	set     1,(ix+$18)
-_8c6e:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	and     a
-	jr      z,_8c8d
+	jr      z,++
 	dec     (ix+$11)
-	jr      z,_8c8a
-_8c79:
-	xor     a
+	jr      z,+
+-	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
-	ret     
-_8c8a:
-	ld      a,$18
+	ret
+	
++	ld      a,$18
 	rst     $28
-_8c8d:
-	xor     a
+++	xor     a
 	bit     1,(ix+$18)
-	jr      nz,_8caa
+	jr      nz,+
 	ld      (ix+$07),$00
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
 	ld      (ix+$0f),<_8d39
 	ld      (ix+$10),>_8d39
-	jr      _8cbc
-_8caa:
-	ld      (ix+$07),a
+	jr      ++
+	
++	ld      (ix+$07),a
 	ld      (ix+$08),$01
 	ld      (ix+$09),a
-	ld      (ix+$0f),<$8d41		;WLA DX BUG? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	ld      (ix+$10),>$8d41		;this will not resolve if turned into a label
-_8cbc:
-	ld      (ix+$0a),a
+	ld      (ix+$0f),<_8d41
+	ld      (ix+$10),>_8d41
+++	ld      (ix+$0a),a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	bit     6,(ix+$18)
-	jr      nz,_8d1a
+	jr      nz,+
 	bit     7,(ix+$18)
-	jr      nz,_8d1a
+	jr      nz,+
 	ld      hl,$0402
 	ld      ($d214),hl
 	call    _LABEL_3956_11
@@ -14780,13 +14892,13 @@ _8cbc:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_8d1a
+	jr      nc,+
 	ld      hl,($d25a)
 	ld      bc,$0110
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_8d1a
+	jr      c,+
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	ld      hl,($d25d)
@@ -14794,16 +14906,16 @@ _8cbc:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_8d1a
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$00d0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_8d1a
-	ret     
-_8d1a:
-	ld      l,(ix+$12)
+	jr      c,+
+	ret
+	
++	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	ld      (ix+$02),l
 	ld      (ix+$03),h
@@ -14812,7 +14924,7 @@ _8d1a:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	ld      (ix+$11),$96
-	jp      _8c79
+	jp      -
 
 _8d39:
 .db $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF
@@ -14832,11 +14944,10 @@ _8d48:
 	ld      e,(hl)
 	ld      a,d
 	bit     7,e
-	jr      z,_8d5e
+	jr      z,+
 	dec     a
 	dec     d
-_8d5e:
-	ld      l,(ix+$04)
++	ld      l,(ix+$04)
 	ld      h,(ix+$05)
 	add     hl,de
 	adc     a,(ix+$06)
@@ -14847,31 +14958,29 @@ _8d5e:
 	ld      h,(ix+$06)
 	ld      a,($d223)
 	and     $0f
-	jr      nz,_8d8a
+	jr      nz,+
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $20
-	jr      c,_8d8a
+	jr      c,+
 	ld      (ix+$11),$00
-_8d8a:
-	ld      ($d2dc),hl
++	ld      ($d2dc),hl
 	ld      de,($d25d)
 	and     a
 	ld      a,$ff
 	sbc     hl,de
-	jr      c,_8dab
+	jr      c,+
 	ex      de,hl
 	ld      hl,$000c
 	ld      a,$ff
 	sbc     hl,de
-	jr      nc,_8dab
+	jr      nc,+
 	ld      hl,$00b4
 	xor     a
 	sbc     hl,de
-	jr      c,_8dab
+	jr      c,+
 	ld      a,e
-_8dab:
-	ld      ($d2db),a
++	ld      ($d2db),a
 	and     a
 	ret     z
 	cp      $ff
@@ -14899,8 +15008,8 @@ _8dab:
 	ld      hl,_8e16
 	add     hl,bc
 	ld      b,$04
-_8de5:
-	push    bc
+	
+-	push    bc
 	ld      c,(hl)
 	inc     hl
 	push    hl
@@ -14920,7 +15029,8 @@ _8de5:
 	call    _3581
 	pop     hl
 	pop     bc
-	djnz    _8de5
+	djnz    -
+	
 	pop     hl
 	pop     af
 	ld      ($d23c),hl
@@ -14941,18 +15051,16 @@ _8e56:
 	set     5,(ix+$18)
 	ld      a,(ix+$12)
 	and     $7f
-	jr      nz,_8e72
+	jr      nz,+
 	call    _LABEL_625_57
 	and     $07
 	ld      e,a
 	ld      d,$00
 	ld      hl,_8ec2
-_8e6c:
 	add     hl,de
 	bit     0,(hl)
 	call    nz,_91eb
-_8e72:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -14980,7 +15088,7 @@ _8e72:
 	cp      $06
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _8eb6:
 .db $08, $05, $08, $04, $07, $03
@@ -14999,21 +15107,19 @@ _8eca:
 	ld      (ix+$10),a
 	ld      a,(ix+$11)
 	and     $0f
-	jr      nz,_8ef8
+	jr      nz,++
 	call    _LABEL_625_57
 	ld      bc,$0020
 	ld      d,$00
 	and     $3f
 	cp      $20
-	jr      c,_8eef
+	jr      c,+
 	ld      bc,$ffe0
 	ld      d,$ff
-_8eef:
-	ld      (ix+$07),c
++	ld      (ix+$07),c
 	ld      (ix+$08),b
 	ld      (ix+$09),d
-_8ef8:
-	ld      (ix+$0a),$a0
+++	ld      (ix+$0a),$a0
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
 	ld      l,(ix+$02)
@@ -15024,19 +15130,18 @@ _8ef8:
 	ld      bc,$0008
 	xor     a
 	sbc     hl,bc
-	jr      nc,_8f1b
+	jr      nc,+
 	ld      l,a
 	ld      h,a
-_8f1b:
-	and     a
++	and     a
 	sbc     hl,de
-	jr      nc,_8f56
+	jr      nc,+
 	ld      hl,($d25a)
 	ld      bc,$0100
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_8f56
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      ($d210),hl
@@ -15044,35 +15149,33 @@ _8f1b:
 	ld      hl,($d2dc)
 	and     a
 	sbc     hl,de
-	jr      nc,_8f56
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_8f56
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$00c0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_8f5a
-_8f56:
-	ld      (ix+$00),$ff
-_8f5a:
-	ld      hl,$0000
+	jr      nc,++
++	ld      (ix+$00),$ff
+++	ld      hl,$0000
 	ld      ($d212),hl
 	ld      ($d214),hl
 	ld      a,$0c
 	call    _3581
 	inc     (ix+$11)
-	ret     
+	ret
 
 ;____________________________________________________________________________[$8F6C]___
 ;OBJECT: UNKNOWN
 
 _8f6c:
-	ret     			;object nullified!
+	ret			;object nullified!
 
 ;____________________________________________________________________________[$8F6D]___
 ;OBJECT: badnick - Burrobot (Labyrinth)
@@ -15093,18 +15196,17 @@ _8f6d:
 	add     hl,de
 	adc     a,$00
 	ld      c,a
-	jp      m,_8fa4
+	jp      m,+
 	ld      a,h
 	cp      $04
-	jr      c,_8fa4
+	jr      c,+
 	ld      hl,$0300
 	ld      c,$00
-_8fa4:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	bit     0,(ix+$18)
-	jp      nz,_9029
+	jp      nz,++
 	ld      de,$ffd0
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -15112,25 +15214,24 @@ _8fa4:
 	ld      de,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      nc,_8fe6
+	jr      nc,+
 	ld      bc,$0030
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_8fe6
+	jr      c,+
 	set     0,(ix+$18)
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$fd
 	ld      (ix+$0c),$ff
-_8fe6:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      c,_900f
+	jr      c,+
 	ld      (ix+$07),$c0
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
@@ -15138,28 +15239,27 @@ _8fe6:
 	ld      bc,_904a
 	call    _7c41
 	set     1,(ix+$18)
-	ret     
-_900f:
-	ld      (ix+$07),$40
+	ret
+	
++	ld      (ix+$07),$40
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	ld      de,_9059
 	ld      bc,_9045
 	call    _7c41
 	res     1,(ix+$18)
-	ret     
-_9029:
-	ld      bc,_9054
+	ret
+	
+++	ld      bc,_9054
 	bit     1,(ix+$18)
-	jr      nz,_9035
+	jr      nz,+
 	ld      bc,_904f
-_9035:
-	ld      de,_9059
++	ld      de,_9059
 	call    _7c41
 	bit     7,(ix+$18)
 	ret     z
 	res     0,(ix+$18)
-	ret     
+	ret
 
 _9045:
 .db $00, $04, $01, $04, $FF
@@ -15188,7 +15288,7 @@ _90c0:
 	ld      (ix+$0f),<_91de
 	ld      (ix+$10),>_91de
 	bit     1,(ix+$18)
-	jr      nz,_9100
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (ix+$11),l
@@ -15202,8 +15302,7 @@ _90c0:
 	ld      (ix+$13),l
 	ld      (ix+$14),h
 	set     1,(ix+$18)
-_9100:
-	ld      bc,$0010
++	ld      bc,$0010
 	ld      de,$0020
 	call    _36f9
 	ld      e,(hl)
@@ -15225,9 +15324,9 @@ _9100:
 	ld      l,c
 	ld      h,c
 	cp      $1e
-	jr      z,_9148
+	jr      z,+
 	bit     0,(ix+$18)
-	jr      z,_9151
+	jr      z,++
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
@@ -15238,27 +15337,25 @@ _9100:
 	ld      a,h
 	neg     
 	cp      $02
-	jr      c,_9148
+	jr      c,+
 	ld      hl,$ff00
 	ld      c,$ff
-_9148:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
-_9151:
-	ld      e,(ix+$02)
+++	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      hl,($d25a)
 	ld      bc,$ffe0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_918a
+	jr      nc,+
 	ld      hl,($d25a)
 	inc     h
 	and     a
 	sbc     hl,de
-	jr      c,_918a
+	jr      c,+
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	ld      hl,($d25d)
@@ -15266,15 +15363,14 @@ _9151:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_918a
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$00e0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_91b7
-_918a:
-	ld      l,(ix+$11)
+	jr      nc,++
++	ld      l,(ix+$11)
 	ld      h,(ix+$12)
 	ld      (ix+$02),l
 	ld      (ix+$03),h
@@ -15289,28 +15385,30 @@ _918a:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	res     0,(ix+$18)
-	ret     
-_91b7:
-	ld      hl,$0e02
+	ret
+	
+++	ld      hl,$0e02
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	ret     c
 	set     0,(ix+$18)
 	ld      a,($d407)
 	and     a
-	jp      p,_91d1
+	jp      p,+
 	neg     
 	cp      $02
 	ret     nc
-_91d1:
-	ld      e,(ix+$0a)
+	
++	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	ld      bc,$0010
 	call    _LABEL_7CC1_12
-	ret     
+	ret
 
 _91de:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $16, $18, $1A, $1C, $FF, $FF, $FF
+
+;____________________________________________________________________________[$91EB]___
 
 _91eb:
 	call    _7c7b
@@ -15318,7 +15416,7 @@ _91eb:
 	ld      c,$42
 	ld      a,(ix+$00)
 	cp      $41
-	jr      nz,_9207
+	jr      nz,+
 	push    hl
 	call    _LABEL_625_57
 	and     $0f
@@ -15328,8 +15426,7 @@ _91eb:
 	add     hl,de
 	ld      c,(hl)
 	pop     hl
-_9207:
-	ld      a,c
++	ld      a,c
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      c,(ix+$05)
@@ -15363,7 +15460,7 @@ _9207:
 	ld      (ix+$08),a
 	ld      (ix+$09),a
 	pop     ix
-	ret     
+	ret
 
 _9257:
 .db $42, $20, $20, $20, $42, $20, $20, $20, $42, $20, $20, $20, $42, $20, $20, $20
@@ -15379,7 +15476,7 @@ _9267:
 	ld      (ix+$0f),<_9493
 	ld      (ix+$10),>_9493
 	bit     0,(ix+$18)
-	jr      nz,_92af
+	jr      nz,+
 	ld      hl,$02d0
 	ld      de,$0290
 	call    _7c8c
@@ -15399,10 +15496,9 @@ _9267:
 	ld      a,$0b
 	rst     $18
 	set     0,(ix+$18)
-_92af:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	and     a
-	jr      nz,_92db
+	jr      nz,+
 	ld      a,(ix+$13)
 	add     a,a
 	add     a,a
@@ -15423,23 +15519,22 @@ _92af:
 	inc     hl
 	ld      (ix+$06),a
 	inc     (ix+$11)
-	jp      _93f7
-_92db:
-	dec     a
-	jr      nz,_9324
+	jp      _f
+	
++	dec     a
+	jr      nz,+++
 	ld      a,(ix+$13)
 	and     a
-	jr      nz,_92f3
+	jr      nz,+
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-	jp      _92ff
-_92f3:
-	ld      (ix+$0a),$80
+	jp      ++
+	
++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-_92ff:
-	ld      hl,_9487
+++	ld      hl,_9487
 	ld      a,(ix+$13)
 	add     a,a
 	ld      e,a
@@ -15453,13 +15548,13 @@ _92ff:
 	ld      d,(ix+$06)
 	and     a
 	sbc     hl,de
-	jp      nz,_93f7
+	jp      nz,_f
 	inc     (ix+$11)
 	ld      (ix+$12),$00
-	jp      _93f7
-_9324:
-	dec     a
-	jp      nz,_93ab
+	jp      _f
+	
++++	dec     a
+	jp      nz,+
 	xor     a
 	ld      (ix+$0a),a
 	ld      (ix+$0b),a
@@ -15467,7 +15562,7 @@ _9324:
 	inc     (ix+$12)
 	ld      a,(ix+$12)
 	cp      $64
-	jp      nz,_93f7
+	jp      nz,_f
 	inc     (ix+$11)
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -15484,9 +15579,9 @@ _9324:
 	jp      z,_9432
 	ld      a,($d2ec)
 	cp      $08
-	jp      nc,_93f7
+	jp      nc,_f
 	call    _7c7b
-	jp      c,_93f7
+	jp      c,_f
 	push    ix
 	push    hl
 	pop     ix
@@ -15508,21 +15603,20 @@ _9324:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	pop     ix
-	jp      _93f7
-_93ab:
-	ld      a,(ix+$13)
+	jp      _f
+	
++	ld      a,(ix+$13)
 	and     a
-	jr      nz,_93c0
+	jr      nz,+
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-	jp      _93cc
-_93c0:
-	ld      (ix+$0a),$80
+	jp      ++
+	
++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-_93cc:
-	ld      hl,$948d
+++	ld      hl,$948d
 	ld      a,(ix+$13)
 	add     a,a
 	ld      e,a
@@ -15536,15 +15630,14 @@ _93cc:
 	ld      d,(ix+$06)
 	xor     a
 	sbc     hl,de
-	jr      nz,_93f7
+	jr      nz,_f
 	ld      (ix+$11),a
 	inc     (ix+$13)
 	ld      a,(ix+$13)
 	cp      $03
-	jr      c,_93f7
+	jr      c,_f
 	ld      (ix+$13),$00
-_93f7:
-	ld      hl,$00a2
+__	ld      hl,$00a2
 	ld      ($d216),hl
 	call    _77be
 	ld      a,($d2ec)
@@ -15565,7 +15658,7 @@ _93f7:
 	ld      a,($d223)
 	and     $02
 	call    _3581
-	ret     
+	ret
 _9432:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -15594,7 +15687,7 @@ _9432:
 	call    _85d1
 	ld      a,$01
 	rst     $28
-	jp      _93f7
+	jp      _b
 
 _947b:
 .db $3C, $03, $60, $03, $EC, $02, $60, $02, $8C, $03, $60, $02
@@ -15616,11 +15709,10 @@ _94a5:
 	ld      (ix+$0e),$0a
 	ld      hl,$0404
 	ld      ($d214),hl
-_94b7:
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	bit     1,(ix+$18)
-	jr      nz,_94e2
+	jr      nz,+
 	set     1,(ix+$18)
 	ld      hl,($d3fe)
 	ld      de,$000c
@@ -15632,20 +15724,18 @@ _94b7:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_94e2
+	jr      nc,+
 	set     2,(ix+$18)
-_94e2:
-	bit     0,(ix+$18)
-	jr      nz,_9518
++	bit     0,(ix+$18)
+	jr      nz,++
 	ld      (ix+$0a),$40
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
 	ld      hl,_9698
 	bit     2,(ix+$18)
-	jr      z,_9500
+	jr      z,+
 	ld      hl,_9688
-_9500:
-	ld      (ix+$0f),l
++	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($d401)
 	ld      e,(ix+$05)
@@ -15654,22 +15744,22 @@ _9500:
 	sbc     hl,de
 	ret     nc
 	set     0,(ix+$18)
-	ret     
-_9518:
-	ld      c,(ix+$02)
+	ret
+	
+++	ld      c,(ix+$02)
 	ld      b,(ix+$03)
 	ld      hl,$fff0
 	add     hl,bc
 	ld      de,($d25a)
 	and     a
 	sbc     hl,de
-	jr      c,_954f
+	jr      c,+
 	ld      l,c
 	ld      h,b
 	inc     d
 	and     a
 	sbc     hl,de
-	jr      nc,_954f
+	jr      nc,+
 	ld      c,(ix+$05)
 	ld      b,(ix+$06)
 	ld      hl,$fff0
@@ -15677,23 +15767,20 @@ _9518:
 	ld      de,($d25d)
 	and     a
 	sbc     hl,de
-	jr      c,_954f
+	jr      c,+
 	ld      hl,$00c0
 	add     hl,de
 	and     a
 	sbc     hl,bc
-	jr      nc,_9553
-_954f:
-	ld      (ix+$00),$ff
-_9553:
-	xor     a
+	jr      nc,++
++	ld      (ix+$00),$ff
+++	xor     a
 	ld      hl,$0002
 	bit     2,(ix+$18)
-	jr      nz,_9561
+	jr      nz,+
 	dec     a
 	ld      hl,$fffe
-_9561:
-	ld      e,(ix+$07)
++	ld      e,(ix+$07)
 	ld      d,(ix+$08)
 	add     hl,de
 	adc     a,(ix+$09)
@@ -15701,7 +15788,7 @@ _9561:
 	ld      a,h
 	ld      de,$0100
 	bit     7,c
-	jr      z,_957f
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      e,a
@@ -15711,12 +15798,10 @@ _9561:
 	inc     de
 	ld      a,d
 	ld      de,$ff00
-_957f:
-	and     a
-	jr      z,_9583
++	and     a
+	jr      z,+
 	ex      de,hl
-_9583:
-	ld      (ix+$07),l
++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
 	ld      hl,($d401)
@@ -15732,17 +15817,15 @@ _9583:
 	ld      a,$ff
 	ld      hl,$fffe
 	bit     7,(ix+$0c)
-	jr      nz,_95af
+	jr      nz,+
 	ld      hl,$fffc
-_95af:
-	jr      nc,_95be
++	jr      nc,+
 	inc     a
 	ld      hl,$0002
 	bit     7,(ix+$0c)
-	jr      z,_95be
+	jr      z,+
 	ld      hl,$0004
-_95be:
-	ld      e,(ix+$0a)
++	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	add     hl,de
 	adc     a,(ix+$0c)
@@ -15750,7 +15833,7 @@ _95be:
 	ld      a,h
 	ld      de,$0100
 	bit     7,c
-	jr      z,_95dc
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      e,a
@@ -15760,24 +15843,21 @@ _95be:
 	inc     de
 	ld      a,d
 	ld      de,$ff00
-_95dc:
-	and     a
-	jr      z,_95e0
++	and     a
+	jr      z,+
 	ex      de,hl
-_95e0:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      hl,_9688
 	bit     7,(ix+$09)
-	jr      z,_95f5
+	jr      z,+
 	ld      hl,_9698
-_95f5:
-	push    hl
++	push    hl
 	ld      l,(ix+$07)
 	ld      h,(ix+$08)
 	bit     7,h
-	jr      z,_9607
+	jr      z,+
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -15785,8 +15865,7 @@ _95f5:
 	cpl     
 	ld      h,a
 	inc     hl
-_9607:
-	ld      e,(ix+$11)
++	ld      e,(ix+$11)
 	ld      d,(ix+$12)
 	add     hl,de
 	ld      (ix+$11),l
@@ -15803,10 +15882,9 @@ _9607:
 	ld      h,(ix+$03)
 	ld      de,$fff9
 	bit     7,(ix+$09)
-	jr      z,_9634
+	jr      z,+
 	ld      de,$000f
-_9634:
-	add     hl,de
++	add     hl,de
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
@@ -15838,7 +15916,7 @@ _9634:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	pop     ix
-	ret     
+	ret
 
 _9688:
 .db $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $38, $3A, $FF, $FF, $FF, $FF, $FF, $FF
@@ -15879,7 +15957,7 @@ _96a8:
 	cp      $03
 	ret     c
 	ld      (ix+$00),$ff
-	ret     
+	ret
 
 _96f5:
 .db $1C, $1E, $5E
@@ -15898,7 +15976,7 @@ _96f8:
 	push    hl
 	ld      a,($d2de)
 	cp      $24
-	jr      nc,_9767
+	jr      nc,+++
 	ld      e,a
 	ld      d,$00
 	ld      hl,$d000
@@ -15915,28 +15993,26 @@ _96f8:
 	ld      ($d214),hl
 	ld      a,(ix+$12)
 	and     a
-	jr      z,_974b
+	jr      z,+
 	cp      $08
-	jr      nc,_974b
+	jr      nc,+
 	ld      hl,$0004
 	ld      ($d212),hl
 	ld      a,$0c
-	jr      _975c
-_974b:
-	ld      a,$40
+	jr      ++
+	
++	ld      a,$40
 	call    _3581
 	ld      hl,($d212)
 	ld      de,$0008
 	add     hl,de
 	ld      ($d212),hl
 	ld      a,$42
-_975c:
-	call    _3581
+++	call    _3581
 	ld      a,($d2de)
 	add     a,$06
 	ld      ($d2de),a
-_9767:
-	pop     hl
++++	pop     hl
 	pop     af
 	ld      ($d23c),hl
 	ld      (iy+$0a),a
@@ -15944,7 +16020,7 @@ _9767:
 	ld      (ix+$0e),$0c
 	ld      a,(ix+$12)
 	and     a
-	jr      z,_9797
+	jr      z,+
 	ld      c,$00
 	ld      b,c
 	ld      d,c
@@ -15952,14 +16028,14 @@ _9767:
 	ld      (ix+$0b),c
 	ld      (ix+$0c),c
 	dec     (ix+$12)
-	jp      nz,_9809
+	jp      nz,++
 	ld      (ix+$00),$ff
-	jp      _9809
-_9797:
-	ld      hl,$0206
+	jp      ++
+	
++	ld      hl,$0206
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_97e3
+	jr      c,+
 	ld      bc,($d401)
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
@@ -15967,15 +16043,15 @@ _9797:
 	add     hl,de
 	and     a
 	sbc     hl,bc
-	jr      nc,_97e3
+	jr      nc,+
 	ld      hl,$0006
 	add     hl,de
 	and     a
 	sbc     hl,bc
-	jr      c,_97e3
+	jr      c,+
 	ld      a,(ix+$12)
 	and     a
-	jr      nz,_97e3
+	jr      nz,+
 	xor     a
 	ld      l,a
 	ld      h,a
@@ -15989,70 +16065,64 @@ _9797:
 	ld      (ix+$12),$10
 	ld      a,$22
 	rst     $28
-_97e3:
-	ld      (ix+$0a),$98
++	ld      (ix+$0a),$98
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
 	ld      a,(ix+$11)
 	and     $0f
-	jr      nz,_9812
+	jr      nz,+
 	call    _LABEL_625_57
 	ld      bc,$0020
 	ld      d,$00
 	and     $3f
 	cp      $20
-	jr      c,_9809
+	jr      c,++
 	ld      bc,$ffe0
 	ld      d,$ff
-_9809:
-	ld      (ix+$07),c
+++	ld      (ix+$07),c
 	ld      (ix+$08),b
 	ld      (ix+$09),d
-_9812:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ex      de,hl
 	ld      hl,($d25a)
 	ld      bc,$0008
 	xor     a
 	sbc     hl,bc
-	jr      nc,_9826
+	jr      nc,+
 	ld      l,a
 	ld      h,a
-_9826:
-	and     a
++	and     a
 	sbc     hl,de
-	jr      nc,_985e
+	jr      nc,+
 	ld      hl,($d25a)
 	ld      bc,$0100
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_985e
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ex      de,hl
 	ld      hl,($d2dc)
 	and     a
 	sbc     hl,de
-	jr      nc,_985e
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_985e
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$00c0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_9862
-_985e:
-	ld      (ix+$00),$ff
-_9862:
-	inc     (ix+$11)
-	ret     
+	jr      nc,++
++	ld      (ix+$00),$ff
+++	inc     (ix+$11)
+	ret
 
 ;____________________________________________________________________________[$9866]___
 ;OBJECT: flipper (Special Stage)
@@ -16062,23 +16132,22 @@ _9866:
 	ld      (ix+$0f),<_9a7e
 	ld      (ix+$10),>_9a7e
 	bit     5,(iy+$03)
-	jr      nz,_988b
+	jr      nz,+
 	ld      a,(ix+$11)
 	ld      (ix+$12),a
 	ld      a,(ix+$11)
 	cp      $05
-	jr      nc,_9894
+	jr      nc,++
 	inc     (ix+$11)
-	jp      _9894
-_988b:
-	ld      a,(ix+$11)
+	jp      ++
+	
++	ld      a,(ix+$11)
 	and     a
-	jr      z,_9894
+	jr      z,++
 	dec     (ix+$11)
-_9894:
-	ld      a,(ix+$11)
+++	ld      a,(ix+$11)
 	cp      $01
-	jr      nc,_98d3
+	jr      nc,+
 	ld      hl,$140c
 	ld      ($d214),hl
 	ld      (ix+$0d),$1e
@@ -16099,10 +16168,10 @@ _9894:
 	adc     a,$ff
 	ld      ($d403),hl
 	ld      ($d405),a
-	ret     
-_98d3:
-	cp      $04
-	jp      nc,_995e
+	ret
+	
++	cp      $04
+	jp      nc,+
 	ld      (ix+$0f),<_9a90
 	ld      (ix+$10),>_9a90
 	ld      hl,$080f
@@ -16152,7 +16221,7 @@ _98d3:
 	adc     a,$ff
 	ld      ($d406),hl
 	ld      ($d408),a
-	ret     
+	ret
 
 	;unused section of code?
 	ld      a,($d2e8)
@@ -16166,9 +16235,9 @@ _98d3:
 	adc     a,$00
 	ld      ($d403),hl
 	ld      ($d405),a
-	ret     
-_995e:
-	ld      (ix+$0f),<_9aa2
+	ret
+	
++	ld      (ix+$0f),<_9aa2
 	ld      (ix+$10),>_9aa2
 	ld      hl,$021a
 	ld      ($d214),hl
@@ -16190,7 +16259,7 @@ _995e:
 	adc     a,$00
 	ld      ($d403),hl
 	ld      ($d405),a
-	ret     
+	ret
 
 _999e:
 .db $FF, $FF, $FE, $FE, $FE, $FD, $FD, $FD, $FC, $FC, $FC, $FC, $FB, $FB, $FB, $FB
@@ -16220,6 +16289,8 @@ _9a90:
 _9aa2:
 .db $FE, $12, $14, $16, $FF, $FF, $FE, $32, $34, $36, $FF, $FF, $FF
 
+;____________________________________________________________________________[$9AAF]___
+
 _9aaf:
 	ld      a,($d408)
 	and     a
@@ -16233,20 +16304,19 @@ _9aaf:
 	ld      b,$00
 	ld      c,(hl)
 	bit     7,c
-	jr      z,_9ac7
+	jr      z,+
 	dec     b
-_9ac7:
-	ld      l,(ix+$05)
++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,bc
 	ld      ($d401),hl
 	ld      a,($d407)
 	cp      $03
-	jr      nc,_9ada
+	jr      nc,+
 	scf     
-	ret    
-_9ada: 
-	ld      de,$0001
+	ret
+	
++	ld      de,$0001
 	ld      hl,($d406)
 	ld      a,l
 	cpl     
@@ -16264,7 +16334,7 @@ _9ada:
 	ld      ($d406),hl
 	ld      ($d408),a
 	and     a
-	ret     
+	ret
 
 ;____________________________________________________________________________[$9AFB]___
 ;OBJECT: moving bumper (Special Stage)
@@ -16278,21 +16348,19 @@ _9afb:
 	ld      hl,$0001
 	ld      a,(ix+$12)
 	cp      $60
-	jr      nc,_9b1c
+	jr      nc,+
 	ld      hl,$ffff
-_9b1c:
-	ld      (ix+$07),$00
++	ld      (ix+$07),$00
 	ld      (ix+$08),l
 	ld      (ix+$09),h
 	inc     a
 	cp      $c0
-	jr      c,_9b2c
+	jr      c,+
 	xor     a
-_9b2c:
-	ld      (ix+$12),a
++	ld      (ix+$12),a
 	ld      a,(ix+$11)
 	and     a
-	jr      nz,_9b6a
+	jr      nz,+
 	ld      hl,$0602
 	ld      ($d214),hl
 	call    _LABEL_3956_11
@@ -16319,10 +16387,10 @@ _9b2c:
 	ld      (ix+$11),$08
 	ld      a,$07
 	rst     $28
-	ret     
-_9b6a:
-	dec     (ix+$11)
-	ret     
+	ret
+	
++	dec     (ix+$11)
+	ret
 
 _9b6e:
 .db $08, $0A, $28, $2A, $FF, $FF, $FF
@@ -16337,7 +16405,7 @@ _9b75:
 	ld      hl,$0000
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_9bd1
+	jr      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      a,l
@@ -16347,7 +16415,6 @@ _9b75:
 	rl      h
 	add     a,a
 	rl      h
-_9b9c:
 	ld      e,h
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
@@ -16361,30 +16428,30 @@ _9b9c:
 	ld      d,h
 	ld      hl,_9bd9
 	ld      b,$05
-_9bb3:
-	ld      a,(hl)
+	
+-	ld      a,(hl)
 	inc     hl
 	cp      e
-	jr      nz,_9bcd
+	jr      nz,+
 	ld      a,(hl)
 	cp      d
-	jr      nz,_9bcd
+	jr      nz,+
 	inc     hl
 	ld      a,(hl)
 	ld      ($d2d3),a
 	ld      a,$01
 	ld      ($d289),a
 	set     4,(iy+$06)
-	jp      _9bd1
-_9bcd:
+	jp      ++
+	
++	inc     hl
 	inc     hl
-	inc     hl
-	djnz    _9bb3
-_9bd1:
-	xor     a
+	djnz    -
+	
+++	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	ret     
+	ret
 
 _9bd9:
 .db $7D, $1A, $15, $7D, $01, $14, $01, $3C, $18, $01, $02
@@ -16403,7 +16470,7 @@ _9be8:
 _9bfc:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_9c19
+	jr      nz,+
 	ld      a,(ix+$02)
 	ld      (ix+$11),a
 	ld      a,(ix+$03)
@@ -16411,23 +16478,21 @@ _9bfc:
 	ld      a,$18
 	rst     $28
 	set     0,(ix+$18)
-_9c19:
-	ld      (ix+$0d),$06
++	ld      (ix+$0d),$06
 	ld      (ix+$0e),$08
 	ld      a,(ix+$13)
 	cp      $64
-	jr      nc,_9c34
+	jr      nc,+
 	ld      hl,$0400
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
-_9c34:
-	inc     (ix+$13)
++	inc     (ix+$13)
 	ld      a,(ix+$13)
 	cp      $64
 	ret     c
 	cp      $f0
-	jr      c,_9c58
+	jr      c,+
 	xor     a
 	ld      (ix+$01),a
 	ld      (ix+$13),a
@@ -16437,15 +16502,15 @@ _9c34:
 	ld      (ix+$03),a
 	ld      a,$18
 	rst     $28
-	ret     
-_9c58:
-	xor     a
+	ret
+	
++	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
-	ret     
+	ret
 
 _9c69:
 .db $0C, $0E, $FF, $FF, $FF, $FF, $FF
@@ -16470,7 +16535,7 @@ _9c87:
 _9c8e:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_9cc2
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$000c
@@ -16486,8 +16551,7 @@ _9c8e:
 	call    _LABEL_625_57
 	ld      (ix+$11),a
 	set     0,(ix+$18)
-_9cc2:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -16517,7 +16581,7 @@ _9cc2:
 	ld      h,(hl)
 	ld      l,a
 	or      h
-	jr      z,_9d36
+	jr      z,+
 	ld      a,(ix+$11)
 	add     a,a
 	add     a,a
@@ -16527,8 +16591,8 @@ _9cc2:
 	ld      d,$00
 	add     hl,de
 	ld      b,$04
-_9d11:
-	push    bc
+	
+-	push    bc
 	ld      a,(hl)
 	inc     hl
 	ld      e,(hl)
@@ -16539,16 +16603,16 @@ _9d11:
 	call    _3581
 	pop     hl
 	pop     bc
-	djnz    _9d11
+	djnz    -
+	
 	ld      a,(ix+$0e)
 	and     a
-	jr      z,_9d36
+	jr      z,+
 	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
-_9d36:	
-	inc     (ix+$11)
++	inc     (ix+$11)
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -16557,7 +16621,7 @@ _9d36:
 	ret     nz
 	ld      a,$17
 	rst     $28
-	ret     
+	ret
 
 _9d4a:
 .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $9A, $9D
@@ -16581,18 +16645,17 @@ _9dfa:
 	call    _9ed4
 	ld      a,(ix+$11)
 	cp      $28
-	jr      nc,_9e33
+	jr      nc,++
 	ld      hl,$0005
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_9e33
+	jr      c,++
 	ld      de,$0005
 	ld      a,($d405)
 	and     a
-	jp      m,_9e20
+	jp      m,+
 	ld      de,$ffec
-_9e20:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      ($d3fe),hl
@@ -16601,20 +16664,19 @@ _9e20:
 	ld      h,a
 	ld      ($d403),hl
 	ld      ($d405),a
-_9e33:
-	ld      l,(ix+$02)
+++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ffc8
 	add     hl,de
 	ld      de,($d3fe)
 	xor     a
 	sbc     hl,de
-	jr      nc,_9e78
+	jr      nc,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	and     a
 	sbc     hl,de
-	jr      c,_9e78
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$ffe0
@@ -16622,19 +16684,19 @@ _9e33:
 	ld      de,($d401)
 	xor     a
 	sbc     hl,de
-	jr      nc,_9e78
+	jr      nc,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_9e78
+	jr      c,+
 	call    _9eb4
-	jr      _9e7b
-_9e78:
-	call    _9ec4
-_9e7b:
+	jr      ++
+	
++	call    _9ec4
+++:
 	ld      de,_9f2b
 _9e7e:
 	ld      a,(ix+$11)
@@ -16665,7 +16727,9 @@ _9e7e:
 	add     hl,bc
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ret     
+	ret
+
+;____________________________________________________________________________[$9EB4]___
 
 _9eb4:
 	ld      a,(ix+$11)
@@ -16677,7 +16741,9 @@ _9eb4:
 	ret     nz
 	ld      a,$19
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$9EC4]___
 
 _9ec4:
 	ld      a,(ix+$11)
@@ -16689,7 +16755,9 @@ _9ec4:
 	ret     nz
 	ld      a,$19
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$9ED4]___
 
 _9ed4:
 	ld      (ix+$0d),$04
@@ -16715,11 +16783,10 @@ _9ed4:
 	ld      de,$0014
 	ld      a,(hl)
 	cp      $a3
-	jr      z,_9f0d
+	jr      z,+
 	ld      de,$0004
 	set     1,(ix+$18)
-_9f0d:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      (ix+$02),l
@@ -16729,7 +16796,7 @@ _9f0d:
 	ld      a,(ix+$06)
 	ld      (ix+$13),a
 	set     0,(ix+$18)
-	ret     
+	ret
 
 _9f2b:
 .db $0A, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
@@ -16746,18 +16813,17 @@ _9f62:
 	call    _9ed4
 	ld      a,(ix+$11)
 	cp      $28
-	jr      nc,_9f9c
+	jr      nc,++
 	ld      hl,$0005
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_9f9c
+	jr      c,++
 	ld      de,$0005
 	ld      a,($d405)
 	and     a
-	jp      m,_9f88
+	jp      m,+
 	ld      de,$ffec
-_9f88:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      ($d3fe),hl
@@ -16765,22 +16831,21 @@ _9f88:
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-_9f9c:
-	ld      l,(ix+$02)
+++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$fff0
 	add     hl,de
 	ld      de,($d3fe)
 	xor     a
 	sbc     hl,de
-	jr      nc,_9fe5
+	jr      nc,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      bc,$0024
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_9fe5
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$ffe0
@@ -16788,20 +16853,18 @@ _9f9c:
 	ld      de,($d401)
 	xor     a
 	sbc     hl,de
-	jr      nc,_9fe5
+	jr      nc,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_9fe5
+	jr      c,+
 	call    _9eb4
-	jr      _9fe8
-_9fe5:
-	call    _9ec4
-_9fe8:
-	ld      de,_9fee
+	jr      ++
++	call    _9ec4
+++	ld      de,_9fee
 	jp      _9e7e
 
 _9fee:
@@ -16819,18 +16882,17 @@ _a025:
 	call    _9ed4
 	ld      a,(ix+$11)
 	cp      $28
-	jr      nc,_a05f
+	jr      nc,++
 	ld      hl,$0005
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_a05f
+	jr      c,++
 	ld      de,$0005
 	ld      a,($d405)
 	and     a
-	jp      m,_a04b
+	jp      m,+
 	ld      de,$ffec
-_a04b:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      ($d3fe),hl
@@ -16838,22 +16900,21 @@ _a04b:
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-_a05f:
-	ld      l,(ix+$02)
+++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ffc8
 	add     hl,de
 	ld      de,($d3fe)
 	xor     a
 	sbc     hl,de
-	jr      nc,_a0a8
+	jr      nc,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      bc,$0024
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_a0a8
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$ffe0
@@ -16861,20 +16922,19 @@ _a05f:
 	ld      de,($d401)
 	xor     a
 	sbc     hl,de
-	jr      nc,_a0a8
+	jr      nc,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_a0a8
+	jr      c,+
 	call    _9eb4
-	jr      _a0ab
-_a0a8:
-	call    _9ec4
-_a0ab:
-	ld      de,_a0b1
+	jr      ++
+	
++	call    _9ec4
+++	ld      de,_a0b1
 	jp      _9e7e
 
 _a0b1:
@@ -16892,7 +16952,7 @@ _a0e8:
 	ld      (ix+$0d),$30
 	ld      (ix+$0e),$10
 	bit     0,(ix+$18)
-	jr      nz,_a11e
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0018
@@ -16906,40 +16966,37 @@ _a0e8:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	set     0,(ix+$18)
-_a11e:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	cp      $64
-	jr      c,_a142
-	jr      nz,_a12a
+	jr      c,++
+	jr      nz,+
 	ld      a,$13
 	rst     $28
-_a12a:
-	ld      hl,$0000
++	ld      hl,$0000
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      de,_a173
 	ld      bc,_a167
 	call    _7c41
-	jp      _a159
-_a142:
-	cp      $46
-	jr      nc,_a150
+	jp      +++
+	
+++	cp      $46
+	jr      nc,+
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	jp      _a159
-_a150:
-	ld      de,_a173
+	jp      +++
+	
++	ld      de,_a173
 	ld      bc,_a16e
 	call    _7c41
-_a159:
-	inc     (ix+$11)
++++	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $a0
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _a167:
 .db $00, $01, $01, $01, $02, $01, $FF
@@ -16977,23 +17034,21 @@ _a1aa:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_a25d
+	jr      nc,+++
 	ld      bc,_a2d2
 	ld      a,(ix+$11)
 	cp      $eb
-	jr      c,_a1fa
-	jr      nz,_a1f7
+	jr      c,++
+	jr      nz,+
 	ld      (ix+$16),$00
-_a1f7:
-	ld      bc,_a2d7
-_a1fa:
-	ld      de,_a2da
++	ld      bc,_a2d7
+++	ld      de,_a2da
 	call    _7c41
 	ld      a,(ix+$11)
 	cp      $ed
-	jp      nz,_a2ce
+	jp      nz,++++
 	call    _7c7b
-	jp      c,_a2ce
+	jp      c,++++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      c,(ix+$05)
@@ -17021,24 +17076,22 @@ _a1fa:
 	ld      (ix+$0b),$01
 	ld      (ix+$0c),a
 	pop     ix
-	jp      _a2ce
-_a25d:
-	ld      bc,_a2d2
+	jp      ++++
+	
++++	ld      bc,_a2d2
 	ld      a,(ix+$11)
 	cp      $eb
-	jr      c,_a270
-	jr      nz,_a26d
+	jr      c,++
+	jr      nz,+
 	ld      (ix+$16),$00
-_a26d:
-	ld      bc,_a2d7
-_a270:
-	ld      de,_a30b
++	ld      bc,_a2d7
+++	ld      de,_a30b
 	call    _7c41
 	ld      a,(ix+$11)
 	cp      $ed
-	jr      nz,_a2ce
+	jr      nz,++++
 	call    _7c7b
-	jp      c,_a2ce
+	jp      c,++++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      c,(ix+$05)
@@ -17066,8 +17119,7 @@ _a270:
 	ld      (ix+$0b),$01
 	ld      (ix+$0c),a
 	pop     ix
-_a2ce:
-	inc     (ix+$11)
+++++	inc     (ix+$11)
 	ret
 
 _a2d2:
@@ -17097,12 +17149,11 @@ _a33c:
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	bit     7,(ix+$18)
-	jr      z,_a366
+	jr      z,+
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fd
 	ld      (ix+$0c),$ff
-_a366:
-	ld      l,(ix+$0a)
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$001f
@@ -17113,27 +17164,25 @@ _a366:
 	ld      (ix+$0c),a
 	ld      a,(ix+$11)
 	cp      $82
-	jr      nc,_a391
+	jr      nc,+
 	ld      bc,_a3b1
 	ld      de,_a3bb
 	call    _7c41
-	jp      _a3a3
-_a391:
-	jr      nz,_a39a
+	jp      ++
+	
++	jr      nz,+
 	ld      (ix+$16),$00
 	ld      a,$01
 	rst     $28
-_a39a:
-	ld      bc,_a3b4
++	ld      bc,_a3b4
 	ld      de,_a3bb
 	call    _7c41
-_a3a3:
-	inc     (ix+$11)
+++	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $a5
 	ret     c
 	ld      (ix+$00),$ff
-	ret     
+	ret
 
 _a3b1:
 .db $00, $08, $FF
@@ -17152,7 +17201,7 @@ _a3f8:
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$11
 	bit     0,(ix+$18)
-	jr      nz,_a41a
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0008
@@ -17160,27 +17209,25 @@ _a3f8:
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	set     0,(ix+$18)
-_a41a:
-	ld      hl,$0001
++	ld      hl,$0001
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_a464
+	jr      c,++
 	ld      a,($d408)
 	and     a
-	jp      m,_a464
+	jp      m,++
 	ld      (ix+$0f),<_a48b
 	ld      (ix+$10),>_a48b
 	ld      a,(S1_LEVEL_SOLIDITY)
 	cp      $03
-	jr      nz,_a443
+	jr      nz,+
 	ld      (ix+$0f),<_a49b
 	ld      (ix+$10),>_a49b
-_a443:
-	ld      bc,$0006
++	ld      bc,$0006
 	ld      de,$0000
 	call    _LABEL_7CC1_12
 	bit     1,(ix+$18)
-	jr      nz,_a47f
+	jr      nz,+
 	set     1,(ix+$18)
 	ld      hl,$d317
 	call    _LABEL_C02_135
@@ -17189,22 +17236,21 @@ _a443:
 	ld      (hl),a
 	ld      a,$1a
 	rst     $28
-	jr      _a47f
-_a464:
-	res     1,(ix+$18)
+	jr      +
+	
+++	res     1,(ix+$18)
 	ld      (ix+$0f),<_a493
 	ld      (ix+$10),>_a493
 	ld      a,(S1_LEVEL_SOLIDITY)
 	cp      $03
-	jr      nz,_a47f
+	jr      nz,+
 	ld      (ix+$0f),$a3
 	ld      (ix+$10),$a4
-_a47f:
-	xor     a
++	xor     a
 	ld      (ix+$0a),a
 	ld      (ix+$0b),$02
 	ld      (ix+$0c),a
-	ret     
+	ret
 
 _a48b:
 .db $1A, $1C, $FF, $FF, $FF, $FF, $FF, $FF
@@ -17221,18 +17267,17 @@ _a4ab:
 	call    _9ed4
 	ld      a,(ix+$11)
 	cp      $28
-	jr      nc,_a4e5
+	jr      nc,++
 	ld      hl,$0005
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_a4e5
+	jr      c,++
 	ld      de,$0005
 	ld      a,($d405)
 	and     a
-	jp      m,_a4d1
+	jp      m,+
 	ld      de,$ffec
-_a4d1:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      ($d3fe),hl
@@ -17240,36 +17285,33 @@ _a4d1:
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
-_a4e5:
-	ld      hl,$d317
+++	ld      hl,$d317
 	call    _LABEL_C02_135
 	bit     1,(ix+$18)
-	jr      z,_a4f7
+	jr      z,+
 	ld      a,(hl)
 	and     c
-	jr      nz,_a509
-	jr      _a4fb
-_a4f7:
-	ld      a,(hl)
+	jr      nz,+++
+	jr      ++
+	
++	ld      a,(hl)
 	and     c
-	jr      z,_a509
-_a4fb:
-	ld      a,(ix+$11)
+	jr      z,+++
+++	ld      a,(ix+$11)
 	cp      $30
-	jr      nc,_a514
+	jr      nc,+
 	inc     a
 	inc     a
 	ld      (ix+$11),a
-	jr      _a514
-_a509:
-	ld      a,(ix+$11)
+	jr      +
+	
++++	ld      a,(ix+$11)
 	and     a
-	jr      z,_a514
+	jr      z,+
 	dec     a
 	dec     a
 	ld      (ix+$11),a
-_a514:
-	ld      de,_a51a
++	ld      de,_a51a
 	jp      _9e7e
 
 _a51a:
@@ -17286,13 +17328,12 @@ _a551:
 	ld      (ix+$0e),$10
 	ld      a,($d223)
 	and     $01
-	jr      nz,_a5b3
+	jr      nz,+++
 	ld      hl,_a6b9
 	bit     1,(ix+$18)
-	jr      z,_a56c
+	jr      z,+
 	ld      hl,_a769
-_a56c:
-	ld      e,(ix+$11)
++	ld      e,(ix+$11)
 	sla     e
 	ld      d,$00
 	add     hl,de
@@ -17304,13 +17345,12 @@ _a56c:
 	ld      a,(ix+$03)
 	add     hl,bc
 	bit     7,b
-	jr      z,_a589
+	jr      z,+
 	adc     a,$ff
-	jr      _a58b
-_a589:
-	adc     a,$00
-_a58b:
-	ld      (ix+$01),l
+	jr      ++
+	
++	adc     a,$00
+++	ld      (ix+$01),l
 	ld      (ix+$02),h
 	ld      (ix+$03),a
 	ld      hl,_a6e5
@@ -17325,19 +17365,17 @@ _a58b:
 	ld      (ix+$13),h
 	ld      c,$00
 	bit     7,h
-	jr      z,_a5b0
+	jr      z,+
 	ld      c,$ff
-_a5b0:
-	ld      (ix+$14),c
-_a5b3:
-	ld      l,(ix+$02)
++	ld      (ix+$14),c
++++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      ($d210),hl
 	bit     1,(ix+$18)
-	jr      nz,_a614
+	jr      nz,++
 	ld      hl,_a711
 	ld      e,(ix+$11)
 	ld      d,$00
@@ -17356,18 +17394,18 @@ _a5b3:
 	call    _LABEL_3956_11
 	ld      hl,$0000
 	ld      ($d20e),hl
-	jr      c,_a602
+	jr      c,+
 	call    _35e5
-	jr      _a65b
-_a602:
-	ld      (ix+$0d),$16
+	jr      +++
+	
++	ld      (ix+$0d),$16
 	ld      hl,$0806
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
-	jr      _a65b
-_a614:
-	ld      hl,_a795
+	jr      +++
+	
+++	ld      hl,_a795
 	ld      e,(ix+$11)
 	ld      d,$00
 	add     hl,de
@@ -17383,19 +17421,18 @@ _a614:
 	ld      hl,$0401
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_a645
+	jr      c,+
 	call    _35fd
-	jr      _a65b
-_a645:
-	ld      (ix+$0d),$16
+	jr      +++
+	
++	ld      (ix+$0d),$16
 	ld      hl,$0410
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
 	ld      ($d20e),hl
 	call    nc,_35e5
-_a65b:
-	ld      (ix+$0b),$01
++++	ld      (ix+$0b),$01
 	ld      a,($d223)
 	and     $01
 	ret     nz
@@ -17412,7 +17449,9 @@ _a65b:
 	ld      a,(ix+$18)
 	xor     $02
 	ld      (ix+$18),a
-	ret     
+	ret
+
+;____________________________________________________________________________[$A688]___
 
 _a688:
 	push    hl
@@ -17426,7 +17465,9 @@ _a688:
 	pop     hl
 	ld      de,$0016
 	add     hl,de
-	ret     
+	ret
+
+;____________________________________________________________________________[$A6A2]___
 
 _a6a2:
 	push    hl
@@ -17439,7 +17480,7 @@ _a6a2:
 	pop     hl
 	ld      de,$0016
 	add     hl,de
-	ret     
+	ret
 
 _a6b9:
 .db $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
@@ -17475,7 +17516,7 @@ _a7ed:
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$2f
 	bit     0,(ix+$18)
-	jr      nz,_a830
+	jr      nz,+
 	ld      hl,$0340
 	ld      (S1_LEVEL_CROPLEFT),hl
 	ld      hl,$0540
@@ -17500,9 +17541,8 @@ _a7ed:
 	rst     $18
 	
 	set     0,(ix+$18)
-_a830:
-	bit     1,(ix+$18)
-	jr      nz,_a893
++	bit     1,(ix+$18)
+	jr      nz,+++
 	ld      hl,($d25a)
 	ld      (S1_LEVEL_CROPLEFT),hl
 	ld      de,_baf9
@@ -17517,13 +17557,11 @@ _a830:
 	xor     a
 	ld      bc,($d403)
 	bit     7,b
-	jr      nz,_a862
+	jr      nz,+
 	sbc     hl,de
-	jr      c,_a865
-_a862:
-	ld      bc,$ff80
-_a865:
-	inc     b
+	jr      c,++
++	ld      bc,$ff80
+++	inc     b
 	ld      (ix+$07),c
 	ld      (ix+$08),b
 	ld      (ix+$09),a
@@ -17532,7 +17570,7 @@ _a865:
 	ld      de,$05a0
 	xor     a
 	sbc     hl,de
-	jp      c,_a974
+	jp      c,++++
 	ld      l,a
 	ld      h,a
 	ld      (ix+$07),a
@@ -17540,10 +17578,10 @@ _a865:
 	ld      ($d403),hl
 	ld      ($d405),a
 	set     1,(ix+$18)
-	jp      _a974
-_a893:
-	bit     2,(ix+$18)
-	jr      nz,_a8cd
+	jp      ++++
+	
++++	bit     2,(ix+$18)
+	jr      nz,+
 	ld      hl,$0530
 	ld      de,$0220
 	call    _7c8c
@@ -17557,45 +17595,44 @@ _a893:
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $c0
-	jp      c,_a974
+	jp      c,++++
 	set     2,(ix+$18)
-	jp      _a974
-_a8cd:
-	bit     3,(ix+$18)
-	jr      nz,_a8eb
+	jp      ++++
+	
++	bit     3,(ix+$18)
+	jr      nz,+
 	ld      (iy+$03),$ff
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	dec     (ix+$11)
-	jp      nz,_a974
+	jp      nz,++++
 	set     3,(ix+$18)
-	jp      _a974
-_a8eb:
-	bit     4,(ix+$18)
-	jr      nz,_a96b
+	jp      ++++
+	
++	bit     4,(ix+$18)
+	jr      nz,++
 	ld      de,($d3fe)
 	ld      hl,$0596
 	and     a
 	sbc     hl,de
-	jr      nc,_a974
+	jr      nc,++++
 	ld      hl,$05c0
 	xor     a
 	sbc     hl,de
-	jr      c,_a974
+	jr      c,++++
 	or      (ix+$11)
-	jr      nz,_a91d
+	jr      nz,+
 	ld      hl,($d401)
 	ld      de,$028d
 	xor     a
 	sbc     hl,de
-	jr      c,_a974
+	jr      c,++++
 	ld      l,a
 	ld      h,a
 	ld      ($d403),hl
 	ld      ($d405),a
-_a91d:
-	ld      a,$80
++	ld      a,$80
 	ld      ($d414),a
 	ld      hl,$05a0
 	ld      ($d3fe),hl
@@ -17614,7 +17651,7 @@ _a91d:
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $c0
-	jr      nz,_a974
+	jr      nz,++++
 	ld      hl,($d25a)
 	inc     h
 	ld      ($d3fe),hl
@@ -17624,14 +17661,13 @@ _a91d:
 	ld      a,$a0
 	ld      ($d289),a
 	set     1,(iy+$06)
-	ret     
-_a96b:
-	ld      a,(ix+$11)
+	ret
+	
+++	ld      a,(ix+$11)
 	and     a
-	jr      z,_a974
+	jr      z,++++
 	dec     (ix+$11)
-_a974:
-	ld      e,(ix+$11)
+++++	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,$0280
 	xor     a
@@ -17660,7 +17696,7 @@ _a974:
 	ret     nz
 	ld      a,$19
 	rst     $28
-	ret     
+	ret
 
 _a9b7:
 .db $03, $08, $04, $07, $05, $08, $04, $07, $FF
@@ -17678,7 +17714,7 @@ _a9c7:
 	push    hl
 	ld      a,($d2de)
 	cp      $24
-	jr      nc,_aa1c
+	jr      nc,+
 	ld      e,a
 	ld      d,$00
 	ld      hl,$d000
@@ -17708,8 +17744,7 @@ _a9c7:
 	ld      a,($d2de)
 	add     a,$0c
 	ld      ($d2de),a
-_aa1c:
-	pop     hl
++	pop     hl
 	pop     af
 	ld      ($d23c),hl
 	ld      (iy+$0a),a
@@ -17721,7 +17756,7 @@ _aa1c:
 	ld      h,(ix+$03)
 	and     a
 	sbc     hl,de
-	jr      nc,_aa4e
+	jr      nc,+
 	call    _LABEL_625_57
 	ld      b,$00
 	add     a,a
@@ -17733,13 +17768,12 @@ _aa1c:
 	add     hl,bc
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-_aa4e:
-	ld      (ix+$07),$00
++	ld      (ix+$07),$00
 	ld      (ix+$08),$fd
 	ld      (ix+$09),$ff
 	ld      (ix+$0f),$00
 	ld      (ix+$10),$00
-	ret     
+	ret
 
 _aa63:
 .db $40, $42, $44, $46, $FF, $FF, $FF
@@ -17752,7 +17786,7 @@ _aa6a:
 	ld      (ix+$0d),$05
 	ld      (ix+$0e),$14
 	bit     0,(ix+$18)
-	jr      nz,_aaa0
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$000f
@@ -17766,8 +17800,7 @@ _aa6a:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	set     0,(ix+$18)
-_aaa0:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -17781,8 +17814,8 @@ _aaa0:
 	inc     hl
 	ld      d,(hl)
 	ld      b,$02
-_aac0:
-	push    bc
+	
+-	push    bc
 	ld      a,(de)
 	ld      l,a
 	ld      h,$00
@@ -17795,13 +17828,13 @@ _aac0:
 	ld      a,(de)
 	inc     de
 	and     a
-	jp      m,_aada
+	jp      m,+
 	push    de
 	call    _3581
 	pop     de
-_aada:
-	pop     bc
-	djnz    _aac0
++	pop     bc
+	djnz    -
+	
 	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
@@ -17815,7 +17848,7 @@ _aada:
 	ld      (ix+$11),a
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _ab01:
 .db $09, $AB, $0F, $AB, $15, $AB, $1B, $AB, $00, $00, $1C, $00, $18, $3C, $00, $00
@@ -17829,7 +17862,7 @@ _ab21:
 	ld      (ix+$0e),$10
 	ld      a,(ix+$11)
 	cp      $64
-	jr      nc,_ab5a
+	jr      nc,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ffc8
@@ -17838,7 +17871,7 @@ _ab21:
 	ld      hl,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      c,_ab5a
+	jr      c,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$002c
@@ -17847,43 +17880,42 @@ _ab21:
 	ld      hl,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      nc,_ab5a
+	jr      nc,+
 	ld      (ix+$11),$64
-_ab5a:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	cp      $1e
-	jr      nc,_ab79
+	jr      nc,+
 	ld      (ix+$07),$f8
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
 	ld      de,_ad0b
 	ld      bc,_acf1
 	call    _7c41
-	jp      _ac6a
-_ab79:
-	ld      a,(ix+$11)
+	jp      +++
+	
++	ld      a,(ix+$11)
 	cp      $64
-	jp      c,_ac1e
+	jp      c,++
 	ld      (ix+$07),$00
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	cp      $66
-	jr      nc,_ab9d
+	jr      nc,+
 	ld      de,_ad0b
 	ld      bc,_ad01
 	call    _7c41
-	jp      _ac6a
-_ab9d:
-	ld      (ix+$0f),<_ad53
+	jp      +++
+	
++	ld      (ix+$0f),<_ad53
 	ld      (ix+$10),>_ad53
 	cp      $67
-	jp      nz,_ac6a
+	jp      nz,+++
 	ld      hl,$fffe
 	ld      ($d212),hl
 	ld      hl,$fffc
 	ld      ($d214),hl
 	call    _7c7b
-	jp      c,_ac76
+	jp      c,++++
 	ld      de,$0000
 	ld      c,e
 	ld      b,d
@@ -17893,7 +17925,7 @@ _ab9d:
 	ld      hl,$fffc
 	ld      ($d214),hl
 	call    _7c7b
-	jp      c,_ac76
+	jp      c,++++
 	ld      de,$0008
 	ld      bc,$0000
 	call    _ac96
@@ -17902,7 +17934,7 @@ _ab9d:
 	ld      hl,$fffe
 	ld      ($d214),hl
 	call    _7c7b
-	jp      c,_ac76
+	jp      c,++++
 	ld      de,$0000
 	ld      bc,$0008
 	call    _ac96
@@ -17911,17 +17943,17 @@ _ab9d:
 	ld      hl,$fffe
 	ld      ($d214),hl
 	call    _7c7b
-	jp      c,_ac76
+	jp      c,++++
 	ld      de,$0008
 	ld      bc,$0008
 	call    _ac96
 	ld      (ix+$00),$ff
 	ld      a,$1b
 	rst     $28
-	jr      _ac76
-_ac1e:
-	cp      $23
-	jr      nc,_ac37
+	jr      ++++
+	
+++	cp      $23
+	jr      nc,+
 	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
@@ -17929,31 +17961,29 @@ _ac1e:
 	ld      de,_ad0b
 	ld      bc,_acf6
 	call    _7c41
-	jr      _ac6a
-_ac37:
-	ld      a,(ix+$11)
+	jr      +++
+	
++	ld      a,(ix+$11)
 	cp      $41
-	jr      nc,_ac55
+	jr      nc,+
 	ld      (ix+$07),$08
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	ld      de,_ad0b
 	ld      bc,_acf9
 	call    _7c41
-	jr      _ac6a
-_ac55:
-	ld      (ix+$07),$00
+	jr      +++
+	
++	ld      (ix+$07),$00
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	ld      de,_ad0b
 	ld      bc,_acfe
 	call    _7c41
-_ac6a:
-	ld      (ix+$0a),$80
++++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-_ac76:
-	ld      hl,$0202
+++++	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
@@ -17965,7 +17995,9 @@ _ac76:
 	cp      $46
 	ret     nz
 	ld      (ix+$11),$00
-	ret     
+	ret
+
+;____________________________________________________________________________[$AC96]___
 
 _ac96:
 	push    ix
@@ -18031,7 +18063,7 @@ _ad53:
 _ad6c:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_ad90
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$fffc
@@ -18041,12 +18073,11 @@ _ad6c:
 	call    _LABEL_625_57
 	ld      (ix+$11),a
 	set     0,(ix+$18)
-_ad90:
-	ld      a,(ix+$11)
++	ld      a,(ix+$11)
 	cp      $64
-	jr      nz,_addd
+	jr      nz,+
 	call    _7c7b
-	jr      c,_addd
+	jr      c,+
 	push    ix
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
@@ -18072,21 +18103,20 @@ _ad90:
 	ld      (ix+$12),$18
 	ld      (ix+$16),$00
 	ld      (ix+$17),$00
-_addd:
-	ld      a,(ix+$12)
++	ld      a,(ix+$12)
 	and     a
-	jr      z,_adf3
+	jr      z,+
 	ld      de,_ae04
 	ld      bc,_adfd
 	call    _7c41
 	dec     (ix+$12)
 	inc     (ix+$11)
-	ret     
-_adf3:
-	ld      (ix+$0f),a
+	ret
+	
++	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	inc     (ix+$11)
-	ret     
+	ret
 
 _adfd:
 .db $00, $08, $01, $08, $02, $08, $FF
@@ -18110,10 +18140,9 @@ _ae35:
 	ld      d,(ix+$03)
 	and     a
 	sbc     hl,de
-	jr      nc,_ae57
+	jr      nc,+
 	ld      (ix+$00),$ff
-_ae57:
-	ld      hl,$0202
++	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
@@ -18126,7 +18155,7 @@ _ae57:
 	ld      (ix+$0c),a
 	ld      (ix+$0f),<_ae81
 	ld      (ix+$10),>_ae81
-	ret     
+	ret
 
 _ae81:
 .db $02, $04, $FF, $FF, $FF, $FF, $FF
@@ -18137,19 +18166,18 @@ _ae81:
 _ae88:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_aea6
+	jr      nz,+
 	ld      (ix+$11),$00
 	ld      (ix+$12),$2a
 	ld      (ix+$13),$52
 	ld      (ix+$14),$7c
 	set     0,(ix+$18)
-_aea6:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      c,_aed8
+	jr      c,+
 	ld      (ix+$07),$f8
 	ld      (ix+$08),$ff
 	ld      (ix+$09),$ff
@@ -18159,9 +18187,9 @@ _aea6:
 	ld      ($d216),hl
 	call    _af98
 	ld      (ix+$16),$01
-	jr      _aef9
-_aed8:
-	ld      (ix+$07),$08
+	jr      ++
+	
++	ld      (ix+$07),$08
 	ld      (ix+$08),$00
 	ld      (ix+$09),$00
 	ld      (ix+$0f),<_b0e7
@@ -18170,8 +18198,7 @@ _aed8:
 	ld      ($d216),hl
 	call    _af98
 	ld      (ix+$16),$ff
-_aef9:
-	ld      (ix+$0d),$1c
+++	ld      (ix+$0d),$1c
 	ld      (ix+$0e),$1c
 	ld      hl,$1212
 	ld      ($d214),hl
@@ -18190,12 +18217,12 @@ _aef9:
 	ld      de,$0011
 	add     hl,de
 	ld      b,$04
-_af2e:
-	push    bc
+	
+-	push    bc
 	push    hl
 	ld      a,(hl)
 	cp      $fe
-	jr      z,_af6d
+	jr      z,+
 	and     $fe
 	ld      e,a
 	ld      d,$00
@@ -18225,25 +18252,24 @@ _af2e:
 	ld      (ix+$0e),a
 	call    _LABEL_3956_11
 	call    nc,_35fd
-_af6d:
-	pop     hl
++	pop     hl
 	pop     bc
 	ld      a,(hl)
 	cp      $fe
-	jr      z,_af84
+	jr      z,++
 	add     a,(ix+$16)
 	cp      $ff
-	jr      nz,_af7f
+	jr      nz,+
 	ld      a,$a3
-	jr      _af84
-_af7f:
-	cp      $a4
-	jr      nz,_af84
+	jr      ++
+	
++	cp      $a4
+	jr      nz,++
 	xor     a
-_af84:
-	ld      (hl),a
+++	ld      (hl),a
 	inc     hl
-	djnz    _af2e
+	djnz    -
+	
 	ld      a,($d223)
 	and     $07
 	ret     z
@@ -18251,7 +18277,9 @@ _af84:
 	cp      $c8
 	ret     nc
 	inc     (ix+$15)
-	ret     
+	ret
+
+;____________________________________________________________________________[$AF98]___
 
 _af98:
 	ld      a,(ix+$15)
@@ -18280,8 +18308,8 @@ _af98:
 	ld      de,$0011
 	add     hl,de
 	ld      b,$04
-_afcd:
-	push    bc
+	
+-	push    bc
 	push    hl
 	ld      a,(hl)
 	cp      $4a
@@ -18289,8 +18317,11 @@ _afcd:
 	pop     hl
 	pop     bc
 	inc     hl
-	djnz    _afcd
-	ret     
+	djnz    -
+	
+	ret
+
+;____________________________________________________________________________[$AFDB]___
 
 _afdb:
 	ld      (hl),$fe
@@ -18320,16 +18351,15 @@ _afdb:
 	ld      (ix+$08),h
 	xor     a
 	bit     7,h
-	jr      z,_b021
+	jr      z,+
 	ld      a,$ff
-_b021:
-	ld      (ix+$09),a
++	ld      (ix+$09),a
 	xor     a
 	ld      (ix+$0a),a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	pop     ix
-	ret     
+	ret
 
 _b031:
 .db $0C, $03, $0D, $03, $0E, $03, $0E, $04, $0F, $04, $10, $04, $10, $05, $11, $05
@@ -18372,13 +18402,13 @@ _b0f4:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_b167
+	jr      nc,+
 	ld      hl,($d25a)
 	ld      bc,$0110
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_b167
+	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      ($d210),hl
@@ -18388,22 +18418,22 @@ _b0f4:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_b167
+	jr      nc,+
 	ld      hl,($d25d)
 	ld      bc,$00d0
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      c,_b167
+	jr      c,+
 	ld      hl,$0000
 	ld      ($d212),hl
 	ld      ($d214),hl
 	ld      a,$24
 	call    _3581
-	ret     
-_b167:
-	ld      (ix+$00),$ff
-	ret     
+	ret
+	
++	ld      (ix+$00),$ff
+	ret
 
 ;____________________________________________________________________________[$B16C]___
 ;OBJECT: rotating turret (Sky Base)
@@ -18411,13 +18441,12 @@ _b167:
 _b16c:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_b182
+	jr      nz,+
 	call    _LABEL_625_57
 	and     $07
 	ld      (ix+$11),a
 	set     0,(ix+$18)
-_b182:
-	ld      (ix+$0f),$00
++	ld      (ix+$0f),$00
 	ld      (ix+$10),$00
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -18434,44 +18463,41 @@ _b182:
 	ld      hl,_b227
 	add     hl,de
 	ld      b,$02
-_b1ab:
-	push    bc
+	
+-	push    bc
 	ld      d,$00
 	ld      e,(hl)
 	bit     7,e
-	jr      z,_b1b5
+	jr      z,+
 	ld      d,$ff
-_b1b5:
-	ld      ($d212),de
++	ld      ($d212),de
 	inc     hl
 	ld      d,$00
 	ld      e,(hl)
 	bit     7,e
-	jr      z,_b1c3
+	jr      z,+
 	ld      d,$ff
-_b1c3:
-	ld      ($d214),de
++	ld      ($d214),de
 	inc     hl
 	ld      a,(hl)
 	inc     hl
 	inc     hl
 	cp      $ff
-	jr      z,_b1d4
+	jr      z,+
 	push    hl
 	call    _3581
 	pop     hl
-_b1d4:
-	pop     bc
-	djnz    _b1ab
++	pop     bc
+	djnz    -
+	
 	ld      a,($d223)
 	and     $3f
-	jr      nz,_b1e7
+	jr      nz,+
 	ld      a,(ix+$11)
 	inc     a
 	and     $07
 	ld      (ix+$11),a
-_b1e7:
-	inc     (ix+$12)
++	inc     (ix+$12)
 	ld      a,(ix+$12)
 	cp      $1a
 	ret     nz
@@ -18498,18 +18524,16 @@ _b1e7:
 	ld      e,(hl)
 	ld      d,$00
 	bit     7,e
-	jr      z,_b21a
+	jr      z,+
 	dec     d
-_b21a:
-	inc     hl
++	inc     hl
 	ld      c,(hl)
 	ld      b,$00
 	bit     7,c
-	jr      z,_b223
+	jr      z,+
 	dec     b
-_b223:
-	call    _b5c2
-	ret     
++	call    _b5c2
+	ret
 
 _b227:
 .db $08, $F8, $66, $00, $00, $00, $FF, $00, $0C, $FA, $70, $00, $14, $FA, $72, $00
@@ -18527,7 +18551,7 @@ _b267:
 _b297:
 	set 5, (ix+$18)
 	bit 0, (ix+$18)
-	jr      nz,_b2b7
+	jr      nz,+
 	ld      a,(ix+$04)
 	ld      (ix+$12),a
 	ld      a,(ix+$05)
@@ -18535,8 +18559,7 @@ _b297:
 	ld      a,(ix+$06)
 	ld      (ix+$14),a
 	set     0,(ix+$18)
-_b2b7:
-	ld      a,($d2a3)
++	ld      a,($d2a3)
 	ld      c,a
 	ld      de,($d2a1)
 	ld      l,(ix+$12)
@@ -18549,13 +18572,13 @@ _b2b7:
 	ld      (ix+$06),a
 	ld      a,($d408)
 	and     a
-	jp      m,_b329
+	jp      m,+
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$10
 	ld      hl,$0a02
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_b329
+	jr      c,+
 	ld      hl,$0030
 	ld      ($d26b),hl
 	ld      hl,$0030
@@ -18578,8 +18601,7 @@ _b2b7:
 	adc     a,$00
 	ld      ($d3fd),hl
 	ld      ($d3ff),a
-_b329:
-	ld      l,(ix+$02)
++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($d20e),hl
 	ld      l,(ix+$05)
@@ -18592,8 +18614,8 @@ _b329:
 	ld      hl,_b388
 	add     hl,de
 	ld      b,$02
-_b34c:
-	push    bc
+	
+-	push    bc
 	ld      e,(hl)
 	ld      d,$00
 	inc     hl
@@ -18601,13 +18623,13 @@ _b34c:
 	ld      a,(hl)
 	inc     hl
 	cp      $ff
-	jr      z,_b360
+	jr      z,+
 	push    hl
 	call    _3581
 	pop     hl
-_b360:
-	pop     bc
-	djnz    _b34c
++	pop     bc
+	djnz    -
+	
 	ld      (ix+$0f),<_b37b
 	ld      (ix+$10),>_b37b
 	ld      a,(ix+$11)
@@ -18616,7 +18638,7 @@ _b360:
 	cp      $10
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
 _b37b:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $36, $36, $36, $36, $FF, $FF, $FF
@@ -18629,21 +18651,19 @@ _b388:
 _b398:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_b3b2
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (ix+$11),l
-_b3ab:
 	ld      (ix+$12),h
 	set     0,(ix+$18)
-_b3b2:
-	ld      (ix+$0d),$0c
++	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$2e
 	ld      (ix+$0f),<_b45b
 	ld      (ix+$10),>_b45b
 	ld      hl,$0202
 	ld      ($d214),hl
-_b3c8:
+
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      l,(ix+$01)
@@ -18684,13 +18704,12 @@ _b3c8:
 	ld      de,($d25d)
 	and     a
 	sbc     hl,de
-	jr      nc,_b43c
+	jr      nc,+
 	ld      a,(ix+$11)
 	ld      (ix+$02),a
 	ld      a,(ix+$12)
 	ld      (ix+$03),a
-_b43c:
-	ld      de,($d401)
++	ld      de,($d401)
 	ld      hl,$ffe0
 	add     hl,bc
 	xor     a
@@ -18704,7 +18723,7 @@ _b43c:
 	ld      (ix+$07),$80
 	ld      (ix+$08),a
 	ld      (ix+$09),a
-	ret     
+	ret
 
 _b45b:
 .db $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF
@@ -18716,7 +18735,7 @@ _b45b:
 _b46d:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
-	jr      nz,_b48c
+	jr      nz,+
 	ld      bc,$0000
 	ld      e,c
 	ld      d,b
@@ -18727,8 +18746,7 @@ _b46d:
 	ret     nc
 	ld      (ix+$11),a
 	set     0,(ix+$18)
-_b48c:
-	inc     (ix+$12)
++	inc     (ix+$12)
 	ld      a,(ix+$12)
 	bit     6,a
 	ret     nz
@@ -18784,7 +18802,7 @@ _b48c:
 	cp      (hl)
 	ret     nz
 	call    _b5c2
-	ret     
+	ret
 
 _b4e6:
 .db $80, $FE, $80, $FE, $00, $00, $F8, $FF, $FF, $FF, $80, $01, $80, $FE, $18, $00
@@ -18805,26 +18823,24 @@ _b50e:
 	ld      (ix+$10),h
 	ld      a,$50
 	ld      ($d216),a
-	call    _b53b
+	call    +
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $a0
 	ret     c
 	ld      (ix+$11),$00
-	ret     
+	ret
 
-_b53b:
-	ld      a,($d216)
++	ld      a,($d216)
 	ld      l,a
 	ld      de,$0010
 	ld      c,$00
 	ld      a,(ix+$11)
 	cp      l
-	jr      c,_b54e
+	jr      c,+
 	dec     c
 	ld      de,$fff0
-_b54e:
-	ld      l,(ix+$0a)
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	add     hl,de
@@ -18834,7 +18850,7 @@ _b54e:
 	ld      (ix+$0c),a
 	ld      a,h
 	and     a
-	jp      p,_b581
+	jp      p,+
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -18844,19 +18860,18 @@ _b54e:
 	inc     hl
 	ld      a,h
 	cp      $02
-	jr      c,_b591
+	jr      c,++
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fe
 	ld      (ix+$0c),$ff
-	jr      _b591
-_b581:
-	cp      $02
-	jr      c,_b591
+	jr      ++
+	
++	cp      $02
+	jr      c,++
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$02
 	ld      (ix+$0c),$00
-_b591:
-	ld      a,($d408)
+++	ld      a,($d408)
 	and     a
 	ret     m
 	ld      (ix+$0d),$1e
@@ -18869,10 +18884,12 @@ _b591:
 	ld      d,(ix+$0b)
 	ld      bc,$0010
 	call    _LABEL_7CC1_12
-	ret     
+	ret
 
 _b5b5:
 .db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6C, $6E, $FF, $FF, $FF
+
+;____________________________________________________________________________[$B5C2]___
 
 _b5c2:
 	push    bc
@@ -18909,25 +18926,23 @@ _b5c2:
 	ld      (ix+$17),a
 	ld      hl,($d212)
 	bit     7,h
-	jr      z,_b612
+	jr      z,+
 	ld      a,$ff
-_b612:
-	ld      (ix+$07),l
++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
 	xor     a
 	ld      hl,($d214)
 	bit     7,h
-	jr      z,_b625
+	jr      z,+
 	ld      a,$ff
-_b625:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
 	pop     ix
 	ld      a,$01
 	rst     $28
-	ret     
+	ret
 
 ;____________________________________________________________________________[$B634]___
 ;OBJECT: boss (Sky Base)
@@ -18941,7 +18956,7 @@ _b634:
 	call    _7ca6
 	call    _b7e6
 	bit     0,(ix+$18)
-	jr      nz,_b697
+	jr      nz,+
 	ld      hl,$0350
 	ld      de,$0120
 	call    _7c8c
@@ -18967,34 +18982,31 @@ _b634:
 	rst     $18
 	set     4,(iy+$08)
 	set     0,(ix+$18)
-_b697:
-	ld      a,(ix+$15)
++	ld      a,(ix+$15)
 	and     a
-	jp      nz,_b6d4
+	jp      nz,+++
 	call    _b99f
 	ld      a,($d223)
 	and     $07
-	jp      nz,_b793
+	jp      nz,++++
 	ld      a,(ix+$16)
 	cp      $1c
-	jr      nc,_b6bb
+	jr      nc,+
 	inc     (ix+$17)
 	ld      a,(ix+$17)
 	cp      $02
-	jp      c,_b6bf
-_b6bb:
-	ld      (ix+$17),$00
-_b6bf:
-	inc     (ix+$16)
+	jp      c,++
++	ld      (ix+$17),$00
+++	inc     (ix+$16)
 	ld      a,(ix+$16)
 	cp      $28
-	jp      c,_b793
+	jp      c,++++
 	ld      (ix+$16),$00
 	inc     (ix+$15)
-	jp      _b793
-_b6d4:
-	dec     a
-	jr      nz,_b701
+	jp      ++++
+	
++++	dec     a
+	jr      nz,+
 	ld      (ix+$0a),$40
 	ld      (ix+$0b),$fe
 	ld      (ix+$0c),$ff
@@ -19007,10 +19019,10 @@ _b6d4:
 	ld      (ix+$03),h
 	ld      (ix+$0f),<_bb1d
 	ld      (ix+$10),>_bb1d
-	jp      _b793
-_b701:
-	dec     a
-	jp      nz,_b75c
+	jp      ++++
+	
++	dec     a
+	jp      nz,++
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
@@ -19018,13 +19030,12 @@ _b701:
 	add     hl,de
 	adc     a,$00
 	ld      c,a
-	jp      m,_b720
+	jp      m,+
 	ld      a,h
 	cp      $02
-	jr      c,_b720
+	jr      c,+
 	ld      hl,$0200
-_b720:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      (ix+$0f),<_bb1d
@@ -19036,7 +19047,7 @@ _b720:
 	ld      d,(ix+$14)
 	and     a
 	sbc     hl,de
-	jr      c,_b793
+	jr      c,++++
 	ld      (ix+$05),e
 	ld      (ix+$06),d
 	xor     a
@@ -19045,10 +19056,10 @@ _b720:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	inc     (ix+$15)
-	jp      _b793
-_b75c:
-	dec     a
-	jp      nz,_b793
+	jp      ++++
+	
+++	dec     a
+	jp      nz,++++
 	ld      l,(ix+$11)
 	ld      h,(ix+$12)
 	ld      (ix+$02),l
@@ -19062,18 +19073,16 @@ _b75c:
 	inc     (ix+$16)
 	ld      a,(ix+$16)
 	cp      $12
-	jr      c,_b793
+	jr      c,++++
 	res     1,(ix+$18)
 	xor     a
 	ld      (ix+$15),a
 	ld      (ix+$16),a
-_b793:
-	ld      hl,$ba31
+++++	ld      hl,$ba31
 	bit     1,(ix+$18)
-	jr      z,_b79f
+	jr      z,+
 	ld      hl,_ba3b
-_b79f:
-	ld      de,$d20e
++	ld      de,$d20e
 	ldi     
 	ldi     
 	ldi     
@@ -19106,7 +19115,9 @@ _b79f:
 	rst     $18
 	ld      a,$21
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$B7E6]___	
 
 _b7e6:
 	ld      a,($d2b1)
@@ -19116,11 +19127,10 @@ _b7e6:
 	ret     nz
 	ld      a,($d414)
 	rrca    
-	jr      c,_b7f9
+	jr      c,+
 	and     $02
 	ret     z
-_b7f9:
-	ld      hl,($d3fe)
++	ld      hl,($d3fe)
 	ld      de,$0410
 	and     a
 	sbc     hl,de
@@ -19139,14 +19149,14 @@ _b7f9:
 	rst     $28
 	ld      hl,$d2ec
 	inc     (hl)
-	ret     
+	ret
 _b821:
 	bit     3,(ix+$18)
-	jp      nz,_b95b
+	jp      nz,++++
 	res     5,(ix+$18)
 	ld      a,(ix+$11)
 	cp      $0f
-	jr      nc,_b86a
+	jr      nc,+
 	add     a,a
 	add     a,a
 	ld      e,a
@@ -19170,23 +19180,22 @@ _b821:
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $0f
-	jr      nz,_b86a
+	jr      nz,+
 	set     5,(iy+$00)
 	res     1,(iy+$02)
 	ld      hl,$0550
 	ld      ($d275),hl
-_b86a:
-	ld      e,(ix+$02)
++	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      hl,$05e0
 	xor     a
 	sbc     hl,de
-	jr      nc,_b87d
+	jr      nc,+
 	ld      c,a
 	ld      b,a
-	jp      _b899
-_b87d:
-	ex      de,hl
+	jp      +++
+	
++	ex      de,hl
 	ld      de,($d3fe)
 	xor     a
 	sbc     hl,de
@@ -19194,30 +19203,26 @@ _b87d:
 	xor     a
 	ld      bc,($d403)
 	bit     7,b
-	jr      nz,_b895
+	jr      nz,+
 	sbc     hl,de
-	jr      c,_b898
-_b895:
-	ld      bc,$ff80
-_b898:
-	inc     b
-_b899:
-	ld      (ix+$07),c
+	jr      c,++
++	ld      bc,$ff80
+++	inc     b
++++	ld      (ix+$07),c
 	ld      (ix+$08),b
 	ld      (ix+$09),a
 	ld      a,(ix+$17)
 	cp      $06
-	jr      nz,_b8c1
+	jr      nz,+
 	ld      a,(ix+$16)
 	dec     a
-	jr      nz,_b8c1
+	jr      nz,+
 	bit     7,(ix+$18)
-	jr      z,_b8c1
+	jr      z,+
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-_b8c1:
-	ld      de,$0017
++	ld      de,$0017
 	ld      bc,$0036
 	call    _36f9
 	ld      e,(hl)
@@ -19227,21 +19232,20 @@ _b8c1:
 	ld      a,(hl)
 	and     $3f
 	and     a
-	jr      z,_b8e9
+	jr      z,+
 	bit     7,(ix+$18)
-	jr      z,_b8e9
+	jr      z,+
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$fd
 	ld      (ix+$0c),$ff
-_b8e9:
-	ld      de,$0000
++	ld      de,$0000
 	ld      bc,$0008
 	call    _36f9
 	ld      a,(hl)
 	cp      $49
-	jr      nz,_b92d
+	jr      nz,+
 	bit     7,(ix+$18)
-	jr      z,_b92d
+	jr      z,+
 	xor     a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
@@ -19256,52 +19260,50 @@ _b8e9:
 	ld      de,$0120
 	call    _7c8c
 	set     3,(ix+$18)
-	jp      _b95b
-_b92d:
-	ld      l,(ix+$0a)
+	jp      ++++
+	
++	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
 	ld      de,$000e
 	add     hl,de
 	adc     a,$00
 	ld      c,a
-	jp      m,_b948
+	jp      m,+
 	ld      a,h
 	cp      $02
-	jr      c,_b948
+	jr      c,+
 	ld      hl,$0200
-_b948:
-	ld      (ix+$0a),l
++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      bc,_ba28
 	ld      de,_baf9
 	call    _7c41
-	ret     
-_b95b:
-	ld      (iy+$03),$ff
+	ret
+	
+++++	ld      (iy+$03),$ff
 	call    _b99f
 	ld      a,(ix+$16)
 	cp      $30
-	jr      nc,_b98a
+	jr      nc,++
 	ld      c,a
 	ld      a,($d223)
 	and     $07
-	jr      nz,_b97d
+	jr      nz,+
 	ld      a,(ix+$17)
 	inc     a
 	and     $01
 	ld      (ix+$17),a
 	inc     (ix+$16)
-_b97d:
-	ld      a,c
++	ld      a,c
 	cp      $2c
 	ret     c
 	ld      (ix+$0f),<_bb77
 	ld      (ix+$10),>_bb77
-	ret     
-_b98a:
-	xor     a
+	ret
+	
+++	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	inc     (ix+$16)
@@ -19309,7 +19311,9 @@ _b98a:
 	cp      $70
 	ret     c
 	ld      (ix+$00),$ff
-	ret     
+	ret
+	
+;____________________________________________________________________________[$B99F]___
 
 _b99f:
 	ld      hl,_ba1c
@@ -19340,7 +19344,9 @@ _b99f:
 	add     hl,de
 	ld      (ix+$05),l
 	ld      (ix+$06),h
-	ret     
+	ret
+
+;____________________________________________________________________________[$B9D5]___
 
 _b9d5:
 	bit     5,(iy+$08)
@@ -19369,7 +19375,7 @@ _b9d5:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	pop     ix
-	ret     
+	ret
 
 _ba1b:
 .db $C9					;unused?
@@ -19414,7 +19420,7 @@ _bb84:
 	ld      hl,$0008
 	ld      ($d26b),hl
 	bit     0,(ix+$18)
-	jr      nz,_bba7
+	jr      nz,+
 
 	;UNKNOWN
 	ld      hl,$ef3f
@@ -19424,8 +19430,7 @@ _bb84:
 
 	ld      (ix+$12),$01
 	set     0,(ix+$18)
-_bba7:
-	ld      hl,$0390
++	ld      hl,$0390
 	ld      ($d20e),hl
 	ld      l,(ix+$11)
 	ld      h,$00
@@ -19444,7 +19449,7 @@ _bba7:
 	bit     4,(iy+$08)
 	ret     z
 	bit     1,(ix+$18)
-	jr      z,_bc2b
+	jr      z,+
 	ld      a,($d223)
 	bit     0,a
 	ret     nz
@@ -19455,8 +19460,8 @@ _bba7:
 	add     hl,de
 	ld      b,$0a
 	ld      de,$0130
-_bbf3:
-	push    bc
+	
+-	push    bc
 	push    de
 	call    _bca5
 	pop     de
@@ -19466,7 +19471,8 @@ _bbf3:
 	ex      de,hl
 	pop     hl
 	pop     bc
-	djnz    _bbf3
+	djnz    -
+	
 	ld      hl,$0390
 	ld      c,(ix+$11)
 	ld      b,$00
@@ -19478,20 +19484,19 @@ _bbf3:
 	ld      de,($d3fe)
 	and     a
 	sbc     hl,de
-	jr      c,_bc2b
+	jr      c,+
 	ld      hl,$000e
 	add     hl,de
 	and     a
 	sbc     hl,bc
-	jr      c,_bc2b
+	jr      c,+
 	bit     0,(iy+$05)
 	call    z,_35fd
-_bc2b
-	ld      a,($d2ec)
++	ld      a,($d2ec)
 	cp      $06
-	jr      nc,_bc65
+	jr      nc,++
 	bit     1,(ix+$18)
-	jr      nz,_bc4e
+	jr      nz,+
 	ld      a,(ix+$11)
 	inc     a
 	ld      (ix+$11),a
@@ -19502,38 +19507,36 @@ _bc2b
 	and     $01
 	ret     nz
 	set     1,(ix+$18)
-	ret     
-_bc4e:
-	ld      a,($d223)
+	ret
+	
++	ld      a,($d223)
 	and     $0f
-	jr      nz,_bc58
+	jr      nz,+
 	ld      a,$13
 	rst     $28
-_bc58:
-	dec     (ix+$11)
++	dec     (ix+$11)
 	ret     nz
 	ld      (ix+$11),$00
 	res     1,(ix+$18)
-	ret     
-_bc65:
-	ld      hl,($d3fe)
+	ret
+	
+++	ld      hl,($d3fe)
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	and     a
 	sbc     hl,de
-	jr      nc,_bc7e
+	jr      nc,+
 	ld      a,(ix+$11)
 	and     a
-	jr      z,_bc88
+	jr      z,++
 	dec     (ix+$11)
-	jr      _bc88
-_bc7e:
-	ld      a,(ix+$11)
+	jr      ++
+	
++	ld      a,(ix+$11)
 	cp      $80
-	jr      nc,_bc88
+	jr      nc,++
 	inc     (ix+$11)
-_bc88:
-	res     1,(ix+$18)
+++	res     1,(ix+$18)
 	ld      a,($d223)
 	ld      c,a
 	and     $40
@@ -19547,7 +19550,9 @@ _bc88:
 	ret     nz
 	ld      a,$13
 	rst     $28
-	ret     
+	ret
+
+;____________________________________________________________________________[$BAC5]___
 
 _bca5:
 	ld      ($d210),de
@@ -19568,7 +19573,7 @@ _bca5:
 	pop     hl
 	ld      ($d212),hl
 	pop     hl
-	ret     
+	ret
 
 _bcc7:
 .db $36, $38, $56, $58, $36, $38, $56, $58, $36, $38, $56, $58, $36, $38, $56, $58
@@ -19585,14 +19590,14 @@ _bcdf:
 	ld      hl,$0202
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_bcfc
+	jr      c,+
 	bit     0,(iy+$05)
 	call    z,_35fd
-	jp      _bdbe
-_bcfc:
-	ld      a,(ix+$11)
+	jp      ++++
+	
++	ld      a,(ix+$11)
 	cp      $c8
-	jp      c,_bdad
+	jp      c,+++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      hl,($d25a)
@@ -19600,33 +19605,32 @@ _bcfc:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jp      nc,_bdbe
+	jp      nc,++++
 	ld      hl,($d25a)
 	inc     h
 	and     a
 	sbc     hl,de
-	jp      c,_bdbe
+	jp      c,++++
 	ld      hl,($d3fe)
 	and     a
 	sbc     hl,de
 	ld      l,(ix+$07)
 	ld      h,(ix+$08)
 	ld      a,(ix+$09)
-	jr      nc,_bd40
+	jr      nc,+
 	ld      c,$ff
 	ld      de,$fff4
 	bit     7,a
-	jr      nz,_bd4c
+	jr      nz,++
 	ld      de,$ffe8
-	jr      _bd4c
-_bd40:
-	ld      c,$00
+	jr      ++
+
++	ld      c,$00
 	ld      de,$000c
 	bit     7,a
-	jr      z,_bd4c
+	jr      z,++
 	ld      de,$0018
-_bd4c:
-	add     hl,de
+++	add     hl,de
 	adc     a,c
 	ld      (ix+$07),l
 	ld      (ix+$08),h
@@ -19638,51 +19642,47 @@ _bd4c:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	jr      nc,_bdbe
+	jr      nc,++++
 	ld      hl,($d25d)
 	ld      bc,$00c0
 	add     hl,de
 	and     a
 	sbc     hl,de
-	jr      c,_bdbe
+	jr      c,++++
 	ld      hl,($d401)
 	and     a
 	sbc     hl,de
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
 	ld      a,(ix+$0c)
-	jr      nc,_bd94
+	jr      nc,+
 	ld      c,$ff
 	ld      de,$fff6
 	bit     7,a
-	jr      nz,_bda0
+	jr      nz,++
 	ld      de,$fffb
-	jr      _bda0
-_bd94:
-	ld      de,$000a
+	jr      ++
+	
++	ld      de,$000a
 	ld      c,$00
 	bit     7,a
-	jr      z,_bda0
+	jr      z,++
 	ld      de,$0005
-_bda0:
-	add     hl,de
+++	add     hl,de
 	adc     a,c
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	jr      _bdb0
-_bdad:
-	inc     (ix+$11)
-_bdb0:
-	ld      bc,_bdc7
+	jr      +
++++	inc     (ix+$11)
++	ld      bc,_bdc7
 	ld      de,_bdce
 	call    _7c41
 	bit     4,(iy+$08)
 	ret     nz
-_bdbe:
-	ld      (ix+$00),$ff
+++++	ld      (ix+$00),$ff
 	res     5,(iy+$08)
-	ret     
+	ret
 
 _bdc7:
 .db $00, $01, $01, $01, $02, $01, $FF
@@ -19698,7 +19698,7 @@ _bdf9:
 	set     5,(ix+$18)
 	ld      (iy+$03),$ff
 	bit     1,(ix+$18)
-	jr      nz,_be26
+	jr      nz,+
 	ld      hl,S1_BossPalette
 	ld      a,$02
 	call    loadPaletteOnInterrupt
@@ -19709,15 +19709,14 @@ _bdf9:
 	ld      (ix+$12),$ff
 	set     6,(iy+$07)
 	set     1,(ix+$18)
-_be26:
-	ld      a,($d223)
++	ld      a,($d223)
 	rrca    
-	jr      c,_be5c
+	jr      c,+
 	ld      a,(ix+$12)
 	and     a
-	jr      z,_be5c
+	jr      z,+
 	dec     (ix+$12)
-	jr      nz,_be5c
+	jr      nz,+
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$003c
@@ -19733,8 +19732,7 @@ _be26:
 	set     6,(iy+$08)
 	ld      a,$06
 	rst     $28
-_be5c:
-	ld      (ix+$0d),$20
++	ld      (ix+$0d),$20
 	ld      (ix+$0e),$1c
 	xor     a
 	ld      (ix+$07),a
@@ -19744,7 +19742,7 @@ _be5c:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	bit     6,(iy+$07)
-	jr      z,_be96
+	jr      z,+
 	ld      de,($d25a)
 	ld      hl,$0040
 	add     hl,de
@@ -19752,18 +19750,17 @@ _be5c:
 	ld      b,(ix+$03)
 	and     a
 	sbc     hl,bc
-	jr      nc,_be96
+	jr      nc,+
 	inc     de
 	ld      ($d25a),de
-_be96:
-	ld      (ix+$0f),<_bf21
++	ld      (ix+$0f),<_bf21
 	ld      (ix+$10),>_bf21
 	bit     0,(ix+$18)
-	jr      nz,_bed7
+	jr      nz,+
 	ld      hl,$1008
 	ld      ($d214),hl
 	call    _LABEL_3956_11
-	jr      c,_bed7
+	jr      c,+
 	ld      de,$0001
 	ld      hl,($d406)
 	ld      a,l
@@ -19783,8 +19780,7 @@ _be96:
 	ld      (ix+$11),$01
 	ld      a,$01
 	rst     $28
-_bed7:
-	call    _79fa
++	call    _79fa
 	bit     0,(ix+$18)
 	ret     z
 	xor     a
@@ -19803,17 +19799,17 @@ _bed7:
 	ret     c
 	ld      a,($d27f)
 	cp      $06
-	jr      c,_bf12
+	jr      c,+
 	set     7,(iy+$08)
-	ret     
-_bf12:
-	ld      a,($d289)
+	ret
+	
++	ld      a,($d289)
 	and     a
 	ret     nz
 	ld      a,$20
 	ld      ($d289),a
 	set     2,(iy+$0d)
-	ret     
+	ret
 
 _bf21:
 .db $2A, $2C, $2E, $30, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70
@@ -19830,7 +19826,7 @@ _bf4c:
 	ld      hl,$5400
 	call    _c1d
 	bit     0,(ix+$18)
-	jr      nz,_bf7e
+	jr      nz,+
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -19843,22 +19839,21 @@ _bf4c:
 	ret     c
 	set     0,(ix+$18)
 	ld      (ix+$11),$64
-	ret   
-_bf7e:  
-	ld      a,(ix+$11)
+	ret
+	
++	ld      a,(ix+$11)
 	and     a
-	jr      z,_bf89
+	jr      z,+
 	dec     (ix+$11)
-	jr      _bf95
-_bf89:
-	ld      (ix+$0a),$80
+	jr      ++
+	
++	ld      (ix+$0a),$80
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-_bf95:
-	ld      hl,_bff1
+++	ld      hl,_bff1
 	ld      a,($d223)
 	rrca    
-	jr      nc,_bfd5
+	jr      nc,+
 	ld      a,(iy+$0a)
 	ld      hl,($d23c)
 	push    af
@@ -19882,8 +19877,7 @@ _bf95:
 	pop     af
 	ld      ($d23c),hl
 	ld      (iy+$0a),a
-_bfd5:
-	ld      l,(ix+$05)
++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$0020
 	add     hl,de
@@ -19894,7 +19888,7 @@ _bfd5:
 	ld      a,$01
 	ld      ($d289),a
 	set     2,(iy+$0d)
-	ret     
+	ret
 
 _bff1:
 .db $5C, $5E, $FF, $FF, $FF, $FF, $FF, $49, $43, $20, $54, $48, $45, $20, $48
@@ -19991,7 +19985,7 @@ _c026:
 	ld      ($dc7c),hl
 	ld      ($dca9),hl
 	ld      ($dcd6),hl
-	ret     
+	ret
 
 _c070:
 .db $48, $DC, $00, $00, $75, $DC, $00, $00, $A2, $DC, $00, $00, $CF, $DC, $00, $00
@@ -20061,7 +20055,7 @@ _c12d:					;($412D) [$C12D]
 	pop     bc
 	pop     hl
 	pop     af
-	ret     
+	ret
 	
 ;--------------------------------------------------------------------------------------
 _c171:
@@ -20123,7 +20117,7 @@ _c1d9:
 	pop     hl
 	pop     de
 	pop     af
-	ret     
+	ret
 
 _c1dd:
 .db $80, $90, $a0, $b0, $c0, $d0, $e0, $f0
@@ -20155,7 +20149,7 @@ _c1e5:
 	xor     a
 	ld      ($dc04),a
 	pop     af
-	ret     
+	ret
 
 ;--------------------------------------------------------------------------------------
 
@@ -20170,7 +20164,7 @@ _c224:
 	ld      ($dc10),hl
 	pop     hl
 	pop     af
-	ret     
+	ret
 
 ;____________________________________________________________________($423A)_[$C23A]___
 
@@ -20242,7 +20236,7 @@ _c2bf:
 	call    _c12d			;reset sound / mute?
 _c2f0:
 	ld      ($dc10),hl
-	ret     
+	ret
 
 ;____________________________________________________________________($42F4)_[$C2F4]___
 
@@ -20360,7 +20354,7 @@ _c3b7:
 	ld      (ix+$03),a
 _c3c9:
 	res     0,(ix+$28)
-	ret     
+	ret
 
 _c3ce:
 .db $05, $ff, $be, $0a, $04, $05, $02, $00, $05, $e6, $24, $5a, $14, $28, $08, $00
@@ -20491,7 +20485,7 @@ _c4a7:
 _c4ce:
 	ld      (ix+$04),l
 	ld      (ix+$05),h
-	ret     
+	ret
 
 _c4d5:
 .db $56, $03, $26, $03, $f9, $02, $ce, $02, $a5, $02, $80, $02, $5c, $02, $3a, $02
@@ -20529,7 +20523,7 @@ _c51d:
 	ld      a,%00001111
 	or      (ix+$01)
 	out     (SMS_SOUND_PORT),a
-	ret     
+	ret
 
 _c529:
 .dw _c5ae, _c5d1, _c5f2, _c60a, _c620, _c62d, _c632, _c647
@@ -20760,7 +20754,7 @@ _c6e4:
 	or      c
 	ret     z
 	add     hl,de
-	ret     
+	ret
 
 ;--------------------------------------------------------------------------------------
 ;this fetches an address from a look up table and stores it in HL
@@ -20784,7 +20778,7 @@ _c6eb:
 	call    _c018
 	
 	pop     hl
-	ret     
+	ret
 
 ;--------------------------------------------------------------------------------------
 

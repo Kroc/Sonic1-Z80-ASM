@@ -7,10 +7,10 @@ Based Upon:
 
 BANKS:
 =============================================================================
-$00000 - $03FFF		BANK 0
-$04000 - $07FFF		BANK 1	Palettes
-$08000 - $0BFFF		BANK 2
-$0C000 - $0FFFF		BANK 3
+$00000 - $03FFF		BANK 0	Code, Solidity Data
+$04000 - $07FFF		BANK 1	Palettes, object code
+$08000 - $0BFFF		BANK 2	Object code
+$0C000 - $0FFFF		BANK 3	Object code
 $10000 - $13FFF		BANK 4	Block Mappings
 $14000 - $17FFF		BANK 5	Block Mappings, Object Layout, Floor Layout
 $18000 - $1BFFF		BANK 6	Floor Layout
@@ -25,11 +25,12 @@ $38000 - $3BFFF		BANK E  Level Art
 $3C000 - $3FFFF		BANK F  Level Art
 =============================================================================
 
-$00000 - ?		Main Game Code
+$00000 - $0C715		Main Game Code
 $0024B - $0026A		Labyrinth Act 1-2 Underwater Palette
 $0026B - $0028A		Labyrinth Act 3 Underwater Palette
 $00F0E - $00F2D		Map Screen 1 Palette
 $00F2E - $00F4D		Map Screen 2 Palette
+$00F4E - $01208		??? UNKNOWN ??? (a level-indexed lookup table & data)
 $01209 - $0122C		Zone Title Pointers:
 -----------------------------------------------------------------------------
 $01209-0A		Green Hill Act 1 (=$122D)
@@ -60,7 +61,10 @@ $0125A-68		"LABYRINTH"
 $01269-77		"SCRAP BRAIN"
 $01278-86		"SKY BASE"
 -----------------------------------------------------------------------------
+$01252 - $01261		"PRESS  BUTTON"
+$01362 - $01371		"             " (removes "press button" text)
 $013E1 - $01400		Title Screen Palette
+$014FC - $0151C		Unknown palette
 $0197E - $019AD		Final Score Titles:
 -----------------------------------------------------------------------------
 $0197E-8D		"CHAOS EMERALD"
