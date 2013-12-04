@@ -23,7 +23,9 @@ S1_MusicPointers:
 .dw S1_Music_SFX			;$798C [$F98C]
 .dw S1_Music_Emerald			;$7A26 [$FA26]
 
-S1_SFXPointers:				;[$C740]
+;____________________________________________________________________________[$C740]___
+
+S1_SFXPointers:
 .dw _fb27, $0002			;$7B27 [$FB27]
 .dw _fb43, $0002			;$7B43 [$FB43]
 .dw _fb74, $0002			;$7B74 [$FB74]

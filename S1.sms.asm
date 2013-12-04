@@ -42,32 +42,11 @@
 
 ;======================================================================================
 
-;configure the bank boundaries. the Master System doesn't have 16 slots but this is
- ;necessary for WLA DX to stop saying that the data is "overflowing the boundary"
-
- .MEMORYMAP		
+.MEMORYMAP		
 	SLOTSIZE $4000	
-	SLOT 0   $0000	; CODE
-	SLOT 1   $4000	; CODE
-	SLOT 2   $8000	; CODE
-	SLOT 3   $C000	; CODE (sound driver) + Music
-	SLOT 4  $10000	; Block Mappings
-	SLOT 5  $14000	; Block Mappings
-			; Level Headers
-			; Object Layout
-			; Floor Layout
-	SLOT 6  $18000	; Floor Layout
-	SLOT 7  $1C000	; Floor Layout
-	SLOT 8  $20000	; Sonic Sprites
-	SLOT 9  $24000	; Sonic Sprites
-			; Tiles and Sprites
-	SLOT 10 $28000	; Tiles and Sprites
-	SLOT 11 $2C000	; Tiles and Sprites
-	SLOT 12 $30000	; Tiles and Sprites
-			; Level Art
-	SLOT 13 $34000	; Level Art
-	SLOT 14 $38000	; Level Art
-	SLOT 15 $3C000	; Level Art
+	SLOT 0   $0000
+	SLOT 1   $4000
+	SLOT 2   $8000
 	DEFAULTSLOT 0
 .ENDME
 
@@ -149,19 +128,19 @@ _START:					;[$0000]
 
 ;--------------------------------------------------------------------------------------
 
-.ORGA $0018
+.ORG $0018
 _RST_18:				;[$0018]
 	jp   _RST18Handler		;load a music track specified by A
 
-.ORGA $0020
+.ORG $0020
 _RST_20:				;[$0020]
 	jp   _LABEL_2ED_7
 
-.ORGA $0028
+.ORG $0028
 _RST_28:				;[$0028]
 	jp   _2fe
 
-.ORGA $0038
+.ORG $0038
 _RST_38:				;[$0038]
 	jp   IRQHandler
 
@@ -260,10 +239,10 @@ IRQHandler:
 	
 	;there's an extra bank of code located at ROM:$C000-$FFFF,
 	 ;page this into Z80:$4000-$7FFF
-	ld   a, :_c000
+	ld   a, :sound_update
 	ld   (SMS_PAGE_1), a
 	ld   (S1_PAGE_1), a
-	call _c000
+	call sound_update
 	
 	call readJoypad
 	bit  4, (iy+$03)		;joypad button A?
@@ -607,12 +586,12 @@ _RST18Handler:
 	push af
 	
 	;switch page 1 (Z80:$4000-$7FFF) to bank 3 ($C000-$FFFF)
-	ld   a, :_c012
+	ld   a, :sound_playMusic
 	ld   (SMS_PAGE_1), a
 	
 	pop  af
 	ld   ($D2D2), a
-	call _c012
+	call sound_playMusic
 	
 	ld   a, (S1_PAGE_1)
 	ld   (SMS_PAGE_1), a
@@ -626,9 +605,9 @@ _LABEL_2ED_7:
 	di				;disable interrupts
 	
 	;switch page 1 (Z80:$4000-$7FFF) to bank 3 (ROM:$0C000-$0FFFF)
-	ld   a, :_c006
+	ld   a, :sound_stop
 	ld   (SMS_PAGE_1), a
-	call _c006
+	call sound_stop
 	ld   a, (S1_PAGE_1)
 	ld   (SMS_PAGE_1), a
 	
@@ -638,10 +617,10 @@ _LABEL_2ED_7:
 _2fe:
 	di      
 	push    af
-	ld      a,:_c015
+	ld      a,:sound_playSFX
 	ld      (SMS_PAGE_1),a
 	pop     af
-	call    _c015
+	call    sound_playSFX
 	ld      a,(S1_PAGE_1)
 	ld      (SMS_PAGE_1),a
 	ei      
@@ -678,7 +657,7 @@ wait:
 	jr   z, wait
 	ret
 
-;--------------------------------------------------------------------------------------
+;___ UNUSED! ________________________________________________________________[$0323]___
 
 _323:
 	set     2,(iy+$00)
@@ -4435,10 +4414,10 @@ _1e9e:
 	bit     3,(iy+$07)		;paused?
 	jr      nz,-
 	
-	ld      a,:_c009
+	ld      a,:sound_unpause
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
-	call    _c009
+	call    sound_unpause
 	ret
 
 ;____________________________________________________________________________[$1ED8]___
@@ -4719,12 +4698,12 @@ _20a4:
 ;____________________________________________________________________________[$20B8]___
 
 _20b8:
-	ld      a,:_c00c
+	ld      a,:sound_fadeOut
 	ld      (SMS_PAGE_1),a
 	ld      (S1_PAGE_1),a
 	
 	ld      hl,$0028
-	call    _c00c
+	call    sound_fadeOut
 	call    _LABEL_A40_121
 	
 	xor     a
@@ -7969,7 +7948,7 @@ S1_SolidityData_7:			;[$3F28] Sky Base 2 & 3 (interior)
 ;======================================================================================
 
 .BANK 1 SLOT 1
-.ORGA $4000
+.ORG $0000
 
 .db $03, $08, $03, $03, $03, $03, $03, $03, $00, $00, $00, $00, $00, $00, $00, $00
 .db $00, $00, $00, $00, $00, $00, $00, $03, $03, $04, $04, $03, $03, $03, $03, $00
@@ -8555,7 +8534,7 @@ _4c39:
 	jp      -
 	
 +	ld      d,a
-	ld      bc,_c000
+	ld      bc,sound_update
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      bc,_7000
@@ -13555,8 +13534,8 @@ _7ee6:
 ;======================================================================================
 
 .BANK 2 SLOT 2
+.ORG $0000
 
-.ORGA $8000
 .db $00, $00, $00
 
 ;jumped to by _7ee6, OBJECT: log - floating (Jungle)
@@ -19897,914 +19876,9 @@ _bff1:
 ;music code and song data
 
 .BANK 3 SLOT 1
-
-.ORG $C000
 .ORGA $4000
 
-_c000:		jp      _c23a
-_c003:		jp      _c018
-_c006:		jp      _c12d
-_c009:		jp      _c1e5
-_c00c:		jp      _c224
-_c00f: 		jp      _c171
-_c012:		jp      _c6eb
-_c015:		jp      _c6ff
-
-;--------------------------------------------------------------------------------------
-
-_c018:
-;HL : An address from a look up table, e.g. $64C3
-	push    af
-	push    bc
-	push    de
-	push    hl
-	push    ix
-	
-	;copy HL to BC
-	ld      c,l
-	ld      b,h
-	
-	ld      ix,$dc1c
-	ld      a,$05
-_c026:
-	;load the 16-bit value from the parameter address into DE
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	inc     hl
-	ex      de,hl			;swap DE into HL
-	add     hl,bc			;add the value to the initial address
-	
-	;copy the new address to RAM at $DC1C/D+
-	ld      (ix+$00),l
-	inc     ix
-	ld      (ix+$00),h
-	inc     ix
-	ex      de,hl
-	
-	;repeat this process five times
-	dec     a
-	jp      nz,_c026
-	
-	;$64C3 + $1110 = $75D3
-	;$64C3 + $2025 = $84E8
-	;$64C3 + $3F3D = $A400
-	;$64C3 + $393D = $9E00
-	;$64C3 + $0024 = $64E7
-	
-	ld      hl,_c070
-
--	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	ld      a,d
-	inc     a
-	jr      z,+
-	inc     hl
-	ldi     
-	ldi     
-	jp      -
-	
-+	ld      hl,_c0d6
--	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	ld      a,d
-	inc     a
-	jr      z,+
-	inc     hl
-	ldi     
-	jp      -
-	
-+	pop     ix
-	pop     hl
-	pop     de
-	pop     bc
-	pop     af
-	ld      ($dc4f),hl
-	ld      ($dc7c),hl
-	ld      ($dca9),hl
-	ld      ($dcd6),hl
-	ret
-
-_c070:
-.db $48, $DC, $00, $00, $75, $DC, $00, $00, $A2, $DC, $00, $00, $CF, $DC, $00, $00
-.db $46, $DC, $07, $DD, $73, $DC, $08, $DD, $A0, $DC, $09, $DD, $CD, $DC, $0A, $DD
-.db $28, $DC, $01, $00, $55, $DC, $01, $00, $82, $DC, $01, $00, $AF, $DC, $01, $00
-.db $3D, $DC, $00, $00, $42, $DC, $00, $00, $6A, $DC, $00, $00, $6F, $DC, $00, $00
-.db $97, $DC, $00, $00, $9C, $DC, $00, $00, $C4, $DC, $00, $00, $C9, $DC, $00, $00
-.db $2E, $DC, $00, $00, $5B, $DC, $00, $00, $88, $DC, $00, $00, $B5, $DC, $00, $00
-.db $0A, $DC, $01, $00, $FF, $FF
-_c0d6:
-.db $26, $DC, $80, $27, $DC, $90, $53, $DC, $A0, $54, $DC, $B0, $80, $DC, $C0, $81
-.db $DC, $D0, $AD, $DC, $E0, $AE, $DC, $F0, $4E, $DC, $02, $7B, $DC, $02, $A8, $DC
-.db $02, $D5, $DC, $02, $02, $DD, $00, $3A, $DC, $00, $67, $DC, $00, $94, $DC, $00
-.db $C1, $DC, $00, $3B, $DC, $00, $68, $DC, $00, $95, $DC, $00, $C2, $DC, $00, $51
-.db $DC, $00, $7E, $DC, $01, $AB, $DC, $02, $D8, $DC, $03, $06, $DC, $00, $04, $DC
-.db $00, $FF, $FF
-
-;____________________________________________________________________($4129)_[$C129]___
-
-initPSGValues:
-;    +xx+yyyy	;set channel xx volume to yyyy (0000 is max, 1111 is off)
-.db %10011111	;mute channel 0
-.db %10111111	;mute channel 1
-.db %11011111	;mute channel 2
-.db %11111111	;mute channel 3
-
-_c12d:					;($412D) [$C12D]			
-	;put any current values for these registers aside
-	push    af
-	push    hl
-	push    bc
-	
-	ld      a,($dc4e)
-	and     %11111101
-	ld      ($dc4e),a
-	
-	ld      a,($dc7b)
-	and     %11111101
-	ld      ($dc7b),a
-	
-	ld      a,($dca8)
-	and     %11111101
-	ld      ($dca8),a
-	
-	ld      a,($dcd5)
-	and     %11111101
-	ld      ($dcd5),a
-	
-	ld      a,($dd02)
-	and     %11111101
-	ld      ($dd02),a
-	
-	xor     a
-	ld      ($dc06),a
-	
-	;mute all sound channels by sending the right bytes to the sound chip
-	ld      b,4
-	ld      c,SMS_SOUND_PORT
-	ld      hl,initPSGValues
-	otir
-	
-	ld      a,($dc04)
-	and     %11110111
-	ld      ($dc04),a
-	
-	;restore the previous state of the registers and return
-	pop     bc
-	pop     hl
-	pop     af
-	ret
-	
-;--------------------------------------------------------------------------------------
-_c171:
-	push    af
-	push    de
-	push    hl
-	ld      e,a
-	ld      a,($dc06)
-	and     a
-	jr      z,_c17e
-	cp      e
-	jr      c,_c1d9
-_c17e:
-	ld      a,e
-	ld      ($dc06),a
-	ld      ($dd03),hl
-	ld      a,($dcdb)
-	or      %00001111
-	out     (SMS_SOUND_PORT),a
-	ld      a,(hl)
-	ld      ($dc05),a
-	inc     hl
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	inc     hl
-	ld      ($dd00),de
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	inc     hl
-	ld      ($dc0e),de
-	inc     hl
-	ld      ($dc24),hl
-	ld      hl,_c1dd
-	add     a,a
-	ld      e,a
-	ld      d,$00
-	add     hl,de
-	ld      a,(hl)
-	ld      ($dcda),a
-	inc     hl
-	ld      a,(hl)
-	ld      ($dcdb),a
-	ld      hl,$0000
-	ld      ($dcfc),hl
-	ld      ($dcf1),hl
-	ld      ($dcf6),hl
-	ld      ($dce2),hl
-	ld      a,$04
-	ld      ($dd05),a
-	inc     hl
-	ld      ($dcdc),hl
-	ld      hl,$dd0b
-	ld      ($dcfa),hl
-	ld      a,$02
-	ld      ($dd02),a
-_c1d9:
-	pop     hl
-	pop     de
-	pop     af
-	ret
-
-_c1dd:
-.db $80, $90, $a0, $b0, $c0, $d0, $e0, $f0
-
-;--------------------------------------------------------------------------------------
-
-_c1e5:
-	push    af
-	ld      a,($dc4e)
-	or      $02
-	ld      ($dc4e),a
-	ld      a,($dc7b)
-	or      $02
-	ld      ($dc7b),a
-	ld      a,($dca8)
-	or      $02
-	ld      ($dca8),a
-	ld      a,($dcd5)
-	or      $02
-	ld      ($dcd5),a
-	ld      a,($dc52)
-	ld      ($dc2b),a
-	ld      a,($dc7f)
-	ld      ($dc58),a
-	ld      a,($dcac)
-	ld      ($dc85),a
-	ld      a,($dcd9)
-	ld      ($dcb2),a
-	xor     a
-	ld      ($dc04),a
-	pop     af
-	ret
-
-;--------------------------------------------------------------------------------------
-
-_c224:
-	push    af
-	push    hl
-	ld      ($dc12),hl
-	ld      a,($dc04)
-	or      $08
-	ld      ($dc04),a
-	ld      hl,$1000
-	ld      ($dc10),hl
-	pop     hl
-	pop     af
-	ret
-
-;____________________________________________________________________($423A)_[$C23A]___
-
-_c23a:
-	ld      ix,$dc26
-	ld      de,($dc1c)
-	ld      bc,($dc0a)
-	call    _c2f4
-	ld      ($dc14),ix
-	ld      ($dc1c),de
-	
-	ld      ix,$dc53
-	ld      de,($dc1e)
-	ld      bc,($dc0a)
-	call    _c2f4
-	ld      ($dc16),ix
-	ld      ($dc1e),de
-	
-	ld      ix,$dc80
-	ld      de,($dc20)
-	ld      bc,($dc0a)
-	call    _c2f4
-	ld      ($dc18),ix
-	ld      ($dc20),de
-	
-	ld      ix,$dcad
-	ld      de,($dc22)
-	ld      bc,($dc0a)
-	call    _c2f4
-	ld      ($dc1a),ix
-	ld      ($dc22),de
-	
-	ld      ix,$dcda
-	ld      de,($dc24)
-	ld      bc,($dc0e)
-	call    _c2f4
-	ld      ($dc24),de
-	bit     1,(ix+$28)
-	jr      z,_c2bf
-	
-	ld      hl,$dc14
-	ld      a,($dc05)
-	add     a,a
-	ld      c,a
-	ld      b,$00
-	add     hl,bc
-	ld      (hl),$da
-	inc     hl
-	ld      (hl),$dc
-_c2bf:
-	ld      ix,($dc14)
-	call    _c3de
-	ld      ix,($dc16)
-	call    _c3de
-	ld      ix,($dc18)
-	call    _c3de
-	ld      ix,($dc1a)
-	call    _c3de
-	
-	ld      a,($dc04)
-	and     $08
-	ret     z
-	
-	ld      hl,($dc10)
-	ld      bc,($dc12)
-	and     a
-	sbc     hl,bc
-	jr      nc,_c2f0
-	call    _c12d			;reset sound / mute?
-_c2f0:
-	ld      ($dc10),hl
-	ret
-
-;____________________________________________________________________($42F4)_[$C2F4]___
-
-_c2f4:
-	bit     1,(ix+$28)
-	ret     z
-	
-	ld      l,(ix+$02)
-	ld      h,(ix+$03)
-	and     a
-	sbc     hl,bc
-	ld      (ix+$02),l
-	ld      (ix+$03),h
-	jr      z,_c30d
-	jp      nc,_c3c9
-_c30d:
-	ld      a,(de)
-	and     a
-	jp      m,_c4f3
-	cp      $70
-	jr      c,_c34b
-	cp      $7f
-	jr      nz,_c321
-	ld      (ix+$1e),$00
-	jp      _c39f
-_c321:
-	push    de
-	push    ix
-	pop     hl
-	ld      bc,$000e
-	add     hl,bc
-	ex      de,hl
-	and     $0f
-	ld      l,a
-	ld      h,$00
-	add     hl,hl
-	add     hl,hl
-	add     hl,hl
-	ld      bc,_c3ce
-	add     hl,bc
-	ld      a,(hl)
-	ld      (ix+$25),a
-	inc     hl
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	pop     de
-	jp      _c36e
-_c34b:
-	and     $0f
-	ld      hl,_c4d5
-	add     a,a
-	ld      c,a
-	ld      b,$00
-	add     hl,bc
-	ld      a,(hl)
-	ld      (ix+$06),a
-	inc     hl
-	ld      a,(hl)
-	ld      (ix+$07),a
-	ld      a,(de)
-	rrca    
-	rrca    
-	rrca    
-	rrca    
-	and     $0f
-	ld      (ix+$1f),a
-	bit     0,(ix+$28)
-	jr      nz,_c39f
-_c36e:
-	ld      a,(ix+$14)
-	ld      (ix+$19),a
-	ld      a,(ix+$15)
-	ld      (ix+$1a),a
-	ld      a,(ix+$16)
-	srl     a
-	ld      (ix+$1b),a
-	ld      a,(ix+$17)
-	ld      (ix+$1c),a
-	ld      a,(ix+$18)
-	ld      (ix+$1d),a
-	xor     a
-	ld      (ix+$0a),a
-	ld      (ix+$0b),a
-	ld      (ix+$0d),a
-	ld      (ix+$0c),a
-	ld      (ix+$1e),$0f
-_c39f:
-	inc     de
-	ld      a,(de)
-	inc     de
-	and     a
-	jr      nz,_c3a8
-	ld      a,(ix+$24)
-_c3a8:
-	push    de
-	ld      c,a
-	ld      l,(ix+$26)
-	ld      h,(ix+$27)
-	ld      a,l
-	or      h
-	jr      nz,_c3b7
-	ld      hl,($dc08)
-_c3b7:
-	call    _c6d8
-	pop     de
-	ld      a,l
-	add     a,(ix+$02)
-	ld      (ix+$02),a
-	ld      a,h
-	adc     a,(ix+$03)
-	ld      (ix+$03),a
-_c3c9:
-	res     0,(ix+$28)
-	ret
-
-_c3ce:
-.db $05, $ff, $be, $0a, $04, $05, $02, $00, $05, $e6, $24, $5a, $14, $28, $08, $00
-
-_c3de:
-	bit     1,(ix+$28)
-	ret     z
-	ld      a,(ix+$0d)
-	and     a
-	jp      z,_c545
-
-.db $3d, $ca, $5c, $45, $3d, $ca, $79, $45, $3d, $ca, $97, $45
-
-_c3f6:
-	ld      a,(ix+$00)
-	cp      $e0
-	jr      nz,_c412
-	ld      c,(ix+$25)
-	ld      a,($dc07)
-	cp      c
-	jp      z,_c48f
-	ld      a,c
-	ld      ($dc07),a
-	or      %11100000		;noise channel frequency?
-	out     (SMS_SOUND_PORT),a
-	jp      _c48f
-_c412:
-	ld      e,(ix+$0a)
-	ld      d,(ix+$0b)
-	ld      a,(ix+$19)
-	and     a
-	jr      z,_c424
-	dec     (ix+$19)
-	jp      _c45a
-_c424:
-	dec     (ix+$1a)
-	jp      nz,_c45a
-	ld      a,(ix+$15)
-	ld      (ix+$1a),a
-	ld      l,(ix+$1c)
-	ld      h,(ix+$1d)
-	dec     (ix+$1b)
-	jp      nz,_c452
-	ld      a,(ix+$16)
-	ld      (ix+$1b),a
-	ld      a,l
-	cpl     
-	ld      l,a
-	ld      a,h
-	cpl     
-	ld      h,a
-	inc     hl
-	ld      (ix+$1c),l
-	ld      (ix+$1d),h
-	jp      _c45a
-_c452:
-	add     hl,de
-	ld      (ix+$0a),l
-	ld      (ix+$0b),h
-	ex      de,hl
-_c45a:
-	ld      l,(ix+$06)
-	ld      h,(ix+$07)
-	ld      c,(ix+$08)
-	ld      b,(ix+$09)
-	add     hl,bc
-	add     hl,de
-	ld      a,(ix+$1f)
-	and     a
-	jr      z,_c475
-	ld      b,a
-_c46f:
-	srl     h
-_c471:
-	rr      l
-	djnz    _c46f
-_c475:
-	ld      a,l
-	and     %00001111
-	or      (ix+$00)
-	out     (SMS_SOUND_PORT),a
-	ld      a,h
-	rlca    
-	rlca    
-	rlca    
-	rlca    
-	and     %11110000
-	ld      c,a
-	ld      a,l
-	rrca    
-	rrca    
-	rrca    
-	rrca    
-	and     %00001111
-	or      c
-	out     (SMS_SOUND_PORT),a
-_c48f:
-	ld      a,(ix+$05)
-	and     a
-	jr      z,_c4a7
-	ld      c,a
-	ld      a,(ix+$0c)
-	and     a
-	jr      z,_c4a7
-	ld      l,a
-	ld      h,$00
-	call    _c6d8
-	rl      l
-	ld      a,$00
-	adc     a,h
-_c4a7:
-	and     (ix+$1e)
-	xor     %00001111
-	or      (ix+$01)
-	out     (SMS_SOUND_PORT),a
-	ld      a,($dc04)
-	and     $08
-	ret     z
-	ld      a,(ix+$2b)
-	cp      $04
-	ret     z
-	ld      l,(ix+$04)
-	ld      h,(ix+$05)
-	ld      bc,($dc12)
-	sbc     hl,bc
-	jr      nc,_c4ce
-	ld      hl,$0000
-_c4ce:
-	ld      (ix+$04),l
-	ld      (ix+$05),h
-	ret
-
-_c4d5:
-.db $56, $03, $26, $03, $f9, $02, $ce, $02, $a5, $02, $80, $02, $5c, $02, $3a, $02
-.db $1a, $02, $fb, $01, $df, $01, $c4, $01, $f7, $03, $be, $03, $88, $03
-
-_c4f3:
-	cp      $ff
-	jp      z,_c50b
-	cp      $fe
-	jp      z,_c519
-	inc     de
-	ld      hl,_c529
-	add     a,a
-	ld      c,a
-	ld      b,$00
-	add     hl,bc
-	ld      a,(hl)
-	inc     hl
-	ld      h,(hl)
-	ld      l,a
-	jp      (hl)
-_c50b:
-	ld      l,(ix+$22)
-	ld      h,(ix+$23)
-	ld      a,l
-	or      h
-	jr      z,_c51d
-	ex      de,hl
-	jp      _c30d
-_c519:
-	xor     a
-	ld      ($dc06),a
-_c51d:
-	res     1,(ix+$28)
-	ld      a,%00001111
-	or      (ix+$01)
-	out     (SMS_SOUND_PORT),a
-	ret
-
-_c529:
-.dw _c5ae, _c5d1, _c5f2, _c60a, _c620, _c62d, _c632, _c647
-.dw _c67d, _c686, _c68e, _c696, _c6b4, _c6d1
-
-_c545:
-	ld      a,(ix+$0e)
-	add     a,(ix+$0c)
-	jp      nc,_c550
-	ld      a,$ff
-_c550:
-	ld      (ix+$0c),a
-	jp      nc,_c3f6
-	inc     (ix+$0d)
-	jp      _c3f6
-_c55c:
-	ld      c,(ix+$10)
-	ld      a,(ix+$0c)
-	sub     (ix+$0f)
-	jr      c,_c56d
-	cp      (ix+$10)
-	jr      c,_c56d
-	ld      c,a
-_c56d:
-	ld      (ix+$0c),c
-	jp      nc,_c3f6
-	inc     (ix+$0d)
-	jp      _c3f6
-_c579:
-	ld      c,(ix+$12)
-	ld      a,(ix+$0c)
-	sub     (ix+$11)
-	jr      c,_c58b
-	cp      (ix+$12)
-	jp      c,_c58b
-	ld      c,a
-_c58b:
-	ld      (ix+$0c),c
-	jp      nc,_c3f6
-	inc     (ix+$0d)
-	jp      _c3f6
-_c597:
-	ld      a,(ix+$0c)
-	sub     (ix+$13)
-	jp      nc,_c5a2
-	ld      a,$00
-_c5a2:
-	ld      (ix+$0c),a
-	jp      nc,_c3f6
-	inc     (ix+$0d)
-	jp      _c3f6
-
-_c5ae:
-	ld      a,(de)
-	ld      (ix+$26),a
-	ld      ($dc08),a
-	inc     de
-	ld      a,(de)
-	ld      (ix+$27),a
-	ld      ($dc09),a
-	inc     de
-	ld      a,(de)
-	ld      ($dc0a),a
-	ld      ($dc0c),a
-	inc     de
-	ld      a,(de)
-	ld      ($dc0b),a
-	ld      ($dc0d),a
-	inc     de
-	jp      _c30d
-_c5d1:
-	ld      a,(de)
-	ld      (ix+$2c),a
-	inc     de
-	ld      a,(ix+$2b)
-	cp      $04
-	jr      z,_c5e5
-	ld      a,($dc04)
-	and     $08
-	jp      nz,_c30d
-_c5e5:
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
-	ld      (ix+$04),$00
-	jp      _c30d
-	
-_c5f2:
-	push    ix
-	pop     hl
-	ld      bc,$000e
-	add     hl,bc
-	ex      de,hl
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ex      de,hl
-	jp      _c30d
-_c60a:
-	push    ix
-	pop     hl
-	ld      bc,$0014
-	add     hl,bc
-	ex      de,hl
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ldi     
-	ex      de,hl
-	jp      _c30d
-_c620:
-	ld      a,(de)
-	ld      (ix+$08),a
-	inc     de
-	ld      a,(de)
-	ld      (ix+$09),a
-	inc     de
-	jp      _c30d
-_c62d:
-	ld      a,(de)
-	inc     de
-	jp      _c30d
-_c632:
-	ld      l,(ix+$20)
-	ld      h,(ix+$21)
-	ld      (hl),$00
-	ld      bc,$0005
-	add     hl,bc
-	ld      (ix+$20),l
-	ld      (ix+$21),h
-	jp      _c30d
-_c647:
-	ld      l,(ix+$20)
-	ld      h,(ix+$21)
-	ld      bc,$fffb
-	add     hl,bc
-	ld      a,(hl)
-	and     a
-	jr      nz,_c65d
-	ld      a,(de)
-	dec     a
-	jr      z,_c671
-	ld      (hl),a
-	jp      _c660
-_c65d:
-	dec     (hl)
-	jr      z,_c671
-_c660:
-	ex      de,hl
-	inc     hl
-	ld      a,(hl)
-	inc     hl
-	ld      h,(hl)
-	ld      l,a
-	ld      c,(ix+$29)
-	ld      b,(ix+$2a)
-	add     hl,bc
-	ex      de,hl
-	jp      _c30d
-_c671:
-	ld      (ix+$20),l
-	ld      (ix+$21),h
-	inc     de
-	inc     de
-	inc     de
-	jp      _c30d
-_c67d:
-	ld      (ix+$22),e
-	ld      (ix+$23),d
-	jp      _c30d
-_c686:
-	ld      a,(de)
-	ld      (ix+$25),a
-	inc     de
-	jp      _c30d
-_c68e:
-	ld      a,(de)
-	ld      (ix+$24),a
-	inc     de
-	jp      _c30d
-_c696:
-	ld      a,(ix+$2c)
-	inc     a
-	cp      $10
-	jr      c,_c6a0
-	ld      a,$0f
-_c6a0:
-	ld      (ix+$2c),a
-	ld      a,($dc04)
-	and     $08
-	jp      nz,_c30d
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
-	jp      _c30d
-_c6b4:
-	ld      a,(ix+$2c)
-	dec     a
-	cp      $10
-	jr      c,_c6bd
-	xor     a
-_c6bd:
-	ld      (ix+$2c),a
-	ld      a,($dc04)
-	and     $08
-	jp      nz,_c30d
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
-	jp      _c30d
-_c6d1:
-	set     0,(ix+$28)
-	jp      _c30d
-_c6d8:
-	xor     a
-	ld      b,$07
-	ex      de,hl
-	ld      l,a
-	ld      h,a
-_c6de:
-	rl      c
-	jp      nc,_c6e4
-	add     hl,de
-_c6e4:
-	add     hl,hl
-	djnz    _c6de
-	or      c
-	ret     z
-	add     hl,de
-	ret
-
-;--------------------------------------------------------------------------------------
-;this fetches an address from a look up table and stores it in HL
-
-_c6eb:
-	push    hl
-	ld      hl,S1_MusicPointers
-	
-	add     a,a
-	add     a,l
-	ld      l,a
-	ld      a,$00
-	adc     a,h
-	ld      h,a
-	
-	ld      a,(hl)
-	inc     hl
-	ld      h,(hl)
-	ld      l,a
-	
-	call    _c018
-	
-	pop     hl
-	ret
-
-;--------------------------------------------------------------------------------------
-
-_c6ff:
-	push    hl
-	push    de
-	ld      hl,S1_SFXPointers
-	add     a,a
-	add     a,a
-	ld      e,a
-	ld      d,$00
-	add     hl,de
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	inc     hl
-	ld      a,(hl)
-	ex      de,hl
-	call    _c171
-	pop     de
-	pop     hl
-	ret
-
-;____________________________________________________________________________[$C716]___
-
-;insert the music data
+.include "includes\sound_driver.asm"
 .include "includes\music.asm"
 
 ;we might be able to set a background repeating text like this so that we don't have
@@ -20813,63 +19887,3 @@ _c6ff:
 .db "Master System & Game Gear Version.  "
 .db "'1991 (C)Ancient. (BANK0-4)", $A2
 .db "SONIC THE HEDGE"
-
-;======================================================================================
-
-.BANK 4 SLOT 4
-.ORGA $10000
-
-;======================================================================================
-
-.BANK 5 SLOT 5
-.ORGA $14000
-
-;======================================================================================
-
-.BANK 6 SLOT 6
-.ORGA $18000
-
-;======================================================================================
-
-.BANK 7 SLOT 7
-.ORGA $1C000
-
-;======================================================================================
-
-.BANK 8 SLOT 8
-.ORGA $20000
-
-;======================================================================================
-
-.BANK 9 SLOT 9
-.ORGA $24000
-
-;======================================================================================
-
-.BANK 10 SLOT 10
-.ORGA $28000
-
-;======================================================================================
-
-.BANK 11 SLOT 11
-.ORGA $2C000
-
-;======================================================================================
-
-.BANK 12 SLOT 12
-.ORGA $30000
-
-;======================================================================================
-
-.BANK 13 SLOT 13
-.ORGA $34000
-
-;======================================================================================
-
-.BANK 14 SLOT 14
-.ORGA $38000
-
-;======================================================================================
-
-.BANK 15 SLOT 15
-.ORGA $3C000

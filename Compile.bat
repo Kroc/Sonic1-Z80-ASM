@@ -1,6 +1,8 @@
 @ECHO OFF
 CLS
 
+CD %~dp0
+
 IF EXIST S1.o ERASE S1.o
 WLADX\wla-z80 -o s1.sms.asm
 
