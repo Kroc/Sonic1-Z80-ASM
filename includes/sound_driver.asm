@@ -3,39 +3,40 @@
 ;======================================================================================
 
 .STRUCT TRACK
-	channelFrequencyPSG	db
-	channelVolumePSG	db
-	tickStep		dw
-	fadeTicks		dw
-	noteFrequencey		dw
-	detune			dw
-	modulationFreq		dw
-	envelopeLevel		db
-	adsrState		db
-	attackRate		db
-	decay1Rate		db
-	decay1Level		db
-	decay2Rate		db
-	decay2Level		db
-	sustainRate		db
-	initModulationDelay	dw
-	initModulationStepDelay	db
-	initModulationStepCount	db
-	initModulationFreqDelta	dw
-	modulationStepDelay	db
-	modulationStepCount	db
-	modulationFreqDelta	dw
-	effectiveVolume		db
-	octave			db
-	loopAddress		dw
-	masterLoopAddress	dw
-	defaultNoteLength	db
-	noiseMode		db
-	tempoDivider		dw
-	flags			db
-	baseAddress		dw
-	id			db
-	channelVolume		db
+	channelFrequencyPSG	db	;+$00
+	channelVolumePSG	db	;+$01
+	tickStep		dw	;+$02
+	fadeTicks		dw	;+$04
+	noteFrequencey		dw	;+$06 - can't find direct reference
+	detune			dw	;+$08
+	modulationFreq		dw	;+$0A
+	envelopeLevel		db	;+$0C
+	ADSRstate		db	;+$0D
+	attackRate		db	;+$0E
+	decay1Rate		db	;+$0F
+	decay1Level		db	;+$10
+	decay2Rate		db	;+$11
+	decay2Level		db	;+$12
+	sustainRate		db	;+$13
+	initModulationDelay	db	;+$14
+	initModulationStepDelay	db	;+$15
+	initModulationStepCount	db	;+$16
+	initModulationFreqDelta	dw	;+$17
+	modulationDelay		db	;+$19
+	modulationStepDelay	db	;+$1A
+	modulationStepCount	db	;+$1B
+	modulationFreqDelta	dw	;+$1C
+	effectiveVolume		db	;+$1E
+	octave			db	;+$1F
+	loopAddress		dw	;+$20
+	masterLoopAddress	dw	;+$22
+	defaultNoteLength	db	;+$24
+	noiseMode		db	;+$25
+	tempoDivider		dw	;+$26
+	flags			db	;+$28
+	baseAddress		dw	;+$29
+	id			db	;+$2B
+	channelVolume		db	;+$2C
 .ENDST
 
 ;define the variables in RAM:
@@ -43,25 +44,25 @@
 .ENUM $DC04
 	playbackMode		db	;bit 3 dis/enables fading out
 	overriddenTrack		db	;which music track the SFX is overriding
-	SFXPriority		db	;priority level of current SFX
+	SFXpriority		db	;priority level of current SFX
 	noiseMode		db	;high/med/low noise mode and frequency mode
-	tickMultiplier		dw
-	tickDivider1		dw
-	tickDivider2		dw
-	tickDividerSFX		dw
-	fadeTicks		dw
-	fadeTicksDecrement	dw
+	tickMultiplier		dw	
+	tickDivider1		dw	
+	tickDivider2		dw	
+	tickDividerSFX		dw	
+	fadeTicks		dw	
+	fadeTicksDecrement	dw	
 	
-	channel0TrackPointer	dw
-	channel1TrackPointer	dw
-	channel2TrackPointer	dw
-	channel3TrackPointer	dw
+	channel0trackPointer	dw	
+	channel1trackPointer	dw	
+	channel2trackPointer	dw	
+	channel3trackPointer	dw	
 	
-	track0DataPointer	dw
-	track1DataPointer	dw
-	track2DataPointer	dw
-	track3DataPointer	dw
-	track4DataPointer	dw
+	track0dataPointer	dw	
+	track1dataPointer	dw	
+	track2dataPointer	dw	
+	track3dataPointer	dw	
+	track4dataPointer	dw	
 	
 	track0vars		INSTANCEOF TRACK
 	track1vars		INSTANCEOF TRACK
@@ -97,11 +98,10 @@ _loadMusic:
 	push    hl
 	push    ix
 	
-	;copy HL to BC
 	ld      c,l
 	ld      b,h
 	
-	ld      ix,track0DataPointer
+	ld      ix,track0dataPointer
 	ld      a,5
 	
 -	;load the 16-bit value from the parameter address into DE
@@ -109,25 +109,17 @@ _loadMusic:
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ex      de,hl			;swap DE into HL
-	add     hl,bc			;add the value to the initial address
+	ex      de,hl			
+	add     hl,bc			
 	
-	;copy the new address to RAM at track0DataPointer/D+
-	ld      (ix+$00),l
+	ld      (ix+TRACK.channelFrequencyPSG),l
 	inc     ix
-	ld      (ix+$00),h
+	ld      (ix+TRACK.channelFrequencyPSG),h
 	inc     ix
 	ex      de,hl
 	
-	;repeat this process five times
 	dec     a
 	jp      nz,-
-	
-	;$64C3 + $1110 = $75D3
-	;$64C3 + $2025 = $84E8
-	;$64C3 + $3F3D = $A400
-	;$64C3 + $393D = $9E00
-	;$64C3 + $0024 = $64E7
 	
 	ld      hl,initTrackValues1
 
@@ -158,71 +150,106 @@ _loadMusic:
 	pop     de
 	pop     bc
 	pop     af
-	ld      ($dc4f),hl
-	ld      ($dc7c),hl
-	ld      ($dca9),hl
-	ld      ($dcd6),hl
+	ld      (track0vars.baseAddress),hl
+	ld      (track1vars.baseAddress),hl
+	ld      (track2vars.baseAddress),hl
+	ld      (track3vars.baseAddress),hl
 	ret
 
+;______________________________________________________________________________________
+
 initTrackValues1:
-.dw $DC48, $0000
-.dw $DC75, $0000
-.dw $DCA2, $0000
-.dw $DCCF, $0000
-.dw $DC46, loopStack+0
-.dw $DC73, loopStack+1
-.dw $DCA0, loopStack+2
-.dw $DCCD, loopStack+3
-.dw $DC28, $0001
-.dw $DC55, $0001
-.dw $DC82, $0001
-.dw $DCAF, $0001
-.dw $DC3D, $0000
-.dw $DC42, $0000
-.dw $DC6A, $0000
-.dw $DC6F, $0000
-.dw $DC97, $0000
-.dw $DC9C, $0000
-.dw $DCC4, $0000
-.dw $DCC9, $0000
-.dw $DC2E, $0000
-.dw $DC5B, $0000
-.dw $DC88, $0000
-.dw $DCB5, $0000
+.dw track0vars.masterLoopAddress, $0000
+.dw track1vars.masterLoopAddress, $0000
+.dw track2vars.masterLoopAddress, $0000
+.dw track3vars.masterLoopAddress, $0000
+
+.dw track0vars.loopAddress, loopStack+0
+.dw track1vars.loopAddress, loopStack+1
+.dw track2vars.loopAddress, loopStack+2
+.dw track3vars.loopAddress, loopStack+3
+
+.dw track0vars.tickStep, $0001
+.dw track1vars.tickStep, $0001
+.dw track2vars.tickStep, $0001
+.dw track3vars.tickStep, $0001
+
+.dw track0vars.initModulationFreqDelta, $0000
+.dw track0vars.modulationFreqDelta, 	$0000
+.dw track1vars.initModulationFreqDelta, $0000
+.dw track1vars.modulationFreqDelta, 	$0000
+.dw track2vars.initModulationFreqDelta, $0000
+.dw track2vars.modulationFreqDelta, 	$0000
+.dw track3vars.initModulationFreqDelta, $0000
+.dw track3vars.modulationFreqDelta, 	$0000
+
+.dw track0vars.detune, $0000
+.dw track1vars.detune, $0000
+.dw track2vars.detune, $0000
+.dw track3vars.detune, $0000
+
 .dw tickDivider1, $0001
 .dw $FFFF
 
 initTrackValues2:
-.db $26, $DC, $80
-.db $27, $DC, $90
-.db $53, $DC, $A0
-.db $54, $DC, $B0
-.db $80, $DC, $C0
-.db $81, $DC, $D0
-.db $AD, $DC, $E0
-.db $AE, $DC, $F0
-.db $4E, $DC, $02
-.db $7B, $DC, $02
-.db $A8, $DC, $02
-.db $D5, $DC, $02
-.db $02, $DD, $00
-.db $3A, $DC, $00
-.db $67, $DC, $00
-.db $94, $DC, $00
-.db $C1, $DC, $00
-.db $3B, $DC, $00
-.db $68, $DC, $00
-.db $95, $DC, $00
-.db $C2, $DC, $00
-.db $51, $DC, $00
-.db $7E, $DC, $01
-.db $AB, $DC, $02
-.db $D8, $DC, $03
-.db $06, $DC, $00
-.db $04, $DC, $00
-.dw $FFFF
+.dw track0vars.channelFrequencyPSG
+.db $80
+.dw track0vars.channelVolumePSG
+.db $90
+.dw track1vars.channelFrequencyPSG
+.db $A0
+.dw track1vars.channelVolumePSG
+.db $B0
+.dw track2vars.channelFrequencyPSG
+.db $C0
+.dw track2vars.channelVolumePSG
+.db $D0
+.dw track3vars.channelFrequencyPSG
+.db $E0
+.dw track3vars.channelVolumePSG
+.db $F0
+.dw track0vars.flags
+.db %00000010
+.dw track1vars.flags
+.db %00000010
+.dw track2vars.flags
+.db %00000010
+.dw track3vars.flags
+.db %00000010
+.dw track4vars.flags
+.db %00000000
 
-;____________________________________________________________________($4129)_[$C129]___
+;is there a reason this var is not set using the word table above
+ ;instead of two separate bytes as is the case here?
+.dw track0vars.initModulationDelay+0
+.db $00
+.dw track1vars.initModulationDelay+0
+.db $00
+.dw track2vars.initModulationDelay+0
+.db $00
+.dw track3vars.initModulationDelay+0
+.db $00
+.dw track0vars.initModulationDelay+1
+.db $00
+.dw track1vars.initModulationDelay+1
+.db $00
+.dw track2vars.initModulationDelay+1
+.db $00
+.dw track3vars.initModulationDelay+1
+.db $00
+.dw track0vars.id
+.db $00
+.dw track1vars.id
+.db $01
+.dw track2vars.id
+.db $02
+.dw track3vars.id
+.db $03
+.dw SFXpriority
+.db $00
+.dw playbackMode
+.db $00
+.dw $FFFF
 
 initPSGValues:
 ;    +xx+yyyy	;set channel xx volume to yyyy (0000 is max, 1111 is off)
@@ -231,34 +258,36 @@ initPSGValues:
 .db %11011111	;mute channel 2
 .db %11111111	;mute channel 3
 
-_stop:					;($412D) [$C12D]			
+;______________________________________________________________________________________
+
+_stop:			
 	;put any current values for these registers aside
 	push    af
 	push    hl
 	push    bc
 	
-	ld      a,($dc4e)
+	ld      a,(track0vars.flags)
 	and     %11111101
-	ld      ($dc4e),a
+	ld      (track0vars.flags),a
 	
-	ld      a,($dc7b)
+	ld      a,(track1vars.flags)
 	and     %11111101
-	ld      ($dc7b),a
+	ld      (track1vars.flags),a
 	
-	ld      a,($dca8)
+	ld      a,(track2vars.flags)
 	and     %11111101
-	ld      ($dca8),a
+	ld      (track2vars.flags),a
 	
-	ld      a,($dcd5)
+	ld      a,(track3vars.flags)
 	and     %11111101
-	ld      ($dcd5),a
+	ld      (track3vars.flags),a
 	
-	ld      a,($dd02)
+	ld      a,(track4vars.flags)
 	and     %11111101
-	ld      ($dd02),a
+	ld      (track4vars.flags),a
 	
 	xor     a
-	ld      (SFXPriority),a
+	ld      (SFXpriority),a
 	
 	;mute all sound channels by sending the right bytes to the sound chip
 	ld      b,4
@@ -282,15 +311,15 @@ _loadSFX:
 	push    de
 	push    hl
 	ld      e,a
-	ld      a,(SFXPriority)
+	ld      a,(SFXpriority)
 	and     a
 	jr      z,+
 	cp      e
 	jr      c,++
 +	ld      a,e
-	ld      (SFXPriority),a
-	ld      ($dd03),hl
-	ld      a,($dcdb)
+	ld      (SFXpriority),a
+	ld      (track4vars.baseAddress),hl
+	ld      a,(track4vars.channelVolumePSG)
 	or      %00001111
 	out     (SMS_SOUND_PORT),a
 	ld      a,(hl)
@@ -300,14 +329,14 @@ _loadSFX:
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($dd00),de
+	ld      (track4vars.tempoDivider),de
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
 	ld      (tickDividerSFX),de
 	inc     hl
-	ld      (track4DataPointer),hl
+	ld      (track4dataPointer),hl
 	ld      hl,_c1dd
 	add     a,a
 	ld      e,a
@@ -317,20 +346,20 @@ _loadSFX:
 	ld      (track4vars),a
 	inc     hl
 	ld      a,(hl)
-	ld      ($dcdb),a
+	ld      (track4vars.channelVolumePSG),a
 	ld      hl,$0000
-	ld      ($dcfc),hl
-	ld      ($dcf1),hl
-	ld      ($dcf6),hl
-	ld      ($dce2),hl
+	ld      (track4vars.masterLoopAddress),hl
+	ld      (track4vars.initModulationFreqDelta),hl
+	ld      (track4vars.modulationFreqDelta),hl
+	ld      (track4vars.detune),hl
 	ld      a,$04
-	ld      ($dd05),a
+	ld      (track4vars.id),a
 	inc     hl
-	ld      ($dcdc),hl
-	ld      hl,$dd0b
-	ld      ($dcfa),hl
+	ld      (track4vars.tickStep),hl
+	ld      hl,loopStack + 4
+	ld      (track4vars.loopAddress),hl
 	ld      a,$02
-	ld      ($dd02),a
+	ld      (track4vars.flags),a
 ++	pop     hl
 	pop     de
 	pop     af
@@ -343,26 +372,30 @@ _c1dd:
 
 _unpause:
 	push    af
-	ld      a,($dc4e)
-	or      $02
-	ld      ($dc4e),a
-	ld      a,($dc7b)
-	or      $02
-	ld      ($dc7b),a
-	ld      a,($dca8)
-	or      $02
-	ld      ($dca8),a
-	ld      a,($dcd5)
-	or      $02
-	ld      ($dcd5),a
-	ld      a,($dc52)
-	ld      ($dc2b),a
-	ld      a,($dc7f)
-	ld      ($dc58),a
-	ld      a,($dcac)
-	ld      ($dc85),a
-	ld      a,($dcd9)
-	ld      ($dcb2),a
+	ld      a,(track0vars.flags)
+	or      %00000010
+	ld      (track0vars.flags),a
+	
+	ld      a,(track1vars.flags)
+	or      %00000010
+	ld      (track1vars.flags),a
+	
+	ld      a,(track2vars.flags)
+	or      %00000010
+	ld      (track2vars.flags),a
+	
+	ld      a,(track3vars.flags)
+	or      %00000010
+	ld      (track3vars.flags),a
+	
+	ld      a,(track0vars.channelVolume)
+	ld      (track0vars.fadeTicks+1),a
+	ld      a,(track1vars.channelVolume)
+	ld      (track1vars.fadeTicks+1),a
+	ld      a,(track2vars.channelVolume)
+	ld      (track2vars.fadeTicks+1),a
+	ld      a,(track3vars.channelVolume)
+	ld      (track3vars.fadeTicks+1),a
 	xor     a
 	ld      (playbackMode),a
 	pop     af
@@ -375,7 +408,7 @@ _fadeOut:
 	push    hl
 	ld      (fadeTicksDecrement),hl
 	ld      a,(playbackMode)
-	or      $08
+	or      %00001000
 	ld      (playbackMode),a
 	ld      hl,$1000
 	ld      (fadeTicks),hl
@@ -388,62 +421,62 @@ _fadeOut:
 _update:
 	;track 1
 	ld      ix,track0vars
-	ld      de,(track0DataPointer)
+	ld      de,(track0dataPointer)
 	ld      bc,(tickDivider1)
 	call    _c2f4
-	ld      (channel0TrackPointer),ix
-	ld      (track0DataPointer),de
+	ld      (channel0trackPointer),ix
+	ld      (track0dataPointer),de
 	
 	;track 2
 	ld      ix,track1vars
-	ld      de,(track1DataPointer)
+	ld      de,(track1dataPointer)
 	ld      bc,(tickDivider1)
 	call    _c2f4
-	ld      (channel1TrackPointer),ix
-	ld      (track1DataPointer),de
+	ld      (channel1trackPointer),ix
+	ld      (track1dataPointer),de
 	
 	;track 3
 	ld      ix,track2vars
-	ld      de,(track2DataPointer)
+	ld      de,(track2dataPointer)
 	ld      bc,(tickDivider1)
 	call    _c2f4
-	ld      (channel2TrackPointer),ix
-	ld      (track2DataPointer),de
+	ld      (channel2trackPointer),ix
+	ld      (track2dataPointer),de
 	
 	;track 4
 	ld      ix,track3vars
-	ld      de,(track3DataPointer)
+	ld      de,(track3dataPointer)
 	ld      bc,(tickDivider1)
 	call    _c2f4
-	ld      (channel3TrackPointer),ix
-	ld      (track3DataPointer),de
+	ld      (channel3trackPointer),ix
+	ld      (track3dataPointer),de
 	
 	;SFX track
 	ld      ix,track4vars
-	ld      de,(track4DataPointer)
+	ld      de,(track4dataPointer)
 	ld      bc,(tickDividerSFX)
 	call    _c2f4
-	ld      (track4DataPointer),de
-	bit     1,(ix+$28)
+	ld      (track4dataPointer),de
+	bit     1,(ix+TRACK.flags)
 	jr      z,_c2bf
 	
-	ld      hl,channel0TrackPointer
+	ld      hl,channel0trackPointer
 	ld      a,(overriddenTrack)
 	add     a,a
 	ld      c,a
 	ld      b,$00
 	add     hl,bc
-	ld      (hl),$da
+	ld      (hl),<track4vars
 	inc     hl
-	ld      (hl),$dc
+	ld      (hl),>track4vars
 _c2bf:
-	ld      ix,(channel0TrackPointer)
+	ld      ix,(channel0trackPointer)
 	call    _c3de
-	ld      ix,(channel1TrackPointer)
+	ld      ix,(channel1trackPointer)
 	call    _c3de
-	ld      ix,(channel2TrackPointer)
+	ld      ix,(channel2trackPointer)
 	call    _c3de
-	ld      ix,(channel3TrackPointer)
+	ld      ix,(channel3trackPointer)
 	call    _c3de
 	
 	ld      a,(playbackMode)
@@ -465,15 +498,15 @@ _c2f0:
 ;____________________________________________________________________($42F4)_[$C2F4]___
 
 _c2f4:
-	bit     1,(ix+$28)
+	bit     1,(ix+TRACK.flags)
 	ret     z
 	
-	ld      l,(ix+$02)
-	ld      h,(ix+$03)
+	ld      l,(ix+TRACK.tickStep+0)
+	ld      h,(ix+TRACK.tickStep+1)
 	and     a
 	sbc     hl,bc
-	ld      (ix+$02),l
-	ld      (ix+$03),h
+	ld      (ix+TRACK.tickStep+0),l
+	ld      (ix+TRACK.tickStep+1),h
 	jr      z,_c30d
 	jp      nc,_c3c9
 _c30d:
@@ -484,7 +517,7 @@ _c30d:
 	jr      c,_c34b
 	cp      $7f
 	jr      nz,_c321
-	ld      (ix+$1e),$00
+	ld      (ix+TRACK.effectiveVolume),$00
 	jp      _c39f
 _c321:
 	push    de
@@ -502,7 +535,7 @@ _c321:
 	ld      bc,_c3ce
 	add     hl,bc
 	ld      a,(hl)
-	ld      (ix+$25),a
+	ld      (ix+TRACK.noiseMode),a
 	inc     hl
 	ldi     
 	ldi     
@@ -520,49 +553,49 @@ _c34b:
 	ld      b,$00
 	add     hl,bc
 	ld      a,(hl)
-	ld      (ix+$06),a
+	ld      (ix+TRACK.noteFrequencey),a
 	inc     hl
 	ld      a,(hl)
-	ld      (ix+$07),a
+	ld      (ix+TRACK.noteFrequencey+1),a
 	ld      a,(de)
 	rrca    
 	rrca    
 	rrca    
 	rrca    
 	and     $0f
-	ld      (ix+$1f),a
-	bit     0,(ix+$28)
+	ld      (ix+TRACK.octave),a
+	bit     0,(ix+TRACK.flags)
 	jr      nz,_c39f
 _c36e:
-	ld      a,(ix+$14)
-	ld      (ix+$19),a
-	ld      a,(ix+$15)
-	ld      (ix+$1a),a
-	ld      a,(ix+$16)
+	ld      a,(ix+TRACK.initModulationDelay)
+	ld      (ix+TRACK.modulationDelay),a
+	ld      a,(ix+TRACK.initModulationDelay+1)
+	ld      (ix+TRACK.modulationDelay+1),a
+	ld      a,(ix+TRACK.initModulationStepCount)
 	srl     a
-	ld      (ix+$1b),a
-	ld      a,(ix+$17)
-	ld      (ix+$1c),a
-	ld      a,(ix+$18)
-	ld      (ix+$1d),a
+	ld      (ix+TRACK.modulationStepCount),a
+	ld      a,(ix+TRACK.initModulationFreqDelta+0)
+	ld      (ix+TRACK.modulationFreqDelta+0),a
+	ld      a,(ix+TRACK.initModulationFreqDelta+1)
+	ld      (ix+TRACK.modulationFreqDelta+1),a
 	xor     a
-	ld      (ix+$0a),a
-	ld      (ix+$0b),a
-	ld      (ix+$0d),a
-	ld      (ix+$0c),a
-	ld      (ix+$1e),$0f
+	ld      (ix+TRACK.modulationFreq+0),a
+	ld      (ix+TRACK.modulationFreq+1),a
+	ld      (ix+TRACK.ADSRstate),a
+	ld      (ix+TRACK.envelopeLevel),a
+	ld      (ix+TRACK.effectiveVolume),$0f
 _c39f:
 	inc     de
 	ld      a,(de)
 	inc     de
 	and     a
 	jr      nz,_c3a8
-	ld      a,(ix+$24)
+	ld      a,(ix+TRACK.defaultNoteLength)
 _c3a8:
 	push    de
 	ld      c,a
-	ld      l,(ix+$26)
-	ld      h,(ix+$27)
+	ld      l,(ix+TRACK.tempoDivider+0)
+	ld      h,(ix+TRACK.tempoDivider+1)
 	ld      a,l
 	or      h
 	jr      nz,_c3b7
@@ -571,32 +604,32 @@ _c3b7:
 	call    _c6d8
 	pop     de
 	ld      a,l
-	add     a,(ix+$02)
-	ld      (ix+$02),a
+	add     a,(ix+TRACK.tickStep+0)
+	ld      (ix+TRACK.tickStep+0),a
 	ld      a,h
-	adc     a,(ix+$03)
-	ld      (ix+$03),a
+	adc     a,(ix+TRACK.tickStep+1)
+	ld      (ix+TRACK.tickStep+1),a
 _c3c9:
-	res     0,(ix+$28)
+	res     0,(ix+TRACK.flags)
 	ret
 
 _c3ce:
 .db $05, $ff, $be, $0a, $04, $05, $02, $00, $05, $e6, $24, $5a, $14, $28, $08, $00
 
 _c3de:
-	bit     1,(ix+$28)
+	bit     1,(ix+TRACK.flags)
 	ret     z
-	ld      a,(ix+$0d)
+	ld      a,(ix+TRACK.ADSRstate)
 	and     a
 	jp      z,_c545
 
 .db $3d, $ca, $5c, $45, $3d, $ca, $79, $45, $3d, $ca, $97, $45
 
 _c3f6:
-	ld      a,(ix+$00)
+	ld      a,(ix+TRACK.channelFrequencyPSG)
 	cp      $e0
 	jr      nz,_c412
-	ld      c,(ix+$25)
+	ld      c,(ix+TRACK.noiseMode)
 	ld      a,(noiseMode)
 	cp      c
 	jp      z,_c48f
@@ -606,24 +639,24 @@ _c3f6:
 	out     (SMS_SOUND_PORT),a
 	jp      _c48f
 _c412:
-	ld      e,(ix+$0a)
-	ld      d,(ix+$0b)
-	ld      a,(ix+$19)
+	ld      e,(ix+TRACK.modulationFreq+0)
+	ld      d,(ix+TRACK.modulationFreq+1)
+	ld      a,(ix+TRACK.modulationDelay)
 	and     a
 	jr      z,_c424
-	dec     (ix+$19)
+	dec     (ix+TRACK.modulationDelay)
 	jp      _c45a
 _c424:
-	dec     (ix+$1a)
+	dec     (ix+TRACK.modulationStepDelay)
 	jp      nz,_c45a
 	ld      a,(ix+$15)
-	ld      (ix+$1a),a
-	ld      l,(ix+$1c)
-	ld      h,(ix+$1d)
-	dec     (ix+$1b)
+	ld      (ix+TRACK.modulationStepDelay),a
+	ld      l,(ix+TRACK.modulationFreqDelta+0)
+	ld      h,(ix+TRACK.modulationFreqDelta+1)
+	dec     (ix+TRACK.modulationStepCount)
 	jp      nz,_c452
-	ld      a,(ix+$16)
-	ld      (ix+$1b),a
+	ld      a,(ix+TRACK.initModulationStepCount)
+	ld      (ix+TRACK.modulationStepCount),a
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -631,22 +664,22 @@ _c424:
 	cpl     
 	ld      h,a
 	inc     hl
-	ld      (ix+$1c),l
-	ld      (ix+$1d),h
+	ld      (ix+TRACK.modulationFreqDelta+0),l
+	ld      (ix+TRACK.modulationFreqDelta+1),h
 	jp      _c45a
 _c452:
 	add     hl,de
-	ld      (ix+$0a),l
-	ld      (ix+$0b),h
+	ld      (ix+TRACK.modulationFreq+0),l
+	ld      (ix+TRACK.modulationFreq+1),h
 	ex      de,hl
 _c45a:
-	ld      l,(ix+$06)
-	ld      h,(ix+$07)
-	ld      c,(ix+$08)
-	ld      b,(ix+$09)
+	ld      l,(ix+TRACK.noteFrequencey)
+	ld      h,(ix+TRACK.noteFrequencey+1)
+	ld      c,(ix+TRACK.detune+0)
+	ld      b,(ix+TRACK.detune+1)
 	add     hl,bc
 	add     hl,de
-	ld      a,(ix+$1f)
+	ld      a,(ix+TRACK.octave)
 	and     a
 	jr      z,_c475
 	ld      b,a
@@ -658,7 +691,7 @@ _c471:
 _c475:
 	ld      a,l
 	and     %00001111
-	or      (ix+$00)
+	or      (ix+TRACK.channelFrequencyPSG)
 	out     (SMS_SOUND_PORT),a
 	ld      a,h
 	rlca    
@@ -676,11 +709,11 @@ _c475:
 	or      c
 	out     (SMS_SOUND_PORT),a
 _c48f:
-	ld      a,(ix+$05)
+	ld      a,(ix+TRACK.fadeTicks+1)
 	and     a
 	jr      z,_c4a7
 	ld      c,a
-	ld      a,(ix+$0c)
+	ld      a,(ix+TRACK.envelopeLevel)
 	and     a
 	jr      z,_c4a7
 	ld      l,a
@@ -690,25 +723,25 @@ _c48f:
 	ld      a,$00
 	adc     a,h
 _c4a7:
-	and     (ix+$1e)
+	and     (ix+TRACK.effectiveVolume)
 	xor     %00001111
-	or      (ix+$01)
+	or      (ix+TRACK.channelVolumePSG)
 	out     (SMS_SOUND_PORT),a
 	ld      a,(playbackMode)
 	and     $08
 	ret     z
-	ld      a,(ix+$2b)
+	ld      a,(ix+TRACK.id)
 	cp      $04
 	ret     z
-	ld      l,(ix+$04)
-	ld      h,(ix+$05)
+	ld      l,(ix+TRACK.fadeTicks+0)
+	ld      h,(ix+TRACK.fadeTicks+1)
 	ld      bc,(fadeTicksDecrement)
 	sbc     hl,bc
 	jr      nc,_c4ce
 	ld      hl,$0000
 _c4ce:
-	ld      (ix+$04),l
-	ld      (ix+$05),h
+	ld      (ix+TRACK.fadeTicks+0),l
+	ld      (ix+TRACK.fadeTicks+1),h
 	ret
 
 _c4d5:
@@ -732,8 +765,8 @@ _c4f3:
 	ld      l,a
 	jp      (hl)
 _c50b:
-	ld      l,(ix+$22)
-	ld      h,(ix+$23)
+	ld      l,(ix+TRACK.masterLoopAddress+0)
+	ld      h,(ix+TRACK.masterLoopAddress+1)
 	ld      a,l
 	or      h
 	jr      z,_c51d
@@ -741,11 +774,11 @@ _c50b:
 	jp      _c30d
 _c519:
 	xor     a
-	ld      (SFXPriority),a
+	ld      (SFXpriority),a
 _c51d:
-	res     1,(ix+$28)
+	res     1,(ix+TRACK.flags)
 	ld      a,%00001111
-	or      (ix+$01)
+	or      (ix+TRACK.channelVolumePSG)
 	out     (SMS_SOUND_PORT),a
 	ret
 
@@ -754,84 +787,84 @@ _c529:
 .dw _c67d, _c686, _c68e, _c696, _c6b4, _c6d1
 
 _c545:
-	ld      a,(ix+$0e)
-	add     a,(ix+$0c)
+	ld      a,(ix+TRACK.attackRate)
+	add     a,(ix+TRACK.envelopeLevel)
 	jp      nc,_c550
 	ld      a,$ff
 _c550:
-	ld      (ix+$0c),a
+	ld      (ix+TRACK.envelopeLevel),a
 	jp      nc,_c3f6
-	inc     (ix+$0d)
+	inc     (ix+TRACK.ADSRstate)
 	jp      _c3f6
 _c55c:
-	ld      c,(ix+$10)
-	ld      a,(ix+$0c)
-	sub     (ix+$0f)
+	ld      c,(ix+TRACK.decay1Level)
+	ld      a,(ix+TRACK.envelopeLevel)
+	sub     (ix+TRACK.decay1Rate)
 	jr      c,_c56d
-	cp      (ix+$10)
+	cp      (ix+TRACK.decay1Level)
 	jr      c,_c56d
 	ld      c,a
 _c56d:
-	ld      (ix+$0c),c
+	ld      (ix+TRACK.envelopeLevel),c
 	jp      nc,_c3f6
-	inc     (ix+$0d)
+	inc     (ix+TRACK.ADSRstate)
 	jp      _c3f6
 _c579:
-	ld      c,(ix+$12)
-	ld      a,(ix+$0c)
-	sub     (ix+$11)
+	ld      c,(ix+TRACK.decay2Level)
+	ld      a,(ix+TRACK.envelopeLevel)
+	sub     (ix+TRACK.decay2Rate)
 	jr      c,_c58b
-	cp      (ix+$12)
+	cp      (ix+TRACK.decay2Level)
 	jp      c,_c58b
 	ld      c,a
 _c58b:
-	ld      (ix+$0c),c
+	ld      (ix+TRACK.envelopeLevel),c
 	jp      nc,_c3f6
-	inc     (ix+$0d)
+	inc     (ix+TRACK.ADSRstate)
 	jp      _c3f6
 _c597:
-	ld      a,(ix+$0c)
-	sub     (ix+$13)
+	ld      a,(ix+TRACK.envelopeLevel)
+	sub     (ix+TRACK.sustainRate)
 	jp      nc,_c5a2
 	ld      a,$00
 _c5a2:
-	ld      (ix+$0c),a
+	ld      (ix+TRACK.envelopeLevel),a
 	jp      nc,_c3f6
-	inc     (ix+$0d)
+	inc     (ix+TRACK.ADSRstate)
 	jp      _c3f6
 
 _c5ae:
 	ld      a,(de)
-	ld      (ix+$26),a
-	ld      (tickMultiplier),a
+	ld      (ix+TRACK.tempoDivider+0),a
+	ld      (tickMultiplier+0),a
 	inc     de
 	ld      a,(de)
-	ld      (ix+$27),a
-	ld      ($dc09),a
+	ld      (ix+TRACK.tempoDivider+1),a
+	ld      (tickMultiplier+1),a
 	inc     de
 	ld      a,(de)
-	ld      (tickDivider1),a
-	ld      (tickDivider2),a
+	ld      (tickDivider1+0),a
+	ld      (tickDivider2+0),a
 	inc     de
 	ld      a,(de)
-	ld      ($dc0b),a
-	ld      ($dc0d),a
+	ld      (tickDivider1+1),a
+	ld      (tickDivider2+1),a
 	inc     de
 	jp      _c30d
 _c5d1:
 	ld      a,(de)
-	ld      (ix+$2c),a
+	ld      (ix+TRACK.channelVolume),a
 	inc     de
-	ld      a,(ix+$2b)
+	ld      a,(ix+TRACK.id)
 	cp      $04
 	jr      z,_c5e5
 	ld      a,(playbackMode)
 	and     $08
 	jp      nz,_c30d
 _c5e5:
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
-	ld      (ix+$04),$00
+	ld      a,(ix+TRACK.channelVolume)
+	ld      (ix+TRACK.fadeTicks+1),a
+	ld      (ix+TRACK.fadeTicks+0),$00
 	jp      _c30d
 	
 _c5f2:
@@ -863,10 +896,10 @@ _c60a:
 	jp      _c30d
 _c620:
 	ld      a,(de)
-	ld      (ix+$08),a
+	ld      (ix+TRACK.detune+0),a
 	inc     de
 	ld      a,(de)
-	ld      (ix+$09),a
+	ld      (ix+TRACK.detune+1),a
 	inc     de
 	jp      _c30d
 _c62d:
@@ -874,17 +907,17 @@ _c62d:
 	inc     de
 	jp      _c30d
 _c632:
-	ld      l,(ix+$20)
-	ld      h,(ix+$21)
+	ld      l,(ix+TRACK.loopAddress+0)
+	ld      h,(ix+TRACK.loopAddress+1)
 	ld      (hl),$00
 	ld      bc,$0005
 	add     hl,bc
-	ld      (ix+$20),l
-	ld      (ix+$21),h
+	ld      (ix+TRACK.loopAddress+0),l
+	ld      (ix+TRACK.loopAddress+1),h
 	jp      _c30d
 _c647:
-	ld      l,(ix+$20)
-	ld      h,(ix+$21)
+	ld      l,(ix+TRACK.loopAddress+0)
+	ld      h,(ix+TRACK.loopAddress+1)
 	ld      bc,$fffb
 	add     hl,bc
 	ld      a,(hl)
@@ -905,62 +938,62 @@ _c660:
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      c,(ix+$29)
-	ld      b,(ix+$2a)
+	ld      c,(ix+TRACK.baseAddress+0)
+	ld      b,(ix+TRACK.baseAddress+1)
 	add     hl,bc
 	ex      de,hl
 	jp      _c30d
 _c671:
-	ld      (ix+$20),l
-	ld      (ix+$21),h
+	ld      (ix+TRACK.loopAddress+0),l
+	ld      (ix+TRACK.loopAddress+1),h
 	inc     de
 	inc     de
 	inc     de
 	jp      _c30d
 _c67d:
-	ld      (ix+$22),e
-	ld      (ix+$23),d
+	ld      (ix+TRACK.masterLoopAddress+0),e
+	ld      (ix+TRACK.masterLoopAddress+1),d
 	jp      _c30d
 _c686:
 	ld      a,(de)
-	ld      (ix+$25),a
+	ld      (ix+TRACK.noiseMode),a
 	inc     de
 	jp      _c30d
 _c68e:
 	ld      a,(de)
-	ld      (ix+$24),a
+	ld      (ix+TRACK.defaultNoteLength),a
 	inc     de
 	jp      _c30d
 _c696:
-	ld      a,(ix+$2c)
+	ld      a,(ix+TRACK.channelVolume)
 	inc     a
 	cp      $10
 	jr      c,_c6a0
 	ld      a,$0f
 _c6a0:
-	ld      (ix+$2c),a
+	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
 	and     $08
 	jp      nz,_c30d
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
+	ld      a,(ix+TRACK.channelVolume)
+	ld      (ix+TRACK.fadeTicks+1),a
 	jp      _c30d
 _c6b4:
-	ld      a,(ix+$2c)
+	ld      a,(ix+TRACK.channelVolume)
 	dec     a
 	cp      $10
 	jr      c,_c6bd
 	xor     a
 _c6bd:
-	ld      (ix+$2c),a
+	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
 	and     $08
 	jp      nz,_c30d
-	ld      a,(ix+$2c)
-	ld      (ix+$05),a
+	ld      a,(ix+TRACK.channelVolume)
+	ld      (ix+TRACK.fadeTicks+1),a
 	jp      _c30d
 _c6d1:
-	set     0,(ix+$28)
+	set     0,(ix+TRACK.flags)
 	jp      _c30d
 _c6d8:
 	xor     a
