@@ -88,7 +88,7 @@ sound_loadSFX 	jp      _loadSFX	;this public call is not used in the game
 sound_playMusic jp      _playMusic
 sound_playSFX	jp      _playSFX
 
-;--------------------------------------------------------------------------------------
+;______________________________________________________________________________________
 
 _loadMusic:
 ;HL : An address from a look up table, e.g. $64C3
@@ -305,7 +305,8 @@ _stop:
 	pop     af
 	ret
 	
-;--------------------------------------------------------------------------------------
+;______________________________________________________________________________________
+
 _loadSFX:
 	push    af
 	push    de
@@ -337,7 +338,7 @@ _loadSFX:
 	ld      (tickDividerSFX),de
 	inc     hl
 	ld      (track4dataPointer),hl
-	ld      hl,_c1dd
+	ld      hl,_PSGchannelBits
 	add     a,a
 	ld      e,a
 	ld      d,$00
@@ -365,10 +366,10 @@ _loadSFX:
 	pop     af
 	ret
 
-_c1dd:
+_PSGchannelBits:
 .db $80, $90, $a0, $b0, $c0, $d0, $e0, $f0
 
-;--------------------------------------------------------------------------------------
+;______________________________________________________________________________________
 
 _unpause:
 	push    af
@@ -401,7 +402,7 @@ _unpause:
 	pop     af
 	ret
 
-;--------------------------------------------------------------------------------------
+;______________________________________________________________________________________
 
 _fadeOut:
 	push    af
@@ -416,14 +417,14 @@ _fadeOut:
 	pop     af
 	ret
 
-;____________________________________________________________________($423A)_[$C23A]___
+;______________________________________________________________________________________
 
 _update:
 	;track 1
 	ld      ix,track0vars
 	ld      de,(track0dataPointer)
 	ld      bc,(tickDivider1)
-	call    _c2f4
+	call    _updateTrack
 	ld      (channel0trackPointer),ix
 	ld      (track0dataPointer),de
 	
@@ -431,7 +432,7 @@ _update:
 	ld      ix,track1vars
 	ld      de,(track1dataPointer)
 	ld      bc,(tickDivider1)
-	call    _c2f4
+	call    _updateTrack
 	ld      (channel1trackPointer),ix
 	ld      (track1dataPointer),de
 	
@@ -439,7 +440,7 @@ _update:
 	ld      ix,track2vars
 	ld      de,(track2dataPointer)
 	ld      bc,(tickDivider1)
-	call    _c2f4
+	call    _updateTrack
 	ld      (channel2trackPointer),ix
 	ld      (track2dataPointer),de
 	
@@ -447,7 +448,7 @@ _update:
 	ld      ix,track3vars
 	ld      de,(track3dataPointer)
 	ld      bc,(tickDivider1)
-	call    _c2f4
+	call    _updateTrack
 	ld      (channel3trackPointer),ix
 	ld      (track3dataPointer),de
 	
@@ -455,10 +456,10 @@ _update:
 	ld      ix,track4vars
 	ld      de,(track4dataPointer)
 	ld      bc,(tickDividerSFX)
-	call    _c2f4
+	call    _updateTrack
 	ld      (track4dataPointer),de
 	bit     1,(ix+TRACK.flags)
-	jr      z,_c2bf
+	jr      z,+
 	
 	ld      hl,channel0trackPointer
 	ld      a,(overriddenTrack)
@@ -469,15 +470,14 @@ _update:
 	ld      (hl),<track4vars
 	inc     hl
 	ld      (hl),>track4vars
-_c2bf:
-	ld      ix,(channel0trackPointer)
-	call    _c3de
++	ld      ix,(channel0trackPointer)
+	call    _processTrack
 	ld      ix,(channel1trackPointer)
-	call    _c3de
+	call    _processTrack
 	ld      ix,(channel2trackPointer)
-	call    _c3de
+	call    _processTrack
 	ld      ix,(channel3trackPointer)
-	call    _c3de
+	call    _processTrack
 	
 	ld      a,(playbackMode)
 	and     $08
@@ -487,17 +487,16 @@ _c2bf:
 	ld      bc,(fadeTicksDecrement)
 	and     a
 	sbc     hl,bc
-	jr      nc,_c2f0
+	jr      nc,+
 	
 	;stop all sound
 	call    _stop
-_c2f0:
-	ld      (fadeTicks),hl
++	ld      (fadeTicks),hl
 	ret
 
-;____________________________________________________________________($42F4)_[$C2F4]___
+;______________________________________________________________________________________
 
-_c2f4:
+_updateTrack:
 	bit     1,(ix+TRACK.flags)
 	ret     z
 	
@@ -507,19 +506,23 @@ _c2f4:
 	sbc     hl,bc
 	ld      (ix+TRACK.tickStep+0),l
 	ld      (ix+TRACK.tickStep+1),h
-	jr      z,_c30d
-	jp      nc,_c3c9
-_c30d:
+	jr      z,_trackReadLoop
+	jp      nc,++
+
+_trackReadLoop:
 	ld      a,(de)
 	and     a
-	jp      m,_c4f3
+	jp      m,_doCommand
 	cp      $70
-	jr      c,_c34b
+	jr      c,_doNote
 	cp      $7f
-	jr      nz,_c321
+	jr      nz,_doNoiseNote
 	ld      (ix+TRACK.effectiveVolume),$00
-	jp      _c39f
-_c321:
+	jp      _doNoteLength
+
+;--------------------------------------------------------------------------------------
+
+_doNoiseNote:
 	push    de
 	push    ix
 	pop     hl
@@ -532,7 +535,7 @@ _c321:
 	add     hl,hl
 	add     hl,hl
 	add     hl,hl
-	ld      bc,_c3ce
+	ld      bc,_noiseNoteValues
 	add     hl,bc
 	ld      a,(hl)
 	ld      (ix+TRACK.noiseMode),a
@@ -544,10 +547,13 @@ _c321:
 	ldi     
 	ldi     
 	pop     de
-	jp      _c36e
-_c34b:
+	jp      _resetModValues
+
+;--------------------------------------------------------------------------------------
+
+_doNote:
 	and     $0f
-	ld      hl,_c4d5
+	ld      hl,_PSGfrequencyValues
 	add     a,a
 	ld      c,a
 	ld      b,$00
@@ -565,8 +571,11 @@ _c34b:
 	and     $0f
 	ld      (ix+TRACK.octave),a
 	bit     0,(ix+TRACK.flags)
-	jr      nz,_c39f
-_c36e:
+	jr      nz,_doNoteLength
+
+;--------------------------------------------------------------------------------------
+
+_resetModValues:
 	ld      a,(ix+TRACK.initModulationDelay)
 	ld      (ix+TRACK.modulationDelay),a
 	ld      a,(ix+TRACK.initModulationDelay+1)
@@ -584,24 +593,25 @@ _c36e:
 	ld      (ix+TRACK.ADSRstate),a
 	ld      (ix+TRACK.envelopeLevel),a
 	ld      (ix+TRACK.effectiveVolume),$0f
-_c39f:
+
+;--------------------------------------------------------------------------------------
+
+_doNoteLength:
 	inc     de
 	ld      a,(de)
 	inc     de
 	and     a
-	jr      nz,_c3a8
+	jr      nz,+
 	ld      a,(ix+TRACK.defaultNoteLength)
-_c3a8:
-	push    de
++	push    de
 	ld      c,a
 	ld      l,(ix+TRACK.tempoDivider+0)
 	ld      h,(ix+TRACK.tempoDivider+1)
 	ld      a,l
 	or      h
-	jr      nz,_c3b7
+	jr      nz,+
 	ld      hl,(tickMultiplier)
-_c3b7:
-	call    _c6d8
++	call    _calcTickTime
 	pop     de
 	ld      a,l
 	add     a,(ix+TRACK.tickStep+0)
@@ -609,52 +619,65 @@ _c3b7:
 	ld      a,h
 	adc     a,(ix+TRACK.tickStep+1)
 	ld      (ix+TRACK.tickStep+1),a
-_c3c9:
-	res     0,(ix+TRACK.flags)
+	
+++	res     0,(ix+TRACK.flags)
 	ret
 
-_c3ce:
+_noiseNoteValues:
 .db $05, $ff, $be, $0a, $04, $05, $02, $00, $05, $e6, $24, $5a, $14, $28, $08, $00
 
-_c3de:
+;______________________________________________________________________________________
+
+_processTrack:
 	bit     1,(ix+TRACK.flags)
 	ret     z
+	
 	ld      a,(ix+TRACK.ADSRstate)
 	and     a
-	jp      z,_c545
+	jp      z,_ADSRenvelopeAttack
+	
+	dec	a
+	jp	z, _ADSRenvelopeDecay1
+	
+	dec	a
+	jp	z, _ADSRenvelopeDecay2
+	
+	dec	a
+	jp	z, _ADSRenvelopeSustain
 
-.db $3d, $ca, $5c, $45, $3d, $ca, $79, $45, $3d, $ca, $97, $45
-
-_c3f6:
+_doTrackSoundOut:
 	ld      a,(ix+TRACK.channelFrequencyPSG)
 	cp      $e0
-	jr      nz,_c412
+	jr      nz,_doModulation
 	ld      c,(ix+TRACK.noiseMode)
 	ld      a,(noiseMode)
 	cp      c
-	jp      z,_c48f
+	jp      z,_sendVolume
 	ld      a,c
 	ld      (noiseMode),a
 	or      %11100000		;noise channel frequency?
 	out     (SMS_SOUND_PORT),a
-	jp      _c48f
-_c412:
+	jp      _sendVolume
+	
+;--------------------------------------------------------------------------------------
+
+_doModulation:
 	ld      e,(ix+TRACK.modulationFreq+0)
 	ld      d,(ix+TRACK.modulationFreq+1)
 	ld      a,(ix+TRACK.modulationDelay)
 	and     a
-	jr      z,_c424
+	jr      z,+
 	dec     (ix+TRACK.modulationDelay)
-	jp      _c45a
-_c424:
-	dec     (ix+TRACK.modulationStepDelay)
-	jp      nz,_c45a
+	jp      _sendFrequency
+	
++	dec     (ix+TRACK.modulationStepDelay)
+	jp      nz,_sendFrequency
 	ld      a,(ix+$15)
 	ld      (ix+TRACK.modulationStepDelay),a
 	ld      l,(ix+TRACK.modulationFreqDelta+0)
 	ld      h,(ix+TRACK.modulationFreqDelta+1)
 	dec     (ix+TRACK.modulationStepCount)
-	jp      nz,_c452
+	jp      nz,+
 	ld      a,(ix+TRACK.initModulationStepCount)
 	ld      (ix+TRACK.modulationStepCount),a
 	ld      a,l
@@ -666,13 +689,16 @@ _c424:
 	inc     hl
 	ld      (ix+TRACK.modulationFreqDelta+0),l
 	ld      (ix+TRACK.modulationFreqDelta+1),h
-	jp      _c45a
-_c452:
-	add     hl,de
+	jp      _sendFrequency
+	
++	add     hl,de
 	ld      (ix+TRACK.modulationFreq+0),l
 	ld      (ix+TRACK.modulationFreq+1),h
 	ex      de,hl
-_c45a:
+
+;--------------------------------------------------------------------------------------
+
+_sendFrequency:
 	ld      l,(ix+TRACK.noteFrequencey)
 	ld      h,(ix+TRACK.noteFrequencey+1)
 	ld      c,(ix+TRACK.detune+0)
@@ -681,15 +707,14 @@ _c45a:
 	add     hl,de
 	ld      a,(ix+TRACK.octave)
 	and     a
-	jr      z,_c475
+	jr      z,+
 	ld      b,a
-_c46f:
-	srl     h
-_c471:
+	
+-	srl     h
 	rr      l
-	djnz    _c46f
-_c475:
-	ld      a,l
+	djnz    -
+	
++	ld      a,l
 	and     %00001111
 	or      (ix+TRACK.channelFrequencyPSG)
 	out     (SMS_SOUND_PORT),a
@@ -708,22 +733,22 @@ _c475:
 	and     %00001111
 	or      c
 	out     (SMS_SOUND_PORT),a
-_c48f:
+	
+_sendVolume:
 	ld      a,(ix+TRACK.fadeTicks+1)
 	and     a
-	jr      z,_c4a7
+	jr      z,+
 	ld      c,a
 	ld      a,(ix+TRACK.envelopeLevel)
 	and     a
-	jr      z,_c4a7
+	jr      z,+
 	ld      l,a
 	ld      h,$00
-	call    _c6d8
+	call    _calcTickTime
 	rl      l
 	ld      a,$00
 	adc     a,h
-_c4a7:
-	and     (ix+TRACK.effectiveVolume)
++	and     (ix+TRACK.effectiveVolume)
 	xor     %00001111
 	or      (ix+TRACK.channelVolumePSG)
 	out     (SMS_SOUND_PORT),a
@@ -737,24 +762,25 @@ _c4a7:
 	ld      h,(ix+TRACK.fadeTicks+1)
 	ld      bc,(fadeTicksDecrement)
 	sbc     hl,bc
-	jr      nc,_c4ce
+	jr      nc,+
 	ld      hl,$0000
-_c4ce:
-	ld      (ix+TRACK.fadeTicks+0),l
++	ld      (ix+TRACK.fadeTicks+0),l
 	ld      (ix+TRACK.fadeTicks+1),h
 	ret
 
-_c4d5:
-.db $56, $03, $26, $03, $f9, $02, $ce, $02, $a5, $02, $80, $02, $5c, $02, $3a, $02
-.db $1a, $02, $fb, $01, $df, $01, $c4, $01, $f7, $03, $be, $03, $88, $03
+_PSGfrequencyValues:
+.dw $0356, $0326, $02F9, $02CE, $02A5, $0280, $025C, $023A
+.dw $021A, $01FB, $01DF, $01C4, $03F7, $03BE, $0388
 
-_c4f3:
+;______________________________________________________________________________________
+
+_doCommand:
 	cp      $ff
-	jp      z,_c50b
+	jp      z,_cmdFF_stopMusic
 	cp      $fe
-	jp      z,_c519
+	jp      z,_cmdFE_stopSFX
 	inc     de
-	ld      hl,_c529
+	ld      hl,_commandPointers
 	add     a,a
 	ld      c,a
 	ld      b,$00
@@ -764,76 +790,104 @@ _c4f3:
 	ld      h,(hl)
 	ld      l,a
 	jp      (hl)
-_c50b:
+
+;--------------------------------------------------------------------------------------
+
+_cmdFF_stopMusic:
 	ld      l,(ix+TRACK.masterLoopAddress+0)
 	ld      h,(ix+TRACK.masterLoopAddress+1)
 	ld      a,l
 	or      h
-	jr      z,_c51d
+	jr      z,_stopTrack
 	ex      de,hl
-	jp      _c30d
-_c519:
+	jp      _trackReadLoop
+	
+_cmdFE_stopSFX:
 	xor     a
 	ld      (SFXpriority),a
-_c51d:
+	
+_stopTrack:
 	res     1,(ix+TRACK.flags)
 	ld      a,%00001111
 	or      (ix+TRACK.channelVolumePSG)
 	out     (SMS_SOUND_PORT),a
 	ret
 
-_c529:
-.dw _c5ae, _c5d1, _c5f2, _c60a, _c620, _c62d, _c632, _c647
-.dw _c67d, _c686, _c68e, _c696, _c6b4, _c6d1
+;--------------------------------------------------------------------------------------
 
-_c545:
+_commandPointers:
+.dw _cmd80_tempo
+.dw _cmd81_volumeSet
+.dw _cmd82_setADSR
+.dw _cmd83_modulation
+.dw _cmd84_detune
+.dw _cmd85_dummy
+.dw _cmd86_loopStart
+.dw _cmd87_loopEnd
+.dw _cmd88_masterLoop
+.dw _cmd89_noiseMode
+.dw _cmd8A_noteLength
+.dw _cmd8B_volumeUp
+.dw _cmd8C_volumeDown
+.dw _cmd8D_hold
+
+;--------------------------------------------------------------------------------------
+
+_ADSRenvelopeAttack:
 	ld      a,(ix+TRACK.attackRate)
 	add     a,(ix+TRACK.envelopeLevel)
-	jp      nc,_c550
+	jp      nc,+
 	ld      a,$ff
-_c550:
-	ld      (ix+TRACK.envelopeLevel),a
-	jp      nc,_c3f6
++	ld      (ix+TRACK.envelopeLevel),a
+	jp      nc,_doTrackSoundOut
 	inc     (ix+TRACK.ADSRstate)
-	jp      _c3f6
-_c55c:
+	jp      _doTrackSoundOut
+
+;--------------------------------------------------------------------------------------
+	
+_ADSRenvelopeDecay1:
 	ld      c,(ix+TRACK.decay1Level)
 	ld      a,(ix+TRACK.envelopeLevel)
 	sub     (ix+TRACK.decay1Rate)
-	jr      c,_c56d
+	jr      c,+
 	cp      (ix+TRACK.decay1Level)
-	jr      c,_c56d
+	jr      c,+
 	ld      c,a
-_c56d:
-	ld      (ix+TRACK.envelopeLevel),c
-	jp      nc,_c3f6
++	ld      (ix+TRACK.envelopeLevel),c
+	jp      nc,_doTrackSoundOut
 	inc     (ix+TRACK.ADSRstate)
-	jp      _c3f6
-_c579:
+	jp      _doTrackSoundOut
+
+;--------------------------------------------------------------------------------------
+
+_ADSRenvelopeDecay2:
 	ld      c,(ix+TRACK.decay2Level)
 	ld      a,(ix+TRACK.envelopeLevel)
 	sub     (ix+TRACK.decay2Rate)
-	jr      c,_c58b
+	jr      c,+
 	cp      (ix+TRACK.decay2Level)
-	jp      c,_c58b
+	jp      c,+
 	ld      c,a
-_c58b:
-	ld      (ix+TRACK.envelopeLevel),c
-	jp      nc,_c3f6
++	ld      (ix+TRACK.envelopeLevel),c
+	jp      nc,_doTrackSoundOut
 	inc     (ix+TRACK.ADSRstate)
-	jp      _c3f6
-_c597:
+	jp      _doTrackSoundOut
+
+;--------------------------------------------------------------------------------------
+
+_ADSRenvelopeSustain:
 	ld      a,(ix+TRACK.envelopeLevel)
 	sub     (ix+TRACK.sustainRate)
-	jp      nc,_c5a2
+	jp      nc,+
 	ld      a,$00
-_c5a2:
-	ld      (ix+TRACK.envelopeLevel),a
-	jp      nc,_c3f6
++	ld      (ix+TRACK.envelopeLevel),a
+	jp      nc,_doTrackSoundOut
 	inc     (ix+TRACK.ADSRstate)
-	jp      _c3f6
+	jp      _doTrackSoundOut
 
-_c5ae:
+;--------------------------------------------------------------------------------------
+
+_cmd80_tempo:
 	ld      a,(de)
 	ld      (ix+TRACK.tempoDivider+0),a
 	ld      (tickMultiplier+0),a
@@ -850,24 +904,29 @@ _c5ae:
 	ld      (tickDivider1+1),a
 	ld      (tickDivider2+1),a
 	inc     de
-	jp      _c30d
-_c5d1:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd81_volumeSet:
 	ld      a,(de)
 	ld      (ix+TRACK.channelVolume),a
 	inc     de
 	ld      a,(ix+TRACK.id)
 	cp      $04
-	jr      z,_c5e5
+	jr      z,+
 	ld      a,(playbackMode)
 	and     $08
-	jp      nz,_c30d
-_c5e5:
-	ld      a,(ix+TRACK.channelVolume)
+	jp      nz,_trackReadLoop
+	
++	ld      a,(ix+TRACK.channelVolume)
 	ld      (ix+TRACK.fadeTicks+1),a
 	ld      (ix+TRACK.fadeTicks+0),$00
-	jp      _c30d
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
 	
-_c5f2:
+_cmd82_setADSR:
 	push    ix
 	pop     hl
 	ld      bc,$000e
@@ -880,8 +939,11 @@ _c5f2:
 	ldi     
 	ldi     
 	ex      de,hl
-	jp      _c30d
-_c60a:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd83_modulation:
 	push    ix
 	pop     hl
 	ld      bc,$0014
@@ -893,20 +955,29 @@ _c60a:
 	ldi     
 	ldi     
 	ex      de,hl
-	jp      _c30d
-_c620:
+	jp      _trackReadLoop
+	
+;--------------------------------------------------------------------------------------
+
+_cmd84_detune:
 	ld      a,(de)
 	ld      (ix+TRACK.detune+0),a
 	inc     de
 	ld      a,(de)
 	ld      (ix+TRACK.detune+1),a
 	inc     de
-	jp      _c30d
-_c62d:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd85_dummy:
 	ld      a,(de)
 	inc     de
-	jp      _c30d
-_c632:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd86_loopStart:
 	ld      l,(ix+TRACK.loopAddress+0)
 	ld      h,(ix+TRACK.loopAddress+1)
 	ld      (hl),$00
@@ -914,25 +985,28 @@ _c632:
 	add     hl,bc
 	ld      (ix+TRACK.loopAddress+0),l
 	ld      (ix+TRACK.loopAddress+1),h
-	jp      _c30d
-_c647:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd87_loopEnd:
 	ld      l,(ix+TRACK.loopAddress+0)
 	ld      h,(ix+TRACK.loopAddress+1)
 	ld      bc,$fffb
 	add     hl,bc
 	ld      a,(hl)
 	and     a
-	jr      nz,_c65d
+	jr      nz,_loopInit
 	ld      a,(de)
 	dec     a
-	jr      z,_c671
+	jr      z,++
 	ld      (hl),a
-	jp      _c660
-_c65d:
+	jp      +
+	
+_loopInit:
 	dec     (hl)
-	jr      z,_c671
-_c660:
-	ex      de,hl
+	jr      z,++
++	ex      de,hl
 	inc     hl
 	ld      a,(hl)
 	inc     hl
@@ -942,72 +1016,91 @@ _c660:
 	ld      b,(ix+TRACK.baseAddress+1)
 	add     hl,bc
 	ex      de,hl
-	jp      _c30d
-_c671:
-	ld      (ix+TRACK.loopAddress+0),l
+	jp      _trackReadLoop
+	
+++	ld      (ix+TRACK.loopAddress+0),l
 	ld      (ix+TRACK.loopAddress+1),h
 	inc     de
 	inc     de
 	inc     de
-	jp      _c30d
-_c67d:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd88_masterLoop:
 	ld      (ix+TRACK.masterLoopAddress+0),e
 	ld      (ix+TRACK.masterLoopAddress+1),d
-	jp      _c30d
-_c686:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd89_noiseMode:
 	ld      a,(de)
 	ld      (ix+TRACK.noiseMode),a
 	inc     de
-	jp      _c30d
-_c68e:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd8A_noteLength:
 	ld      a,(de)
 	ld      (ix+TRACK.defaultNoteLength),a
 	inc     de
-	jp      _c30d
-_c696:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd8B_volumeUp:
 	ld      a,(ix+TRACK.channelVolume)
 	inc     a
 	cp      $10
-	jr      c,_c6a0
+	jr      c,+
 	ld      a,$0f
-_c6a0:
-	ld      (ix+TRACK.channelVolume),a
++	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
 	and     $08
-	jp      nz,_c30d
+	jp      nz,_trackReadLoop
 	ld      a,(ix+TRACK.channelVolume)
 	ld      (ix+TRACK.fadeTicks+1),a
-	jp      _c30d
-_c6b4:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd8C_volumeDown:
 	ld      a,(ix+TRACK.channelVolume)
 	dec     a
 	cp      $10
-	jr      c,_c6bd
+	jr      c,+
 	xor     a
-_c6bd:
-	ld      (ix+TRACK.channelVolume),a
++	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
 	and     $08
-	jp      nz,_c30d
+	jp      nz,_trackReadLoop
 	ld      a,(ix+TRACK.channelVolume)
 	ld      (ix+TRACK.fadeTicks+1),a
-	jp      _c30d
-_c6d1:
+	jp      _trackReadLoop
+
+;--------------------------------------------------------------------------------------
+
+_cmd8D_hold:
 	set     0,(ix+TRACK.flags)
-	jp      _c30d
-_c6d8:
+	jp      _trackReadLoop
+
+;______________________________________________________________________________________
+
+_calcTickTime:
 	xor     a
 	ld      b,$07
 	ex      de,hl
 	ld      l,a
 	ld      h,a
-_c6de:
-	rl      c
-	jp      nc,_c6e4
+	
+-	rl      c
+	jp      nc,+
 	add     hl,de
-_c6e4:
-	add     hl,hl
-	djnz    _c6de
++	add     hl,hl
+	djnz    -
+	
 	or      c
 	ret     z
 	add     hl,de
