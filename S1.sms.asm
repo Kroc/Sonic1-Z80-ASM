@@ -67,6 +67,7 @@
 
 ;======================================================================================
 
+;hardware constants
 .DEF SMS_CURRENT_SCANLINE 	$7E	;current vertical scanline from 0 to 191
 .DEF SMS_SOUND_PORT		$7F	;write-only port to send data to sound chip
 .DEF SMS_VDP_DATA		$BE	;VRAM data port
@@ -82,43 +83,54 @@
 
 ;Game variables in RAM:
 ;--------------------------------------------------------------------------------------
-.DEF S1_VDPREGISTER_0		$D218	;RAM cache of the VDP register 0
-.DEF S1_VDPREGISTER_1		$D219	;RAM cache of the VDP register 1
+.DEF RAM_VDPREGISTER_0		$D218	;RAM cache of the VDP register 0
+.DEF RAM_VDPREGISTER_1		$D219	;RAM cache of the VDP register 1
 
-.DEF S1_PAGE_1			$D235	;used to keep track of what bank is in page 1
-.DEF S1_PAGE_2			$D236	;used to keep track of what bank is in page 2
+.DEF RAM_PAGE_1			$D235	;used to keep track of what bank is in page 1
+.DEF RAM_PAGE_2			$D236	;used to keep track of what bank is in page 2
 
-.DEF S1_CURRENT_LEVEL		$D23E
+.DEF RAM_CURRENT_LEVEL		$D23E
 
-.DEF S1_LEVEL_FLOORWIDTH	$D238	;width of level floor layout in blocks
-.DEF S1_LEVEL_FLOORHEIGHT	$D23A	;height of level floor layout in blocks
+.DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of level floor layout in blocks
+.DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of level floor layout in blocks
 
 ;level dimensions / crop
-.DEF S1_LEVEL_CROPLEFT		$D273
-.DEF S1_LEVEL_OFFSET_X		$D274
-.DEF S1_LEVEL_WIDTH		$D276
-.DEF S1_LEVEL_CROPTOP		$D277
-.DEF S1_LEVEL_OFFSET_Y		$D278
-.DEF S1_LEVEL_EXTENDHEIGHT	$D279
-.DEF S1_LEVEL_HEIGHT		$D27A
+.DEF RAM_LEVEL_CROPLEFT		$D273
+.DEF RAM_LEVEL_OFFSET_X		$D274
+.DEF RAM_LEVEL_WIDTH		$D276
+.DEF RAM_LEVEL_CROPTOP		$D277
+.DEF RAM_LEVEL_OFFSET_Y		$D278
+.DEF RAM_LEVEL_EXTENDHEIGHT	$D279
+.DEF RAM_LEVEL_HEIGHT		$D27A
 
-.DEF S1_LEVEL_SOLIDITY		$D2D4
+.DEF RAM_LEVEL_SOLIDITY		$D2D4
 
-.DEF S1_RASTERSPLIT_STEP	$D247
-.DEF S1_RASTERSPLIT_LINE	$D248
+.DEF RAM_RASTERSPLIT_STEP	$D247
+.DEF RAM_RASTERSPLIT_LINE	$D248
 
-.DEF S1_RINGS			$D2AA	;player's ring count
-.DEF S1_LIVES			$D246	;player's lives count
-.DEF S1_TIME			$D29F	;the level's time
+.DEF RAM_RINGS			$D2AA	;player's ring count
+.DEF RAM_LIVES			$D246	;player's lives count
+.DEF RAM_TIME			$D29F	;the level's time
+
+;`loadPaletteOnInterrupt` and `_LABEL_174_38` use these to pass parameters
+.DEF RAM_LOADPALETTE_ADDRESS	$D22B
+.DEF RAM_LOADPALETTE_FLAGS	$D22F
+
+;a copy of the level music index is kept so that the music can be started again (?)
+ ;after other sound events like invincibility
+.DEF RAM_LEVEL_MUSIC		$D2FC
+;the previous song played is checked during level load to avoid re-initialising the
+ ;same song (for example, when teleporting in Scrap Brain)
+.DEF RAM_PREVIOUS_MUSIC		$D2D2
 
 ;======================================================================================
 
-.BANK 0 SLOT 0
+.BANK 0
 
 _START:					;[$0000]
 	di				;disable interrupts
 	im   1				;set the interrupt mode to 1 --
-					 ;$38 will be called at 50/60Hz 
+					 ;$0038 will be called at 50/60Hz 
 
 -	;wait for the scanline to reach 176 (no idea why)
 	in   a, (SMS_CURRENT_SCANLINE)
@@ -126,34 +138,35 @@ _START:					;[$0000]
 	jr   nz, -
 	jp   _init
 
-;--------------------------------------------------------------------------------------
+;______________________________________________________________________________________
 
+;the `rst $18` instruction jumps here
 .ORG $0018
-_RST_18:				;[$0018]
-	jp   _RST18Handler		;load a music track specified by A
+	jp   playMusic			;play a song specified by A
 
+;the `rst $20` instruction jumps here
 .ORG $0020
-_RST_20:				;[$0020]
-	jp   _LABEL_2ED_7
+	jp   muteSound
 
+;the `rst $28` instruction jumps here
 .ORG $0028
-_RST_28:				;[$0028]
-	jp   _2fe
+	jp   playSFX			;play sound effect specified by A
 
+;the hardware interrupt generator jumps here
 .ORG $0038
-_RST_38:				;[$0038]
 	jp   IRQHandler
 
-; Data from 3B to 65 (43 bytes)
+.ORG $003B
 .db "Developed By (C) 1991 Ancient - S", $A5, "Hayashi.", $00
 
 ;____________________________________________________________________________[$0066]___
+;pressing the pause buttons causes an interupt and jumps to $0066
 
-_NMI_HANDLER:
+.ORG $0066
 	di				;disable interrupts
 	push af
 	ld   a, (iy+$07)		;level time HUD / lightning flags
-	xor  %00001000			;fip bit 4 (the pause bit)
+	xor  %00001000			;fip bit 3 (the pause bit)
 	ld   (iy+$07), a		;save it back
 	pop  af
 	ei				;enable interrupts
@@ -182,7 +195,7 @@ IRQHandler:
 	 ;a value of 0 means that it needs to be initialised, and then it counts
 	 ;down from 3
 	
-	ld   a, ($D247)			;get the current raster split step
+	ld   a, (RAM_RASTERSPLIT_STEP)	;get the current raster split step
 	and  a				;doesn't change the number, but updates flags
 	jp   nz, _LABEL_1F2_17		;if it's not zero, deal with the particulars
 	
@@ -197,7 +210,7 @@ IRQHandler:
 	;copy the water line position into the working space for the raster split.
 	 ;this is to avoid the water line changing height between the multiple
 	 ;interrupts needed to produce the split, I think
-	ld   ($D248), a
+	ld   (RAM_RASTERSPLIT_LINE), a
 	
 	;set the line interrupt to fire at line 9 (top of the screen),
 	 ;we will then set another interrupt to fire where we want the split to occur
@@ -207,7 +220,7 @@ IRQHandler:
 	out  (SMS_VDP_CONTROL), a
 	
 	;enable line interrupt IRQs (bit 5 of VDP register 0)
-	ld   a, (S1_VDPREGISTER_0)
+	ld   a, (RAM_VDPREGISTER_0)
 	or   %00010000
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80
@@ -215,7 +228,7 @@ IRQHandler:
 	
 	;initialise the step counter for the water line raster split
 	ld   a, 3
-	ld   ($D247), a
+	ld   (RAM_RASTERSPLIT_STEP), a
 	
 	;------------------------------------------------------------------------------
 	
@@ -223,7 +236,7 @@ IRQHandler:
 	push iy
 	
 	;remember the current page 1 & 2 banks
-	ld   hl, (S1_PAGE_1)
+	ld   hl, (RAM_PAGE_1)
 	push hl
 	
 	;if the main thread is not held up at the `wait` routine
@@ -241,7 +254,7 @@ IRQHandler:
 	 ;page this into Z80:$4000-$7FFF
 	ld   a, :sound_update
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	call sound_update
 	
 	call readJoypad
@@ -259,7 +272,7 @@ IRQHandler:
 	;return pages 1 & 2 to the banks before we started messing around here
 	pop  hl
 	ld   (SMS_PAGE_1), hl
-	ld   (S1_PAGE_1), hl
+	ld   (RAM_PAGE_1), hl
 	
 	;pull everything off the stack so that the code that was running
 	 ;before the interrupt doesn't explode
@@ -281,7 +294,7 @@ _setJoypadButtonB:
 	
 _LABEL_F7_25:
 	;blank the screen (remove bit 6 of VDP register 1)
-	ld   a, (S1_VDPREGISTER_1)	;get our cache value from RAM
+	ld   a, (RAM_VDPREGISTER_1)	;get our cache value from RAM
 	and  %10111111			;remove bit 6
 	out  (SMS_VDP_CONTROL), a	;write the value,
 	ld   a, $80 + 1			;followed by the register number
@@ -307,27 +320,27 @@ _LABEL_F7_25:
 	
 	;turn the screen back on 
 	 ;(or if it was already blank before this function, leave it blank)
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 1			;VDP register 1
 	out  (SMS_VDP_CONTROL), a
 	
 	ld   a, 8			;Sonic sprites?
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	ld   a, 9
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
 	
 	bit  7, (iy+$07)
 	call nz, _LABEL_37E0_41
 	
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	ld   a, 2
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
 	
 	;update sprite table?
 	bit  1, (iy+$00)
@@ -346,15 +359,15 @@ _LABEL_F7_25:
 	set  0, (iy+$00)
 	ret
 	
-;______________________________________________________________________________________
+;____________________________________________________________________________[$0174]___
 	
-_LABEL_174_38:				;[$0174]
+_LABEL_174_38:
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	ld   a, 2
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
 	
 	;if the level is underwater then skip loading the palette as the palettes
 	 ;are handled by the code that does the raster split
@@ -363,8 +376,8 @@ _LABEL_174_38:				;[$0174]
 	
 	;get the palette loading parameters that were assigned by the main thread
 	 ;(i.e. `loadPaletteOnInterrupt`)
-	ld   hl, ($D22B)		;address of palette
-	ld   a, ($D22F)			;flags for loading tile and/or sprite palette
+	ld   hl, (RAM_LOADPALETTE_ADDRESS)
+	ld   a, (RAM_LOADPALETTE_FLAGS)
 	
 	bit  3, (iy+$00)		;check the flag to specify loading the palette
 	call nz, loadPalette		;load the palette if flag is set
@@ -385,10 +398,10 @@ _LABEL_1A0_18:
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	ld   a, 2
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
 	
 	;this seems quite pointless but could do with
 	 ;killing a specific amount of time
@@ -399,8 +412,8 @@ _LABEL_1A0_18:
 _LABEL_1BA_40:
 	ld   a, ($D2DB)			;get the position of the water line on screen
 	and  a
-	jr   z, ++			;is it 0?
-	cp   $FF			;or $FF? (i.e. off the screen)
+	jr   z, ++			;is it 0? (above the screen)
+	cp   $FF			;or $FF? (below the screen)
 	jr   nz, ++			;...skip ahead
 	
 	;select the palette
@@ -428,7 +441,7 @@ _LABEL_1BA_40:
 	ld   a, %00000001
 	call loadPalette
 	
-	ld   hl, S1_LabyrinthSpritePalette
+	ld   hl, S1_Palette_Labyrinth_Sprites
 	ld   a, %00000010
 	call loadPalette
 	
@@ -448,17 +461,17 @@ _LABEL_1F2_17:
 	;--- step 3 -------------------------------------------------------------------
 	;set counter at step 2
 	dec  a
-	ld   ($D247), a
+	ld   (RAM_RASTERSPLIT_STEP), a
 	
 	in   a, (SMS_CURRENT_SCANLINE)	;get the current scanline
 	ld   c, a
-	ld   a, ($D248)			;get the water line height on the screen
+	ld   a, (RAM_RASTERSPLIT_LINE)	;get the water line height on the screen
 	sub  c				;work out the difference
 	
 	;set VDP register 10 with the scanline number to interrupt at next
 	 ;(that is, set the next interrupt to occur at the water line)
 	out  (SMS_VDP_CONTROL), a
-	ld   a, $80 + 10
+	ld   a, %10000000 + 10
 	out  (SMS_VDP_CONTROL), a
 	
 	jp   +++
@@ -466,12 +479,12 @@ _LABEL_1F2_17:
 	;--- step 2 -------------------------------------------------------------------
 +	;we don't do anything on this step
 	dec  a
-	ld   ($D247), a
+	ld   (RAM_RASTERSPLIT_STEP), a
 	jp   +++
 	
 	;--- step 1 -------------------------------------------------------------------
 ++	dec  a
-	ld   ($D247), a
+	ld   (RAM_RASTERSPLIT_STEP), a
 	
 	;set the VDP to point at the palette
 	ld   a, $00
@@ -497,7 +510,7 @@ __	ld   a, (hl)
 	inc  hl
 	djnz _b				;jump backward to `__`
 	
-	ld   a, (S1_VDPREGISTER_0)
+	ld   a, (RAM_VDPREGISTER_0)
 	and  %11101111			;remove bit 4 -- disable line interrupts
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80
@@ -509,9 +522,6 @@ __	ld   a, (hl)
 	pop  af
 	ei
 	ret
-	
-;____________________________________________________________________________[$024B]___
-;underwater palettes
 
 S1_UnderwaterPalette:			;[$024B]
 .db $10, $14, $14, $18, $35, $34, $2C, $39, $21, $20, $1E, $09, $04, $1E, $10, $3F
@@ -549,7 +559,7 @@ _init:
 	
 	;initialize the VDP:
 	ld   hl, _InitVDPRegisterValues	;begin copying from $0311 in the ROM,
-	ld   de, S1_VDPREGISTER_0	;to $D218 in the RAM
+	ld   de, RAM_VDPREGISTER_0	;to $D218 in the RAM
 	ld   b, $0B			;copying 11 bytes
 	ld   c, $8B
 				
@@ -572,16 +582,17 @@ _init:
 	call _clearVRAM
 	
 	;mute sound
-	call _LABEL_2ED_7
+	call muteSound
 	
 	;initialise variables?
 	ld   iy, $D200			;variable space starts here
 	jp   _LABEL_1C49_62
 
 ;____________________________________________________________________________[$02D7]___
+;the `rst $18` instruction ends up here
 
-;I believe this loads a music track
-_RST18Handler:
+playMusic:
+;A : index number of song to play (see `S1_MusicPointers` in "includes\music.asm")
 	di				;disable interrupts
 	push af
 	
@@ -590,39 +601,45 @@ _RST18Handler:
 	ld   (SMS_PAGE_1), a
 	
 	pop  af
-	ld   ($D2D2), a
+	ld   (RAM_PREVIOUS_MUSIC), a
 	call sound_playMusic
 	
-	ld   a, (S1_PAGE_1)
+	ld   a, (RAM_PAGE_1)
 	ld   (SMS_PAGE_1), a
 	
 	ei				;enable interrupts
 	ret
 
 ;____________________________________________________________________________[$02ED]___
+;the `rst $20` instruction ends up here
 
-_LABEL_2ED_7:
+muteSound:
 	di				;disable interrupts
 	
 	;switch page 1 (Z80:$4000-$7FFF) to bank 3 (ROM:$0C000-$0FFFF)
 	ld   a, :sound_stop
 	ld   (SMS_PAGE_1), a
 	call sound_stop
-	ld   a, (S1_PAGE_1)
+	ld   a, (RAM_PAGE_1)
 	ld   (SMS_PAGE_1), a
 	
 	ei				;enable interrupts
 	ret
 
-_2fe:
+;____________________________________________________________________________[$02FE]___
+;the `rst $28` instruction ends up here
+
+playSFX:
 	di      
 	push    af
+	
 	ld      a,:sound_playSFX
 	ld      (SMS_PAGE_1),a
 	pop     af
 	call    sound_playSFX
-	ld      a,(S1_PAGE_1)
+	ld      a,(RAM_PAGE_1)
 	ld      (SMS_PAGE_1),a
+	
 	ei      
 	ret  
 
@@ -670,8 +687,9 @@ _323:
 
 loadPaletteOnInterrupt:
 	set  3, (iy+$00)		;set the flag for the interrupt handler
-	ld   ($D22F), a			;store the parameters
-	ld   ($D22B), hl
+	;store the parameters
+	ld   (RAM_LOADPALETTE_FLAGS), a
+	ld   (RAM_LOADPALETTE_ADDRESS), hl
 	ret
 
 ;____________________________________________________________________________[$033E]___
@@ -788,14 +806,14 @@ _03ac:
 	out     (SMS_VDP_CONTROL),a
 	
 	pop     af
-	ld      de,(S1_PAGE_1)		;remember the current page 1 & 2 banks
+	ld      de,(RAM_PAGE_1)		;remember the current page 1 & 2 banks
 	push    de
 	
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	inc     a
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ei      
 
 ---	ld      a,(hl)
@@ -837,7 +855,7 @@ _03ac:
 ++	di      
 	;restore bank numbers
 	pop     de
-	ld      (S1_PAGE_1),de
+	ld      (RAM_PAGE_1),de
 	ld      a,e
 	ld      (SMS_PAGE_1),a
 	ld      a,d
@@ -892,15 +910,15 @@ decompressArt:
 	add  hl, de
 	
 	;stash the current page 1/2 bank numbers cached in RAM
-	ld   de, (S1_PAGE_1)
+	ld   de, (RAM_PAGE_1)
 	push de
 	
 	;change pages 1 & 2 (Z80:$4000-$BFFF) to banks A & A+1
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	inc  a
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
 	
 	;--- read header --------------------------------------------------------------
 	
@@ -1046,7 +1064,7 @@ _processRow:
 	ld   a, b			;combine the high byte,
 	or   c				;with the low byte...
 	jp   nz, _processRow		;loop back if not zero
-	jp   _decompressArt_finish	;otherwise, skip to finalisation
+	jp   ++				;otherwise, skip to finalisation
 
 _duplicateRow:
 	;--- duplicate row ------------------------------------------------------------
@@ -1112,13 +1130,12 @@ _duplicateRow:
 	or   c
 	jp   nz, _processRow
 
-_decompressArt_finish:
-	bit  1, (iy+$09)
+++	bit  1, (iy+$09)
 	jr   nz, +
 	di
 +	;restore the pages to the original banks at the beginning of the procedure
 	pop  de
-	ld   (S1_PAGE_1), de
+	ld   (RAM_PAGE_1), de
 	ld   (SMS_PAGE_1), de
 	
 	ei
@@ -1546,13 +1563,13 @@ _06bd:
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
 	ld      a,4
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,5
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ei      
 	
-	ld      a,(S1_LEVEL_SOLIDITY)	;get the solidity index for the level
+	ld      a,(RAM_LEVEL_SOLIDITY)	;get the solidity index for the level
 	add     a,a			;double it (for a pointer)
 	ld      c,a			;and put it into a 16-bit number
 	ld      b,$00
@@ -1606,7 +1623,7 @@ _06bd:
 	exx     
 	ld      de,$d180
 	exx     
-	ld      de,(S1_LEVEL_FLOORWIDTH)
+	ld      de,(RAM_LEVEL_FLOORWIDTH)
 	ld      b,$07
 -	ld      a,(hl)
 	exx     
@@ -1877,7 +1894,7 @@ _LABEL_7DB_26:
 ;____________________________________________________________________________[$08D5]___
 
 _08d5:
-	ld      a,(S1_LEVEL_FLOORWIDTH)	;get width of the level's floor layout
+	ld      a,(RAM_LEVEL_FLOORWIDTH)	;get width of the level's floor layout
 	rlca    			;double it (x2)
 	jr      c,+
 	rlca    			;double it again (x4)
@@ -1972,10 +1989,10 @@ _0966:
 	di      			;disable interrupts
 	ld      a,4
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,5
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	
 	ld      bc,$0000
 	call    _08d5
@@ -1994,7 +2011,7 @@ _0966:
 	ld      a,(hl)
 	exx     
 	ld      e,a
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      c,a
 	ld      b,$00
@@ -2081,7 +2098,7 @@ _0966:
 	
 	pop     de
 	pop     hl
-	ld      bc,(S1_LEVEL_FLOORWIDTH)
+	ld      bc,(RAM_LEVEL_FLOORWIDTH)
 	add     hl,bc
 	ex      de,hl
 	ld      bc,$0100
@@ -2150,13 +2167,15 @@ loadFloorLayout:
 _LABEL_A40_121:
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	ld   a, 2
 	ld   (SMS_PAGE_2), a
-	ld   (S1_PAGE_2), a
+	ld   (RAM_PAGE_2), a
+	
 	ld   a, (iy+$0a)
 	res  0, (iy+$00)
 	call wait
+	
 	ld   (iy+$0a), a
 	ld   b, $04
 	
@@ -2204,6 +2223,7 @@ __	ld   a, (hl)
 	inc  hl
 	inc  de
 	djnz _b
+	
 	ret
 
 ;____________________________________________________________________________[$0AAE]___
@@ -2216,17 +2236,17 @@ _aae:
 	ldir    
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ld      hl,$d3bc
 	ld      a,$03
 	call    loadPaletteOnInterrupt
 	ld      c,(iy+$0a)
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	res     0,(iy+$00)
 	call    wait
 	ld      (iy+$0a),c
@@ -2314,17 +2334,17 @@ _b60:					;[$0B60]
 	
 +	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ld      hl,$d3bc
 	ld      a,$03
 	call loadPaletteOnInterrupt
 	ld      c,(iy+$0a)
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	res     0,(iy+$00)
 	call wait
 	ld      (iy+$0a),c
@@ -2400,7 +2420,7 @@ _b60:					;[$0B60]
 	
 _LABEL_C02_135:
 ;HL : e.g. $D311
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	ld   c, a
 	;divide the level number by 8?
 	srl  a
@@ -2461,7 +2481,7 @@ _c1d:
 	inc     de
 	djnz    -
 	
-	ld      a,(S1_PAGE_1)
+	ld      a,(RAM_PAGE_1)
 	ld      (SMS_PAGE_1),a
 	ei      
 	ret
@@ -2476,7 +2496,7 @@ _LABEL_C52_106:
 	ld   a, $FF
 	ld   ($D216), a
 	ld   c, $01
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	cp   18
 	ret  nc
 	cp   9
@@ -2489,9 +2509,9 @@ _LABEL_C52_106:
 	ld   ($D216), a
 	dec  a
 	jr   nz, +
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	res  0, (iy+$00)
 	call wait
 	
@@ -2516,7 +2536,7 @@ _LABEL_C52_106:
 	;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;map 1 background
 	ld      hl,$627e
@@ -2539,9 +2559,9 @@ _LABEL_C52_106:
 	jr      ++
 	
 +	;turn the screen off
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111			;remove bit 6 of VDP register 1
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+$00)
 	call wait
@@ -2567,7 +2587,7 @@ _LABEL_C52_106:
 	;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;map screen 2 background
 	ld      hl,$653b
@@ -2588,11 +2608,12 @@ _LABEL_C52_106:
 	ld      hl,S1_MapScreen2_Palette
 	call    _b50
 
-++	ld      a,$07
-	rst     $18
+	;play the map screen music
+++	ld      a,index_music_mapScreen
+	rst     $18			;`playMusic`
 	
 +++	call _LABEL_E86_110
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	add  a, a
 	ld   c, a
 	ld   b, $00
@@ -2607,7 +2628,7 @@ _LABEL_C52_106:
 	ld   ($D20E), a
 	call print
 	
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	ld   c, a
 	add  a, a
 	add  a, c
@@ -2789,7 +2810,7 @@ _LABEL_E86_110:
 	res  0, (iy+$00)
 	call wait
 	ld   (iy+$0a), $00
-	ld   a, (S1_LIVES)
+	ld   a, (RAM_LIVES)
 	ld   l, a
 	ld   h, $00
 	ld   c, $0A
@@ -2801,7 +2822,7 @@ _LABEL_E86_110:
 	ld   c, $0A
 	call _LABEL_5FC_114
 	ex   de, hl
-	ld   a, (S1_LIVES)
+	ld   a, (RAM_LIVES)
 	ld   l, a
 	ld   h, $00
 	and  a
@@ -3006,9 +3027,9 @@ S1_ZoneTitle_6:		;"SKY BASE"	;[$1278]
 
 titleScreen:
 	;turn off screen
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111			;remove bit 6 of $D219
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	
 	;wait for interrupt to complete?
 	res  0, (iy+$00)
@@ -3031,7 +3052,7 @@ titleScreen:
 	;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
 	ld   a, 5
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	
 	;load the title screen itself
 	ld   hl, $6000			;ROM:$16000
@@ -3049,8 +3070,10 @@ titleScreen:
 	call loadPaletteOnInterrupt
 	
 	set  1, (iy+$00)
-	ld   a, $06
-	rst  $18
+	
+	;play title screen music
+	ld   a, index_music_titleScreen
+	rst  $18			;`playMusic`
 	
 	xor  a
 	ld   ($D216), a
@@ -3059,9 +3082,9 @@ titleScreen:
 	ld   hl, _1372
 	ld   ($D210), hl
 	
--	ld   a, (S1_VDPREGISTER_1)
+-	ld   a, (RAM_VDPREGISTER_1)
 	or   $40
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+$00)
 	call wait
@@ -3107,7 +3130,7 @@ titleScreen:
 	jp   nz, -
 	scf
 
-++	rst  $20
+++	rst  $20			;`muteSound`
 	ret
 
 ;"PRESS  BUTTON" text
@@ -3135,9 +3158,9 @@ S1_TitleScreen_Palette			;[$13E1]
 
 _1401:
 	;turn off the screen
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	and     %10111111		;remove bit 6 of VDP register 1
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+$00)
 	call    wait
@@ -3152,7 +3175,7 @@ _1401:
 	;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;level complete background
 	ld      hl,$67fe
@@ -3172,9 +3195,9 @@ _1401:
 	ld      b,$78
 	
 -	;turn the screen on
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	or      %01000000		;enable bit 6 on VDP register 1
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+$00)
 	call    wait
@@ -3234,7 +3257,7 @@ _1401:
 	djnz    -
 	
 	ld      a,$1a
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      hl,$d216
 	ld      a,(hl)
 	and     a
@@ -3277,13 +3300,13 @@ _14fc:
 ;____________________________________________________________________________[$155E]___
 
 _155e:
-	ld	a, (S1_CURRENT_LEVEL)
+	ld	a, (RAM_CURRENT_LEVEL)
 	cp 	19
 	jp      z,_172f
 	
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	and     $bf
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+$00)
 	call    wait
@@ -3303,13 +3326,13 @@ _155e:
 	;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;UNKNOWN
 	ld      hl,$612e
 	ld      bc,$00bb
 	ld      de,$3800
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      28
 	jr      c,+
 	
@@ -3328,7 +3351,7 @@ _155e:
 	and     a
 	call    nz,_16d9
 	
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      nc,+
 	
@@ -3336,7 +3359,7 @@ _155e:
 	ld      ($d2be),a
 	ld      a,$04
 	ld      ($d2bf),a
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	ld      e,a
 	ld      d,$00
 	ld      hl,_1b69
@@ -3371,7 +3394,7 @@ _155e:
 	ld      hl,$1b8d
 	ld      a,$03
 	call    loadPaletteOnInterrupt
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      hl,$d281
@@ -3417,7 +3440,7 @@ _155e:
 	ld      d,(hl)
 ++++	ld      hl,$d212
 	ex      de,hl
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      hl,_1a14
@@ -3429,9 +3452,9 @@ _155e:
 	ld      b,$78
 	
 -	push    bc
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+$00)
 	call    wait
@@ -3445,7 +3468,7 @@ _155e:
 	
 	call    _1a18
 	call    _19b4
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      28
 	call    c,_19df
 	ld      a,($d216)
@@ -3454,11 +3477,11 @@ _155e:
 	and     $03
 	jr      nz,+
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 
 +	ld      hl,($d212)
 	ld      de,($d214)
-	ld      a,(S1_RINGS)
+	ld      a,(RAM_RINGS)
 	or      h
 	or      l
 	or      d
@@ -3522,7 +3545,7 @@ _1711:
 
 _1719:
 	xor     a
-	ld      (S1_RINGS),a
+	ld      (RAM_RINGS),a
 	res     3,(iy+$09)
 	res     2,(iy+$09)
 	ret
@@ -3621,7 +3644,7 @@ _172f:
 	ld      c,$02
 	call    _39d8
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      -
 	
 +	ld      bc,$00b4
@@ -3635,16 +3658,16 @@ _172f:
 	
 -	ld      bc,$001e
 	call    _1860
-	ld      a,(S1_LIVES)
+	ld      a,(RAM_LIVES)
 	and     a
 	jr      z,+
 	dec     a
-	ld      (S1_LIVES),a
+	ld      (RAM_LIVES),a
 	ld      de,$5000
 	ld      c,$00
 	call    _39d8
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      -
 	
 +	ld      bc,$00b4
@@ -3677,7 +3700,7 @@ _172f:
 	ld      c,$01
 	call    _39d8
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      -
 	
 ++	ld      bc,$01e0
@@ -3798,7 +3821,7 @@ _19b1:
 ;____________________________________________________________________________[$19B4]___
 
 _19b4:
-	ld      hl,S1_RINGS
+	ld      hl,RAM_RINGS
 	ld      a,(hl)
 	and     a
 	ret     z
@@ -3813,7 +3836,7 @@ _19b4:
 +	ld      (hl),c
 	ld      de,$0100
 	ld      c,$00
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      a,($d285)
@@ -3879,7 +3902,7 @@ _1a18:
 	ld      b,$50
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ld      hl,S1_RINGS
+	ld      hl,RAM_RINGS
 	ld      de,$d2be
 	ld      b,$01
 	call    _1b13
@@ -3887,14 +3910,14 @@ _1a18:
 	ld      hl,($d23c)
 	ld      c,$98
 	ld      b,$80
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      b,$68
 	
 +	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      hl,$d285
@@ -3915,7 +3938,7 @@ _1a18:
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
 	call    _1aca
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      nc,+
 	ld      hl,$d212
@@ -3945,7 +3968,7 @@ _1a18:
 ;____________________________________________________________________________[$1ACA]___
 
 _1aca:
-	ld      a,(S1_LIVES)
+	ld      a,(RAM_LIVES)
 	ld      l,a
 	ld      h,$00
 	ld      c,$0a
@@ -3957,7 +3980,7 @@ _1aca:
 	ld      c,$0a
 	call    _LABEL_5FC_114
 	ex      de,hl
-	ld      a,(S1_LIVES)
+	ld      a,(RAM_LIVES)
 	ld      l,a
 	ld      h,$00
 	and     a
@@ -3970,7 +3993,7 @@ _1aca:
 	ld      ($d2c0),a
 	ld      c,$38
 	ld      b,$9f
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $13
 	jr      nz,+
 	ld      b,$60
@@ -4083,7 +4106,7 @@ _LABEL_1C49_62:
 	ei				;enable interrupts
 	
 --	ld   a, $03
-	ld   (S1_LIVES), a
+	ld   (RAM_LIVES), a
 	
 	ld   a, $05
 	ld   ($D2FD), a
@@ -4092,7 +4115,7 @@ _LABEL_1C49_62:
 	ld   ($D23F), a
 	
 	xor  a				;set A to 0
-	ld   (S1_CURRENT_LEVEL), a	;set starting level!
+	ld   (RAM_CURRENT_LEVEL), a	;set starting level!
 	ld   ($D223), a
 	ld   (iy+$0d), a
 	
@@ -4123,7 +4146,7 @@ _LABEL_1C49_62:
 	set  1, (iy+$05)
 _LABEL_1C9F_104:
 	;are we on the end sequence?
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	cp   19
 	jr   nc, --
 	
@@ -4146,7 +4169,7 @@ _LABEL_1CBD_120:
 -	res  0, (iy+$00)
 	call wait
 	djnz -
-	rst  $20
+	rst  $20			;`muteSound`
 	
 ++	call _LABEL_1CED_131
 	and     a
@@ -4173,9 +4196,9 @@ _LABEL_1CED_131:
 	;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
 	ld   a, 5
 	ld   (SMS_PAGE_1), a
-	ld   (S1_PAGE_1), a
+	ld   (RAM_PAGE_1), a
 	
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	bit  4, (iy+$06)
 	jr   z, +
 	ld   a, ($D2D3)
@@ -4229,7 +4252,7 @@ _LABEL_1CED_131:
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
 	ld      a,11
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	bit     2,(iy+$05)		;are rings enabled?
 	call    nz,_3879
@@ -4251,10 +4274,10 @@ _LABEL_1CED_131:
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	
 	call    _2e5a
 	call    _063e
@@ -4278,7 +4301,7 @@ _1dae:
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
 	ld      a,11
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	bit     2,(iy+$05)		;are rings enabled?
 	call    nz,_3879
@@ -4310,13 +4333,13 @@ _1de2:					;jump to here from _2067
 ++	bit     1,(iy+$06)
 	call    nz,++
 	
-	bit     1,(iy+$05)		;demo mode?
-	jr      z,+
+	bit     1,(iy+$05)		;are we in demo mode?
+	jr      z,+			;no, skip ahead
 	
-	bit     5,(iy+$03)		;Button B?
-	jp      z,_20b8
+	bit     5,(iy+$03)		;is button pressed?
+	jp      z,_20b8			;if yes, end demo mode -- fade out and return
 	
-	call    _1bad
+	call    _1bad			;process demo mode?
 	
 +	ld      hl,($d223)
 	inc     hl
@@ -4358,16 +4381,16 @@ _1de2:					;jump to here from _2067
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	
 	call    _2e5a
 	call    _063e
 	call    _06bd
 	
-	ld      hl,S1_VDPREGISTER_1
+	ld      hl,RAM_VDPREGISTER_1
 	set     6,(hl)
 	
 	bit     3,(iy+$07)		;paused?
@@ -4376,7 +4399,7 @@ _1de2:					;jump to here from _2067
 	jp      _1dae
 
 ++	ld      (iy+$03),$f7
-	ld      hl,(S1_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      de,$0112
 	add     hl,de
 	ex      de,hl
@@ -4398,7 +4421,7 @@ _1de2:					;jump to here from _2067
 _1e9e:
 	bit     1,(iy+$05)		;demo mode?
 	ret     nz
-	rst     $20
+	rst     $20			;`muteSound`
 	
 -	ld      a,(iy+$0a)
 	res     0,(iy+$00)
@@ -4406,7 +4429,7 @@ _1e9e:
 	ld      (iy+$0a),a
 	ld      a,11
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	bit     2,(iy+$05)		;are rings enabled?
 	call    nz,_3879
 	call    _23c9
@@ -4416,7 +4439,7 @@ _1e9e:
 	
 	ld      a,:sound_unpause
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	call    sound_unpause
 	ret
 
@@ -4424,7 +4447,7 @@ _1e9e:
 
 _1ed8:
 	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
 	ret
 
@@ -4434,9 +4457,9 @@ _1ee2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-	ld      hl,(S1_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_CROPLEFT)
 	inc     hl
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
 	ret
 
@@ -4446,16 +4469,16 @@ _1ef2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-	ld      hl,(S1_LEVEL_EXTENDHEIGHT)
+	ld      hl,(RAM_LEVEL_EXTENDHEIGHT)
 	dec     hl
-	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
 
 ;____________________________________________________________________________[$1EFF]___
 
 _1eff:
 	ld      hl,($d25d)
-	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
 
 ;____________________________________________________________________________[$1F06]___
@@ -4467,10 +4490,10 @@ _1f06:
 	di      
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ld      e,$00
 	ld      a,($d2b2)
 	ld      hl,($d230)
@@ -4524,7 +4547,7 @@ _1f49:	;lightning is enabled...
 	
 +	push    bc
 	ld      a,$13
-	rst     $28
+	rst     $28			;`playSFX`
 	pop     bc
 	
 ++	ld      hl,$d2a4
@@ -4551,11 +4574,14 @@ _1f49:	;lightning is enabled...
 	
 ;lightning palette control:
 _1f9d:
-.db $02, $04, $5e, $64
+.db $02, $04
+.dw S1_PaletteCycles_SkyBase1
 _1fa1:
-.db $02, $04, $9e, $64
+.db $02, $04
+.dw S1_PaletteCycles_SkyBase1_Lightning1
 _1fa5:
-.db $02, $04, $de, $64
+.db $02, $04
+.dw S1_PaletteCycles_SkyBase1_Lightning2
 
 ;____________________________________________________________________________[$1FA9]___
 
@@ -4586,27 +4612,27 @@ _1fa9:
 	jr      nz,+++
 	bit     4,(iy+$06)
 	jr      nz,++++
-	rst     $20
+	rst     $20			;`muteSound`
 	bit     7,(iy+$06)
 	call    nz,_20a4
 	call    hideSprites
 	call    _155e
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1a
 	jr      nc,++
 	bit     0,(iy+$07)
 	jr      z,+
 	ld      hl,$2047
 	call    _b60
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	push    af
 	ld      a,($d23f)
-	ld      (S1_CURRENT_LEVEL),a
+	ld      (RAM_CURRENT_LEVEL),a
 	inc     a
 	ld      ($d23f),a
 	call    _LABEL_1CED_131
 	pop     af
-	ld      (S1_CURRENT_LEVEL),a
+	ld      (RAM_CURRENT_LEVEL),a
 +	ld      hl,$d23e
 	inc     (hl)
 	ld      a,$01
@@ -4628,14 +4654,14 @@ _2023:
 
 _202d:
 	ld a, $0E
-	rst $28
+	rst $28				;`playSFX`
 	ret
 
 _2031:
-	ld      hl,S1_LIVES
+	ld      hl,RAM_LIVES
 	inc     (hl)
 	ld      a,$09
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 _2039:
 	ld      a,$10
@@ -4643,7 +4669,7 @@ _2039:
 	ret
 _203f:
 	ld      a,$07
-	rst     $28
+	rst     $28			;`playSFX`
 	set     0,(iy+$07)
 	ret
 
@@ -4666,7 +4692,7 @@ _2067:
 	set     4,(iy+$06)
 +	bit     7,(iy+$06)
 	call    nz,_20a4
-	ld      a,(S1_LIVES)
+	ld      a,(RAM_LIVES)
 	and     a
 	ld      a,$02
 	ret     nz
@@ -4677,20 +4703,20 @@ _2067:
 	ld      a,$00
 	ret     nc
 	ld      a,$03
-	ld      (S1_LIVES),a
+	ld      (RAM_LIVES),a
 	ld      a,$01
 	ret
 
 ;____________________________________________________________________________[$20A4]___
 
 _20a4:
-	ld      a,($d247)
+	ld      a,(RAM_RASTERSPLIT_STEP)
 	and     a
 	jr      nz,_20a4
 	di      
 	res     7,(iy+$06)		;underwater?
 	xor     a
-	ld      ($d248),a
+	ld      (RAM_RASTERSPLIT_LINE),a
 	ld      ($d2db),a
 	ei      
 	ret
@@ -4700,7 +4726,7 @@ _20a4:
 _20b8:
 	ld      a,:sound_fadeOut
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	ld      hl,$0028
 	call    sound_fadeOut
@@ -4714,9 +4740,9 @@ _20b8:
 loadLevel:
 ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
 ;HL : address for the level header
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111			;remove bit 6
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+$00)
 	call wait
@@ -4747,8 +4773,8 @@ loadLevel:
 	ld   ($D27B), hl
 	ld   ($D27D), hl
 	ld   ($D2B7), hl
-	ld   ($D247), a
-	ld   ($D248), a
+	ld   (RAM_RASTERSPLIT_STEP), a
+	ld   (RAM_RASTERSPLIT_LINE), a
 	
 	;clear $D287-$D2A4 (29 bytes)
 	ld   hl, $D287
@@ -4766,7 +4792,7 @@ loadLevel:
 	ex   de, hl
 	
 	ld   hl, $0800
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	cp   9				
 	jr   c, ++			;less than level 9? (Labyrinth Act 1)
 	cp   11
@@ -4784,7 +4810,7 @@ loadLevel:
 
 ++	ld   ($D2DC), hl		;either $0800 or $0020
 	ld   hl, $FFFE
-	ld   (S1_TIME), hl
+	ld   (RAM_TIME), hl
 	ld   hl, $23FF
 	
 	bit  4, (iy+$06)
@@ -4796,10 +4822,10 @@ loadLevel:
 	ld   hl, _2402
 	
 +	xor  a				;set A to 0
-	ld   (S1_RINGS), a
+	ld   (RAM_RINGS), a
 	
 	;is this a special stage? (level number 28+)
-	ld   a, (S1_CURRENT_LEVEL)
+	ld   a, (RAM_CURRENT_LEVEL)
 	sub  $1C
 	jr   c, +
 	ld   c, a
@@ -4823,20 +4849,20 @@ loadLevel:
 	pop     hl			;get back the address to the level header
 	;SP: Solidity Pointer
 	ld      a,(hl)
-	ld      (S1_LEVEL_SOLIDITY),a
+	ld      (RAM_LEVEL_SOLIDITY),a
 	inc     hl
 	;FW: Floor Width
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      (S1_LEVEL_FLOORWIDTH),de
+	ld      (RAM_LEVEL_FLOORWIDTH),de
 	;FH: Floor Height
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      (S1_LEVEL_FLOORHEIGHT),de
+	ld      (RAM_LEVEL_FLOORHEIGHT),de
 	;copy the next 8 bytes to $D273+
 	 ;CL: Crop Left
 	 ;LX: Level X Offset
@@ -4846,7 +4872,7 @@ loadLevel:
 	 ;LY: Level Y Offset
 	 ;XH: Extend Height
 	 ;LH: Level Height
-	ld      de,S1_LEVEL_CROPLEFT
+	ld      de,RAM_LEVEL_CROPLEFT
 	ld      bc,$0008
 	ldir    
 	
@@ -4883,7 +4909,7 @@ loadLevel:
 	ld      bc,$0003
 	ldir    
 	
-	ld      a,(S1_CURRENT_LEVEL)	;get current level number
+	ld      a,(RAM_CURRENT_LEVEL)	;get current level number
 	add     a,a			;double it (i.e. for 16-bit tables)
 	ld      e,a			;put it into DE
 	ld      d,$00
@@ -4976,18 +5002,18 @@ loadLevel:
 	ld      h,a
 	ld      a,6
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,7
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	jr      ++
 	
 +	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,6
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	
 ++	ei      			;enable interrupts
 	
@@ -5074,10 +5100,10 @@ loadLevel:
 	di      
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ei      
 	
 	;read the palette pointer into HL
@@ -5134,10 +5160,10 @@ loadLevel:
 	di      
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ei      
 	
 	;read the cycle palette pointer
@@ -5168,7 +5194,7 @@ loadLevel:
 	;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	call    _232b			;load the object layout
 	
 	pop     hl
@@ -5197,7 +5223,7 @@ loadLevel:
 	
 	;MU: Music
 	inc     hl
-	ld      a,($d2d2)		;check current music
+	ld      a,(RAM_PREVIOUS_MUSIC)	;check previously played music
 	cp      (hl)
 	jr      z,+			;if current music is the same, skip ahead
 	
@@ -5207,9 +5233,9 @@ loadLevel:
 	jp      m,+			;we can check if the sign is negative,
 					 ;that is, A>127
 	
-	;I believe this queues the music to be loaded
-	ld      ($d2fc),a
-	rst     $18
+	;remember the current level music to restore it after invincibility &c.
+	ld      (RAM_LEVEL_MUSIC),a
+	rst     $18			;`playMusic`
 
 	;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
 +	ld      b,$20
@@ -5429,9 +5455,9 @@ _2405:
 
 ;skip null level / do end sequence?
 _LABEL_258B_133:
-	ld   a, (S1_VDPREGISTER_1)
+	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111
-	ld   (S1_VDPREGISTER_1), a
+	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+$00)
 	call wait
@@ -5453,7 +5479,7 @@ _LABEL_258B_133:
 	;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;map 3 screen (end of game)
 	ld      hl,$6830
@@ -5463,16 +5489,16 @@ _LABEL_258B_133:
 	ld      ($d20e),a
 	call    decompressScreen
 	
-	ld      a,(S1_VDPREGISTER_1)
+	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
-	ld      (S1_VDPREGISTER_1),a
+	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+$00)
 	call    wait
 	
 	ld      a,1
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	ld      a,($d27f)
 	cp      $06
 	jp      c,+
@@ -5492,8 +5518,9 @@ _LABEL_258B_133:
 	pop     bc
 	djnz    -
 	
-	ld      a,$13
-	rst     $18
+	ld      a,index_music_allEmeralds
+	rst     $18			;`playMusic`
+	
 	ld      hl,$241d
 	ld      b,$3d
 	
@@ -5552,7 +5579,7 @@ _LABEL_258B_133:
 	
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;UNKNOWN
 	ld      hl,$69a9
@@ -5588,7 +5615,7 @@ _LABEL_258B_133:
 	
 	ld      a,5
 	ld      (SMS_PAGE_1),a
-	ld      (S1_PAGE_1),a
+	ld      (RAM_PAGE_1),a
 	
 	;credits screen
 	ld      hl,$6c61
@@ -5625,13 +5652,15 @@ _LABEL_258B_133:
 	ld      (hl),a
 	ld      bc,$0001
 	call    _2718
-	ld      hl,_2ad6
+	ld      hl,S1_Credits_Palette
 	call    _b50
-	ld      a,$0e
-	rst     $18
+	
+	ld      a,index_music_ending
+	rst     $18			;`playMusic`
+	
 	xor     a
 	ld      ($d20e),a
-	ld      hl,_2905
+	ld      hl,S1_Credits_Text
 	call    _2795
 	
 _2715:					;infinite loop!?
@@ -5851,8 +5880,41 @@ _2828:
 .db $FF, $FF, $FF, $FF, $2E, $30, $FF, $FF, $FF, $FF, $FF, $48, $60, $12, $14, $FF
 .db $FF, $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FF, $40, $48, $FF
 
-_2905:					;credits text
-.db      $14, $03, $AE, $9E, $7F, $5E, $2E			;SONIC
+S1_Credits_Text:			;[$2905]
+
+.ASCIITABLE
+	MAP " " = $EB
+	MAP "A" = $1E
+	MAP "B" = $1F
+	MAP "C" = $2E
+	MAP "D" = $2F
+	MAP "E" = $3E
+	MAP "F" = $3F
+	MAP "G" = $4E
+	MAP "H" = $4F
+	MAP "I" = $5E
+	MAP "J" = $5F
+	MAP "K" = $6E
+	MAP "L" = $6F
+	MAP "M" = $7E
+	MAP "N" = $7F
+	MAP "O" = $8E
+	MAP "P" = $8F
+	MAP "Q" = $9E
+	MAP "R" = $9F
+	MAP "S" = $AE
+	MAP "T" = $AF
+	MAP "U" = $BE
+	MAP "V" = $BF
+	MAP "W" = $CE
+	MAP "X" = $CF
+	MAP "Y" = $DE
+	MAP "Z" = $DF
+	MAP "@" = $AB
+.ENDA
+
+.db      $14, $03 ;, $AE, $9E, $7F, $5E, $2E			;SONIC
+.asc "SQNIC"
 .db $FE, $15, $04, $AF, $4F, $3E				;THE
 .db $FE, $13, $05, $4F, $3E, $2F, $4E, $3E, $4F, $9E, $4E	;HEDGEHOG
 .db $FD, $3C, $00
@@ -5926,7 +5988,7 @@ _2905:					;credits text
 .db $FE, $19, $13, $3E, $7F, $2F				;END
 .db $FF
 
-_2ad6:					;credits screen palette
+S1_Credits_Palette:			;[$2AD6]
 .db $35, $3D, $1F, $39, $06, $1B, $01, $34, $2B, $10, $03, $14, $2A, $1F, $00, $3F
 .db $35, $3D, $1F, $39, $06, $1B, $01, $34, $2B, $10, $03, $14, $2A, $1F, $00, $3F
 
@@ -6082,7 +6144,7 @@ _2e5a:
 	ld      bc,$0005
 	ldir    
 	
-	ld      a,(S1_LIVES)
+	ld      a,(RAM_LIVES)
 	cp      $09
 	jr      c,+
 	ld      a,$09
@@ -6140,7 +6202,7 @@ _2e5a:
 ;____________________________________________________________________________[$2EE6]___
 
 _2ee6:
-	ld      a,(S1_RINGS)
+	ld      a,(RAM_RINGS)
 	ld      c,a
 	rrca    
 	rrca    
@@ -6200,7 +6262,7 @@ _2f1f:
 	ld      (hl),$ff
 	ld      c,$18
 	ld      b,$10
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
 	ld      c,$70
@@ -6306,7 +6368,7 @@ _2f66:
 	jr      c,_f
 	ld      ($d25a),hl
 __	ld      hl,($d25a)
-	ld      de,(S1_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_CROPLEFT)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -6395,13 +6457,13 @@ __	ld      hl,($d25a)
 	jr      c,_f
 	ld      ($d25d),hl
 __	ld      hl,($d25d)
-	ld      de,(S1_LEVEL_CROPTOP)
+	ld      de,(RAM_LEVEL_CROPTOP)
 	and     a
 	sbc     hl,de
 	jr      nc,+
 	ld      ($d25d),de
 +	ld      hl,($d25d)
-	ld      de,(S1_LEVEL_EXTENDHEIGHT)
+	ld      de,(RAM_LEVEL_EXTENDHEIGHT)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -6426,36 +6488,36 @@ _311f:
 ;____________________________________________________________________________[$3122]___
 
 _3122:
-	ld      de,(S1_LEVEL_CROPTOP)
+	ld      de,(RAM_LEVEL_CROPTOP)
 	and     a
 	sbc     hl,de
 	ret     z
 	jr      c,+
 	inc     de
-	ld      (S1_LEVEL_CROPTOP),de
-	ld      (S1_LEVEL_EXTENDHEIGHT),de
+	ld      (RAM_LEVEL_CROPTOP),de
+	ld      (RAM_LEVEL_EXTENDHEIGHT),de
 	ret
 	
 +	dec     de
-	ld      (S1_LEVEL_CROPTOP),de
-	ld      (S1_LEVEL_EXTENDHEIGHT),de
+	ld      (RAM_LEVEL_CROPTOP),de
+	ld      (RAM_LEVEL_EXTENDHEIGHT),de
 	ret
 
 ;____________________________________________________________________________[$3140]___
 
 _3140:
-	ld      de,(S1_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_CROPLEFT)
 	and     a
 	sbc     hl,de
 	ret     z
 	jr      c,+
 	inc     de
-	ld      (S1_LEVEL_CROPLEFT),de
+	ld      (RAM_LEVEL_CROPLEFT),de
 	ld      ($d275),de
 	ret
 	
 +	dec     de
-	ld      (S1_LEVEL_CROPLEFT),de
+	ld      (RAM_LEVEL_CROPLEFT),de
 	ld      ($d275),de
 	ret
 
@@ -6473,7 +6535,7 @@ _315e:
 	
 _3164:
 	ld      hl,($d29d)
-	ld      de,(S1_TIME)
+	ld      de,(RAM_TIME)
 	add     hl,de
 	ld      bc,$0200
 	ld      a,h
@@ -6512,7 +6574,7 @@ _3164:
 	sbc     hl,bc
 	jr      nc,+
 	ld      hl,$0002
-	ld      (S1_TIME),hl
+	ld      (RAM_TIME),hl
 	ret
 	
 +	ld      hl,($d2a2)
@@ -6521,7 +6583,7 @@ _3164:
 	sbc     hl,bc
 	ret     c
 	ld      hl,$fffe
-	ld      (S1_TIME),hl
+	ld      (RAM_TIME),hl
 	ret
 
 ;____________________________________________________________________________[$31CF]___
@@ -6741,7 +6803,7 @@ _3343:
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      c,a
 	ld      b,d
@@ -6853,7 +6915,7 @@ _3343:
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      c,a
 	ld      b,d
@@ -7157,7 +7219,7 @@ _35fd:
 	ret     nz
 	bit     5,(iy+$06)
 	jr      nz,_367e
-	ld      a,(S1_RINGS)
+	ld      a,(RAM_RINGS)
 	and     a
 	jr      nz,_3644
 
@@ -7176,13 +7238,15 @@ _3618:
 	res     5,(iy+$06)
 	res     6,(iy+$06)
 	res     0,(iy+$08)
-	ld      a,$0a
-	rst     $18
+	
+	ld      a,index_music_death
+	rst     $18			;`playMusic`
+	
 	ret
 
 _3644:
 	xor     a
-	ld      (S1_RINGS),a
+	ld      (RAM_RINGS),a
 	call    _7c7b
 	jr      c,_367e
 	push    ix
@@ -7228,7 +7292,7 @@ _367e:
 	set     6,(iy+$06)
 	ld      (iy+$03),$ff
 	ld      a,$11
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;----------------------------------------------------------------------------[$36BE]---
@@ -7253,7 +7317,7 @@ _36be:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      de,$0100
 	ld      c,$00
 	call    _39d8
@@ -7262,7 +7326,7 @@ _36be:
 ;____________________________________________________________________________[$36F9]___
 
 _36f9:
-	ld      a,(S1_LEVEL_FLOORWIDTH)
+	ld      a,(RAM_LEVEL_FLOORWIDTH)
 	cp      $80
 	jr      z,+
 	cp      $40
@@ -7707,7 +7771,7 @@ _LABEL_3956_11:
 
 _39ac:
 	ld      c,a
-	ld      a,(S1_RINGS)
+	ld      a,(RAM_RINGS)
 	add     a,c
 	ld      c,a
 	and     $0f
@@ -7720,17 +7784,17 @@ _39ac:
 	cp      $a0
 	jr      c,+
 	sub     $a0
-	ld      (S1_RINGS),a
-	ld      a,(S1_LIVES)
+	ld      (RAM_RINGS),a
+	ld      a,(RAM_LIVES)
 	inc     a
-	ld      (S1_LIVES),a
+	ld      (RAM_LIVES),a
 	ld      a,$09
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 	
-+	ld      (S1_RINGS),a
++	ld      (RAM_RINGS),a
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$39D8]___
@@ -7765,10 +7829,10 @@ _39d8:
 	add     a,(hl)
 	daa     
 	ld      (hl),a
-	ld      hl,S1_LIVES
+	ld      hl,RAM_LIVES
 	inc     (hl)
 	ld      a,$09
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$3A03]___
@@ -8198,13 +8262,13 @@ _48c8:
 	call    nz,_50e3
 	ld      a,15
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	ld      bc,$000c
 	ld      de,$0010
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      l,a
 	ld      h,d
@@ -8231,7 +8295,7 @@ _48c8:
 	ld      de,$4a28		;data?
 	ld      a,2
 	ld      (SMS_PAGE_2),a
-	ld      (S1_PAGE_2),a
+	ld      (RAM_PAGE_2),a
 	push    de
 	jp      (hl)
 	
@@ -8239,7 +8303,7 @@ _48c8:
 	ld      de,$0024
 	add     hl,de
 	ex      de,hl
-	ld      hl,(S1_LEVEL_EXTENDHEIGHT)
+	ld      hl,(RAM_LEVEL_EXTENDHEIGHT)
 	ld      bc,$00c0
 	add     hl,bc
 	xor     a
@@ -8605,7 +8669,7 @@ _4c39:
 	call    nz,_4e51
 	bit     1,(iy+$06)
 	jr      nz,++
-	ld      hl,(S1_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      bc,$0008
 	add     hl,bc
 	ex      de,hl
@@ -9019,17 +9083,19 @@ _4ff5:
 	dec     (hl)
 	ret     nz
 	res     0,(iy+$08)
-	ld      a,($d2fc)
-	rst     $18
+	
+	ld      a,(RAM_LEVEL_MUSIC)
+	rst     $18			;`playMusic`
+	
 	ret
 
 ;____________________________________________________________________________[$5009]___
 
 _5009:
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	ret     nz
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0b
 	ret     z
 	ld      hl,($d29b)
@@ -9049,8 +9115,10 @@ _5009:
 	set     0,(iy+$05)
 	ld      a,$c0
 	ld      ($d287),a
-	ld      a,$0a
-	rst     $18
+	
+	ld      a,index_music_death
+	rst     $18			;`playMusic`
+	
 	call    _91eb
 	call    _91eb
 	call    _91eb
@@ -9069,7 +9137,7 @@ _5009:
 	and     (hl)
 	jr      nz,+
 	ld      a,$1a
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      a,($d223)
 	rrca    
 	ret     nc
@@ -9101,7 +9169,7 @@ _509d:
 	ld      a,$10
 	ld      ($d28e),a
 	ld      a,$00
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;unreferenced?
@@ -9138,7 +9206,7 @@ _50c1:
 	or      h
 	jr      z,+
 	ld      a,$06
-	rst     $28
+	rst     $28			;`playSFX`
 +	set     2,(iy+$07)
 	ret
 
@@ -9316,7 +9384,7 @@ _51f3:
 	bit     7,(ix+$18)
 	ret     z
 	ld      a,$03
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      a,$3c
 	ld      ($d412),a
 	ret
@@ -9409,8 +9477,10 @@ _5285:
 	dec     a
 	ld      ($d28b),a
 	ret     nz
-	ld      a,($d2fc)
-	rst     $18
+	
+	ld      a,(RAM_LEVEL_MUSIC)
+	rst     $18			;`playMusic`
+	
 	ld      c,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
@@ -9622,7 +9692,7 @@ _543c:
 	jr      nz,+
 	ld      a,$01
 	ld      ($d283),a
-	ld      hl,S1_LIVES
+	ld      hl,RAM_LIVES
 	dec     (hl)
 	set     2,(iy+$06)
 	jp      _54aa
@@ -9720,7 +9790,7 @@ _54ce:
 	ld      (ix+$0b),l
 	ld      (ix+$0c),h
 	ld      a,$05
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$550F]___
@@ -9737,7 +9807,7 @@ _550f:
 	ld      (ix+$09),$ff
 	set     1,(ix+$18)
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$552D]___
@@ -9759,7 +9829,7 @@ _552d:
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5556]___
@@ -9777,7 +9847,7 @@ _5556:
 	ld      (ix+$09),$00
 	res     1,(ix+$18)
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5578]___
@@ -9817,7 +9887,7 @@ _55a8:
 	bit     4,(ix+$18)
 	jr      nz,+
 	ld      a,$12
-	rst     $28
+	rst     $28			;`playSFX`
 +	set     4,(ix+$18)
 	ret
 
@@ -9842,7 +9912,7 @@ _55b6:
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$55E2]___
@@ -9852,7 +9922,7 @@ _55e2:
 	bit     7,(ix+$0c)
 	ret     nz
 	ld      a,$05
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$55EB]___
@@ -9905,7 +9975,7 @@ _55eb:
 	ld      a,$50
 	ld      ($d28a),a
 	ld      a,$06
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 +	inc     hl
@@ -9934,7 +10004,7 @@ _565c:
 	bit     4,(ix+$18)
 	jr      nz,+
 	ld      a,$12
-	rst     $28
+	rst     $28			;`playSFX`
 +	set     4,(ix+$18)
 	ret
 
@@ -10041,7 +10111,7 @@ _56d6:
 	ld      a,$10
 	ld      ($d2e1),a
 	ld      a,$07
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5727]___
@@ -10092,7 +10162,7 @@ _5761:
 	ld      (ix+$0b),$f6
 	ld      (ix+$0c),$ff
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5771]___
@@ -10103,7 +10173,7 @@ _5771:
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5781]___
@@ -10114,7 +10184,7 @@ _5781:
 	ld      (ix+$0b),$f2
 	ld      (ix+$0c),$ff
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$5791]___
@@ -10153,7 +10223,7 @@ _57be:
 	inc     hl
 	ld      (hl),$3f
 	ld      a,$07
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$57CD]___
@@ -10453,7 +10523,7 @@ _5bd9:
 	ld      a,$f0
 	ld      ($d411),a
 	ld      a,$02
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      _5b29
 	
 +	ld      hl,$5200
@@ -10482,7 +10552,7 @@ _5c05:
 	jr      c,+
 	bit     2,(ix+$18)
 	jp      nz,_5b24
-	ld      hl,S1_LIVES
+	ld      hl,RAM_LIVES
 	inc     (hl)
 	ld      hl,$d305
 	call    _LABEL_C02_135
@@ -10493,15 +10563,15 @@ _5c05:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      a,$09
-	rst     $28
-	ld      a,(S1_CURRENT_LEVEL)
+	rst     $28			;`playSFX`
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	ret     nc
 	ld      hl,$d280
 	inc     (hl)
 	ret
 	
-+	ld      a,(S1_CURRENT_LEVEL)
++	ld      a,(RAM_CURRENT_LEVEL)
 	cp      4			;level 4 (Bridge Act 2)?
 	jr      z,+
 	cp      $09			;level 9 (Labyrinth Act 1)?
@@ -10588,8 +10658,10 @@ _5cff:
 	set     0,(iy+$08)
 	ld      a,$f0
 	ld      ($d28d),a
-	ld      a,$08
-	rst     $18
+	
+	ld      a,index_music_invincibility
+	rst     $18			;`playMusic`
+	
 	jp      _5b29
 	
 +	ld      hl,$5380
@@ -10613,7 +10685,7 @@ _5d2f:
 	ld      a,(hl)
 	or      c
 	ld      (hl),a
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	add     a,a
 	ld      e,a
 	ld      d,$00
@@ -10665,7 +10737,7 @@ _5d80:
 _5da8:
 	bit     0,(ix+$18)
 	ret     nz
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      nz,+
 	ld      bc,$0000
@@ -10807,8 +10879,10 @@ _5ea2:
 	inc     (hl)
 	ld      a,$fe
 	ld      ($d28b),a
-	ld      a,$14
-	rst     $18
+	
+	ld      a,index_music_emerald
+	rst     $18			;`playMusic`
+	
 +	ld      (ix+$00),$ff
 	ret
 
@@ -10855,7 +10929,7 @@ _5f17:
 	call    loadPaletteOnInterrupt
 	set     0,(ix+$11)
 +	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ff90
@@ -10910,10 +10984,12 @@ _5f17:
 	jr      z,+
 	bit     7,(ix+$18)
 	jr      z,++
-	ld      a,$09
-	rst     $18
+	
+	ld      a,index_music_actComplete
+	rst     $18			;`playMusic`
+	
 	ld      a,$0c
-	rst     $28
+	rst     $28			;`playSFX`
 	res     2,(ix+$11)
 	set     3,(ix+$11)
 	ld      a,$a0
@@ -10952,7 +11028,7 @@ _5f17:
 	set     1,(ix+$11)
 	res     3,(iy+$06)
 	ld      a,$0b
-	rst     $28
+	rst     $28			;`playSFX`
 ++	ld      de,_6157
 	bit     1,(ix+$11)
 	jr      nz,_f
@@ -10961,7 +11037,7 @@ _5f17:
 	ld      de,$6171
 	bit     3,(ix+$11)
 	jr      z,_f
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0c
 	jr      c,+
 	cp      $1c
@@ -10972,7 +11048,7 @@ _5f17:
 	
 +	ld      de,$61a8
 	ld      c,$04
-	ld      a,(S1_RINGS)
+	ld      a,(RAM_RINGS)
 	cp      $50
 	jr      nc,+++
 ++	cp      $40
@@ -10981,13 +11057,13 @@ _5f17:
 	ld      c,$03
 	and     $0f
 	jr      z,+++
-+	ld      a,(S1_RINGS)
++	ld      a,(RAM_RINGS)
 	srl     a
 	srl     a
 	srl     a
 	srl     a
 	ld      b,a
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	and     $03
 	inc     a
 	ld      de,$6174
@@ -11103,70 +11179,82 @@ S1_EndSign_Palette:
 
 S1_Palette_Pointers:
 
-.dw S1_Palette_0, S1_Palette_1, S1_Palette_2, S1_Palette_3
-.dw S1_Palette_4, S1_Palette_5, S1_Palette_6, S1_Palette_7
+.dw S1_Palette_GreenHill
+.dw S1_Palette_Bridge
+.dw S1_Palette_Jungle
+.dw S1_Palette_Labyrinth
+.dw S1_Palette_ScrapBrain
+.dw S1_Palette_SkyBaseExterior
+.dw S1_Palette_6
+.dw S1_Palette_7
 
 S1_PaletteCycle_Pointers:		;[$628C]
 
-.dw S1_PaletteCycles_0, S1_PaletteCycles_1, S1_PaletteCycles_2
-.dw S1_PaletteCycles_3, S1_PaletteCycles_4, S1_PaletteCycles_5
-.dw S1_PaletteCycles_6, S1_PaletteCycles_7, S1_PaletteCycles_8
+.dw S1_PaletteCycles_GreenHill
+.dw S1_PaletteCycles_Bridge
+.dw S1_PaletteCycles_Jungle
+.dw S1_PaletteCycles_Labyrinth
+.dw S1_PaletteCycles_ScrapBrain
+.dw S1_PaletteCycles_SkyBase1
+.dw S1_PaletteCycles_6
+.dw S1_PaletteCycles_7
+.dw S1_PaletteCycles_8
 
 S1_Palettes:				;[$629E]
 
-S1_Palette_0:				;[$629E] Green Hill
+S1_Palette_GreenHill:			;[$629E] Green Hill
 .db $38, $01, $06, $0B, $04, $08, $0C, $3D, $3B, $34, $3C, $3E, $3F, $0F, $00, $3F
 .db $38, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $00, $00, $00
-S1_PaletteCycles_0:			;[$62BE] Green Hill Cycles x 3
+S1_PaletteCycles_GreenHill:		;[$62BE] Green Hill Cycles x 3
 .db $38, $01, $06, $0B, $04, $08, $0C, $3D, $3B, $34, $3C, $3E, $3F, $0F, $00, $3F
 .db $38, $01, $06, $0B, $04, $08, $0C, $3D, $3B, $34, $3F, $3C, $3E, $0F, $00, $3F
 .db $38, $01, $06, $0B, $04, $08, $0C, $3D, $3B, $34, $3E, $3F, $3C, $0F, $00, $3F
-S1_Palette_1:				;[$62EE] Bridge
+S1_Palette_Bridge:			;[$62EE] Bridge
 .db $38, $01, $06, $0B, $2A, $3A, $0C, $19, $3D, $24, $38, $3C, $3F, $1F, $00, $3F
 .db $38, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $27, $0B, $00
-S1_PaletteCycles_1:			;[$630E] Bridge Cycles
+S1_PaletteCycles_Bridge:		;[$630E] Bridge Cycles
 .db $38, $01, $06, $0B, $3A, $08, $0C, $19, $3C, $24, $38, $3C, $3F, $1F, $00, $3F
 .db $38, $01, $06, $0B, $3A, $08, $0C, $19, $3C, $24, $3F, $38, $3C, $1F, $00, $3F
 .db $38, $01, $06, $0B, $3A, $08, $0C, $19, $3C, $24, $3C, $3F, $38, $1F, $00, $3F
-S1_Palette_2:				;[$633E] Jungle
+S1_Palette_Jungle:			;[$633E] Jungle
 .db $04, $08, $0C, $06, $0B, $05, $25, $01, $03, $10, $34, $38, $3E, $1F, $00, $3F
 .db $04, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $27, $0B, $00
-S1_PaletteCycles_2:			;[$635E] Jungle Cycles
+S1_PaletteCycles_Jungle:		;[$635E] Jungle Cycles
 .db $04, $08, $0C, $06, $0B, $05, $26, $01, $03, $10, $34, $38, $3E, $0F, $00, $3F
 .db $04, $08, $0C, $06, $0B, $05, $26, $01, $03, $10, $3E, $34, $38, $0F, $00, $3F
 .db $04, $08, $0C, $06, $0B, $05, $26, $01, $03, $10, $38, $3E, $34, $0F, $00, $3F
-S1_Palette_3:				;[$638E] Labyrinth
+S1_Palette_Labyrinth:			;[$638E] Labyrinth
 .db $00, $01, $06, $0B, $27, $14, $18, $29, $12, $10, $1E, $09, $04, $0F, $00, $3F
-S1_LabyrinthSpritePalette:
+S1_Palette_Labyrinth_Sprites:
 ;the code for the water line raster split refers directly to this sprite palette:
 .db $00, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $27, $0B, $15
-S1_PaletteCycles_3:			;[$63AE] Labyrinth Cycles
+S1_PaletteCycles_Labyrinth:		;[$63AE] Labyrinth Cycles
 .db $00, $01, $06, $0B, $27, $14, $18, $29, $12, $10, $1E, $09, $04, $0F, $00, $3F
 .db $00, $01, $06, $0B, $27, $14, $18, $29, $12, $10, $09, $04, $1E, $0F, $00, $3F
 .db $00, $01, $06, $0B, $27, $14, $18, $29, $12, $10, $04, $1E, $09, $0F, $00, $3F
-S1_Palette_4:				;[$63DE] Scrap Brain
+S1_Palette_ScrapBrain:			;[$63DE] Scrap Brain
 .db $00, $10, $15, $29, $3D, $01, $14, $02, $05, $0A, $0F, $3F, $07, $0F, $00, $3F
 .db $00, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3D, $15, $0F, $27, $10, $29
-S1_PaletteCycles_4:			;[$63FE] Scrap Brain Cycles
+S1_PaletteCycles_ScrapBrain:		;[$63FE] Scrap Brain Cycles
 .db $00, $10, $15, $29, $3D, $01, $14, $02, $05, $0A, $0F, $3F, $07, $0F, $00, $3F
 .db $00, $10, $15, $29, $3D, $01, $14, $02, $3F, $05, $0A, $0F, $07, $0F, $00, $3F
 .db $00, $10, $15, $29, $3D, $01, $14, $02, $0F, $3F, $05, $0A, $07, $0F, $00, $3F
 .db $00, $10, $15, $29, $3D, $01, $14, $02, $0A, $0F, $3F, $05, $07, $0F, $00, $3F
-S1_Palette_5:				;[$643E] Sky Base 1/2 Exterior
+S1_Palette_SkyBaseExterior:		;[$643E] Sky Base 1/2 Exterior
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3D, $39, $3D, $3F, $24, $00, $38
 .db $10, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $27, $15, $00
-S1_PaletteCycles_5:			;[$645E] Sky Base 1 Cycles
+S1_PaletteCycles_SkyBase1:		;[$645E] Sky Base 1 Cycles
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3D, $39, $3D, $3F, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3F, $3D, $39, $3D, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3D, $3F, $3D, $39, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $39, $3D, $3F, $3D, $24, $00, $38
 
-S1_Lightning_Palette_1			;[$649E] Sky Base 1 Lightning Cycles 1
+S1_PaletteCycles_SkyBase1_Lightning1	;[$649E] Sky Base 1 Lightning Cycles 1
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3D, $39, $3D, $3F, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $10, $3F, $3D, $39, $3D, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $20, $3D, $3F, $3D, $39, $24, $00, $38
 .db $10, $10, $20, $34, $30, $10, $11, $25, $2A, $39, $3D, $3F, $3D, $24, $00, $38
-S1_Lightning_Palette_2			;[$64DE] Sky Base 1 Lightning Cycles 2
+S1_PaletteCycles_SkyBase1_Lightning2	;[$64DE] Sky Base 1 Lightning Cycles 2
 .db $10, $10, $20, $34, $30, $10, $11, $25, $2F, $3D, $39, $3D, $3F, $24, $00, $38
 .db $30, $14, $29, $2E, $3A, $01, $02, $17, $10, $3F, $3D, $39, $3D, $0F, $00, $3F
 .db $10, $10, $20, $34, $30, $10, $11, $25, $3F, $3D, $3F, $3D, $39, $24, $00, $38
@@ -11252,7 +11340,7 @@ _65ee:
 	ld      bc,$0000
 	call    _ac96
 	ld      a,$0a
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      +
 	
 ++	ld      (ix+$07),l
@@ -11377,7 +11465,7 @@ _673c:
 	ld      de,$0000
 	call    _LABEL_7CC1_12
 +	ld      hl,$6911
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
 	ld      hl,_6923
@@ -11427,7 +11515,7 @@ _693f:
 	ld      (ix+$17),a
 	bit     5,(iy+$00)
 	jr      z,+
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $12
 	jr      z,+
 	ld      a,($d414)
@@ -11550,7 +11638,7 @@ _6a47:
 	ld      d,(ix+$0b)
 	call    _LABEL_7CC1_12
 +	ld      hl,$6911
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
 	ld      hl,_6923
@@ -11600,7 +11688,7 @@ _6ac1:
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,_6b72
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $05
 	jr      z,+
 	cp      $0b
@@ -11769,7 +11857,7 @@ _6b74:
 	pop     ix
 	pop     bc
 	ld      a,$0a
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      c,$00
 	ld      l,c
 	ld      h,c
@@ -11813,7 +11901,7 @@ _6cf9:
 ;OBJECT: wooden platform - moving (Green Hill)
 _6d65:
 	set     5,(ix+$18)
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $07
 	jr      z,+
 	ld      hl,$0020
@@ -11867,7 +11955,7 @@ _6d65:
 	add     hl,de
 	ld      ($d3fe),hl
 +	ld      hl,$6911
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
 	ld      hl,$6931
@@ -12017,7 +12105,7 @@ _6f08:
 	pop     ix
 	pop     bc
 	ld      a,$0a
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      bc,_6fed
 	cp      $78
 	jr      c,++++
@@ -12074,8 +12162,10 @@ _700c:
 	ld      hl,S1_BossPalette
 	ld      a,$02
 	call    loadPaletteOnInterrupt
-	ld      a,$0b
-	rst     $18
+	
+	ld      a,index_music_boss1
+	rst     $18			;`playMusic`
+	
 	xor     a
 	ld      ($d2ec),a
 	ld      (ix+$12),a
@@ -12125,7 +12215,7 @@ _700c:
 	ld      h,(hl)
 	ld      l,a
 	jp      (hl)
-	ld      hl,(S1_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      de,$0006
 	add     hl,de
 	ld      e,(ix+$02)
@@ -12147,7 +12237,7 @@ _700c:
 	ld      (ix+$15),$72
 	res     1,(ix+$11)
 	jp      ++
-	ld      hl,(S1_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      de,$00e0
 	add     hl,de
 	ld      e,(ix+$02)
@@ -12239,7 +12329,7 @@ _700c:
 	jp      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,(S1_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_CROPLEFT)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -12354,7 +12444,7 @@ _732c:
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ff90
@@ -12455,8 +12545,10 @@ _732c:
 	jr      nz,+
 	ld      a,$a0
 	ld      ($d289),a
-	ld      a,$09
-	rst     $18
+	
+	ld      a,index_music_actComplete
+	rst     $18			;`playMusic`
+	
 	set     1,(ix+$18)
 +	xor     a
 	ld      (ix+$0f),a
@@ -12548,7 +12640,7 @@ _7594:
 	ld      (ix+$0b),$fd
 	ld      (ix+$0c),$ff
 +	ld      de,$0012
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	jr      nz,+
 	ld      de,$0038
@@ -12568,7 +12660,7 @@ _7594:
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      hl,$fe00
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	jr      nz,+
 	ld      hl,$fe80
@@ -12576,7 +12668,7 @@ _7594:
 	ld      (ix+$08),h
 	ld      (ix+$09),$ff
 	ld      bc,_7629
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
 	ld      bc,_762e
@@ -12614,7 +12706,7 @@ _7699:
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$20
 	ld      hl,_7760
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
 	ld      hl,_777b
@@ -12636,7 +12728,7 @@ _7699:
 	ld      (ix+$08),a
 	ld      (ix+$09),a
 	ld      hl,_7752
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	ld      c,a
 	and     a
 	jr      z,+
@@ -12744,7 +12836,7 @@ _77be:
 	ld      a,$3f
 	ld      ($d2b3),a
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      a,($d2ec)
 	inc     a
 	ld      ($d2ec),a
@@ -12814,8 +12906,10 @@ _77be:
 	
 +	jr      nz,+
 	ld      (hl),$5b
-	ld      a,($d2fc)
-	rst     $18
+	
+	ld      a,(RAM_LEVEL_MUSIC)
+	rst     $18			;`playMusic`
+	
 	ld      a,(iy+$0a)
 	res     0,(iy+$00)
 	call    wait
@@ -12843,7 +12937,7 @@ _77be:
 	set     5,(iy+$00)
 	set     0,(iy+$02)
 	res     1,(iy+$02)
-	ld      a,(S1_CURRENT_LEVEL)
+	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0b
 	jr      nz,+
 	set     1,(iy+$09)
@@ -12933,7 +13027,7 @@ _7a3a:
 	ld      (ix+$0c),a
 	pop     ix
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 	
 ;____________________________________________________________________________[$7AA7]___
@@ -12965,7 +13059,7 @@ _7aa7:
 	set     6,(iy+$06)
 	ld      (iy+$03),$ff
 	ld      a,$11
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$7AED]___
@@ -13170,11 +13264,11 @@ _7c8c:
 	ld      ($d27b),hl
 	ld      ($d27d),de
 	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (S1_LEVEL_CROPTOP),hl
-	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
 
 ;____________________________________________________________________________[$7CA6]___
@@ -13261,7 +13355,7 @@ _7cf6:
 	ld      (ix+$0c),$ff
 	set     0,(ix+$18)
 	ld      a,$12
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      (ix+$11),$03
 	jr      +++
 	
@@ -13581,16 +13675,18 @@ _8053:
 	ld      hl,S1_BossPalette
 	ld      a,$02
 	call    loadPaletteOnInterrupt
-	ld      a,$0b
-	rst     $18
+	
+	ld      a,index_music_boss1
+	rst     $18			;`playMusic`
+	
 	xor     a
 	ld      ($d2ec),a
 	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (S1_LEVEL_CROPTOP),hl
-	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$01f0
 	ld      ($d27b),hl
 	ld      hl,$0048
@@ -13782,7 +13878,7 @@ _8218:
 	ret     z
 	ld      (ix+$16),$00
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 +	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
@@ -13910,7 +14006,7 @@ _83c1:
 	ld      ($d2af),hl
 	set     0,(ix+$18)
 	ld      a,$20
-	rst     $28
+	rst     $28			;`playSFX`
 ++	ld      (ix+$0f),<_8481
 	ld      (ix+$10),>_8481
 	ld      l,(ix+$0a)
@@ -13980,8 +14076,10 @@ _8496:
 	call    loadPaletteOnInterrupt
 	xor     a
 	ld      ($d2ec),a
-	ld      a,$0b
-	rst     $18
+	
+	ld      a,index_music_boss1
+	rst     $18			;`playMusic`
+	
 	set     0,(ix+$18)
 +	ld      a,(ix+$11)
 	and     a
@@ -14087,7 +14185,7 @@ _8496:
 	djnz    -
 	
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      +++
 	
 ++	ld      (ix+$0a),$80
@@ -14234,7 +14332,7 @@ _866c:
 +	bit     1,(ix+$18)
 	jr      z,+++
 	ld      a,$04
-	rst     $28
+	rst     $28			;`playSFX`
 +++	xor     a
 	ld      (ix+$11),a
 	ld      (ix+$12),a
@@ -14771,7 +14869,7 @@ _8af6:
 	cp      $80
 	ret     nz
 	ld      a,$1d
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 _8bbc:
@@ -14837,7 +14935,7 @@ _8c16:
 	ret
 	
 +	ld      a,$18
-	rst     $28
+	rst     $28			;`playSFX`
 ++	xor     a
 	bit     1,(ix+$18)
 	jr      nz,+
@@ -15286,7 +15384,7 @@ _90c0:
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      c,a
 	ld      b,d
@@ -15472,8 +15570,10 @@ _9267:
 	call    loadPaletteOnInterrupt
 	xor     a
 	ld      ($d2ec),a
-	ld      a,$0b
-	rst     $18
+	
+	ld      a,index_music_boss1
+	rst     $18			;`playMusic`
+	
 	set     0,(ix+$18)
 +	ld      a,(ix+$11)
 	and     a
@@ -15665,7 +15765,7 @@ _9432:
 	ld      c,$04
 	call    _85d1
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	jp      _b
 
 _947b:
@@ -16043,7 +16143,7 @@ _96f8:
 	ld      ($d2fb),a
 	ld      (ix+$12),$10
 	ld      a,$22
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      (ix+$0a),$98
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
@@ -16365,7 +16465,7 @@ _9afb:
 	ld      ($d408),a
 	ld      (ix+$11),$08
 	ld      a,$07
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 	
 +	dec     (ix+$11)
@@ -16455,7 +16555,7 @@ _9bfc:
 	ld      a,(ix+$03)
 	ld      (ix+$12),a
 	ld      a,$18
-	rst     $28
+	rst     $28			;`playSFX`
 	set     0,(ix+$18)
 +	ld      (ix+$0d),$06
 	ld      (ix+$0e),$08
@@ -16480,7 +16580,7 @@ _9bfc:
 	ld      a,(ix+$12)
 	ld      (ix+$03),a
 	ld      a,$18
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 	
 +	xor     a
@@ -16599,7 +16699,7 @@ _9c8e:
 	cp      $70
 	ret     nz
 	ld      a,$17
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 _9d4a:
@@ -16719,7 +16819,7 @@ _9eb4:
 	dec     a
 	ret     nz
 	ld      a,$19
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$9EC4]___
@@ -16733,7 +16833,7 @@ _9ec4:
 	cp      $2f
 	ret     nz
 	ld      a,$19
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$9ED4]___
@@ -16950,7 +17050,7 @@ _a0e8:
 	jr      c,++
 	jr      nz,+
 	ld      a,$13
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      hl,$0000
 	ld      ($d214),hl
 	call    _LABEL_3956_11
@@ -17152,7 +17252,7 @@ _a33c:
 +	jr      nz,+
 	ld      (ix+$16),$00
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      bc,_a3b4
 	ld      de,_a3bb
 	call    _7c41
@@ -17197,7 +17297,7 @@ _a3f8:
 	jp      m,++
 	ld      (ix+$0f),<_a48b
 	ld      (ix+$10),>_a48b
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	jr      nz,+
 	ld      (ix+$0f),<_a49b
@@ -17214,13 +17314,13 @@ _a3f8:
 	xor     c
 	ld      (hl),a
 	ld      a,$1a
-	rst     $28
+	rst     $28			;`playSFX`
 	jr      +
 	
 ++	res     1,(ix+$18)
 	ld      (ix+$0f),<_a493
 	ld      (ix+$10),>_a493
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	jr      nz,+
 	ld      (ix+$0f),$a3
@@ -17497,12 +17597,12 @@ _a7ed:
 	bit     0,(ix+$18)
 	jr      nz,+
 	ld      hl,$0340
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      hl,$0540
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (S1_LEVEL_CROPTOP),hl
-	ld      (S1_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$0220
 	ld      ($d27d),hl
 
@@ -17516,14 +17616,14 @@ _a7ed:
 	ld      a,$02
 	call    loadPaletteOnInterrupt
 	
-	ld      a,$0b
-	rst     $18
+	ld      a,index_music_boss1
+	rst     $18			;`playMusic`
 	
 	set     0,(ix+$18)
 +	bit     1,(ix+$18)
 	jr      nz,+++
 	ld      hl,($d25a)
-	ld      (S1_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_CROPLEFT),hl
 	ld      de,_baf9
 	ld      bc,_a9b7
 	call    _7c41
@@ -17635,8 +17735,10 @@ _a7ed:
 	inc     h
 	ld      ($d3fe),hl
 	set     4,(ix+$18)
-	ld      a,$09
-	rst     $18
+	
+	ld      a,index_music_actComplete
+	rst     $18			;`playMusic`
+	
 	ld      a,$a0
 	ld      ($d289),a
 	set     1,(iy+$06)
@@ -17674,7 +17776,7 @@ _a7ed:
 	cp      $0f
 	ret     nz
 	ld      a,$19
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 _a9b7:
@@ -17928,7 +18030,7 @@ _ab21:
 	call    _ac96
 	ld      (ix+$00),$ff
 	ld      a,$1b
-	rst     $28
+	rst     $28			;`playSFX`
 	jr      ++++
 	
 ++	cp      $23
@@ -18078,7 +18180,7 @@ _ad6c:
 	ld      (ix+$06),h
 	pop     ix
 	ld      a,$1c
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      (ix+$12),$18
 	ld      (ix+$16),$00
 	ld      (ix+$17),$00
@@ -18264,7 +18366,7 @@ _af98:
 	ld      a,(ix+$15)
 	cp      $c8
 	ret     nz
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	ret     nz
 	ld      l,(ix+$05)
@@ -18794,7 +18896,7 @@ _b4e6:
 _b50e:
 	set     5,(ix+$18)
 	ld      hl,_b37b
-	ld      a,(S1_LEVEL_SOLIDITY)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $01
 	jr      nz,+
 	ld      hl,_b5b5
@@ -18920,7 +19022,7 @@ _b5c2:
 	ld      (ix+$0c),a
 	pop     ix
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$B634]___
@@ -18957,8 +19059,10 @@ _b634:
 	ld      (ix+$14),h
 	xor     a
 	ld      ($d2ec),a
-	ld      a,$0d
-	rst     $18
+	
+	ld      a,index_music_boss3
+	rst     $18			;`playMusic`
+	
 	set     4,(iy+$08)
 	set     0,(ix+$18)
 +	ld      a,(ix+$15)
@@ -19090,10 +19194,12 @@ _b634:
 	ld      (ix+$17),a
 	set     2,(ix+$18)
 	res     4,(iy+$08)
-	ld      a,$04
-	rst     $18
+	
+	ld      a,index_music_scrapBrain
+	rst     $18			;`playMusic`
+	
 	ld      a,$21
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$B7E6]___	
@@ -19125,7 +19231,7 @@ _b7e6:
 	inc     hl
 	ld      (hl),$3f
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 	ld      hl,$d2ec
 	inc     (hl)
 	ret
@@ -19492,7 +19598,7 @@ _bb84:
 	and     $0f
 	jr      nz,+
 	ld      a,$13
-	rst     $28
+	rst     $28			;`playSFX`
 +	dec     (ix+$11)
 	ret     nz
 	ld      (ix+$11),$00
@@ -19528,7 +19634,7 @@ _bb84:
 	and     $1f
 	ret     nz
 	ld      a,$13
-	rst     $28
+	rst     $28			;`playSFX`
 	ret
 
 ;____________________________________________________________________________[$BAC5]___
@@ -19710,7 +19816,7 @@ _bdf9:
 	ld      ($d3fc),a
 	set     6,(iy+$08)
 	ld      a,$06
-	rst     $28
+	rst     $28			;`playSFX`
 +	ld      (ix+$0d),$20
 	ld      (ix+$0e),$1c
 	xor     a
@@ -19758,7 +19864,7 @@ _bdf9:
 	set     0,(ix+$18)
 	ld      (ix+$11),$01
 	ld      a,$01
-	rst     $28
+	rst     $28			;`playSFX`
 +	call    _79fa
 	bit     0,(ix+$18)
 	ret     z
@@ -19878,8 +19984,8 @@ _bff1:
 .BANK 3 SLOT 1
 .ORGA $4000
 
-.include "includes\sound_driver.asm"
-.include "includes\music.asm"
+.include "SOUND\sound_driver.asm"
+.include "SOUND\music.asm"
 
 ;we might be able to set a background repeating text like this so that we don't have
  ;to specify precise gap-filling like this
@@ -19887,3 +19993,111 @@ _bff1:
 .db "Master System & Game Gear Version.  "
 .db "'1991 (C)Ancient. (BANK0-4)", $A2
 .db "SONIC THE HEDGE"
+
+;======================================================================================
+;block mappings
+
+.BANK 4
+.ORG $0000
+
+;[$10000]
+S1_BlockMappings:
+
+S1_BlockMappings_GreenHill:
+.INCBIN "ROM.sms" SKIP $10000 READ 2944
+
+S1_BlockMappings_Bridge:
+.INCBIN "ROM.sms" SKIP $10B80 READ 2304
+
+S1_BlockMappings_Jungle:
+.INCBIN "ROM.sms" SKIP $11480 READ 2560
+
+S1_BlockMappings_Labyrinth:
+.INCBIN "ROM.sms" SKIP $11E80 READ 2816
+
+S1_BlockMappings_ScrapBrain:
+.INCBIN "ROM.sms" SKIP $12980 READ 3072
+
+S1_BlockMappings_SkyBaseExterior:
+;.INCBIN "ROM.sms" SKIP $13580 READ 3456
+.INCBIN "ROM.sms" SKIP $13580 READ ($14000 - $13580)
+.BANK 5
+.ORG $0000
+.INCBIN "ROM.sms" SKIP $14000 READ 3456 - ($14000 - $13580)
+
+S1_BlockMappings_SkyBaseInterior:
+.INCBIN "ROM.sms" SKIP $14300 READ 1664
+
+S1_BlockMappings_SpecialStage:
+.INCBIN "ROM.sms" SKIP $14980 READ 2048
+
+;======================================================================================
+;"blinking items"
+;(need to properly break these down)
+
+;[$15180]
+.INCBIN "ROM.sms" SKIP $15180 READ 1024
+
+;======================================================================================
+;level headers:
+
+.MACRO TABLE ARGS tableName
+	;define the current position as the table name
+__TABLE\@__:
+	.DEF \1 __TABLE\@__
+	;then define a reference used for counting the row index
+	.REDEF __ROW__ 0
+.ENDM
+
+.MACRO ROW ARGS rowIndexLabel
+__ROW\@__:
+	.IFDEFM \1
+		.DEF \1 __ROW__
+	.ENDIF
+	.REDEF __ROW__ (__ROW__+1)
+.ENDM
+
+.MACRO ENDTABLE ARGS tableName
+	.DEF _sizeof_\1 (__ROW__+1)
+.ENDM
+
+
+.BANK 5
+
+;[$15580]
+S1_LevelHeader_Pointers:
+
+;[$155CA]
+.ORG $155CA - $14000
+
+ TABLE "S1_LevelHeaders"
+ ROW "index_levelHeaders_greenHill1"
+.db $00					;SP: SolidityPointer
+.dw $0100, $0010			;FW/FH: FloorWidth/Height
+.db $40					;CL: CropLeft
+.db $00					;LX: LevelXOffset
+.db $C0					;unknown byte
+.db $18					;LW: LevelWidth
+.db $20					;CT: CropTop
+.db $00					;LY: LevelYOffset
+.db $40					;XH: ExtendHeight
+.db $01					;LH: LevelHeight
+.db $08					;SX: StartX
+.db $0B					;SY: StartY
+.dw $2DEA				;FL: FloorLayout
+.dw $083E				;FS: FloorSize
+.dw $0000				;BM: BlockMappings
+.dw $2FE6				;LA: LevelArt
+.db $09					;SB: SpriteBank
+.dw $612A				;SA: SpriteArt
+.db $00					;IP: InitialPalette
+.db $0A					;CS: CycleSpeed
+.db $03					;CC: CycleCount
+.db $00					;CP: CyclePalette
+.dw $0534				;OL: ObjectLayout
+.db $04					;SR: Scrolling/Ring flags
+.db $00					;UW: Underwater flag
+.db $20					;TL: Time/Lightning flags
+.db $00					;X0: Unknown byte - always 0
+.db $00					;MU: Music
+ ENDTABLE "S1_LevelHeaders"

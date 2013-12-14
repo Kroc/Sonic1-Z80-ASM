@@ -2,9 +2,10 @@
 !.gitignore
 !.gitattributes
 
-!includes
 !VBinDiff
 !WLADX
+
+!SOUND
 
 !Compile.bat
 !S1.sms.asm

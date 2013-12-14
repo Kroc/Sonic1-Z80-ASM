@@ -1,26 +1,63 @@
 ;____________________________________________________________________________[$C716]___
 
 S1_MusicPointers:
+.DEF index_music_greenHill $00
 .dw S1_Music_GreenHill			;$47D0 [$C7D0]
+
+.DEF index_music_bridge $01
 .dw S1_Music_Bridge			;$574A [$D74A]
+
+.DEF index_music_jungle $02
 .dw S1_Music_Jungle			;$524A [$D24A]
+
+.DEF index_music_labyrinth $03
 .dw S1_Music_Labyrinth			;$760C [$F60C]
+
+.DEF index_music_scrapBrain $04
 .dw S1_Music_ScrapBrain			;$5B4F [$DB4F]
+
+.DEF index_music_skyBase $05
 .dw S1_Music_SkyBase			;$61A7 [$E1A7]
+
+.DEF index_music_titleScreen $06
 .dw S1_Music_TitleScreen		;$64C3 [$E4C3]
+
+.DEF index_music_mapScreen $07
 .dw S1_Music_MapScreen			;$663C [$E63C]
+
+.DEF index_music_invincibility $08
 .dw S1_Music_Invinciblity		;$6704 [$E704]
+
+.DEF index_music_actComplete $09
 .dw S1_Music_ActComplete		;$68B4 [$E8B4]
+
+.DEF index_music_death $0A
 .dw S1_Music_Death			;$6991 [$E991]
+
+.DEF index_music_boss1 $0B
 .dw S1_Music_Boss			;$6AC0 [$EAC0]
+
+.DEF index_music_boss2 $0C
 .dw S1_Music_Boss			;$6AC0 [$EAC0]
+
+.DEF index_music_boss3 $0D
 .dw S1_Music_Boss			;$6AC0 [$EAC0]
+
+.DEF index_music_ending $0E
 .dw S1_Music_Ending			;$6D54 [$ED54]
+
 .dw S1_Music_GreenHill			;$47D0 [$C7D0]
+
+.DEF index_music_specialStage $10
 .dw S1_Music_SpecialStage		;$712C [$F12C]
+
 .dw S1_Music_GreenHill			;$47D0 [$C7D0]
 .dw S1_Music_GreenHill			;$47D0 [$C7D0]
-.dw S1_Music_SFX			;$798C [$F98C]
+
+.DEF index_music_allEmeralds $13
+.dw S1_Music_AllEmeralds		;$798C [$F98C]
+
+.DEF index_music_emerald $14
 .dw S1_Music_Emerald			;$7A26 [$FA26]
 
 ;____________________________________________________________________________[$C740]___
@@ -2803,14 +2840,14 @@ __:
 
 ;____________________________________________________________________________[$F98C]___
 
-S1_Music_SFX:
-.dw (S1_Music_SFX_Channel1 - S1_Music_SFX) ;$000A
-.dw (S1_Music_SFX_Channel2 - S1_Music_SFX) ;$003E
-.dw (S1_Music_SFX_Channel3 - S1_Music_SFX) ;$006B
-.dw (S1_Music_SFX_Channel4 - S1_Music_SFX) ;$0096
+S1_Music_AllEmeralds:
+.dw (S1_Music_AllEmeralds_Channel1 - S1_Music_AllEmeralds) ;$000A
+.dw (S1_Music_AllEmeralds_Channel2 - S1_Music_AllEmeralds) ;$003E
+.dw (S1_Music_AllEmeralds_Channel3 - S1_Music_AllEmeralds) ;$006B
+.dw (S1_Music_AllEmeralds_Channel4 - S1_Music_AllEmeralds) ;$0096
 .dw $0000
 
-S1_Music_SFX_Channel1: ;---------------------------------------------------------------
+S1_Music_AllEmeralds_Channel1: ;-------------------------------------------------------
 .db $80, $01, $00, $02, $00
 .db $85, $FF
 .db $83, $01, $01, $FE, $F8, $FF
@@ -2821,19 +2858,19 @@ __:
 .db $14, $24
 .db $8B
 .db $87, $04
-.dw (_b - S1_Music_SFX) ;$25, $00
+.dw (_b - S1_Music_AllEmeralds) ;$25, $00
 .db $14, $24, $14, $24, $14, $24
 .db $86
 __:
 .db $14, $24
 .db $8C
 .db $87, $09
-.dw (_b - S1_Music_SFX) ;$33, $00
+.dw (_b - S1_Music_AllEmeralds) ;$33, $00
 .db $88
 .db $7F, $00
 .db $FF
 
-S1_Music_SFX_Channel2: ;---------------------------------------------------------------
+S1_Music_AllEmeralds_Channel2: ;-------------------------------------------------------
 .db $83, $01, $01, $FE, $F8, $FF
 .db $82, $FF, $00, $96, $00, $14, $0A
 .db $81, $05, $7F, $30, $7F, $3C
@@ -2842,19 +2879,19 @@ __:
 .db $14, $24
 .db $8B
 .db $87, $04
-.dw (_b - S1_Music_SFX) ;$52, $00
+.dw (_b - S1_Music_AllEmeralds) ;$52, $00
 .db $14, $24, $14, $24, $14, $24
 .db $86
 __:
 .db $14, $24
 .db $8C
 .db $87, $09
-.dw (_b - S1_Music_SFX) ;$60, $00
+.dw (_b - S1_Music_AllEmeralds) ;$60, $00
 .db $88
 .db $7F, $00
 .db $FF
 
-S1_Music_SFX_Channel3: ;---------------------------------------------------------------
+S1_Music_AllEmeralds_Channel3: ;-------------------------------------------------------
 .db $82, $FF, $14, $82, $0A, $14, $0A
 .db $81, $06
 .db $8A, $03
@@ -2863,18 +2900,18 @@ __:
 .db $4B, $00, $3B, $00, $4B, $00, $3B, $00
 .db $8B
 .db $87, $07
-.dw (_b - S1_Music_SFX) ;$77, $00
+.dw (_b - S1_Music_AllEmeralds) ;$77, $00
 .db $86
 __:
 .db $4B, $00, $3B, $00, $4B, $00, $3B, $00
 .db $8C
 .db $87, $0D
-.dw (_b - S1_Music_SFX) ;$85, $00
+.dw (_b - S1_Music_AllEmeralds) ;$85, $00
 .db $88
 .db $7F, $00
 .db $FF
 
-S1_Music_SFX_Channel4: ;---------------------------------------------------------------
+S1_Music_AllEmeralds_Channel4: ;-------------------------------------------------------
 .db $88
 .db $7F, $10
 .db $FF
@@ -2958,8 +2995,15 @@ S1_Music_Emerald_Channel4: ;----------------------------------------------------
 
 ;____________________________________________________________________________[$FB27]___
 
+.STRUCT SFX_HEADER
+	overriddenTrack	db
+	tempoDivider	dw
+	tickDivider	dw
+	unused		db
+.ENDST
+
 _fb27:
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fb27_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $83, $03, $01, $FA, $F0, $FF
 .db $81, $0F, $15, $03, $1A, $15
@@ -2967,7 +3011,7 @@ _fb27:
 .db $FE
 
 _fb43: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fb43_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $8A, $01
 .db $81, $0F, $10, $00, $07, $00, $04, $00, $00, $00
@@ -2980,14 +3024,14 @@ __:
 .db $FE
 
 _fb74: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fb74_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F, $34, $04, $37, $04, $40, $04, $8C, $8C, $40, $04, $8C, $8C, $40, $04
 .db $8C, $8C, $40, $04
 .db $81, $00, $FE
 
 _fb98: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fb98_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $8A, $01, $28, $00, $2A, $00, $28, $00, $2A, $00, $7F, $02
@@ -3000,7 +3044,7 @@ __:
 .db $FE
 
 _fbbf: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fbbf_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $8A, $01
@@ -3013,7 +3057,7 @@ __:
 .db $FE
 
 _fbe6: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fbe6_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $83, $01, $01, $FA, $F2, $FF
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0A
@@ -3116,7 +3160,7 @@ __:
 .db $FE
 
 _fcfd: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fcfd_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $1E, $C8, $1E, $0A, $01
 .db $83, $01, $01, $FA, $F0, $FF
 .db $81, $0F, $10, $02, $7F, $02
@@ -3129,7 +3173,7 @@ __:
 .db $FE
 
 _fd24: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fd24_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $00, $0A
 .db $83, $01, $01, $FA, $C4, $FF
 .db $81, $00
@@ -3160,7 +3204,7 @@ __:
 .db $FE
 
 _fd62: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fd62_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FF, $00, $0A, $01
 .db $81, $0F
 .db $86
@@ -3178,13 +3222,13 @@ __:
 .db $FE
 
 _fd88: ;-------------------------------------------------------------------------------
-.db $03, $01, $00, $01, $00, $00
+.DSTRUCT _fd88_header INSTANCEOF SFX_HEADER DATA $03, $0001, $0001, $00
 .db $81, $0D
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $8A, $02
-.db $89, $05				;???
+.db $89, $05
 .db $00, $00, $7F, $00
-.db $89, $04				;???
+.db $89, $04
 .db $81, $0C, $00, $00, $8B
 .db $86
 __:
@@ -3195,7 +3239,7 @@ __:
 .db $FE
 
 _fdb1: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fdb1_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $8A, $01
@@ -3214,10 +3258,10 @@ __:
 .db $FE
 
 _fde6: ;-------------------------------------------------------------------------------
-.db $03, $01, $00, $01, $00, $00
+.DSTRUCT _fde6_header INSTANCEOF SFX_HEADER DATA $03, $0001, $0001, $00
 .db $81, $07
 .db $82, $FF, $00, $FA, $00, $32, $0A
-.db $89, $06				;???
+.db $89, $06
 .db $86
 __:
 .db $00, $0C, $8B
@@ -3233,10 +3277,10 @@ __:
 .db $FE
 
 _fe0c: ;-------------------------------------------------------------------------------
-.db $03, $01, $00, $01, $00, $00
+.DSTRUCT _fe0c_header INSTANCEOF SFX_HEADER DATA $03, $0001, $0001, $00
 .db $81, $0F
 .db $82, $FF, $00, $FA, $00, $32, $0A
-.db $89, $06				;???
+.db $89, $06
 .db $86
 __:
 .db $00, $03, $7F, $03, $8C, $8C, $8C, $8C
@@ -3247,7 +3291,7 @@ __:
 .db $FE
 
 _fe2f: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fe2f_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $00, $0A
 .db $81, $0E
 .db $86
@@ -3258,24 +3302,24 @@ __:
 .db $FE
 
 _fe48: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fe48_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0D, $49, $03
 .db $81, $00
 .db $FE
 
 _fe5c: ;-------------------------------------------------------------------------------
-.db $03, $01, $00, $01, $00, $00
+.DSTRUCT _fe5c_header INSTANCEOF SFX_HEADER DATA $03, $0001, $0001, $00
 .db $81, $0F
 .db $82, $FF, $0A, $96, $14, $50, $0A
 .db $8A, $10
-.db $89, $06				;???
+.db $89, $06
 .db $00, $12
 .db $81, $00
 .db $FE
 
 _fe74: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fe74_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $8A, $01
 .db $81, $0F, $0C, $02, $7F, $02
@@ -3289,7 +3333,7 @@ __:
 .db $FE
 
 _fea4: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fea4_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $8A, $01
@@ -3303,7 +3347,7 @@ __:
 .db $FE
 
 _fecc: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _fecc_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $86
@@ -3315,11 +3359,11 @@ __:
 .db $FE
 
 _fee8 ;-------------------------------------------------------------------------------
-.db $03, $01, $00, $01, $00, $00
+.DSTRUCT _fee8_header INSTANCEOF SFX_HEADER DATA $03, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $8A, $03
 .db $81, $0E
-.db $89, $06				;???
+.db $89, $06
 .db $86
 __:
 .db $00, $00, $7F, $00, $8C
@@ -3329,7 +3373,7 @@ __:
 .db $FE
 
 _ff08: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _ff08_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $32, $0A
 .db $81, $0F
 .db $8A, $01
@@ -3346,7 +3390,7 @@ __:
 .db $FE
 
 _ff4e: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _ff4e_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $82, $FF, $00, $FA, $00, $00, $0A
 .db $81, $0B
 .db $8A, $01
@@ -3359,7 +3403,7 @@ _ff4e: ;------------------------------------------------------------------------
 .db $00
 
 _ff83: ;-------------------------------------------------------------------------------
-.db $02, $01, $00, $01, $00, $00
+.DSTRUCT _ff83_header INSTANCEOF SFX_HEADER DATA $02, $0001, $0001, $00
 .db $83, $01, $01, $FA, $F2, $FF
 .db $82, $FF, $00, $FA, $00, $00, $0A
 .db $86

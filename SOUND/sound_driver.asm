@@ -64,6 +64,8 @@
 	track3dataPointer	dw	
 	track4dataPointer	dw	
 	
+	;the `_loadMusic` routine assumes that the track RAM follows the data pointers
+	 ;above, so just take note in case of rearranging the RAM here
 	track0vars		INSTANCEOF TRACK
 	track1vars		INSTANCEOF TRACK
 	track2vars		INSTANCEOF TRACK
@@ -85,80 +87,117 @@ sound_stop	jp      _stop
 sound_unpause	jp      _unpause
 sound_fadeOut	jp      _fadeOut
 sound_loadSFX 	jp      _loadSFX	;this public call is not used in the game
-sound_playMusic jp      _playMusic
-sound_playSFX	jp      _playSFX
+sound_playMusic jp      _playMusic	;this is used externally to start a song
+sound_playSFX	jp      _playSFX	;this is used externally to start SFX
 
 ;______________________________________________________________________________________
 
 _loadMusic:
-;HL : An address from a look up table, e.g. $64C3
+;HL : address of song data to load
+
 	push    af
 	push    bc
 	push    de
 	push    hl
 	push    ix
 	
+	;remember the song's base address in BC for later use
 	ld      c,l
 	ld      b,h
 	
-	ld      ix,track0dataPointer
-	ld      a,5
+	;read song header:
+	;------------------------------------------------------------------------------
+	;the song header contains five relative 16-bit offsets from the song's base
+	 ;address to each track's starting point. since the first track starts right
+	 ;after the header, the first value is always $000A (9)
 	
--	;load the 16-bit value from the parameter address into DE
+	ld      ix,track0dataPointer
+	ld      a,5			;we'll set up five tracks
+	
+-	;begin a loop over the five tracks
+	
+	;fetch the track's offset value from the header and add it to the base address
+	 ;giving you an absolute address to the track data
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ex      de,hl			
-	add     hl,bc			
+	ex      de,hl			;load the offset value into HL
+	add     hl,bc			;add the song's base address to it
 	
-	ld      (ix+TRACK.channelFrequencyPSG),l
+	;now fill the track's data pointer with the absolute address to the track data
+	ld      (ix+0),l
 	inc     ix
-	ld      (ix+TRACK.channelFrequencyPSG),h
+	ld      (ix+0),h
 	inc     ix
 	ex      de,hl
 	
+	;move on to the next track
 	dec     a
 	jp      nz,-
 	
-	ld      hl,initTrackValues1
+	;intialise track variables (16-bit values)
+	;------------------------------------------------------------------------------
+	;the referenced table contains a list of addresses and 16-bit values to set
+	ld      hl,initTrackValues_words
 
+-	;fetch the address of the variable to initialise from the table into DE
+	ld      e,(hl)
+	inc     hl
+	ld      d,(hl)
+	
+	;if the hi-byte is $FF (i.e. $FFFF) then leave the loop
+	ld      a,d
+	inc     a			;if A is $FF then this will overflow to $00
+	jr      z,+			;if $00 (as above) then leave the loop
+	
+	;now copy two bytes from the table into the variable's address
+	inc     hl
+	ldi     
+	ldi     
+	
+	jp      -
+	
+	;intialise track variables (8-bit values)
+	;------------------------------------------------------------------------------
++	;the referenced table contains a list of addresses and 8-bit values to set
+	ld      hl,initTrackValues_bytes
+	
+	;fetch the address of the variable to initialise from the table into DE
 -	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
+	
+	;if the hi-byte is $FF (i.e. $FFFF) then leave the loop
 	ld      a,d
-	inc     a
-	jr      z,+
+	inc     a			;if A is $FF then this will overflow to $00
+	jr      z,+			;if $00 (as above) then leave the loop
+	
+	;now copy one byte from the table into the variable's address
 	inc     hl
-	ldi     
-	ldi     
+	ldi
+	
 	jp      -
 	
-+	ld      hl,initTrackValues2
--	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	ld      a,d
-	inc     a
-	jr      z,+
-	inc     hl
-	ldi     
-	jp      -
-	
+	;finalise:
+	;------------------------------------------------------------------------------
 +	pop     ix
 	pop     hl
 	pop     de
 	pop     bc
 	pop     af
+	
+	;store the song's base address in each track
 	ld      (track0vars.baseAddress),hl
 	ld      (track1vars.baseAddress),hl
 	ld      (track2vars.baseAddress),hl
 	ld      (track3vars.baseAddress),hl
+	
 	ret
 
 ;______________________________________________________________________________________
 
-initTrackValues1:
+initTrackValues_words:
 .dw track0vars.masterLoopAddress, $0000
 .dw track1vars.masterLoopAddress, $0000
 .dw track2vars.masterLoopAddress, $0000
@@ -191,23 +230,23 @@ initTrackValues1:
 .dw tickDivider1, $0001
 .dw $FFFF
 
-initTrackValues2:
+initTrackValues_bytes:
 .dw track0vars.channelFrequencyPSG
-.db $80
+.db %10000000
 .dw track0vars.channelVolumePSG
-.db $90
+.db %10010000
 .dw track1vars.channelFrequencyPSG
-.db $A0
+.db %10100000
 .dw track1vars.channelVolumePSG
-.db $B0
+.db %10110000
 .dw track2vars.channelFrequencyPSG
-.db $C0
+.db %11000000
 .dw track2vars.channelVolumePSG
-.db $D0
+.db %11010000
 .dw track3vars.channelFrequencyPSG
-.db $E0
+.db %11100000
 .dw track3vars.channelVolumePSG
-.db $F0
+.db %11110000
 .dw track0vars.flags
 .db %00000010
 .dw track1vars.flags
@@ -248,7 +287,7 @@ initTrackValues2:
 .dw SFXpriority
 .db $00
 .dw playbackMode
-.db $00
+.db %00000000
 .dw $FFFF
 
 initPSGValues:
@@ -266,6 +305,7 @@ _stop:
 	push    hl
 	push    bc
 	
+	;mark the tracks as not "in-use" (bit 2) of the track's flags variable
 	ld      a,(track0vars.flags)
 	and     %11111101
 	ld      (track0vars.flags),a
@@ -286,7 +326,8 @@ _stop:
 	and     %11111101
 	ld      (track4vars.flags),a
 	
-	xor     a
+	;reset the SFX priority
+	xor     a			;set A to 0
 	ld      (SFXpriority),a
 	
 	;mute all sound channels by sending the right bytes to the sound chip
@@ -308,36 +349,57 @@ _stop:
 ;______________________________________________________________________________________
 
 _loadSFX:
+;A  : priority level of SFX being loaded
+;HL : address of SFX data
 	push    af
 	push    de
 	push    hl
-	ld      e,a
-	ld      a,(SFXpriority)
-	and     a
-	jr      z,+
-	cp      e
-	jr      c,++
-+	ld      a,e
+	
+	ld      e,a			;copy the priority level of new SFX into E
+	
+	ld      a,(SFXpriority)		;get the current driver SFX priority
+	and     a			;is it zero? (any sound allowed)
+	jr      z,+			;then proceed
+	
+	cp      e			;is the new SFX priority < current priority
+	jr      c,++			;if so, the SFX is not high priority enough
+	
++	;update the SFX priority with the new value
+	 ;(only sounds with higher priority will be played)
+	ld      a,e
 	ld      (SFXpriority),a
+	
 	ld      (track4vars.baseAddress),hl
+	
+	;mute the track:
+	 ;(fetch the mask used for that PSG channel)
 	ld      a,(track4vars.channelVolumePSG)
-	or      %00001111
-	out     (SMS_SOUND_PORT),a
+	or      %00001111		;set volume to "%1111" (mute)
+	out     (SMS_SOUND_PORT),a	;send change to the PSG
+	
+	;--- SFX header ---------------------------------------------------------------
 	ld      a,(hl)
 	ld      (overriddenTrack),a
+	
 	inc     hl
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
 	ld      (track4vars.tempoDivider),de
+	
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
 	ld      (tickDividerSFX),de
+	
+	;skip the unused byte
 	inc     hl
+	
 	ld      (track4dataPointer),hl
+	
+	;------------------------------------------------------------------------------
 	ld      hl,_PSGchannelBits
 	add     a,a
 	ld      e,a
@@ -361,18 +423,28 @@ _loadSFX:
 	ld      (track4vars.loopAddress),hl
 	ld      a,$02
 	ld      (track4vars.flags),a
+	
 ++	pop     hl
 	pop     de
 	pop     af
 	ret
 
 _PSGchannelBits:
-.db $80, $90, $a0, $b0, $c0, $d0, $e0, $f0
+.db %10000000
+.db %10010000
+.db %10100000
+.db %10110000
+.db %11000000
+.db %11010000
+.db %11100000
+.db %11110000
 
 ;______________________________________________________________________________________
 
 _unpause:
 	push    af
+	
+	;mark the tracks as "in-use" (bit 2) of the track's flags variable
 	ld      a,(track0vars.flags)
 	or      %00000010
 	ld      (track0vars.flags),a
@@ -389,6 +461,8 @@ _unpause:
 	or      %00000010
 	ld      (track3vars.flags),a
 	
+	;fade the sound back in(?) by taking the volume level (of each track) and
+	 ;applying it to the [hi-byte of] each track's fade counter
 	ld      a,(track0vars.channelVolume)
 	ld      (track0vars.fadeTicks+1),a
 	ld      a,(track1vars.channelVolume)
@@ -397,8 +471,10 @@ _unpause:
 	ld      (track2vars.fadeTicks+1),a
 	ld      a,(track3vars.channelVolume)
 	ld      (track3vars.fadeTicks+1),a
+	
 	xor     a
 	ld      (playbackMode),a
+	
 	pop     af
 	ret
 
@@ -407,12 +483,14 @@ _unpause:
 _fadeOut:
 	push    af
 	push    hl
+	
 	ld      (fadeTicksDecrement),hl
 	ld      a,(playbackMode)
 	or      %00001000
 	ld      (playbackMode),a
 	ld      hl,$1000
 	ld      (fadeTicks),hl
+	
 	pop     hl
 	pop     af
 	ret
@@ -1109,16 +1187,20 @@ _calcTickTime:
 ;______________________________________________________________________________________
 
 _playMusic:
+;A : index number of music track to play (see `S1_SFXPointers`)
+
 	push    hl
-	ld      hl,S1_MusicPointers
 	
-	add     a,a
-	add     a,l
+	;look up the index number in the music list
+	ld      hl,S1_MusicPointers	;begin with the table of songs
+	add     a,a			;double the ID (each song is a 16-bit pointer)
+	add     a,l			;add that to the lo-byte of the list address
 	ld      l,a
 	ld      a,$00
-	adc     a,h
-	ld      h,a
+	adc     a,h			;add the carry to the hi-byte so that we
+	ld      h,a			;handle the 8-bit overflow ("$00FF > $0100")
 	
+	;get the pointer to the song (into HL) from the song list
 	ld      a,(hl)
 	inc     hl
 	ld      h,(hl)
@@ -1132,21 +1214,33 @@ _playMusic:
 ;______________________________________________________________________________________
 
 _playSFX:
+;A: index number of SFX to play (see `S1_SFXPointers`)
 	push    hl
 	push    de
-	ld      hl,S1_SFXPointers
-	add     a,a
-	add     a,a
-	ld      e,a
+	
+	;look up the index number in the SFX list
+	ld      hl,S1_SFXPointers	;begin with the list of SFX
+	add     a,a			;quadrouple the index number since the SFX
+	add     a,a			 ;list is four bytes each entry instead of two
+	ld      e,a			;put this index number into a 16-bit number
 	ld      d,$00
-	add     hl,de
+	add     hl,de			;and offset into the SFX list
+	
+	;load DE with the first value -- a pointer to the SFX data
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
+	;the next value acts as a priority level
 	ld      a,(hl)
+	;(note that the SFX list has an extra unused byte on each entry)
+	
+	;swap DE & HL,
+	 ;DE will now be an address to SFX's entry in the SFX list
+	 ;HL will now be the address of the SFX's data
 	ex      de,hl
 	call    _loadSFX
+	
 	pop     de
 	pop     hl
 	ret
