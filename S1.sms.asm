@@ -6785,18 +6785,43 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	jp      (hl)			;run object code?
 	
 _32e2:
-.db $DD, $5E, $07, $DD, $56, $08, $DD, $4E, $09, $DD, $6E, $01, $DD, $66, $02, $DD
-.db $7E, $03, $19, $89, $DD, $75, $01, $DD, $74, $02, $DD, $77, $03, $DD, $5E, $0A
-.db $DD, $56, $0B, $DD, $4E, $0C, $DD, $6E, $04, $DD, $66, $05, $DD, $7E, $06, $19
-.db $89, $DD, $75, $04, $DD, $74, $05, $DD, $77, $06, $DD, $CB, $18, $6E, $C2, $E6
-.db $34, $06, $00, $50, $DD, $5E, $0E, $CB, $3B, $DD, $CB, $08, $7E, $20, $09, $DD
-.db $4E, $0D, $21, $1E, $41, $C3, $3F, $33, $0E, $00, $21, $20, $40, $ED, $43, $10
-.db $D2
+	ld e, (ix+$07)
+	ld d, (ix+$08)
+	ld c, (ix+$09)
+	ld l, (ix+$01)
+	ld h, (ix+$02)
+	ld a, (ix+$03)
+	add hl, de
+	adc a, c
+	ld (ix+$01), l
+	ld (ix+$02), h
+	ld (ix+$03), a
+	ld e, (ix+$0A)
+	ld d, (ix+$0B)
+	ld c, (ix+$0C)
+	ld l, (ix+$04)
+	ld h, (ix+$05)
+	ld a, (ix+$06)
+	add hl, de
+	adc a, c
+	ld (ix+$04), l
+	ld (ix+$05), h
+	ld (ix+$06), a
+	bit 5, (ix+$18)
+	jp nz, _34e6
+	ld b, $00
+	ld d, b
+	ld e, (ix+$0E)
+	srl e
+	bit 7, (ix+$08)
+	jr nz, +
+	ld c, (ix+$0D)
+	ld hl, $411E
+	jp ++
 
-;______________________________________________________________________________________
-
-;not referenced. wrong data boundary above?
-_3343:
++	ld c, $00
+	ld hl, $4020
+++	ld ($D210), bc
 	res     6,(ix+$18)
 	push    de
 	push    hl
@@ -7020,6 +7045,7 @@ _3343:
 	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
+_34e6:
 +++	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,($d25d)
@@ -7041,7 +7067,6 @@ _3343:
 	ret
 
 ;____________________________________________________________________________[$350F]___
-;the Emulicious disassembly starts code here and everything above (from _32e2) as data
 
 _LABEL_350F_95:
 	ld   ($D214), hl
@@ -12687,7 +12712,7 @@ _7612:
 	sbc     hl,de
 	ret     nc
 	ld      (ix+$00),$ff
-	ret 
+	ret
 	
 _7629:
 .db $00, $02, $01, $02, $ff
@@ -12696,7 +12721,13 @@ _762e:
 _7633:
 .db $04, $03, $05, $03, $ff
 _7638:
-.db $10, $12, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $6E, $0E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $28, $2A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $2C, $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $30, $32, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $FF
+.db $10, $12, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $6E, $0E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $28, $2A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $2C, $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $30, $32, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$7699]___
 
