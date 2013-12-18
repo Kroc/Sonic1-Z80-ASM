@@ -158,7 +158,7 @@ _loadMusic:
 	
 	jp      -
 	
-	;intialise track variables (8-bit values)
+	;initialise track variables (8-bit values)
 	;------------------------------------------------------------------------------
 +	;the referenced table contains a list of addresses and 8-bit values to set
 	ld      hl,initTrackValues_bytes

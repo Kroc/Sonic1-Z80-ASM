@@ -65,13 +65,12 @@
 	.FAIL
 .ENDIF
 
+;hardware constants:
 ;======================================================================================
-
-;hardware constants
 .DEF SMS_CURRENT_SCANLINE 	$7E	;current vertical scanline from 0 to 191
 .DEF SMS_SOUND_PORT		$7F	;write-only port to send data to sound chip
-.DEF SMS_VDP_DATA		$BE	;VRAM data port
-.DEF SMS_VDP_CONTROL		$BF	;VRAM control port
+.DEF SMS_VDP_DATA		$BE	;graphics data port
+.DEF SMS_VDP_CONTROL		$BF	;graphics control port
 
 .DEF SMS_PAGE_RAM		$FFFC	;RAM select register
 .DEF SMS_PAGE_0			$FFFD	;Page 0 ROM Bank
@@ -81,20 +80,115 @@
 .DEF SMS_JOYPAD_1		$DC
 .DEF SMS_JOYPAD_2		$DD
 
-;Game variables in RAM:
+;game variables:
+;======================================================================================
+;the programmers use the IY register as a shortcut to $D200
+ ;to access commonly used variables and flags
+ 
+.STRUCT vars				;$D200:
+	
+	;program flow control / loading flags?
+	flags0			DB	;IY+$00
+	;bit 0 - when `wait` is called, execution will loop until the bit is set
+	;bit 1 - unknown (set at level load)
+	;bit 3 - flag to load palette on IRQ
+	;bit 5 - unknown
+	;bit 6 - unknown
+	
+	;this is used only as the comparison byte in `loadFloorLayout`
+	temp			DB	;IY+$01
+	
+	flags2			DB	;IY+$02
+	;bit 0 - unknown
+	;bit 1 - unknown
+	;bit 2 - unknown
+	
+	;value of joypad port 1 - the bits are 1 for unpressed and 0 for pressed
+	joypad			DB	;IY+$03
+	;bit 0 - joypad 1 up
+	;bit 1 - joypad 1 down
+	;bit 2 - joypad 1 left
+	;bit 3 - joypad 1 right
+	;bit 4 - joypad button A
+	;bit 5 - joypad button B
+	
+	;this does not appear referenced in any code
+	unused			DB	;IY+$04
+	
+	;taken from the level header, this controls screen scrolling and the
+	 ;presence of the "rings" count on the HUD
+	scrollRingFlags		DB	;IY+$05
+	;bit 0 - unknown, but causes Sonic to immediately die
+	;bit 1 - demo mode
+	;bit 2 - ring count displayed in HUD, rings visible in the level
+	;bit 3 - automatic scrolling to the right
+	;bit 4 - automatic scrolling upwards
+	;bit 5 - smooth scrolling
+	;bit 6 - up and down wave scrolling
+	;bit 7 - screen does not scroll down
+	
+	flags6			DB	;IY+$06
+	;bit 0 - unknown
+	;bit 1 - unknown
+	;bit 3 - unknown
+	;bit 4 - unknown
+	;bit 5 - unknown
+	;bit 6 - unknown
+	;bit 7 - level underwater flag (enables water line)
+	
+	;taken from the leven header, this controls the presence of the time on
+	 ;the HUD and if the lightning effect is in use
+	timeLightningFlags	DB	;IY+$07
+	;bit 0 - centers the time in the screen on special stages
+	;bit 1 - enables the lightning effect
+	;bit 4 - use the boss underwater palette (specially for Labyrinth Act 3)
+	;bit 5 - time is displayed in the HUD
+	;bit 6 - locks the screen, no scrolling
+	
+	;part of the level header -- always "0" for all levels, but unknown function
+	unknown0		DB	;IY+$08
+	
+	flags9			DB	;IY+$09
+	;bit 0 - unknown
+	;bit 1 - enables interrupts during `decompressArt`
+	
+	spriteCount		DB	;IY+$0A, number of hardware sprites in use?
+	origScrollRingFlags	DB	;IY+$0B, copy made during level loading UNUSED
+	origFlags6		DB	;IY+$0C, copy made during level loading
+.ENDST
+
+;temporary variables:
 ;--------------------------------------------------------------------------------------
+
+;these variables are reused throughout, some times for passing extra parameters to a
+ ;function and sometimes as extra working space within a function
+.DEF RAM_TEMP1			$D20E
+.DEF RAM_TEMP2			$D20F
+.DEF RAM_TEMP3			$D210
+.DEF RAM_TEMP4			$D212
+.DEF RAM_TEMP5			$D213
+.DEF RAM_TEMP6			$D214
+.DEF RAM_TEMP7			$D215
+
+;hardware caches:
+;--------------------------------------------------------------------------------------
+
 .DEF RAM_VDPREGISTER_0		$D218	;RAM cache of the VDP register 0
 .DEF RAM_VDPREGISTER_1		$D219	;RAM cache of the VDP register 1
 
 .DEF RAM_PAGE_1			$D235	;used to keep track of what bank is in page 1
 .DEF RAM_PAGE_2			$D236	;used to keep track of what bank is in page 2
 
+.DEF RAM_SCROLL_HORIZONTAL	$D251
+.DEF RAM_SCROLL_VERTICAL	$D252
+
+;--------------------------------------------------------------------------------------
+
 .DEF RAM_CURRENT_LEVEL		$D23E
 
+;level dimensions / crop
 .DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of level floor layout in blocks
 .DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of level floor layout in blocks
-
-;level dimensions / crop
 .DEF RAM_LEVEL_CROPLEFT		$D273
 .DEF RAM_LEVEL_OFFSET_X		$D274
 .DEF RAM_LEVEL_WIDTH		$D276
@@ -104,9 +198,6 @@
 .DEF RAM_LEVEL_HEIGHT		$D27A
 
 .DEF RAM_LEVEL_SOLIDITY		$D2D4
-
-.DEF RAM_RASTERSPLIT_STEP	$D247
-.DEF RAM_RASTERSPLIT_LINE	$D248
 
 .DEF RAM_RINGS			$D2AA	;player's ring count
 .DEF RAM_LIVES			$D246	;player's lives count
@@ -123,11 +214,26 @@
  ;same song (for example, when teleporting in Scrap Brain)
 .DEF RAM_PREVIOUS_MUSIC		$D2D2
 
+;the address of where the cycle palette begins
+.DEF RAM_CYCLEPALETTE_POINTER	$D2A8
+;the current palette in the cycle palette being used
+.DEF RAM_CYCLEPALETTE_INDEX	$D2A6
+
+.DEF RAM_RASTERSPLIT_STEP	$D247
+.DEF RAM_RASTERSPLIT_LINE	$D248
+.DEF RAM_WATERLINE		$D2DB
+
+.DEF RAM_SONIC_CURRENT_FRAME	$D28F
+.DEF RAM_SONIC_PREVIOUS_FRAME	$D291
+
+.DEF RAM_RING_CURRENT_FRAME	$D293
+.DEF RAM_RING_PREVIOUS_FRAME	$D295
+
 ;======================================================================================
 
 .BANK 0
 
-_START:					;[$0000]
+START:
 	di				;disable interrupts
 	im   1				;set the interrupt mode to 1 --
 					 ;$0038 will be called at 50/60Hz 
@@ -160,14 +266,16 @@ _START:					;[$0000]
 .db "Developed By (C) 1991 Ancient - S", $A5, "Hayashi.", $00
 
 ;____________________________________________________________________________[$0066]___
-;pressing the pause buttons causes an interupt and jumps to $0066
+;pressing the pause button causes an interrupt and jumps to $0066
 
 .ORG $0066
 	di				;disable interrupts
 	push af
-	ld   a, (iy+$07)		;level time HUD / lightning flags
-	xor  %00001000			;fip bit 3 (the pause bit)
-	ld   (iy+$07), a		;save it back
+	;level time HUD / lightning flags
+	ld   a, (iy+vars.timeLightningFlags)
+	xor  %00001000			;flip bit 3 (the pause bit)
+	;save it back
+	ld   (iy+vars.timeLightningFlags), a
 	pop  af
 	ei				;enable interrupts
 	ret
@@ -187,7 +295,7 @@ IRQHandler:
 	
 	in   a, (SMS_VDP_CONTROL)	;get the status of the VDP
 	
-	bit  7, (iy+$06)		;check the underwater flag
+	bit  7, (iy+vars.flags6)	;check the underwater flag
 	jr   z, +			;if off, skip ahead
 	
 	;the raster split is controlled across multiple interrupts,
@@ -197,10 +305,10 @@ IRQHandler:
 	
 	ld   a, (RAM_RASTERSPLIT_STEP)	;get the current raster split step
 	and  a				;doesn't change the number, but updates flags
-	jp   nz, _LABEL_1F2_17		;if it's not zero, deal with the particulars
+	jp   nz, doRasterSplit		;if it's not zero, deal with the particulars
 	
 	;--- initialise raster split --------------------------------------------------
-	ld   a, ($D2DB)			;check the water line height
+	ld   a, (RAM_WATERLINE)		;check the water line height
 	and  a
 	jr   z, +			;if it's zero (above the screen), skip
 	
@@ -212,9 +320,9 @@ IRQHandler:
 	 ;interrupts needed to produce the split, I think
 	ld   (RAM_RASTERSPLIT_LINE), a
 	
-	;set the line interrupt to fire at line 9 (top of the screen),
+	;set the line interrupt to fire at line 10 (top of the screen),
 	 ;we will then set another interrupt to fire where we want the split to occur
-	ld   a, $0A
+	ld   a, 10
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 10
 	out  (SMS_VDP_CONTROL), a
@@ -240,10 +348,10 @@ IRQHandler:
 	push hl
 	
 	;if the main thread is not held up at the `wait` routine
-	bit  0, (iy+$00)
+	bit  0, (iy+vars.flags0)
 	call nz, _LABEL_1A0_18
 	;and if it is...
-	bit  0, (iy+$00)
+	bit  0, (iy+vars.flags0)
 	call z, _LABEL_F7_25
 	
 	;I'm  not sure why the interrupts are re-enabled before we've left the
@@ -258,7 +366,7 @@ IRQHandler:
 	call sound_update
 	
 	call readJoypad
-	bit  4, (iy+$03)		;joypad button A?
+	bit  4, (iy+vars.joypad)	;joypad button A?
 	call z, _setJoypadButtonB	;set joypad button B too
 	
 	call _LABEL_625_57
@@ -267,7 +375,7 @@ IRQHandler:
 	in   a, (SMS_JOYPAD_2)		;read the second joypad port which has extra
 					 ;bits for lightgun / reset button
 	and  %00010000			;check bit 4
-	jp   z, _START			;reset!
+	jp   z, START			;reset!
 	
 	;return pages 1 & 2 to the banks before we started messing around here
 	pop  hl
@@ -284,14 +392,14 @@ IRQHandler:
 	pop  af
 	ret
 
-;____________________________________________________________________________[$00F2]___
+;----------------------------------------------------------------------------[$00F2]---
 
 _setJoypadButtonB:
-	res  5, (iy+$03)		;set joypad button B as on
+	res  5, (iy+vars.joypad)	;set joypad button B as on
 	ret
-	
-;____________________________________________________________________________[$00F7]___
-	
+
+;----------------------------------------------------------------------------[$00F7]---
+
 _LABEL_F7_25:
 	;blank the screen (remove bit 6 of VDP register 1)
 	ld   a, (RAM_VDPREGISTER_1)	;get our cache value from RAM
@@ -301,21 +409,21 @@ _LABEL_F7_25:
 	out  (SMS_VDP_CONTROL), a
 	
 	;horizontal scroll
-	ld   a, ($D251)
+	ld   a, (RAM_SCROLL_HORIZONTAL)
 	neg				;I don't understand the reason for this
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 8			;VDP register 8
 	out  (SMS_VDP_CONTROL), a
 	
 	;vertical scroll
-	ld   a, ($D252)
+	ld   a, (RAM_SCROLL_VERTICAL)
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 9			;VDP register 9
 	out  (SMS_VDP_CONTROL), a
 	
-	bit  5, (iy+$00)			
+	bit  5, (iy+vars.flags0)			
 	call nz, _LABEL_7DB_26
-	bit  5, (iy+$00)			
+	bit  5, (iy+vars.flags0)			
 	call nz, _LABEL_174_38
 	
 	;turn the screen back on 
@@ -332,8 +440,10 @@ _LABEL_F7_25:
 	ld   (SMS_PAGE_2), a
 	ld   (RAM_PAGE_2), a
 	
-	bit  7, (iy+$07)
-	call nz, _LABEL_37E0_41
+	;does the Sonic sprite need updating?
+	 ;(the particular frame of animation is copied to the VRAM)
+	bit  7, (iy+vars.timeLightningFlags)
+	call nz, updateSonicSpriteFrame
 	
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
@@ -343,10 +453,10 @@ _LABEL_F7_25:
 	ld   (RAM_PAGE_2), a
 	
 	;update sprite table?
-	bit  1, (iy+$00)
+	bit  1, (iy+vars.flags0)
 	call nz, updateVDPSprites
 	
-	bit  5, (iy+$00)
+	bit  5, (iy+vars.flags0)
 	call z, _LABEL_174_38
 	
 	ld   a, ($D2AC)
@@ -356,10 +466,10 @@ _LABEL_F7_25:
 	ld   a, $FF
 	ld   ($D2AC), a
 	
-	set  0, (iy+$00)
+	set  0, (iy+vars.flags0)
 	ret
 	
-;____________________________________________________________________________[$0174]___
+;----------------------------------------------------------------------------[$0174]---
 	
 _LABEL_174_38:
 	ld   a, 1
@@ -371,7 +481,7 @@ _LABEL_174_38:
 	
 	;if the level is underwater then skip loading the palette as the palettes
 	 ;are handled by the code that does the raster split
-	bit  7, (iy+$06)		;underwater flag
+	bit  7, (iy+vars.flags6)	;underwater flag
 	jr   nz, +
 	
 	;get the palette loading parameters that were assigned by the main thread
@@ -379,9 +489,9 @@ _LABEL_174_38:
 	ld   hl, (RAM_LOADPALETTE_ADDRESS)
 	ld   a, (RAM_LOADPALETTE_FLAGS)
 	
-	bit  3, (iy+$00)		;check the flag to specify loading the palette
+	bit  3, (iy+vars.flags0)	;check the flag to specify loading the palette
 	call nz, loadPalette		;load the palette if flag is set
-	res  3, (iy+$00)		;unset the flag so it doesn't happen again
+	res  3, (iy+vars.flags0)	;unset the flag so it doesn't happen again
 	ret
 	
 	;when the level is underwater, different logic controls loading the palette
@@ -389,10 +499,10 @@ _LABEL_174_38:
 +	call _LABEL_1BA_40
 	ret
 
-;____________________________________________________________________________[$01A0]___
+;----------------------------------------------------------------------------[$01A0]---
 
 _LABEL_1A0_18:
-	bit  7, (iy+$06)		;check the underwater flag
+	bit  7, (iy+vars.flags6)	;check the underwater flag
 	ret  z				;if off, leave now
 	
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
@@ -408,20 +518,26 @@ _LABEL_1A0_18:
 	ld   b, $00
 -	nop
 	djnz -
+
+;----------------------------------------------------------------------------[$01BA]---
 	
 _LABEL_1BA_40:
-	ld   a, ($D2DB)			;get the position of the water line on screen
+	ld   a, (RAM_WATERLINE)		;get the position of the water line on screen
 	and  a
 	jr   z, ++			;is it 0? (above the screen)
 	cp   $FF			;or $FF? (below the screen)
 	jr   nz, ++			;...skip ahead
 	
-	;select the palette
+	;--- below water --------------------------------------------------------------
+	;below the water line a fixed palette is used without cycles
+	
+	;select the palette:
 	 ;labyrinth Act 1 & 2 share an underwater palette and Labyrinth Act 3
 	 ;uses a special palette to account for the boss / capsule, who normally
 	 ;load their palettes on-demand
 	ld   hl, S1_UnderwaterPalette
-	bit  4, (iy+$07)		;underwater boss palette?
+	;underwater boss palette?
+	bit  4, (iy+vars.timeLightningFlags)
 	jr   z, +			
 	ld   hl, S1_UnderwaterPalette_Boss
 
@@ -429,27 +545,29 @@ _LABEL_1BA_40:
 	call loadPalette		;load the relevant underwater palette
 	ret
 	
-++	ld   a, ($D2A6)
-	add  a, a
-	add  a, a
-	add  a, a
-	add  a, a
+	;--- above water --------------------------------------------------------------
+++	ld   a, (RAM_CYCLEPALETTE_INDEX)
+	add  a, a			;x2
+	add  a, a			;x4
+	add  a, a			;x8
+	add  a, a			;x16
 	ld   e, a
 	ld   d, $00
-	ld   hl, ($D2A8)
+	ld   hl, (RAM_CYCLEPALETTE_POINTER)
 	add  hl, de
 	ld   a, %00000001
 	call loadPalette
 	
+	;load the sprite palette specifically for Labyrinth
 	ld   hl, S1_Palette_Labyrinth_Sprites
 	ld   a, %00000010
 	call loadPalette
 	
 	ret
 
-;____________________________________________________________________________[$01F2]___
+;----------------------------------------------------------------------------[$01F2]---
 	
-_LABEL_1F2_17:
+doRasterSplit:
 ;A : the raster split step number (counts down from 3)
 	;step 1?
 	cp   1
@@ -495,7 +613,8 @@ _LABEL_1F2_17:
 	ld   b, $10
 	ld   hl, S1_UnderwaterPalette
 	
-	bit  4, (iy+$07)		;underwater boss palette
+	;underwater boss palette?
+	bit  4, (iy+vars.timeLightningFlags)
 	jr   z, _f			;jump forward to `__`
 	
 	ld   hl, S1_UnderwaterPalette_Boss
@@ -647,7 +766,7 @@ playSFX:
 
 _InitVDPRegisterValues:							;	cache:
 .db %00100110   ;VDP Register 0:						$D218
-    ;......x.    stret     ch screen (33 columns)
+    ;......x.    stretch screen (33 columns)
     ;.....x..    unknown
     ;..x.....    hide left column (for scrolling)
 .db %10100010	;vDP Register 1:						$D219
@@ -669,7 +788,7 @@ _InitVDPRegisterValues:							;	cache:
 
 wait:
 	;test bit 0 of the IY parameter (IY=$D200)
-	bit  0, (iy+$00)
+	bit  0, (iy+vars.flags0)
 	;if bit 0 is off, then wait!
 	jr   z, wait
 	ret
@@ -677,16 +796,16 @@ wait:
 ;___ UNUSED! ________________________________________________________________[$0323]___
 
 _323:
-	set     2,(iy+$00)
-	ld      ($d225),hl
-	ld      ($d227),de
-	ld      ($d229),bc
+	set     2,(iy+vars.flags0)
+	ld      ($d225),hl		;unused RAM location
+	ld      ($d227),de		;unused RAM location
+	ld      ($d229),bc		;unused RAM location
 	ret
 
 ;____________________________________________________________________________[$0333]___
 
 loadPaletteOnInterrupt:
-	set  3, (iy+$00)		;set the flag for the interrupt handler
+	set  3, (iy+vars.flags0)	;set the flag for the interrupt handler
 	;store the parameters
 	ld   (RAM_LOADPALETTE_FLAGS), a
 	ld   (RAM_LOADPALETTE_ADDRESS), hl
@@ -704,7 +823,7 @@ updateVDPSprites:
 	or   %01000000			;add bit 6 to mark an address being given
 	out  (SMS_VDP_CONTROL), a
 	
-	ld   b, (iy+$0a)		;number of sprites to update?
+	ld   b, (iy+vars.spriteCount)
 	ld   hl, $D001			;Y-position of the first sprite
 	ld   de, $0003			;sprite table is 3 bytes per sprite
 	
@@ -720,7 +839,7 @@ updateVDPSprites:
 	
 +	ld   a, ($D2B4)
 	ld   b, a
-	ld   a, (iy+$0a)
+	ld   a, (iy+vars.spriteCount)
 	ld   c, a
 	cp   b
 	jr   nc, +			;"A >= B" (iy+$0a) >= ($D2B4)
@@ -740,7 +859,7 @@ updateVDPSprites:
 	ret  z
 	
 	ld   hl, $D000			;first X-position in the sprite table
-	ld   b, (iy+$0a)
+	ld   b, (iy+vars.spriteCount)
 	
 	;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
 	ld   a, $80
@@ -758,9 +877,9 @@ updateVDPSprites:
 	inc  l
 	djnz -
 	
-	ld   a, (iy+$0a)
+	ld   a, (iy+vars.spriteCount)
 	ld   ($D2B4), a
-	ld   (iy+$0a), b
+	ld   (iy+vars.spriteCount), b
 	ret
 
 ;___ UNUSED! ________________________________________________________________[$0397]___	
@@ -922,11 +1041,11 @@ decompressArt:
 	
 	;--- read header --------------------------------------------------------------
 	
-	bit  1, (iy+$09)
+	bit  1, (iy+vars.flags9)
 	jr   nz, +
 	ei
 	
-+	ld   ($D212), hl
++	ld   (RAM_TEMP4), hl
 	
 	;begin reading the compressed art header:
 	 ;see <info.sonicretro.org/SCHG:Sonic_the_Hedgehog_%288-bit%29#Header>
@@ -956,22 +1075,22 @@ decompressArt:
 	ld   b, (hl)
 	inc  hl
 	
-	ld   ($D210), bc		;store the row count in $D210
-	ld   ($D214), hl		;where the UniqueRows list begins
+	ld   (RAM_TEMP3), bc		;store the row count in $D210
+	ld   (RAM_TEMP6), hl		;where the UniqueRows list begins
 	
 	;swap BC/DE/HL with their shadow values
 	exx
 	
 	;load BC with the absolute starting address of the art header;
 	 ;the DuplicateRows and ArtData values are always relative to this
-	ld   bc, ($D212)
+	ld   bc, (RAM_TEMP4)
 	;copy it to DE
 	ld   e, c
 	ld   d, b
 	
 	pop  hl				;pull the ArtData value from the stack
 	add  hl, bc			;get the absolute address of ArtData
-	ld   ($D20E), hl		;and store that in $D20E
+	ld   (RAM_TEMP1), hl		;and store that in $D20E
 	;copy it to BC. this will be used to produce a counter from 0 to RowCount
 	ld   c, l
 	ld   b, h
@@ -990,7 +1109,7 @@ decompressArt:
 	
 	;--- process row --------------------------------------------------------------
 _processRow:
-	ld   hl, ($D210)		;load HL with the original row count number
+	ld   hl, (RAM_TEMP3)		;load HL with the original row count number
 					 ;(#$0400 for sprites, #$0800 for tiles)
 	xor  a				;set A to 0 (Carry is reset)
 	sbc  hl, bc			;subtract current counter from the row count
@@ -1018,7 +1137,7 @@ _processRow:
 	srl  d
 	rr   e
 	
-	ld   hl, ($D214)		;the absolute address where the UniqueRows
+	ld   hl, (RAM_TEMP6)		;the absolute address where the UniqueRows
 					 ;list begins
 	add  hl, de			;add the counter, so move along to the
 					 ;DE'th byte in the UniqueRows list
@@ -1099,7 +1218,7 @@ _duplicateRow:
 	add  hl, hl			
 	add  hl, hl
 	
-	ld   de, ($D20E)		;get the absolute address to the art data
+	ld   de, (RAM_TEMP1)		;get the absolute address to the art data
 	add  hl, de			;add the index from the duplicate row list
 	
 	;write 1 row of pixles (4 bytes) to the VDP
@@ -1130,7 +1249,7 @@ _duplicateRow:
 	or   c
 	jp   nz, _processRow
 
-++	bit  1, (iy+$09)
+++	bit  1, (iy+vars.flags9)
 	jr   nz, +
 	di
 +	;restore the pages to the original banks at the beginning of the procedure
@@ -1139,7 +1258,7 @@ _duplicateRow:
 	ld   (SMS_PAGE_1), de
 	
 	ei
-	res  1, (iy+$09)
+	res  1, (iy+vars.flags9)
 	ret
 
 _rowIndexTable:
@@ -1192,7 +1311,7 @@ decompressScreen:
 	;--- uncompressed byte --------------------------------------------------------
 	out  (SMS_VDP_DATA), a		;send the tile to the VDP
 	ld   e, a			;update the "current byte" being compared
-	ld   a, ($D20E)			;get the upper byte to use for the tiles
+	ld   a, (RAM_TEMP1)		;get the upper byte to use for the tiles
 					 ;(foreground / background / flip)
 	out  (SMS_VDP_DATA), a
 	
@@ -1220,7 +1339,7 @@ decompressScreen:
 	;repeat the byte
 -	out  (SMS_VDP_DATA), a
 	push af
-	ld   a, ($D20E)
+	ld   a, (RAM_TEMP1)
 	out  (SMS_VDP_DATA), a
 	pop  af
 	dec  e
@@ -1337,7 +1456,7 @@ readJoypad:
 	in   a, (SMS_JOYPAD_1)		;read the joypad port
 	or   %11000000			;mask out bits 7 & 6 - these are joypad 2
 					 ;down / up
-	ld   (iy+$03), a		;store the joypad value in $D203
+	ld   (iy+vars.joypad), a	;store the joypad value in $D203
 	ret
 
 ;____________________________________________________________________________[$05AF]___
@@ -1393,7 +1512,7 @@ print:
 	out  (SMS_VDP_DATA), a
 	push af				;kill time?
 	pop  af
-	ld   a, ($D20E)			;what to use as the tile upper bits
+	ld   a, (RAM_TEMP1)		;what to use as the tile upper bits
 					 ;(front/back, flip &c.)
 	out  (SMS_VDP_DATA), a
 	inc  de
@@ -1421,7 +1540,7 @@ hideSprites:
 	
 	;set parameters so that at the next interrupt,
 	 ;all sprites will be hidden (see `updateVDPSprites`)
-	ld   (iy+$0a), 64		;update 64 sprites
+	ld   (iy+vars.spriteCount), 64
 	xor  a				;(set A to 0)
 	ld   ($D2B4), a			;with 0 remaining
 	ret
@@ -1434,7 +1553,7 @@ _LABEL_5FC_114:
 	ex   de, hl
 	ld   l, a
 	ld   h, a
-
+	
 -	rl   c
 	jp   nc, +
 	add  hl, de
@@ -1447,42 +1566,62 @@ _LABEL_5FC_114:
 	ret
 
 ;____________________________________________________________________________[$060F]___
-	
+;convert to decimal? (used by Map and Act Complete screens for the lives number)
+
 _LABEL_60F_111:
-	xor  a
-	ld   b, $10
+; C : 10
+;HL : Number of lives
+	xor  a				;set A to 0
+	ld   b, 16
+	
+	;16-bit left-rotation -- that is, multiply by 2
 -	rl   l
 	rl   h
-	rla
-	cp   c
-	jp   c, +
-	sub  c
+	rla				;if it goes above $FFFF, overflow into A
+	
+	cp   c				;check the overflow portion against C
+	jp   c, +			;if less than 10, skip ahead
+	sub  c				;-10
+	
+	;invert the carry flag. for values of A of 0-9, the carry will become 0,
+	 ;when A hits 10, the carry will become 1 and adds 1 to DE
 +	ccf
+	
+	;multiply DE by 2
 	rl   e
 	rl   d
+	
 	djnz -
+	
+	;swap DE and HL:
+	 ;HL will be the number of 10s (in two's compliment?)
 	ex   de, hl
 	ret
 
 ;____________________________________________________________________________[$0625]___
-	
+;random number generator?
+
 _LABEL_625_57:
 	push hl
 	push de
+	
 	ld   hl, ($D2D7)
 	ld   e, l
 	ld   d, h
-	add  hl, de
-	add  hl, de
+	add  hl, de			;x2
+	add  hl, de			;x4
+	
 	ld   a, l
 	add  a, h
 	ld   h, a
 	add  a, l
 	ld   l, a
+	
 	ld   de, $0054
 	add  hl, de
 	ld   ($D2D7), hl
 	ld   a, h
+	
 	pop  de
 	pop  hl
 	ret
@@ -1490,7 +1629,7 @@ _LABEL_625_57:
 ;____________________________________________________________________________[$063E]___
 
 _063e:
-	ld      bc,($d251)
+	ld      bc,(RAM_SCROLL_HORIZONTAL)
 	ld      hl,($d25a)
 	ld      de,($d26f)
 	and     a
@@ -1499,13 +1638,13 @@ _063e:
 	ld      a,l
 	add     a,c
 	ld      c,a
-	res     6,(iy+$00)
+	res     6,(iy+vars.flags0)
 	jp      ++
 	
 +	ld      a,l
 	add     a,c
 	ld      c,a
-	set     6,(iy+$00)
+	set     6,(iy+vars.flags0)
 	
 ++	ld      hl,($d25d)
 	ld      de,($d271)
@@ -1518,7 +1657,7 @@ _063e:
 	jr      c,+
 	add     a,$20
 +	ld      b,a
-	res     7,(iy+$00)
+	res     7,(iy+vars.flags0)
 	jp      +++
 
 ++	ld      a,l
@@ -1527,9 +1666,9 @@ _063e:
 	jr      c,+
 	sub     $20
 +	ld      b,a
-	set     7,(iy+$00)
+	set     7,(iy+vars.flags0)
 
-+++	ld      ($d251),bc
++++	ld      (RAM_SCROLL_HORIZONTAL),bc
 	ld      hl,($d25a)
 	sla     l
 	rl      h
@@ -1556,7 +1695,7 @@ _063e:
 ;____________________________________________________________________________[$06BD]___
 
 _06bd:
-	bit     5,(iy+$00)
+	bit     5,(iy+vars.flags0)
 	ret     z
 	
 	di      
@@ -1585,18 +1724,18 @@ _06bd:
 	ld      l,a
 	
 	;store the solidity data address in RAM
-	ld      ($d210),hl
-	bit     0,(iy+$02)
+	ld      (RAM_TEMP3),hl
+	bit     0,(iy+vars.flags2)
 	jp      z,+++
 	
-	bit     6,(iy+$00)
+	bit     6,(iy+vars.flags0)
 	jr      nz,+
 	
 	ld      b,$00
 	ld      c,$08
 	jp      ++
 
-+	ld      a,($d251)
++	ld      a,(RAM_SCROLL_HORIZONTAL)
 	and     %00011111
 	add     a,$08
 	rrca    
@@ -1609,8 +1748,8 @@ _06bd:
 	ld      c,a
 
 ++	call    _08d5
-	ld      a,($d251)
-	bit     6,(iy+$00)
+	ld      a,(RAM_SCROLL_HORIZONTAL)
+	bit     6,(iy+vars.flags0)
 	jr      z,+
 	add     a,$08
 +	and     %00011111
@@ -1619,7 +1758,7 @@ _06bd:
 	srl     a
 	ld      c,a
 	ld      b,$00
-	ld      ($d20e),bc
+	ld      (RAM_TEMP1),bc
 	exx     
 	ld      de,$d180
 	exx     
@@ -1629,7 +1768,7 @@ _06bd:
 	exx     
 	ld      c,a
 	ld      b,$00
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	add     hl,bc
 	rlca    
 	rlca    
@@ -1646,7 +1785,7 @@ _06bd:
 	rrca    
 	rrca    
 	and     $10
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	add     hl,bc
 	ld      bc,($d24f)
 	add     hl,bc
@@ -1672,9 +1811,9 @@ _06bd:
 	add     hl,de
 	djnz    -
 	
-+++	bit     1,(iy+$02)
++++	bit     1,(iy+vars.flags2)
 	jp      z,+++
-	bit     7,(iy+$00)
+	bit     7,(iy+vars.flags0)
 	jr      nz,+
 	ld      b,$06
 	ld      c,$00
@@ -1684,13 +1823,13 @@ _06bd:
 	ld      c,b
 	
 ++	call    _08d5
-	ld      a,($d252)
+	ld      a,(RAM_SCROLL_VERTICAL)
 	and     $1f
 	srl     a
 	and     $fc
 	ld      c,a
 	ld      b,$00
-	ld      ($d20e),bc
+	ld      (RAM_TEMP1),bc
 	exx     
 	ld      de,$d100
 	exx     
@@ -1700,7 +1839,7 @@ _06bd:
 	exx     
 	ld      c,a
 	ld      b,$00
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	add     hl,bc
 	rlca    
 	rlca    
@@ -1717,7 +1856,7 @@ _06bd:
 	rrca    
 	rrca    
 	and     $10
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	add     hl,bc
 	ld      bc,($d24f)
 	add     hl,bc
@@ -1742,7 +1881,7 @@ _06bd:
 ;____________________________________________________________________________[$07DB]___
 
 _LABEL_7DB_26:
-	bit  0, (iy+$02)
+	bit  0, (iy+vars.flags2)
 	jp   z, ++
 	
 	exx
@@ -1750,7 +1889,7 @@ _LABEL_7DB_26:
 	push de
 	push bc
 	
-	ld   a, ($D252)			;vertical scroll?
+	ld   a, (RAM_SCROLL_VERTICAL)
 	and  %11111000
 	ld   b, $00
 	add  a, a
@@ -1760,9 +1899,9 @@ _LABEL_7DB_26:
 	add  a, a
 	rl   b
 	ld   c, a
-	ld   a, ($D251)			;horizontal scroll?
+	ld   a, (RAM_SCROLL_HORIZONTAL)
 	
-	bit  6, (iy+$00)
+	bit  6, (iy+vars.flags0)
 	jr   z, +
 	
 	add  a, $08
@@ -1779,7 +1918,7 @@ _LABEL_7DB_26:
 	ld   e, $07
 	exx
 	ld   hl, $D180
-	ld   a, ($D252)			;vertical scroll?
+	ld   a, (RAM_SCROLL_VERTICAL)
 	and  $1F
 	srl  a
 	srl  a
@@ -1811,14 +1950,14 @@ _LABEL_7DB_26:
 	pop  hl
 	exx
 
-++	bit  1, (iy+$02)
+++	bit  1, (iy+vars.flags2)
 	jp   z, ++
-	ld   a, ($D252)
+	ld   a, (RAM_SCROLL_VERTICAL)
 	ld   b, $00
 	srl  a
 	srl  a
 	srl  a
-	bit  7, (iy+$00)
+	bit  7, (iy+vars.flags0)
 	jr   nz, +
 	add  a, $18
 +	cp   $1C
@@ -1834,7 +1973,7 @@ _LABEL_7DB_26:
 	add  a, a
 	rl   b
 	ld   c, a
-	ld   a, ($D251)
+	ld   a, (RAM_SCROLL_HORIZONTAL)
 	add  a, $08
 	and  $F8
 	srl  a
@@ -1846,7 +1985,7 @@ _LABEL_7DB_26:
 	set  6, h
 	ex   de, hl
 	ld   hl, $D100
-	ld   a, ($D251)
+	ld   a, (RAM_SCROLL_HORIZONTAL)
 	and  $1F
 	add  a, $08
 	srl  a
@@ -1858,7 +1997,7 @@ _LABEL_7DB_26:
 	add  hl, bc
 	ld   a, e
 	and  $C0
-	ld   ($D20E), a
+	ld   (RAM_TEMP1), a
 	ld   a, e
 	out  (SMS_VDP_CONTROL), a
 	and  $3F
@@ -1877,7 +2016,7 @@ _LABEL_7DB_26:
 	jp   nz, -
 	ret
 
-+	ld   a, ($D20E)
++	ld   a, (RAM_TEMP1)
 	out  (SMS_VDP_CONTROL), a
 	ld   a, d
 	out  (SMS_VDP_CONTROL), a
@@ -1894,7 +2033,7 @@ _LABEL_7DB_26:
 ;____________________________________________________________________________[$08D5]___
 
 _08d5:
-	ld      a,(RAM_LEVEL_FLOORWIDTH)	;get width of the level's floor layout
+	ld      a,(RAM_LEVEL_FLOORWIDTH)
 	rlca    			;double it (x2)
 	jr      c,+
 	rlca    			;double it again (x4)
@@ -2136,7 +2275,8 @@ loadFloorLayout:
 	ld      a,b			;are there remaining bytes?
 	or      c
 	jp      nz,-			;if so continue
-	ret			;otherwise, finish
+	ret				;otherwise, finish
+	
 	;if the last two bytes of the data are duplicates, don't try decompress
 	 ;further when there is no more data to be read!
 +	dec     bc			;reduce count of remaining bytes
@@ -2172,30 +2312,30 @@ _LABEL_A40_121:
 	ld   (SMS_PAGE_2), a
 	ld   (RAM_PAGE_2), a
 	
-	ld   a, (iy+$0a)
-	res  0, (iy+$00)
+	ld   a, (iy+vars.spriteCount)
+	res  0, (iy+vars.flags0)
 	call wait
 	
-	ld   (iy+$0a), a
+	ld   (iy+vars.spriteCount), a
 	ld   b, $04
 	
 --	push bc
 	ld   hl, ($D230)
 	ld   de, $D3BC
 	ld   b, $10
-	call _f
+	call _a90
 	ld   hl, ($D232)
 	ld   b, $10
-	call _f
+	call _a90
 	ld   hl, $D3BC
 	ld   a, $03
 	call loadPaletteOnInterrupt
 	ld   b, $0A
 
--	ld   a, (iy+$0a)
-	res  0, (iy+$00)
+-	ld   a, (iy+vars.spriteCount)
+	res  0, (iy+vars.flags0)
 	call wait
-	ld   (iy+$0a), a
+	ld   (iy+vars.spriteCount), a
 	djnz -
 	
 	pop  bc
@@ -2203,7 +2343,10 @@ _LABEL_A40_121:
 	
 	ret
 
-__	ld   a, (hl)
+;----------------------------------------------------------------------------[$0A90]---
+
+_a90:
+	ld   a, (hl)
 	and  $03
 	jr   z, +
 	dec  a
@@ -2222,14 +2365,14 @@ __	ld   a, (hl)
 	ld   (de), a
 	inc  hl
 	inc  de
-	djnz _b
+	djnz _a90
 	
 	ret
 
 ;____________________________________________________________________________[$0AAE]___
 
 _aae:
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,($d230)
 	ld      de,$d3bc
 	ld      bc,$0020
@@ -2243,24 +2386,24 @@ _aae:
 	ld      hl,$d3bc
 	ld      a,$03
 	call    loadPaletteOnInterrupt
-	ld      c,(iy+$0a)
+	ld      c,(iy+vars.spriteCount)
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),c
+	ld      (iy+vars.spriteCount),c
 	ld      b,$09
 	
--	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+-	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	djnz    -
 	ld      b,$04
 
 --	push    bc
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      de,$d3bc
 	ld      b,$20
 
@@ -2303,10 +2446,10 @@ _aae:
 	call loadPaletteOnInterrupt
 	ld      b,$0a
 
--	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+-	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	djnz    -
 	
 	pop     bc
@@ -2316,7 +2459,7 @@ _aae:
 ;____________________________________________________________________________[$0B50]___
 
 _b50:
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,$d3bc
 	ld      b,$20
 	
@@ -2325,8 +2468,10 @@ _b50:
 	djnz    -
 	jp      +
 
-_b60:					;[$0B60]	
-	ld      ($d214),hl
+;----------------------------------------------------------------------------[$0B60]---
+
+_b60:
+	ld      (RAM_TEMP6),hl
 	ld      hl,($d230)
 	ld      de,$d3bc
 	ld      bc,$0020
@@ -2341,25 +2486,25 @@ _b60:					;[$0B60]
 	ld      hl,$d3bc
 	ld      a,$03
 	call loadPaletteOnInterrupt
-	ld      c,(iy+$0a)
+	ld      c,(iy+vars.spriteCount)
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+$0a),c
+	ld      (iy+vars.spriteCount),c
 	ld      b,$09
 	
--	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+-	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	djnz -
 	
 	ld      b,$04
 	
 --	push    bc
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      de,$d3bc
 	ld      b,$20
 	
@@ -2406,10 +2551,10 @@ _b60:					;[$0B60]
 	call loadPaletteOnInterrupt
 	ld      b,$0a
 	
--	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+-	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	djnz    -
 	
 	pop     bc
@@ -2489,9 +2634,10 @@ _c1d:
 ;____________________________________________________________________________[$0C52]___
 
 _LABEL_C52_106:
+	;reset horizontal / vertical scroll
 	xor  a				;set A to 0
-	ld   ($D251), a			;set horizontal scroll to 0 (done on IRQ)
-	ld   ($D252), a			;set vertical scroll to 0 (done on IRQ)
+	ld   (RAM_SCROLL_HORIZONTAL), a
+	ld   (RAM_SCROLL_VERTICAL), a
 	
 	ld   a, $FF
 	ld   ($D216), a
@@ -2512,7 +2658,7 @@ _LABEL_C52_106:
 	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111
 	ld   (RAM_VDPREGISTER_1), a
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
 	;map screen 1 tileset
@@ -2543,7 +2689,7 @@ _LABEL_C52_106:
 	ld      bc,$0178
 	ld      de,$3800
 	ld      a,$10
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call decompressScreen
 	
 	;map 1 foreground
@@ -2551,7 +2697,7 @@ _LABEL_C52_106:
 	ld      bc,$0145
 	ld      de,$3800
 	ld      a,$00
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call decompressScreen
 	
 	ld      hl,S1_MapScreen1_Palette
@@ -2563,7 +2709,7 @@ _LABEL_C52_106:
 	and  %10111111			;remove bit 6 of VDP register 1
 	ld   (RAM_VDPREGISTER_1), a
 	
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
 	;map screen 2 tileset
@@ -2594,7 +2740,7 @@ _LABEL_C52_106:
 	ld      bc,$0170
 	ld      de,$3800
 	ld      a,$10
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	;map screen 2 foreground
@@ -2602,7 +2748,7 @@ _LABEL_C52_106:
 	ld      bc,$0153
 	ld      de,$3800
 	ld      a,$00
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	ld      hl,S1_MapScreen2_Palette
@@ -2625,7 +2771,7 @@ _LABEL_C52_106:
 	ld   l, a
 	
 	ld   a, %00010000		;display in-front of sprites (bit 12 of tile)
-	ld   ($D20E), a
+	ld   (RAM_TEMP1), a
 	call print
 	
 	ld   a, (RAM_CURRENT_LEVEL)
@@ -2640,7 +2786,7 @@ _LABEL_C52_106:
 	inc  hl
 	ld   d, (hl)
 	inc  hl
-	ld   ($D210), de
+	ld   (RAM_TEMP3), de
 	ld   a, (hl)
 	and  a
 	jr   z, _f
@@ -2658,16 +2804,16 @@ _LABEL_C52_106:
 	jp   (hl)
 
 __	ld   a, $01
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	ld      bc,$012c
 
 --	push    bc
 	call    _LABEL_E86_110
-	ld      a,($d20e)
+	ld      a,(RAM_TEMP1)
 	dec     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	jr      nz,++
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 -	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
@@ -2676,7 +2822,7 @@ __	ld   a, $01
 	inc     hl
 	ld      b,(hl)
 	inc     hl
-	ld      ($d214),bc
+	ld      (RAM_TEMP6),bc
 	ld      a,(hl)
 	inc     hl
 	and     a
@@ -2684,26 +2830,26 @@ __	ld   a, $01
 	ex      de,hl
 	jp      -
 	
-+	ld      ($d20e),a
-	ld      ($d210),hl
-	ld      ($d212),de
++	ld      (RAM_TEMP1),a
+	ld      (RAM_TEMP3),hl
+	ld      (RAM_TEMP4),de
 	
-++	ld      hl,($d214)
+++	ld      hl,(RAM_TEMP6)
 	push    hl
 	ld      e,h
 	ld      h,$00
 	ld      d,h
-	ld      bc,($d212)
-	call    _LABEL_350F_95
+	ld      bc,(RAM_TEMP4)
+	call    processSpriteLayout
 	pop     hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	pop     bc
 	dec     bc
 	ld      a,b
 	or      c
 	ret     z
 	
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jp      nz,--
 	ret     nz
 	scf     
@@ -2714,13 +2860,13 @@ __	ld   a, $01
 
 _0dd9:
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,$00dc
 	ld      de,$003c
 	ld      b,$00
 	
 -	call    _LABEL_E86_110
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jp      nz,_b
 	push    bc
@@ -2731,13 +2877,13 @@ _0dd9:
 	djnz    -
 	
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,$ffd8
 	ld      de,$0058
 	ld      b,$80
 	
 -	call    _LABEL_E86_110
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jp      nz,_b
 	push    bc
@@ -2754,13 +2900,13 @@ _0dd9:
 
 _0e24:
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,$0080
 	ld      de,$00c0
 	ld      b,$78
 	
 -	call    _LABEL_E86_110
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jp      nz,_b
 	push    bc
@@ -2777,13 +2923,13 @@ _0e24:
 
 _0e4b:
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,$0078
 	ld      de,$0000
 	ld      b,$30
 	
 -	call    _LABEL_E86_110
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jp      nz,_b
 	push    bc
@@ -2805,23 +2951,29 @@ _LABEL_E86_110:
 	push hl
 	push de
 	push bc
-	ld   hl, ($D20E)
+	
+	ld   hl, (RAM_TEMP1)
 	push hl
-	res  0, (iy+$00)
+	
+	res  0, (iy+vars.flags0)
 	call wait
-	ld   (iy+$0a), $00
+	
+	ld   (iy+vars.spriteCount), $00
 	ld   a, (RAM_LIVES)
 	ld   l, a
 	ld   h, $00
 	ld   c, $0A
 	call _LABEL_60F_111
+	
 	ld   a, l
 	add  a, a
 	add  a, $80
 	ld   ($D2BE), a
 	ld   c, $0A
 	call _LABEL_5FC_114
+	
 	ex   de, hl
+	
 	ld   a, (RAM_LIVES)
 	ld   l, a
 	ld   h, $00
@@ -2838,9 +2990,11 @@ _LABEL_E86_110:
 	ld   hl, $D000
 	ld   de, $D2BE
 	call _LABEL_35CC_117
+	
 	ld   ($D23C), hl
 	pop  hl
-	ld   ($D20E), hl
+	ld   (RAM_TEMP1), hl
+	
 	pop  bc
 	pop  de
 	pop  hl
@@ -2851,9 +3005,10 @@ _LABEL_E86_110:
 _0edd:
 	push    hl
 	push    de
+	
 	ld      l,c
 	ld      h,b
-	ld      a,($d20f)
+	ld      a,(RAM_TEMP2)
 	add     a,a
 	add     a,a
 	ld      e,a
@@ -2863,22 +3018,23 @@ _0edd:
 	inc     hl
 	ld      b,(hl)
 	inc     hl
-	ld      a,($d20e)
+	ld      a,(RAM_TEMP1)
 	cp      (hl)
 	jr      c,+
 	inc     hl
 	ld      a,(hl)
-	ld      ($d20f),a
+	ld      (RAM_TEMP2),a
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 +	pop     de
 	pop     hl
 	push    hl
 	push    de
-	call    _LABEL_350F_95
-	ld      a,($d20e)
+	call    processSpriteLayout
+	ld      a,(RAM_TEMP1)
 	inc     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
+	
 	pop     de
 	pop     hl
 	ret
@@ -2892,17 +3048,17 @@ S1_MapScreen2_Palette:			;[$0F2E]
 .db $25, $01, $06, $0B, $04, $18, $2C, $35, $2B, $10, $2A, $14, $15, $1F, $00, $3F
 .db $2B, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $07, $2D, $00, $3F
 
-;--------------------------------------------------------------------------------------
+;----------------------------------------------------------------------------[$0F4E]---
 
 _f4e:
-.db <_f84, >_f84, $00			;Green Hill Act 1
-.db <_f93, >_f93, $00			;Green Hill Act 2
-.db <_fde, >_fde, $01			;Green Hill Act 3
-.db <_fa2, >_fa2, $00			;Bridge Act 1
-.db <_fb1, >_fb1, $00			;Bridge Act 2
+.db <_0f84, >_0f84, $00			;Green Hill Act 1
+.db <_0f93, >_0f93, $00			;Green Hill Act 2
+.db <_0fde, >_0fde, $01			;Green Hill Act 3
+.db <_0fa2, >_0fa2, $00			;Bridge Act 1
+.db <_0fb1, >_0fb1, $00			;Bridge Act 2
 .db <_107e, >_107e, $02			;Bridge Act 3
-.db <_fc0, >_fc0, $00			;Jungle Act 1
-.db <_fcf, >_fcf, $00			;Jungle Act 2
+.db <_0fc0, >_0fc0, $00			;Jungle Act 1
+.db <_0fcf, >_0fcf, $00			;Jungle Act 2
 .db <_1088, >_1088, $03			;Jungle Act 3
 .db <_100b, >_100b, $00			;Labyrinth Act 1
 .db <_101a, >_101a, $00			;Labyrinth Act 2
@@ -2914,70 +3070,165 @@ _f4e:
 .db <_1056, >_1056, $00			;Sky Base Act 2
 .db <_1056, >_1056, $00			;Sky Base Act 3
 
-;$0F84-$1208: UNKNOWN
-_f84:					;Green Hill Act 1
-.db $BD, $10, $50, $68, $1E, $AB, $10, $50, $68, $1E, $84, $0F, $00, $00, $00
-_f93:					;Green Hill Act 2
-.db $CF, $10, $50, $60, $1E, $AB, $10, $50, $60, $1E, $93, $0F, $00, $00, $00
-_fa2:					;Bridge Act 1
-.db $E1, $10, $60, $60, $1E, $AB, $10, $60, $60, $1E, $A2, $0F, $00, $00, $00
-_fb1:					;Bridge Act 2
-.db $F3, $10, $80, $50, $1E, $AB, $10, $80, $50, $1E, $B1, $0F, $00, $00, $00
-_fc0:					;Jungle Act 1
-.db $05, $11, $70, $48, $1E, $AB, $10, $70, $48, $1E, $C0, $0F, $00, $00, $00
-_fcf:					;Jungle Act 2
-.db $17, $11, $70, $38, $1E, $AB, $10, $70, $38, $1E, $CF, $0F, $00, $00, $00
-_fde:					;Green Hill Act 3
-.db $83, $11, $58, $58, $08, $83, $11, $58, $58, $08, $83, $11, $58, $56, $08
-.db $83, $11, $58, $56, $08, $83, $11, $58, $55, $08, $83, $11, $58, $55, $08
-.db $83, $11, $58, $56, $08, $83, $11, $58, $56, $08, $DE, $0F, $00, $00, $00
-_100b:					;Labyrinth Act 1
-.db $95, $11, $58, $68, $1E, $AB, $10, $58, $68, $1E, $0B, $10, $00, $00, $00
-_101a:					;Labyrinth Act 2
-.db $A7, $11, $68, $78, $1E, $AB, $10, $68, $78, $1E, $1A, $10, $00, $00, $00
-_1029:					;Scrap Brain Act 1
-.db $B9, $11, $70, $58, $1E, $AB, $10, $70, $58, $1E, $29, $10, $00, $00, $00
-_1038:					;Scrap Brain Act 2
-.db $CB, $11, $78, $48, $1E, $AB, $10, $78, $48, $1E, $38, $10, $00, $00, $00
-_1047:					;Sky Base Act 1
-.db $DD, $11, $68, $28, $1E, $AB, $10, $68, $28, $1E, $47, $10, $00, $00, $00
-_1056:					;Sky Base Act 2 / 3
-.db $EF, $11, $80, $28, $1E, $EF, $11, $80, $26, $08, $EF, $11, $80, $26, $08
-.db $EF, $11, $80, $25, $08, $EF, $11, $80, $25, $08, $EF, $11, $80, $26, $08
-.db $EF, $11, $80, $26, $08, $56, $10, $00, $00, $00
-_107e:					;Bridge Act 3
-.db $83, $11, $80, $48, $08, $7E, $10, $00, $00, $00
-_1088:					;Jungle Act 3
-.db $83, $11, $78, $30, $08, $88, $10, $00, $00, $00
-_1092:					;Labyrinth Act 3
-.db $83, $11, $70, $60, $08, $92, $10, $00, $00, $00
-_109c:					;Scrap Brain Act 3
-.db $29, $11, $68, $40, $08, $3B, $11, $68, $40, $08, $9C, $10, $00, $00, $00
+;----------------------------------------------------------------------------[$0F84]---
 
-;unknown, probably referenced above -- "$AB, $10"
-_10ab:
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $00, $02, $FF, $FF, $FF, $FF, $FE, $22, $24, $26, $28, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $04, $06, $08, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $40, $42, $44, $46, $48, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $4A, $4C, $FF, $FF, $FF, $FF, $6A, $6C
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $60, $62, $64, $66, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FE, $0E, $FF
-.db $FF, $FF, $2A, $2C, $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $10, $12
-.db $14, $16, $FF, $FF, $30, $32, $34, $36, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $10, $12, $14, $18, $FF, $FF, $30, $32, $34, $38, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $50, $54, $56, $58, $FF, $FF, $70, $74, $76, $78, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $52, $54, $56, $58, $FF, $FF, $72, $74, $76, $78, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $50, $54, $56, $58, $FF, $FF, $70, $74, $76, $78
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $5A, $5C, $5E, $FF, $FF, $FF, $7A, $7C
-.db $7E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $00, $02, $FF, $FF, $FF, $FF
-.db $20, $22, $04, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $0A, $0C, $0E, $FF
-.db $FF, $FF, $2A, $2C, $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $68, $6A
-.db $6C, $FF, $FF, $FF, $FE, $FE, $6E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $06, $08, $4A, $4C, $FF, $FF, $FE, $FE, $4E, $3E, $FF, $FF, $FE, $40, $42, $44
-.db $FF, $FF, $60, $62, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $46, $48, $26, $28, $FF, $FF, $1A, $1C, $3A, $3C, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, 
+_0f84:					;Green Hill Act 1
+.db <_10bd, >_10bd, $50, $68, $1E
+.db <_10ab, >_10ab, $50, $68, $1E
+.db <_0f84, >_0f84, $00, $00, $00
+_0f93:					;Green Hill Act 2
+.db <_10cf, >_10cf, $50, $60, $1E
+.db <_10ab, >_10ab, $50, $60, $1E
+.db <_0f93, >_0f93, $00, $00, $00
+_0fa2:					;Bridge Act 1
+.db <_10e1, >_10e1, $60, $60, $1E
+.db <_10ab, >_10ab, $60, $60, $1E
+.db <_0fa2, >_0fa2, $00, $00, $00
+_0fb1:					;Bridge Act 2
+.db <_10f3, >_10f3, $80, $50, $1E
+.db <_10ab, >_10ab, $80, $50, $1E
+.db <_0fb1, >_0fb1, $00, $00, $00
+_0fc0:					;Jungle Act 1
+.db <_1105, >_1105, $70, $48, $1E
+.db <_10ab, >_10ab, $70, $48, $1E
+.db <_0fc0, >_0fc0, $00, $00, $00
+_0fcf:					;Jungle Act 2
+.db <_1117, >_1117, $70, $38, $1E
+.db <_10ab, >_10ab, $70, $38, $1E
+.db <_0fcf, >_0fcf, $00, $00, $00
+_0fde:					;Green Hill Act 3
+.db <_1183, >_1183, $58, $58, $08
+.db <_1183, >_1183, $58, $58, $08
+.db <_1183, >_1183, $58, $56, $08
+.db <_1183, >_1183, $58, $56, $08
+.db <_1183, >_1183, $58, $55, $08
+.db <_1183, >_1183, $58, $55, $08
+.db <_1183, >_1183, $58, $56, $08
+.db <_1183, >_1183, $58, $56, $08
+.db <_0fde, >_0fde, $00, $00, $00
+_100b:					;Labyrinth Act 1
+.db <_1195, >_1195, $58, $68, $1E
+.db <_10ab, >_10ab, $58, $68, $1E
+.db <_100b, >_100b, $00, $00, $00
+_101a:					;Labyrinth Act 2
+.db <_11a7, >_11a7, $68, $78, $1E
+.db <_10ab, >_10ab, $68, $78, $1E
+.db <_101a, >_101a, $00, $00, $00
+_1029:					;Scrap Brain Act 1
+.db <_11b9, >_11b9, $70, $58, $1E
+.db <_10ab, >_10ab, $70, $58, $1E
+.db <_1029, >_1029, $00, $00, $00
+_1038:					;Scrap Brain Act 2
+.db <_11cb, >_11cb, $78, $48, $1E
+.db <_10ab, >_10ab, $78, $48, $1E
+.db <_1038, >_1038, $00, $00, $00
+_1047:					;Sky Base Act 1
+.db <_11dd, >_11dd, $68, $28, $1E
+.db <_10ab, >_10ab, $68, $28, $1E
+.db <_1047, >_1047, $00, $00, $00
+_1056:					;Sky Base Act 2 / 3
+.db <_11ef, >_11ef, $80, $28, $1E
+.db <_11ef, >_11ef, $80, $26, $08
+.db <_11ef, >_11ef, $80, $26, $08
+.db <_11ef, >_11ef, $80, $25, $08
+.db <_11ef, >_11ef, $80, $25, $08
+.db <_11ef, >_11ef, $80, $26, $08
+.db <_11ef, >_11ef, $80, $26, $08
+.db <_1056, >_1056, $00, $00, $00
+_107e:					;Bridge Act 3
+.db <_1183, >_1183, $80, $48, $08
+.db <_107e, >_107e, $00, $00, $00
+_1088:					;Jungle Act 3
+.db <_1183, >_1183, $78, $30, $08
+.db <_1088, >_1088, $00, $00, $00
+_1092:					;Labyrinth Act 3
+.db <_1183, >_1183, $70, $60, $08
+.db <_1092, >_1092, $00, $00, $00
+_109c:					;Scrap Brain Act 3
+.db <_1129, >_1129, $68, $40, $08
+.db <_113b, >_113b, $68, $40, $08
+.db <_109c, >_109c, $00, $00, $00
+
+;----------------------------------------------------------------------------[$10AB]---
+
+_10ab:					;blank frame (to make it blink)
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_10bd:					;Green Hill Act 1
+.db $00, $02, $FF, $FF, $FF, $FF
+.db $FE, $22, $24, $26, $28, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_10cf:					;Green Hill Act 2
+.db $04, $06, $08, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_10e1:					;Bridge Act 1
+.db $40, $42, $44, $46, $48, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_10f3:					;Bridge Act 2
+.db $4A, $4C, $FF, $FF, $FF, $FF
+.db $6A, $6C, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1105:					;Jungle Act 1
+.db $60, $62, $64, $66, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1117:					;Jungle Act 2
+.db $FE, $FE, $0E, $FF, $FF, $FF
+.db $2A, $2C, $2E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1129:					;Scrap Brain Act 3 - step 1
+.db $10, $12, $14, $16, $FF, $FF
+.db $30, $32, $34, $36, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_113b:					;Scrap Brain Act 3 - step 2
+.db $10, $12, $14, $18, $FF, $FF
+.db $30, $32, $34, $38, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_114d:					;unused -- Robotnik flying right - frame 1
+.db $50, $54, $56, $58, $FF, $FF
+.db $70, $74, $76, $78, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_115f:					;unused -- Robotnik flying right - frame 2
+.db $52, $54, $56, $58, $FF, $FF
+.db $72, $74, $76, $78, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1171:					;unused -- same as _114d
+.db $50, $54, $56, $58, $FF, $FF
+.db $70, $74, $76, $78, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1183:					;Green Hill, Bridge, Jungle & Labyrinth Act 3
+.db $5A, $5C, $5E, $FF, $FF, $FF
+.db $7A, $7C, $7E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_1195:					;Labyrinth Act 1
+.db $00, $02, $FF, $FF, $FF, $FF
+.db $20, $22, $04, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_11a7:					;Labyrinth Act 2
+.db $0A, $0C, $0E, $FF, $FF, $FF
+.db $2A, $2C, $2E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_11b9:					;Scrap Brain Act 1
+.db $68, $6A, $6C, $FF, $FF, $FF
+.db $FE, $FE, $6E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_11cb:					;Scrap Brain Act 2
+.db $06, $08, $4A, $4C, $FF, $FF
+.db $FE, $FE, $4E, $3E, $FF, $FF
+.db $FE, $40, $42, $44, $FF, $FF
+_11dd:					;Sky Base Act 1
+.db $60, $62, $64, $66, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+_11ef:					;Sky Base Act 2 / 3
+.db $46, $48, $26, $28, $FF, $FF
+.db $1A, $1C, $3A, $3C, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+;----------------------------------------------------------------------------[$1201]---
 
 _1201:
 .dw _0dd9
@@ -3032,21 +3283,21 @@ titleScreen:
 	ld   (RAM_VDPREGISTER_1), a
 	
 	;wait for interrupt to complete?
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
 	;load the title screen tile set
 	 ;BANK 9 ($24000) + $2000 = $26000
 	ld   hl, $2000
 	ld   de, $0000
-	ld   a, $09
+	ld   a, 9
 	call decompressArt
 	
 	;load the title screen sprite set
 	 ;BANK 9 ($24000) + $4B0A = $28B0A
 	ld   hl, $4B0A
 	ld   de, $2000
-	ld   a, $09
+	ld   a, 9
 	call decompressArt
 	
 	;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
@@ -3059,75 +3310,93 @@ titleScreen:
 	ld   de, $3800
 	ld   bc, $012E
 	ld   a, $00
-	ld   ($D20E), a
+	ld   (RAM_TEMP1), a
 	call decompressScreen
 	
+	;reset horizontal / vertical scroll
 	xor  a				;set A to zero
-	ld   ($D251), a
-	ld   ($D252), a
-	ld   hl, $13E1
-	ld   a, $03
+	ld   (RAM_SCROLL_HORIZONTAL), a
+	ld   (RAM_SCROLL_VERTICAL), a
+	
+	;load the palette
+	ld   hl, S1_TitleScreen_Palette
+	ld   a, %00000011		;flags to load tile and sprite palettes
 	call loadPaletteOnInterrupt
 	
-	set  1, (iy+$00)
+	set  1, (iy+vars.flags0)
 	
 	;play title screen music
 	ld   a, index_music_titleScreen
 	rst  $18			;`playMusic`
 	
+	;initialise the animation parameters?
 	xor  a
-	ld   ($D216), a
+	ld   ($D216), a			;reset the screen counter
 	ld   a, $01
-	ld   ($D20F), a
+	ld   (RAM_TEMP2), a
 	ld   hl, _1372
-	ld   ($D210), hl
+	ld   (RAM_TEMP3), hl
 	
--	ld   a, (RAM_VDPREGISTER_1)
-	or   $40
+	;------------------------------------------------------------------------------
+-	;switch screen on (set bit 6 of VDP register 1)
+	ld   a, (RAM_VDPREGISTER_1)
+	or   %01000000
 	ld   (RAM_VDPREGISTER_1), a
 	
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
-	ld   a, ($D216)
-	inc  a
-	cp   $64
-	jr   c, +
-	xor  a
-+	ld   ($D216), a
+	;count to 100:
+	ld   a, ($D216)			;get the screen counter
+	inc  a				;add one
+	cp   100			;if less than 100,
+	jr   c, +			;keep counting,
+	xor  a				;otherwise go back to 0
++	ld   ($D216), a			;update screen counter value
+	
 	ld   hl, _1352
 	cp   $40
 	jr   c, +
 	ld   hl, _1362
 +	xor  a				;set A to 0
-	ld   ($D20E), a
+	ld   (RAM_TEMP1), a
 	call print
 	
-	ld   a, ($D20F)
+	ld   a, (RAM_TEMP2)
 	dec  a
-	ld   ($D20F), a
+	ld   (RAM_TEMP2), a
 	jr   nz, +
-	ld   hl, ($D210)
+	
+	ld   hl, (RAM_TEMP3)
 	ld   e, (hl)
 	inc  hl
 	ld   d, (hl)
 	inc  hl
 	ld   a, (hl)
 	inc  hl
+	
+	;when the animation reaches the end,
+	 ;exit the title screen (begin demo mode)
 	and  a
 	jr   z, ++
-	ld   ($D20F), a
-	ld   ($D210), hl
-	ld   ($D212), de
-
+	
+	ld   (RAM_TEMP2), a
+	ld   (RAM_TEMP3), hl
+	ld   (RAM_TEMP4), de
+	
+	;set sprite table to use?
 +	ld   hl, $D000
 	ld   ($D23C), hl
+	
 	ld   hl, $0080
 	ld   de, $0018
-	ld   bc, ($D212)
-	call _LABEL_350F_95
-	bit  5, (iy+$03)
+	ld   bc, (RAM_TEMP4)
+	call processSpriteLayout
+	
+	;has the button been pressed? if not, repeat
+	bit  5, (iy+vars.joypad)
 	jp   nz, -
+	
 	scf
 
 ++	rst  $20			;`muteSound`
@@ -3141,16 +3410,44 @@ _1362:					;text
 .db $09, $12
 .db $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $FF
 
-_1372:					;unknown
-.db $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF
-.db $13, $08, $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF, $13, $08, $BD, $13
-.db $08, $CF, $13, $08, $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF, $13, $08
-.db $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF, $13, $08, $BD, $13, $08, $CF
-.db $13, $08, $BD, $13, $FF, $BD, $13, $FF, $B4, $13, $00, $00, $02, $04, $FF, $FF
-.db $FF, $20, $22, $24, $FF, $FF, $FF, $40, $42, $44, $FF, $FF, $FF, $06, $08, $FF
-.db $FF, $FF, $FF, $26, $28, $FF, $FF, $FF, $FF, $46, $48, $FF, $FF, $FF, $FF
+;wagging finger animation data:
+_1372:
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+.db <_13bd, >_13bd, $08
+.db <_13cf, >_13cf, $08
+_13b4:
+.db <_13bd, >_13bd, $FF
+.db <_13bd, >_13bd, $FF
+.db <_13b4, >_13b4, $00
+_13bd:					;frame 1 sprite layout
+.db $00, $02, $04, $FF, $FF, $FF
+.db $20, $22, $24, $FF, $FF, $FF
+.db $40, $42, $44, $FF, $FF, $FF
+_13cf:					;frame 2 sprite layout
+.db $06, $08, $FF, $FF, $FF, $FF
+.db $26, $28, $FF, $FF, $FF, $FF
+.db $46, $48, $FF, $FF, $FF, $FF
 
-S1_TitleScreen_Palette			;[$13E1]
+S1_TitleScreen_Palette:			;[$13E1]
 .db $00, $10, $34, $38, $06, $1B, $2F, $3F, $3D, $3E, $01, $03, $0B, $0F, $00, $3F
 .db $00, $10, $34, $38, $06, $1B, $2F, $3F, $3D, $3E, $01, $03, $0B, $0F, $00, $3F
 
@@ -3162,7 +3459,7 @@ _1401:
 	and     %10111111		;remove bit 6 of VDP register 1
 	ld      (RAM_VDPREGISTER_1),a
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	di      
 	
@@ -3182,12 +3479,12 @@ _1401:
 	ld      bc,$0032
 	ld      de,$3800
 	ld      a,$00
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	xor     a
-	ld      ($d251),a
-	ld      ($d252),a
+	ld      (RAM_SCROLL_HORIZONTAL),a
+	ld      (RAM_SCROLL_VERTICAL),a
 	ld      hl,_14fc
 	ld      a,$03
 	call    loadPaletteOnInterrupt
@@ -3199,7 +3496,7 @@ _1401:
 	or      %01000000		;enable bit 6 on VDP register 1
 	ld      (RAM_VDPREGISTER_1),a
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	djnz    -
@@ -3211,7 +3508,7 @@ _1401:
 	ld      bc,$00b4
 -	push    bc
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	pop     bc
@@ -3220,7 +3517,7 @@ _1401:
 	or      c
 	ret     z
 	
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jp      nz,-
 	
 	and     a
@@ -3238,21 +3535,24 @@ _1401:
 --	ld      b,$3c
 	
 -	push    bc
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),$00
+	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d216
 	ld      de,$d2be
 	ld      b,$01
 	call    _1b13
+	
 	ex      de,hl
+	
 	ld      hl,$d000
 	ld      c,$8c
 	ld      b,$5e
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
+	
 	pop     bc
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jr      z,+
 	djnz    -
 	
@@ -3298,6 +3598,7 @@ _14fc:
 .db $3A, $15
 
 ;____________________________________________________________________________[$155E]___
+;Act Complete screen?
 
 _155e:
 	ld	a, (RAM_CURRENT_LEVEL)
@@ -3308,7 +3609,7 @@ _155e:
 	and     $bf
 	ld      (RAM_VDPREGISTER_1),a
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	;load HUD sprites
@@ -3342,7 +3643,7 @@ _155e:
 	ld      de,$3800
 
 +	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	ld      hl,_1711
@@ -3389,8 +3690,8 @@ _155e:
 	djnz    -
 	
 +	xor     a
-	ld      ($d251),a
-	ld      ($d252),a
+	ld      (RAM_SCROLL_HORIZONTAL),a
+	ld      (RAM_SCROLL_VERTICAL),a
 	ld      hl,$1b8d
 	ld      a,$03
 	call    loadPaletteOnInterrupt
@@ -3399,17 +3700,19 @@ _155e:
 	jr      c,+
 	ld      hl,$d281
 	inc     (hl)
-	bit     2,(iy+$09)
+	bit     2,(iy+vars.flags9)
 	jr      nz,+
 	ld      hl,$d282
 	inc     (hl)
 	ld      hl,$d285
 	inc     (hl)
 
-+	bit     2,(iy+$09)
++	bit     2,(iy+vars.flags9)
 	call    nz,_1719
-	bit     3,(iy+$09)
+	
+	bit     3,(iy+vars.flags9)
 	call    nz,_1726
+	
 	ld      hl,$153e
 	ld      de,$154e
 	ld      b,$08
@@ -3438,7 +3741,7 @@ _155e:
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-++++	ld      hl,$d212
+++++	ld      hl,RAM_TEMP4
 	ex      de,hl
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
@@ -3448,7 +3751,7 @@ _155e:
 	ldi     
 	ldi     
 	ldi     
-	set     1,(iy+$00)
+	set     1,(iy+vars.flags0)
 	ld      b,$78
 	
 -	push    bc
@@ -3456,14 +3759,14 @@ _155e:
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	call    _1a18
 	pop     bc
 	djnz    -
 	
--	res     0,(iy+$00)
+-	res     0,(iy+vars.flags0)
 	call    wait
 	
 	call    _1a18
@@ -3479,8 +3782,8 @@ _155e:
 	ld      a,$02
 	rst     $28			;`playSFX`
 
-+	ld      hl,($d212)
-	ld      de,($d214)
++	ld      hl,(RAM_TEMP4)
+	ld      de,(RAM_TEMP6)
 	ld      a,(RAM_RINGS)
 	or      h
 	or      l
@@ -3490,11 +3793,11 @@ _155e:
 	ld      b,$b4
 	
 -	push    bc
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	call    _1a18
 	pop     bc
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jr      z,+
 	djnz    -
 
@@ -3520,7 +3823,7 @@ _16d9:
 	ldir    
 	pop     bc
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	
 -	push    bc
 	ld      hl,$d2be
@@ -3546,8 +3849,8 @@ _1711:
 _1719:
 	xor     a
 	ld      (RAM_RINGS),a
-	res     3,(iy+$09)
-	res     2,(iy+$09)
+	res     3,(iy+vars.flags9)
+	res     2,(iy+vars.flags9)
 	ret
 
 ;____________________________________________________________________________[$1726]___
@@ -3555,7 +3858,7 @@ _1719:
 _1726:
 	ld      hl,$d284
 	inc     (hl)
-	res     3,(iy+$09)
+	res     3,(iy+vars.flags9)
 	ret
 
 ;____________________________________________________________________________[$172F]___
@@ -3711,9 +4014,10 @@ _172f:
 
 _1860:
 	push    bc
-	res     0,(iy+$00)
+	
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),$00
+	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
 	ld      ($d23c),hl
 	ld      hl,$d2ba
@@ -3825,10 +4129,11 @@ _19b4:
 	ld      a,(hl)
 	and     a
 	ret     z
+	
 	dec     a
 	ld      c,a
-	and     $0f
-	cp      $0a
+	and     %00001111
+	cp      $0A
 	jr      c,+
 	ld      a,c
 	sub     $06
@@ -3849,15 +4154,15 @@ _19b4:
 ;____________________________________________________________________________[$19DF]___
 
 _19df:
-	ld      hl,($d212)
-	ld      de,($d214)
+	ld      hl,(RAM_TEMP4)
+	ld      de,(RAM_TEMP6)
 	ld      a,h
 	or      l
 	or      d
 	or      e
 	ret     z
 	ld      b,$03
-	ld      hl,$d214
+	ld      hl,RAM_TEMP6
 	scf     
 	
 -	ld      a,(hl)
@@ -3889,7 +4194,7 @@ _1a14:
 ;____________________________________________________________________________[$1A18]___
 
 _1a18:
-	ld      (iy+$0a),$00
+	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
 	ld      ($d23c),hl
 	ld      hl,$d2ba
@@ -3914,9 +4219,9 @@ _1a18:
 	cp      $1c
 	jr      c,+
 	ld      b,$68
-	
 +	call    _LABEL_35CC_117
 	ld      ($d23c),hl
+	
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
@@ -3941,7 +4246,7 @@ _1a18:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      nc,+
-	ld      hl,$d212
+	ld      hl,RAM_TEMP4
 	ld      de,$d2be
 	ld      b,$04
 	call    _1b13
@@ -3973,12 +4278,14 @@ _1aca:
 	ld      h,$00
 	ld      c,$0a
 	call    _LABEL_60F_111
+	
 	ld      a,l
 	add     a,a
 	add     a,$80
 	ld      ($d2be),a
 	ld      c,$0a
 	call    _LABEL_5FC_114
+	
 	ex      de,hl
 	ld      a,(RAM_LIVES)
 	ld      l,a
@@ -4077,7 +4384,7 @@ _1bad:
 	ld      de,_1bc6
 	add     hl,de
 	ld      a,(hl)
-	ld      (iy+$03),a
+	ld      (iy+vars.joypad),a
 	ld      a,($d223)
 	and     $1f
 	ret     nz
@@ -4102,10 +4409,11 @@ _1bc6:
 _LABEL_1C49_62:
 	;set bit 0 of the parameter address (IY=$D200); when `wait` is called,
 	 ;execution will pause until an interrupt event switches bit 0 of $D200 on?
-	set  0, (iy+$00)			
+	set  0, (iy+vars.flags0)			
 	ei				;enable interrupts
 	
---	ld   a, $03
+	;default to 3 lives
+--	ld   a, 3
 	ld   (RAM_LIVES), a
 	
 	ld   a, $05
@@ -4135,40 +4443,42 @@ _LABEL_1C49_62:
 	ld   b, $18
 	call _fillMemoryWithValue
 	
-	res  0, (iy+$02)
-	res  1, (iy+$02)
+	res  0, (iy+vars.flags2)
+	res  1, (iy+vars.flags2)
 	call hideSprites
 	call titleScreen
 	
-	res  1, (iy+$05)
+	res  1, (iy+vars.scrollRingFlags)
 	jr   c, _LABEL_1C9F_104
 	
-	set  1, (iy+$05)
+	set  1, (iy+vars.scrollRingFlags)
 _LABEL_1C9F_104:
 	;are we on the end sequence?
 	ld   a, (RAM_CURRENT_LEVEL)
 	cp   19
 	jr   nc, --
 	
-	res  0, (iy+$02)
-	res  1, (iy+$02)
+	res  0, (iy+vars.flags2)
+	res  1, (iy+vars.flags2)
 	call hideSprites
 	call _LABEL_C52_106
-	bit  1, (iy+$05)
+	bit  1, (iy+vars.scrollRingFlags)
 	jr   z, _LABEL_1CBD_120
 	jp   c, --
 _LABEL_1CBD_120:
 	call _LABEL_A40_121
 	call hideSprites
-	bit  0, (iy+$05)
+	bit  0, (iy+vars.scrollRingFlags)
 	jr   nz, +
-	bit  4, (iy+$06)
+	bit  4, (iy+vars.flags6)
 	jr   nz, ++
-+	ld   b, $3C
 	
--	res  0, (iy+$00)
+	;wait at title screen for button press?
++	ld   b, $3C
+-	res  0, (iy+vars.flags0)
 	call wait
 	djnz -
+	
 	rst  $20			;`muteSound`
 	
 ++	call _LABEL_1CED_131
@@ -4199,10 +4509,9 @@ _LABEL_1CED_131:
 	ld   (RAM_PAGE_1), a
 	
 	ld   a, (RAM_CURRENT_LEVEL)
-	bit  4, (iy+$06)
+	bit  4, (iy+vars.flags6)
 	jr   z, +
 	ld   a, ($D2D3)
-
 +	add  a, a			;double the level number
 	ld   l, a			;put this into a 16-bit number
 	ld   h, $00
@@ -4224,26 +4533,27 @@ _LABEL_1CED_131:
 	add  hl, de			
 	call loadLevel
 	
-	set     0,(iy+$02)
-	set     1,(iy+$02)
-	set     1,(iy+$00)
-	set     3,(iy+$06)
-	res     3,(iy+$07)
-	res     0,(iy+$09)
-	res     6,(iy+$06)
-	res     0,(iy+$08)
-	res     6,(iy+$00)
+	set     0,(iy+vars.flags2)
+	set     1,(iy+vars.flags2)
+	set     1,(iy+vars.flags0)
+	set     3,(iy+vars.flags6)
+	res     3,(iy+vars.timeLightningFlags)
+	res     0,(iy+vars.flags9)
+	res     6,(iy+vars.flags6)
+	res     0,(iy+vars.unknown0)
+	res     6,(iy+vars.flags0)
 	
-	bit     3,(iy+$05)		;auto scroll right?
+	;auto scroll right?
+	bit     3,(iy+vars.scrollRingFlags)
 	call    nz,_1ed8		;if yes, skip way ahead
 	
 	ld      b,$10
 -	push    bc
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
-	ld      (iy+$03),$ff		;clear joypad input
+	ld      (iy+vars.joypad),$ff	;clear joypad input
 	
 	ld      hl,($d223)
 	inc     hl
@@ -4254,8 +4564,9 @@ _LABEL_1CED_131:
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
 	
-	bit     2,(iy+$05)		;are rings enabled?
-	call    nz,_3879
+	;are rings enabled?
+	bit     2,(iy+vars.scrollRingFlags)
+	call    nz,updateRingFrame
 	
 	ld      hl,$0060
 	ld      ($d25f),hl
@@ -4283,19 +4594,20 @@ _LABEL_1CED_131:
 	call    _063e
 	call    _06bd
 	
-	set     5,(iy+$00)		
+	set     5,(iy+vars.flags0)		
 	
 	pop     bc
 	djnz    -
 	
-	bit     1,(iy+$05)
+	;demo mode?
+	bit     1,(iy+vars.scrollRingFlags)
 	jr      z,_1dae
 	
 	ld      hl,$0000
 	ld      ($d2b5),hl
-	ld      (iy+$0a),h
+	ld      (iy+vars.spriteCount),h
 _1dae:
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
@@ -4303,10 +4615,11 @@ _1dae:
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
 	
-	bit     2,(iy+$05)		;are rings enabled?
-	call    nz,_3879
+	;are rings enabled?
+	bit     2,(iy+vars.scrollRingFlags)
+	call    nz,updateRingFrame
 	
-	bit     3,(iy+$06)		
+	bit     3,(iy+vars.flags6)		
 	call    nz,_3a03
 	
 	ld      a,($d223)
@@ -4327,16 +4640,18 @@ _1de2:					;jump to here from _2067
 	and     a
 	call    nz,_1f06
 	
-	bit     1,(iy+$07)		;is lightning effect enabled?
+	;is lightning effect enabled?
+	bit     1,(iy+vars.timeLightningFlags)
 	call    nz,_1f49		;if so, handle that
 	
-++	bit     1,(iy+$06)
+++	bit     1,(iy+vars.flags6)
 	call    nz,++
 	
-	bit     1,(iy+$05)		;are we in demo mode?
+	;are we in demo mode?
+	bit     1,(iy+vars.scrollRingFlags)
 	jr      z,+			;no, skip ahead
 	
-	bit     5,(iy+$03)		;is button pressed?
+	bit     5,(iy+vars.joypad)	;is button pressed?
 	jp      z,_20b8			;if yes, end demo mode -- fade out and return
 	
 	call    _1bad			;process demo mode?
@@ -4345,25 +4660,29 @@ _1de2:					;jump to here from _2067
 	inc     hl
 	ld      ($d223),hl
 	
-	bit     3,(iy+$05)		;auto scrolling to the right? (ala Bridge 2)
+	;auto scrolling to the right? (ala Bridge 2)
+	bit     3,(iy+vars.scrollRingFlags)
 	call    nz,_1ee2
 	
-	bit     4,(iy+$05)		;auto scrolling upwards?
+	;auto scrolling upwards?
+	bit     4,(iy+vars.scrollRingFlags)
 	call    nz,_1ef2
 	
-	bit     7,(iy+$05)		;no down scrolling (ala Jungle 2)
+	;no down scrolling (ala Jungle 2)
+	bit     7,(iy+vars.scrollRingFlags)
 	call    nz,_1eff
 	
 	call    _23c9
 	
-	bit     2,(iy+$05)		;are rings enabled?
+	;are rings enabled?
+	bit     2,(iy+vars.scrollRingFlags)
 	call    nz,_239c
 	
 	xor     a			;set A to 0
 	ld      ($d302),a
 	ld      ($d2de),a
-	ld      (iy+$0a),$15
-	ld      hl,$d03f
+	ld      (iy+vars.spriteCount),$15
+	ld      hl,$d03f		;lives icon sprite table entry
 	ld      ($d23c),hl
 	ld      hl,$d001
 	ld      b,$07
@@ -4393,12 +4712,13 @@ _1de2:					;jump to here from _2067
 	ld      hl,RAM_VDPREGISTER_1
 	set     6,(hl)
 	
-	bit     3,(iy+$07)		;paused?
+	;paused?
+	bit     3,(iy+vars.timeLightningFlags)
 	call    nz,_1e9e
 	
 	jp      _1dae
 
-++	ld      (iy+$03),$f7
+++	ld      (iy+vars.joypad),$f7
 	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      de,$0112
 	add     hl,de
@@ -4407,7 +4727,7 @@ _1de2:					;jump to here from _2067
 	xor     a
 	sbc     hl,de
 	ret     c
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ld      l,a
 	ld      h,a
 	ld      ($d403),hl
@@ -4418,23 +4738,26 @@ _1de2:					;jump to here from _2067
 
 ;____________________________________________________________________________[$1E9E]___
 
-_1e9e:
-	bit     1,(iy+$05)		;demo mode?
+_1e9e:	;demo mode?
+	bit     1,(iy+vars.scrollRingFlags)
 	ret     nz
 	rst     $20			;`muteSound`
 	
--	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+-	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	ld      a,11
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
-	bit     2,(iy+$05)		;are rings enabled?
-	call    nz,_3879
+	
+	;are rings enabled?
+	bit     2,(iy+vars.scrollRingFlags)
+	call    nz,updateRingFrame
 	call    _23c9
 	call    _239c
-	bit     3,(iy+$07)		;paused?
+	;paused?
+	bit     3,(iy+vars.timeLightningFlags)
 	jr      nz,-
 	
 	ld      a,:sound_unpause
@@ -4567,7 +4890,7 @@ _1f49:	;lightning is enabled...
 	inc     bc
 	ld      a,(bc)
 	ld      h,a
-	ld      ($d2a8),hl
+	ld      (RAM_CYCLEPALETTE_POINTER),hl
 +++	inc     de
 	ld      ($d2e9),de
 	ret    
@@ -4607,20 +4930,21 @@ _1fa9:
 	
 +	call    _LABEL_A40_121
 	pop     hl
-	res     5,(iy+$00)
+	res     5,(iy+vars.flags0)
 	bit     2,(iy+$0d)
 	jr      nz,+++
-	bit     4,(iy+$06)
+	bit     4,(iy+vars.flags6)
 	jr      nz,++++
 	rst     $20			;`muteSound`
-	bit     7,(iy+$06)
+	bit     7,(iy+vars.flags6)
 	call    nz,_20a4
 	call    hideSprites
-	call    _155e
+	call    _155e			;Act Complete screen?
+	
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1a
 	jr      nc,++
-	bit     0,(iy+$07)
+	bit     0,(iy+vars.timeLightningFlags)
 	jr      z,+
 	ld      hl,$2047
 	call    _b60
@@ -4638,7 +4962,7 @@ _1fa9:
 	ld      a,$01
 	ret
 	
-++	res     0,(iy+$07)
+++	res     0,(iy+vars.timeLightningFlags)
 	ld      a,$ff
 	ret
 	
@@ -4670,7 +4994,7 @@ _2039:
 _203f:
 	ld      a,$07
 	rst     $28			;`playSFX`
-	set     0,(iy+$07)
+	set     0,(iy+vars.timeLightningFlags)
 	ret
 
 ;____________________________________________________________________________[$2047]___
@@ -4685,12 +5009,14 @@ _2067:
 	dec	a
 	ld      ($d287),a
 	jp      nz,_1de2
-	bit     1,(iy+$05)		;demo mode?
+	
+	;demo mode?
+	bit     1,(iy+vars.scrollRingFlags)
 	jr      nz,_20b8
-	bit     4,(iy+$0c)
+	bit     4,(iy+vars.origFlags6)
 	jr      z,+
-	set     4,(iy+$06)
-+	bit     7,(iy+$06)
+	set     4,(iy+vars.flags6)
++	bit     7,(iy+vars.flags6)
 	call    nz,_20a4
 	ld      a,(RAM_LIVES)
 	and     a
@@ -4698,7 +5024,7 @@ _2067:
 	ret     nz
 	call    _LABEL_A40_121
 	call    hideSprites
-	res     5,(iy+$00)
+	res     5,(iy+vars.flags0)
 	call    _1401
 	ld      a,$00
 	ret     nc
@@ -4714,10 +5040,10 @@ _20a4:
 	and     a
 	jr      nz,_20a4
 	di      
-	res     7,(iy+$06)		;underwater?
+	res     7,(iy+vars.flags6)	;underwater?
 	xor     a
 	ld      (RAM_RASTERSPLIT_LINE),a
-	ld      ($d2db),a
+	ld      (RAM_WATERLINE),a
 	ei      
 	ret
 
@@ -4744,7 +5070,7 @@ loadLevel:
 	and  %10111111			;remove bit 6
 	ld   (RAM_VDPREGISTER_1), a
 	
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
 	;copy the level header from ROM to RAM starting at $D354
@@ -4757,10 +5083,11 @@ loadLevel:
 	ld   hl, $D354			;position HL at the start of the header
 	push hl				;remember the start point
 	
-	ld   a, (iy+$05)		;read the current Scrolling / Ring HUD value
+	;read the current Scrolling / Ring HUD value
+	ld   a, (iy+vars.scrollRingFlags)
 	ld   (iy+$0b), a		;take a copy
-	ld   a, (iy+$06)		;read the current underwater flag value
-	ld   (iy+$0c), a		;take a copy
+	ld   a, (iy+vars.flags6)	;read the current underwater flag value
+	ld   (iy+vars.origFlags6), a	;take a copy
 	ld   a, $FF
 	ld   ($D2AB), a
 	
@@ -4768,8 +5095,8 @@ loadLevel:
 	ld   l, a			;set HL to #$0000
 	ld   h, a
 	;clear some variables
-	ld   ($D251), a
-	ld   ($D252), a
+	ld   (RAM_SCROLL_HORIZONTAL), a
+	ld   (RAM_SCROLL_VERTICAL), a
 	ld   ($D27B), hl
 	ld   ($D27D), hl
 	ld   ($D2B7), hl
@@ -4805,7 +5132,7 @@ loadLevel:
 	jr   z, ++			;if so, skip this next part
 
 +	ld   a, $FF
-	ld   ($D2DB), a
+	ld   (RAM_WATERLINE), a
 	ld   hl, $0020
 
 ++	ld   ($D2DC), hl		;either $0800 or $0020
@@ -4813,10 +5140,10 @@ loadLevel:
 	ld   (RAM_TIME), hl
 	ld   hl, $23FF
 	
-	bit  4, (iy+$06)
+	bit  4, (iy+vars.flags6)
 	jr   z, +
 	
-	bit  0, (iy+$05)
+	bit  0, (iy+vars.scrollRingFlags)
 	jr   z, ++
 	
 	ld   hl, _2402
@@ -4826,8 +5153,10 @@ loadLevel:
 	
 	;is this a special stage? (level number 28+)
 	ld   a, (RAM_CURRENT_LEVEL)
-	sub  $1C
-	jr   c, +
+	sub  28
+	jr   c, +			;skip ahead if level < 28
+	
+	;triple the level number for a lookup table of 3-bytes each entry
 	ld   c, a
 	add  a, a
 	add  a, c
@@ -4836,6 +5165,8 @@ loadLevel:
 	ld   hl, _2405
 	add  hl, de
 	
+	;copy 3 bytes from HL (`_2402` for regular levels, `_2405`+ for special stages)
+	 ;to $D2CE/D/F
 +	ld   de, $D2CE
 	ld   bc, $0003
 	ldir
@@ -4927,9 +5258,9 @@ loadLevel:
 	;is it greater than or equal to 3?
 	sub     3			
 	jr      nc,+			
-	xor     a			
-	
+	xor     a
 +	ld      ($d257),a
+	
 	;using the number as the hi-byte, divide by 8 into DE, e.g.
 	 ;4	A: 00000100 E: 00000000 (1024) -> A: 00000000 E: 10000000 (128)
 	 ;5	A: 00000101 E: 00000000 (1280) -> A: 00000000 E: 10100000 (160)
@@ -5116,7 +5447,7 @@ loadLevel:
 	ld      a,$03
 	call    loadPaletteOnInterrupt
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	call    _0966
@@ -5153,7 +5484,8 @@ loadLevel:
 	add     a,a			;double the cycle palette index
 	ld      c,a			;put it into a 16-bit number
 	ld      b,$00
-	ld      hl,$628c		;offset into the cycle palette pointers table
+	;offset into the cycle palette pointers table
+	ld      hl,S1_PaletteCycle_Pointers
 	add     hl,bc			
 	
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
@@ -5171,7 +5503,7 @@ loadLevel:
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      ($d2a8),hl
+	ld      (RAM_CYCLEPALETTE_POINTER),hl
 	
 	;swap back DE & HL
 	 ;HL will be the current position in the level header
@@ -5201,25 +5533,25 @@ loadLevel:
 	
 	;SR: Scrolling / Ring HUD flags
 	ld      c,(hl)
-	ld      a,(iy+$05)		
+	ld      a,(iy+vars.scrollRingFlags)		
 	and     %00000010
 	or      c
-	ld      (iy+$05),a
+	ld      (iy+vars.scrollRingFlags),a
 	
 	;UW: Underwater flag
 	inc     hl
 	ld      a,(hl)
-	ld      (iy+$06),a
+	ld      (iy+vars.flags6),a
 	
 	;TL: Time HUD / Lightning effect flags
 	inc     hl
 	ld      a,(hl)
-	ld      (iy+$07),a
+	ld      (iy+vars.timeLightningFlags),a
 	
 	;00: Unknown byte
 	inc     hl
 	ld      a,(hl)
-	ld      (iy+$08),a
+	ld      (iy+vars.unknown0),a
 	
 	;MU: Music
 	inc     hl
@@ -5248,9 +5580,9 @@ loadLevel:
 	inc     hl
 	djnz    -
 	
-	bit     5,(iy+$0c)
+	bit     5,(iy+vars.origFlags6)
 	ret     z
-	set     5,(iy+$06)
+	set     5,(iy+vars.flags6)
 	
 	ret
 	
@@ -5264,7 +5596,7 @@ _232b:
 	ld      ix,$d3fc		;current level's object list
 	ld      de,$001a
 	ld      c,$00
-	ld      hl,($d216)		;per-level X/Y position
+	ld      hl,($d216)
 	ld      a,$00
 	call    _235e
 	
@@ -5295,7 +5627,7 @@ _232b:
 	djnz    -
 	ret
 
-;__________________________________________________________________________[$235E]_____
+;----------------------------------------------------------------------------[$235E]---
 
 ;add object
 _235e:
@@ -5352,7 +5684,7 @@ _235e:
 
 ;______________________________________________________________________________________
 
-;cycle palette?
+;animate ring
 _239c:
 ;ld      ($d25f) = $0060	
 ;ld      ($d261) = $0088	
@@ -5370,7 +5702,7 @@ _239c:
 	ld      h,a
 	ld      de,$7cf0
 	add     hl,de
-	ld      ($d293),hl
+	ld      (RAM_RING_CURRENT_FRAME),hl
 	ld      hl,$d298
 	ld      a,(hl)
 	inc     a
@@ -5395,25 +5727,25 @@ _23c9:
 	ld      ($d2a4),a
 	ret     nz
 	
-	ld      a,($d2a6)
+	ld      a,(RAM_CYCLEPALETTE_INDEX)
 	ld      l,a
 	ld      h,$00
 	add     hl,hl
 	add     hl,hl
 	add     hl,hl
 	add     hl,hl
-	ld      de,($d2a8)
+	ld      de,(RAM_CYCLEPALETTE_POINTER)
 	add     hl,de
 	ld      a,$01
 	call    loadPaletteOnInterrupt
-	ld      hl,($d2a6)
+	ld      hl,(RAM_CYCLEPALETTE_INDEX)
 	ld      a,l
 	inc     a
 	cp      h
 	jr      c,+
 	xor     a
 +	ld      l,a
-	ld      ($d2a6),hl
+	ld      (RAM_CYCLEPALETTE_INDEX),hl
 	ld      a,($d2a5)
 	ld      ($d2a4),a
 	ret
@@ -5425,12 +5757,36 @@ _23ff:
 _2402:
 .db $01, $30, $00
 _2405:
-.db $01, $00, $00, $01, $00, $00, $00, $45, $00, $00, $50, $00, $00, $45, $00, $00
-.db $50, $00, $00, $50, $00, $00, $30, $00, $01, $00, $00, $01, $00, $01, $02, $00
-.db $01, $02, $FF, $02, $03, $01, $01, $03, $FE, $02, $04, $01, $01, $04, $FD, $03
-.db $05, $02, $01, $06, $FB, $03, $06, $03, $00, $07, $FA, $03, $06, $05, $FF, $08
-.db $F9, $03, $07, $06, $FE, $09, $F7, $03, $07, $08, $FD, $0A, $F6, $02, $07, $09
-.db $FB, $0B, $F4, $01, $06, $0B, $FA, $0B, $F3, $00, $06, $0D, $F8, $0B, $F2, $FF
+.db $01, $00, $00			;Special Stage 1?
+.db $01, $00, $00			;Special Stage 2?
+.db $00, $45, $00			;Special Stage 3?
+.db $00, $50, $00			;Special Stage 4?
+.db $00, $45, $00			;Special Stage 5?
+.db $00, $50, $00			;Special Stage 6?
+.db $00, $50, $00			;Special Stage 7?
+.db $00, $30, $00			;Special Stage 8?
+.db $01, $00, $00
+.db $01, $00, $01
+.db $02, $00, $01
+.db $02, $FF, $02
+.db $03, $01, $01
+.db $03, $FE, $02
+.db $04, $01, $01
+.db $04, $FD, $03
+.db $05, $02, $01
+.db $06, $FB, $03
+.db $06, $03, $00
+.db $07, $FA, $03
+.db $06, $05, $FF
+.db $08, $F9, $03
+.db $07, $06, $FE
+.db $09, $F7, $03
+.db $07, $08, $FD
+.db $0A, $F6, $02
+.db $07, $09, $FB
+.db $0B, $F4, $01
+.db $06, $0B, $FA
+.db $0B, $F3, $00, $06, $0D, $F8, $0B, $F2, $FF
 .db $05, $0E, $F6, $0B, $F1, $FD, $03, $10, $F4, $0B, $F0, $FB, $02, $12, $F2, $0A
 .db $F0, $F9, $00, $13, $F0, $09, $F0, $F7, $FE, $14, $EE, $08, $F0, $F4, $FC, $15
 .db $EC, $07, $F0, $F2, $F9, $15, $EA, $05, $F1, $EF, $F6, $16, $E9, $02, $F2, $ED
@@ -5453,18 +5809,18 @@ _2405:
 
 ;____________________________________________________________________________[$258B]___
 
-;skip null level / do end sequence?
+;end sequence screens?
 _LABEL_258B_133:
 	ld   a, (RAM_VDPREGISTER_1)
 	and  %10111111
 	ld   (RAM_VDPREGISTER_1), a
 	
-	res  0, (iy+$00)
+	res  0, (iy+vars.flags0)
 	call wait
 	
 	xor  a
-	ld   ($D251), a			;horizontal scroll
-	ld   ($D252), a			;vertical scroll
+	ld   (RAM_SCROLL_HORIZONTAL), a
+	ld   (RAM_SCROLL_VERTICAL), a		;vertical scroll
 	
 	ld   hl, $2828
 	ld   a, $03
@@ -5486,14 +5842,14 @@ _LABEL_258B_133:
 	ld      bc,$0179
 	ld      de,$3800
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	ld      a,1
@@ -5506,7 +5862,7 @@ _LABEL_258B_133:
 	
 -	push    bc
 	
-	res     0,(iy+$00)
+	res     0,(iy+vars.flags0)
 	call    wait
 	
 	ld      hl,$d000
@@ -5525,11 +5881,11 @@ _LABEL_258B_133:
 	ld      b,$3d
 	
 --	push    bc
-	ld      c,(iy+$0a)
-	res     0,(iy+$00)
+	ld      c,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),c
-	res     0,(iy+$00)
+	ld      (iy+vars.spriteCount),c
+	res     0,(iy+vars.flags0)
 	call    wait
 	ld      de,$d000
 	ld      ($d23c),de
@@ -5575,7 +5931,7 @@ _LABEL_258B_133:
 	djnz    --
 	ld      hl,_2047
 	call    _b60
-	ld      (iy+$0a),$00
+	ld      (iy+vars.spriteCount),$00
 	
 	ld      a,5
 	ld      (SMS_PAGE_1),a
@@ -5586,7 +5942,7 @@ _LABEL_258B_133:
 	ld      bc,$0145
 	ld      de,$3800
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	ld      hl,_2828
@@ -5594,7 +5950,8 @@ _LABEL_258B_133:
 	
 +	ld      bc,$00f0
 	call    _2745
-	call    _155e
+	call    _155e			;Act Complete screen?
+	
 	ld      bc,$00f0
 	call    _2745
 	call    _LABEL_A40_121
@@ -5622,7 +5979,7 @@ _LABEL_258B_133:
 	ld      bc,$0189
 	ld      de,$3800
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
 	xor     a
@@ -5659,7 +6016,7 @@ _LABEL_258B_133:
 	rst     $18			;`playMusic`
 	
 	xor     a
-	ld      ($d20e),a
+	ld      (RAM_TEMP1),a
 	ld      hl,S1_Credits_Text
 	call    _2795
 	
@@ -5674,9 +6031,11 @@ _2718:
 	push    de
 	push    bc
 --	push    bc
-	res     0,(iy+$00)
+	
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),$00
+	
+	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
 	ld      ($d23c),hl
 	ld      hl,$d322
@@ -5686,11 +6045,13 @@ _2718:
 	call    _275a
 	pop     bc
 	djnz    -
+	
 	pop     bc
 	dec     bc
 	ld      a,b
 	or      c
 	jr      nz,--
+	
 	pop     bc
 	pop     de
 	pop     hl
@@ -5701,15 +6062,19 @@ _2718:
 
 _2745:
 	push    bc
-	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+	ld      a,(iy+vars.spriteCount)
+	
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),a
+	
+	ld      (iy+vars.spriteCount),a
+	
 	pop     bc
 	dec     bc
 	ld      a,b
 	or      c
 	jr      nz,_2745
+	
 	ret
 
 ;____________________________________________________________________________[$275A]___
@@ -5764,7 +6129,7 @@ _275a:
 	ld      l,a
 	ld      h,$00
 	ld      d,h
-	call    _LABEL_350F_95
+	call    processSpriteLayout
 	pop     hl
 	ret
 
@@ -5994,7 +6359,7 @@ S1_Credits_Palette:			;[$2AD6]
 
 ;____________________________________________________________________________[$2AF6]___
 
-_2af6:					;object table
+S1_Object_Pointers:
 .dw _48c8				;#00: Sonic
 .dw _5b09				;#01: monitor - ring
 .dw _5bd9				;#02: monitor - speed shoes
@@ -6135,61 +6500,75 @@ _2e55:
 .db $A0, $A2, $A4, $00, $FF
 
 ;____________________________________________________________________________[$2E5A]___
+;update HUD?
 
 _2e5a:
-	res     7,(iy+$07)
+	;do not update the Sonic sprite frame
+	res     7,(iy+vars.timeLightningFlags)
 	
 	ld      hl,_2e55
 	ld      de,$d2be
 	ld      bc,$0005
-	ldir    
+	ldir
 	
 	ld      a,(RAM_LIVES)
-	cp      $09
-	jr      c,+
-	ld      a,$09
-+	add     a,a
-	add     a,$80
+	cp      9			;9 lives?
+	jr      c,+			;if more than 9 lives,
+	ld      a,9			;we will display as 9 lives
+	
++	add     a,a			
+	add     a,$80			
 	ld      ($d2c1),a
+	
 	ld      c,$10
-	ld      b,$ac
+	ld      b,172			;Y-position of lives display
 	ld      hl,($d23c)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
 	ld      ($d23c),hl
-	bit     2,(iy+$05)
+	
+	;show rings?
+	bit     2,(iy+vars.scrollRingFlags)
 	call    nz,_2ee6
-	bit     5,(iy+$07)
+	
+	;show time?
+	bit     5,(iy+vars.timeLightningFlags)
 	call    nz,_2f1f
+	
 	ld      de,$0060
 	ld      hl,$d267
 	ld      a,(hl)
 	inc     hl
 	or      (hl)
 	call    z,_311a
+	
 	inc     hl
 	ld      de,$0088
 	ld      a,(hl)
 	inc     hl
 	or      (hl)
 	call    z,_311a
+	
 	inc     hl
 	ld      de,$0060
 	ld      a,(hl)
 	inc     hl
 	or      (hl)
 	call    z,_311a
+	
 	inc     hl
 	ld      de,$0070
-	bit     6,(iy+$05)
+	bit     6,(iy+vars.scrollRingFlags)
 	jr      z,+
 	ld      de,$0080
 +	ld      a,(hl)
 	inc     hl
 	or      (hl)
 	call    z,_311a
-	bit     0,(iy+$05)
+	
+	bit     0,(iy+vars.scrollRingFlags)
 	call    z,_2f66
+	
 	ld      hl,$0000
 	ld      ($d267),hl
 	ld      ($d269),hl
@@ -6263,10 +6642,12 @@ _2f1f:
 	ld      c,$18
 	ld      b,$10
 	ld      a,(RAM_CURRENT_LEVEL)
-	cp      $1c
+	cp      28
 	jr      c,+
+	
 	ld      c,$70
 	ld      b,$38
+	
 +	ld      hl,($d23c)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
@@ -6276,39 +6657,46 @@ _2f1f:
 ;____________________________________________________________________________[$2F66]___
 
 _2f66:
-	bit     6,(iy+$07)
+	bit     6,(iy+vars.timeLightningFlags)
 	ret     nz
+	
 	ld      hl,($d27b)
 	ld      a,l
 	or      h
 	call    nz,_3140
+	
 	ld      hl,($d27d)
 	ld      a,l
 	or      h
 	call    nz,_3122
+	
 	ld      hl,($d267)
 	ld      de,($d25f)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
+	
 	ld      ($d25f),de
 	ld      hl,($d269)
 	ld      de,($d261)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
+	
 	ld      ($d261),de
 	ld      hl,($d26b)
 	ld      de,($d263)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
+	
 	ld      ($d263),de
 	ld      hl,($d26d)
 	ld      de,($d265)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
+	
 	ld      ($d265),de
 	ld      bc,($d25f)
 	ld      de,($d3fe)
@@ -6317,17 +6705,19 @@ _2f66:
 	and     a
 	sbc     hl,de
 	jr      c,+++
+	
 	ld      a,h
 	and     a
 	jr      nz,+
+	
 	ld      a,l
 	cp      $09
 	jr      c,++
 	
 +	ld      hl,$0008
-++	bit     3,(iy+$05)
+++	bit     3,(iy+vars.scrollRingFlags)
 	jr      nz,_f
-	bit     5,(iy+$05)
+	bit     5,(iy+vars.scrollRingFlags)
 	jr      z,+
 	ld      hl,$0001
 +	ex      de,hl
@@ -6358,9 +6748,9 @@ _2f66:
 	cp      $09
 	jr      c,++	
 +	ld      hl,$0008
-++	bit     3,(iy+$05)
+++	bit     3,(iy+vars.scrollRingFlags)
 	jr      nz,_f
-	bit     5,(iy+$05)
+	bit     5,(iy+vars.scrollRingFlags)
 	jr      z,+
 	ld      hl,$0001
 +	ld      de,($d25a)
@@ -6381,17 +6771,17 @@ __	ld      hl,($d25a)
 	sbc     hl,de
 	jr      c,++
 	ld      ($d25a),de
-++	bit     6,(iy+$05)
+++	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_3164
 	ld      bc,($d263)
 	ld      de,($d401)
 	ld      hl,($d25d)
-	bit     6,(iy+$05)
+	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_31cf
-	bit     7,(iy+$05)
+	bit     7,(iy+vars.scrollRingFlags)
 	call    nz,_31d3
 	add     hl,bc
-	bit     7,(iy+$05)
+	bit     7,(iy+vars.scrollRingFlags)
 	call    z,_31db
 	and     a
 	sbc     hl,de
@@ -6400,7 +6790,7 @@ __	ld      hl,($d25a)
 	ld      a,h
 	and     a
 	jr      nz,+
-	bit     6,(iy+$05)
+	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_311f
 	ld      a,l
 	cp      c
@@ -6408,11 +6798,11 @@ __	ld      hl,($d25a)
 +	dec     c
 	ld      l,c
 	ld      h,$00
-++	bit     7,(iy+$05)
+++	bit     7,(iy+vars.scrollRingFlags)
 	jr      z,+
 	srl     h
 	rr      l
-	bit     1,(iy+$08)
+	bit     1,(iy+vars.unknown0)
 	jr      nz,+
 	ld      hl,$0000
 +	ex      de,hl
@@ -6426,7 +6816,7 @@ __	ld      hl,($d25a)
 +++	ld      bc,($d265)
 	ld      hl,($d25d)
 	add     hl,bc
-	bit     7,(iy+$05)
+	bit     7,(iy+vars.scrollRingFlags)
 	call    z,_31db
 	and     a
 	sbc     hl,de
@@ -6442,7 +6832,7 @@ __	ld      hl,($d25a)
 	ld      a,h
 	and     a
 	jr      nz,+
-	bit     6,(iy+$05)
+	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_311f
 	ld      a,l
 	cp      c
@@ -6450,7 +6840,7 @@ __	ld      hl,($d25a)
 +	dec     c
 	ld      l,c
 	ld      h,$00
-++	bit     4,(iy+$05)
+++	bit     4,(iy+vars.scrollRingFlags)
 	jr      nz,_f
 	ld      de,($d25d)
 	add     hl,de
@@ -6603,7 +6993,7 @@ _31d3:
 ;____________________________________________________________________________[$31DB]___
 
 _31db:
-	bit     6,(iy+$05)
+	bit     6,(iy+vars.scrollRingFlags)
 	ret     nz
 	ld      bc,($d2b7)
 	add     hl,bc
@@ -6648,7 +7038,7 @@ _31e6:
 	inc     hl
 	ld      b,(hl)
 	inc     hl
-	ld      de,$d20e
+	ld      de,RAM_TEMP1
 	ldi     
 	ldi     
 	ldi     
@@ -6666,14 +7056,14 @@ _31e6:
 	ld      d,(ix+$03)
 	sbc     hl,de
 	jp      nc,++
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	ld      bc,($d25a)
 	add     hl,bc
 	xor     a
 	sbc     hl,de
 	jp      c,++
 	ld      hl,($d25d)
-	ld      bc,($d210)
+	ld      bc,(RAM_TEMP3)
 	sbc     hl,bc
 	jr      nc,+
 	ld      l,a
@@ -6683,7 +7073,7 @@ _31e6:
 	ld      d,(ix+$06)
 	sbc     hl,de
 	jp      nc,++
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      bc,($d25d)
 	add     hl,bc
 	xor     a
@@ -6721,69 +7111,82 @@ _31e6:
 ;____________________________________________________________________________[$392B]___
 	
 _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
-	 ;or 16 numbers have been read
-	ld      hl,$d37e
-	ld      b,$1f
+	 ;or 31 numbers have been read
+	ld      hl,$D37E
+	ld      b,31
 	
 -	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
 	
-	;is it greater than zero?
+	;is the value greater than zero?
 	ld      a,e
 	or      d
-	call    nz,+
+	call    nz,doObjectCode
 	
-	;keep reading memory until either something non-zero is found or we hit $D39D
+	;keep reading memory until either something non-zero is found or we hit $D3BC
 	djnz    -
 	
-	;at this point, $D37E-$D39E is known to be empty
+	;at this point, $D37E-$D3BD is known to be empty
 	
-	ld      a,(iy+$0a)		;number of sprites?
-	ld      hl,($d23c)
+	ld      a,(iy+vars.spriteCount)
+	ld      hl,($d23c)		;pointer to sprite table to use?
+	
 	push    af
 	push    hl
 	
-	ld      hl,$d024
+	ld      hl,$d024		;Sonic's sprite table entry
 	ld      ($d23c),hl
 	
 	ld      de,$d3fc		;current level's object list
-	call    +
+	call    doObjectCode
 	
 	pop     hl
 	pop     af
-	ld      ($d23c),hl
-	ld      (iy+$0a),a
-	ret
 	
-+	ld      a,(de)			;get object from the list
-	cp      $ff			;ignore object #$FF
+	ld      ($d23c),hl
+	ld      (iy+vars.spriteCount),a
+	ret
+
+;----------------------------------------------------------------------------[$32C8]---
+
+doObjectCode:
+	ld      a,(de)			;get object from the list
+	cp      $FF			;ignore object #$FF
 	ret     z
 	
 	push    bc
 	push    hl
 	
+	;transfer DE (address of the object) to IX
 	push    de
 	pop     ix
 	
+	;double the index number and put it into DE
 	add     a,a
 	ld      e,a
 	ld      d,$00
 	
-	ld      hl,_2af6		;object look up table
+	;offset into the object pointers table
+	ld      hl,S1_Object_Pointers
 	add     hl,de
 	
+	;get the object's pointer address into HL
 	ld      a,(hl)
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
 	
+	;return function?
 	ld      de,_32e2
 	push    de
 	
-	jp      (hl)			;run object code?
+	;run the object's code
+	jp      (hl)
 	
+;----------------------------------------------------------------------------[$32E2]---
+
 _32e2:
 	ld e, (ix+$07)
 	ld d, (ix+$08)
@@ -6821,7 +7224,7 @@ _32e2:
 
 +	ld c, $00
 	ld hl, $4020
-++	ld ($D210), bc
+++	ld (RAM_TEMP3), bc
 	res     6,(ix+$18)
 	push    de
 	push    hl
@@ -6841,12 +7244,12 @@ _32e2:
 	add     hl,de
 	ld      a,(hl)
 	and     $3f
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	pop     hl
 	pop     de
 	and     $3f
 	jp      z,+++
-	ld      a,($d214)
+	ld      a,(RAM_TEMP6)
 	add     a,a
 	ld      c,a
 	ld      b,$00
@@ -6870,7 +7273,7 @@ _32e2:
 	ld      d,$ff
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      bc,($d210)
+	ld      bc,(RAM_TEMP3)
 	add     hl,bc
 	bit     7,(ix+$09)
 	jr      nz,+
@@ -6897,7 +7300,7 @@ _32e2:
 	sbc     hl,bc
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      a,($d214)
+	ld      a,(RAM_TEMP6)
 	ld      e,a
 	ld      d,$00
 	ld      hl,$3fbf			;data?
@@ -6933,7 +7336,7 @@ _32e2:
 	srl     c
 	ld      e,$00
 	ld      hl,$41ec		;data?
-++	ld      ($d210),de
+++	ld      (RAM_TEMP3),de
 	res     7,(ix+$18)
 	push    bc
 	push    hl
@@ -6953,12 +7356,12 @@ _32e2:
 	add     hl,de
 	ld      a,(hl)
 	and     $3f
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	pop     hl
 	pop     bc
 	and     $3f
-	jp      z,+++
-	ld      a,($d214)
+	jp      z,_34e6
+	ld      a,(RAM_TEMP6)
 	add     a,a
 	ld      e,a
 	ld      d,$00
@@ -6975,14 +7378,14 @@ _32e2:
 	add     hl,bc
 	ld      a,(hl)
 	cp      $80
-	jp      z,+++
+	jp      z,_34e6
 	ld      c,a
 	and     a
 	jp      p,+
 	ld      b,$ff
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      de,($d210)
+	ld      de,(RAM_TEMP3)
 	add     hl,de
 	bit     7,(ix+$0c)
 	jr      nz,+
@@ -6991,14 +7394,14 @@ _32e2:
 	ld      a,l
 	and     $1f
 	exx     
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      h,$00
 	ld      de,$3ff0		;data?
 	add     hl,de
 	add     a,(hl)
 	exx     
 	cp      c
-	jr      c,+++
+	jr      c,_34e6
 	set     7,(ix+$18)
 	jp      ++
 	
@@ -7007,14 +7410,14 @@ _32e2:
 	ld      a,l
 	and     $1f
 	exx     
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      h,$00
 	ld      de,$3ff0		;data?
 	add     hl,de
 	add     a,(hl)
 	exx     
 	cp      c
-	jr      nc,+++
+	jr      nc,_34e6
 ++	ld      a,l
 	and     $e0
 	ld      l,a
@@ -7023,7 +7426,7 @@ _32e2:
 	sbc     hl,de
 	ld      (ix+$05),l
 	ld      (ix+$06),h
-	ld      a,($d214)
+	ld      a,(RAM_TEMP6)
 	ld      e,a
 	ld      d,$00
 	ld      hl,$3f90		;data?
@@ -7046,7 +7449,7 @@ _32e2:
 	ld      (ix+$08),h
 	ld      (ix+$09),a
 _34e6:
-+++	ld      l,(ix+$05)
+	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,($d25d)
 	and     a
@@ -7061,79 +7464,122 @@ _34e6:
 	ld      b,(ix+$10)
 	ld      a,c
 	or      b
-	call    nz,_LABEL_350F_95
+	call    nz,processSpriteLayout
+	
 	pop     hl
 	pop     bc
 	ret
 
 ;____________________________________________________________________________[$350F]___
+;process sprite layout data?
 
-_LABEL_350F_95:
-	ld   ($D214), hl
+processSpriteLayout:
+;HL : X-position
+;D  : ?? (some kind of control flag)
+; E : Y-position
+;BC : address to a sprite layout
+
+	;store the X-position of the sprite for aligning the rows
+	ld   (RAM_TEMP6), hl
+	
+	;copy BC (address of a sprite layout) to its shadow value BC'
 	push bc
 	exx
 	pop  bc
 	exx
+	
+	;--- rows ---------------------------------------------------------------------
+	;there will be 3 rows of double-high (16px) sprites
 	ld   b, $00
 	ld   c, $03
---	exx
-	ld   hl, ($D214)
-	ld   a, (bc)
-	exx
-	cp   $FF
-	ret  z
-	ld   a, d
-	cp   $FF
-	jr   nz, +
-	ld   a, e
-	cp   $F0
-	jr   c, +++
+	
+--	exx				;switch to BC/DE/HL shadow values
+	
+	ld   hl, (RAM_TEMP6)		;get the starting X-position
+					 ;(original HL parameter)
+	
+	;if a row begins with $FF, the data ends early
+	 ;begin a row with $FE to provide a space without ending the data early
+	
+	ld   a, (bc)			;get a byte from the sprite layout data
+	exx				;switch to original BC/DE/HL values
+	cp   $FF			;is the byte $FF?
+	ret  z				;if so leave
+	
+	;DE is the Y-position, but if D is $FF then something else unknown happens
+	
+	ld   a, d			;check the D parameter
+	cp   $FF			;if D is not $FF
+	jr   nz, +			;then skip ahead a little
+	
+	ld   a, e			;check the E parameter
+	cp   $F0			;if it's less than $F0,
+	jr   c, +++			;then skip ahead
 	jp   ++
 	
-+	and  a
++	and  a				;is the sprite byte 0?
 	jr   nz, +++
-	ld   a, e
-	cp   $C0
-	ret  nc
-++	ld   b, $06
 	
--	exx
-	ld   a, h
-	and  a
-	jr   nz, +
-	ld   a, (bc)
-	cp   $FE
-	jr   nc, +
-	ld   de, ($D23C)
-	ld   a, l
-	ld   (de), a
-	inc  e
-	exx
+	;exit if the row Y-position is below the screen
 	ld   a, e
+	cp   192
+	ret  nc
+	
+	;--- columns ------------------------------------------------------------------
+++	;begin 6 columns of single-width (8px) sprites
+	ld   b, $06
+	
+-	exx				;switch to BC/DE/HL shadow values
+	
+	;has the X-position gone over 255?
+	ld   a, h			;check the H parameter
+	and  a				;is it >0? i.e. HL = $0100
+	jr   nz, +			;if so skip
+	
+	ld   a, (bc)			;check the current byte of the layout data
+	cp   $FE			;is it >= than $FE?
+	jr   nc, +			;if so, skip
+	
+	ld   de, ($D23C)		;get the address of the sprite table entry
+	ld   a, l			;take the current X-position
+	ld   (de), a			;and set the sprite's X-position
+	inc  e				
 	exx
-	ld   (de), a
+	ld   a, e			;get the current Y-position
+	exx
+	ld   (de), a			;set the sprite's Y-position 
 	inc  e
-	ld   a, (bc)
-	ld   (de), a
+	ld   a, (bc)			;read the layout byte
+	ld   (de), a			;set the sprite index number
+	
 	inc  e
-	ld   ($D23C), de
-	inc  (iy+10)
+	ld   ($D23C), de		;move to the next sprite table entry
+	inc  (vars.spriteCount)		;increase the number of sprites to draw
+	
+	;move across 8 pixels
 +	inc  bc
 	ld   de, $0008
 	add  hl, de
+	
+	;return B to the column count and decrement
 	exx
 	djnz -
 	
+	;move down 16-pixels
 	ld   a, c
 	ex   de, hl
-	ld   c, $10
+	ld   c, 16
 	add  hl, bc
 	ex   de, hl
+	
+	;any rows remaining?
 	ld   c, a
 	dec  c
 	jr   nz, --
 	ret
-
+	
+	;------------------------------------------------------------------------------
+	;need to work this out (when D is $FF)
 +++	exx
 	ex   de, hl
 	ld   hl, $0006
@@ -7150,20 +7596,21 @@ _LABEL_350F_95:
 	ld   c, a
 	dec  c
 	jr   nz, --
+	
 	ret
 
 ;____________________________________________________________________________[$3581]___
 
 _3581:
-	ld      hl,($d210)
-	ld      bc,($d214)
+	ld      hl,(RAM_TEMP3)
+	ld      bc,(RAM_TEMP6)
 	add     hl,bc
 	ld      bc,($d25d)
 	and     a
 	sbc     hl,bc
 	ex      de,hl
-	ld      hl,($d20e)
-	ld      bc,($d212)
+	ld      hl,(RAM_TEMP1)
+	ld      bc,(RAM_TEMP4)
 	add     hl,bc
 	ld      bc,($d25a)
 	and     a
@@ -7197,24 +7644,32 @@ _3581:
 	ld      (bc),a
 	inc     c
 	ld      ($d23c),bc
-	inc     (iy+$0a)
+	inc     (iy+vars.spriteCount)
 	ret
 
 ;____________________________________________________________________________[$35CC]___
 
 _LABEL_35CC_117:
+;e.g.
+; C : $10
+;B  : 172
+;HL : ($d23c)
+;DE : $D2BE	: $A0, $A2, $A4, ($80 + RAM_LIVES * 2), $FF
 	ld   a, (de)
 	cp   $FF
 	ret  z
+	
 	cp   $FE
 	jr   z, +
+	
 	ld   (hl), c
 	inc  l
 	ld   (hl), b
 	inc  l
 	ld   (hl), a
 	inc  l
-	inc  (iy+10)
+	inc  (iy+vars.spriteCount)
+	
 +	inc  de
 	ld   a, c
 	add  a, $08
@@ -7224,9 +7679,9 @@ _LABEL_35CC_117:
 ;____________________________________________________________________________[$35E5]___
 
 _35e5:
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz
-	bit     0,(iy+$08)
+	bit     0,(iy+vars.unknown0)
 	jp      nz,_36be
 	ld      a,($d414)
 	rrca    
@@ -7236,13 +7691,13 @@ _35e5:
 
 ;----------------------------------------------------------------------------[$35FD]---
 _35fd:
-	bit     0,(iy+$09)
+	bit     0,(iy+vars.flags9)
 	ret     nz
-	bit     6,(iy+$06)
+	bit     6,(iy+vars.flags6)
 	ret     nz
-	bit     0,(iy+$08)
+	bit     0,(iy+vars.unknown0)
 	ret     nz
-	bit     5,(iy+$06)
+	bit     5,(iy+vars.flags6)
 	jr      nz,_367e
 	ld      a,(RAM_RINGS)
 	and     a
@@ -7250,7 +7705,7 @@ _35fd:
 
 ;----------------------------------------------------------------------------[$3618]---
 _3618:
-	set     0,(iy+$05)
+	set     0,(iy+vars.scrollRingFlags)
 	ld      hl,$d414
 	set     7,(hl)
 	ld      hl,$fffa
@@ -7259,10 +7714,10 @@ _3618:
 	ld      ($d407),hl
 	ld      a,$60
 	ld      ($d287),a
-	res     6,(iy+$06)
-	res     5,(iy+$06)
-	res     6,(iy+$06)
-	res     0,(iy+$08)
+	res     6,(iy+vars.flags6)
+	res     5,(iy+vars.flags6)
+	res     6,(iy+vars.flags6)
+	res     0,(iy+vars.unknown0)
 	
 	ld      a,index_music_death
 	rst     $18			;`playMusic`
@@ -7313,9 +7768,9 @@ _367e:
 	ld      de,$fffe
 ++	ld      ($d403),a
 	ld      ($d404),de
-	res     5,(iy+$06)
-	set     6,(iy+$06)
-	ld      (iy+$03),$ff
+	res     5,(iy+vars.flags6)
+	set     6,(iy+vars.flags6)
+	ld      (iy+vars.joypad),$ff
 	ld      a,$11
 	rst     $28			;`playSFX`
 	ret
@@ -7323,7 +7778,7 @@ _367e:
 ;----------------------------------------------------------------------------[$36BE]---
 _36be:
 	ld      (ix+$00),$0a
-	ld      a,($d20e)
+	ld      a,(RAM_TEMP1)
 	ld      e,a
 	ld      d,$00
 	ld      l,(ix+$02)
@@ -7331,7 +7786,7 @@ _36be:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      a,($d20f)
+	ld      a,(RAM_TEMP2)
 	ld      e,a
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
@@ -7496,26 +7951,39 @@ _36f9:
 	ret
 
 ;____________________________________________________________________________[$37E0]___
+;copy the current Sonic animation frame into the sprite data
 
-_LABEL_37E0_41:
-	ld   de, ($D28F)
-	ld   hl, ($D291)
+updateSonicSpriteFrame:
+	ld   de, (RAM_SONIC_CURRENT_FRAME)
+	ld   hl, (RAM_SONIC_PREVIOUS_FRAME)
+	
 	and  a
 	sbc  hl, de
 	ret  z
-	ld   hl, $3680
-	ex   de, hl
-	bit  0, (iy+6)
-	jp   nz, +
-	ld   a, e
-	out  (SMS_VDP_CONTROL), a
-	ld   a, d
-	or   $40
-	out  (SMS_VDP_CONTROL), a
-	xor  a
-	ld   c, $BE
-	ld   e, $18
 	
+	ld   hl, $3680			;location in VRAM of the Sonic sprite
+	ex   de, hl
+	
+	;I can't find an instance where bit 0 of IY+$06 is set,
+	 ;this may be dead code
+	bit  0, (iy+vars.flags6)
+	jp   nz, +
+	
+	;------------------------------------------------------------------------------
+	ld   a, e			;$80
+	out  (SMS_VDP_CONTROL), a
+	ld   a, d			;$36
+	or   %01000000
+	out  (SMS_VDP_CONTROL), a
+	
+	xor  a				;set A to 0
+	ld   c, SMS_VDP_DATA
+	ld   e, 24
+	
+	;by nature of the way the VDP stores image colours across bit-planes, and that
+	 ;the Sonic sprite only uses palette indexes <8, the fourth byte for a tile
+	 ;row is always 0. this is used as a very simple form of compression on the
+	 ;Sonic sprites in the ROM as the fourth byte is excluded from the data
 -	outi
 	outi
 	outi
@@ -7532,20 +8000,25 @@ _LABEL_37E0_41:
 	outi
 	outi
 	out  (SMS_VDP_DATA), a
+	
 	dec  e
 	jp   nz, -
 	
-	ld   hl, ($D28F)
-	ld   ($D291), hl
+	ld   hl, (RAM_SONIC_CURRENT_FRAME)
+	ld   (RAM_SONIC_PREVIOUS_FRAME), hl
 	ret
 	
+	;------------------------------------------------------------------------------
+	;adds 285 to the frame address. purpose unknown...
 +	ld   bc, $011D
 	add  hl, bc
+	
 	ld   a, e
 	out  (SMS_VDP_CONTROL), a
 	ld   a, d
-	or   $40
+	or   %01000000
 	out  (SMS_VDP_CONTROL), a
+	
 	exx
 	push bc
 	ld   b, $18
@@ -7582,25 +8055,27 @@ _LABEL_37E0_41:
 	exx
 	pop  bc
 	exx
-	ld   hl, ($D28F)
-	ld   ($D291), hl
+	ld   hl, (RAM_SONIC_CURRENT_FRAME)
+	ld   (RAM_SONIC_PREVIOUS_FRAME), hl
 	ret
 
 ;____________________________________________________________________________[$3879]___
 
-_3879:
-	ld      de,($d293)
-	ld      hl,($d295)
+updateRingFrame:
+	ld      de,(RAM_RING_CURRENT_FRAME)
+	ld      hl,(RAM_RING_PREVIOUS_FRAME)
+	
 	and     a
 	sbc     hl,de
 	ret     z
-	ld      hl,$1f80
+	
+	ld      hl,$1f80		;location in VRAM of the ring graphics
 	ex      de,hl
 	di      
 	ld      a,e
 	out     (SMS_VDP_CONTROL),a
 	ld      a,d
-	or      $40
+	or      %01000000
 	out     (SMS_VDP_CONTROL),a
 	ld      b,$20
 	
@@ -7622,8 +8097,8 @@ _3879:
 	djnz    -
 	
 	ei      
-	ld      hl,($d293)
-	ld      ($d295),hl
+	ld      hl,(RAM_RING_CURRENT_FRAME)
+	ld      (RAM_RING_PREVIOUS_FRAME),hl
 	ret
 
 ;____________________________________________________________________________[$38B0]___
@@ -7639,7 +8114,7 @@ _LABEL_38B0_51:
 	and  %11111000
 	ld   e, a
 	
-	xor  a
+	xor  a				;set A to 0
 	sbc  hl, de			;is DE > HL?
 	ret  c
 	
@@ -7651,7 +8126,7 @@ _LABEL_38B0_51:
 	ret  c
 	
 	ld   d, a
-	ld   a, ($D251)
+	ld   a, (RAM_SCROLL_HORIZONTAL)
 	and  %11111000
 	ld   e, a
 	add  hl, de
@@ -7682,7 +8157,7 @@ _LABEL_38B0_51:
 	cp   $C0
 	ret  nc
 	ld   d, $00
-	ld   a, ($D252)
+	ld   a, (RAM_SCROLL_VERTICAL)
 	and  $F8
 	ld   e, a
 	add  hl, de
@@ -7716,8 +8191,9 @@ _LABEL_38B0_51:
 -	ld   a, l
 	out  (SMS_VDP_CONTROL), a
 	ld   a, h
-	or   $40
+	or   %01000000
 	out  (SMS_VDP_CONTROL), a
+	
 	ld   a, (de)
 	out  (SMS_VDP_DATA), a
 	inc  de
@@ -7736,6 +8212,7 @@ _LABEL_38B0_51:
 	ld   a, (de)
 	out  (SMS_VDP_DATA), a
 	inc  de
+	
 	ld   a, b
 	ld   bc, $0040
 	add  hl, bc
@@ -7761,7 +8238,7 @@ _LABEL_3956_11:
 	ret  c
 	ld   l, (ix+2)
 	ld   h, (ix+3)
-	ld   a, ($D214)
+	ld   a, (RAM_TEMP6)
 	ld   c, a
 	add  hl, bc
 	ex   de, hl
@@ -7781,7 +8258,7 @@ _LABEL_3956_11:
 	ret  c
 	ld   l, (ix+5)
 	ld   h, (ix+6)
-	ld   a, ($D215)
+	ld   a, (RAM_TEMP7)
 	ld   c, a
 	add  hl, bc
 	ex   de, hl
@@ -7863,10 +8340,10 @@ _39d8:
 ;____________________________________________________________________________[$3A03]___
 
 _3a03:
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz	
 	ld      hl,$d2d0
-	bit     0,(iy+$07)
+	bit     0,(iy+vars.timeLightningFlags)
 	jr      nz,++
 	ld      a,(hl)
 	inc     a
@@ -7921,7 +8398,7 @@ _3a03:
 	jr      c,+
 	ld      a,$01
 	ld      ($d289),a
-	set     2,(iy+$09)
+	set     2,(iy+vars.flags9)
 	xor     a
 +	ld      (hl),a
 	ret
@@ -8185,43 +8662,61 @@ S1_SolidityData_7:			;[$3F28] Sky Base 2 & 3 (interior)
 
 ;OBJECT - Sonic
 _48c8:
-	res     1,(iy+$08)
+	res     1,(iy+vars.unknown0)
+	
 	bit     7,(ix+$18)
 	call    nz,_4e88
-	set     7,(iy+$07)
-	bit     0,(iy+$05)
+	
+	;flag to update the Sonic sprite frame
+	set     7,(iy+vars.timeLightningFlags)
+	
+	bit     0,(iy+vars.scrollRingFlags)
 	jp      nz,_543c
+	
 	ld      a,($d412)
 	and     a
 	call    nz,_4ff0
+	
 	res     5,(ix+$18)
-	bit     6,(iy+$06)
+	
+	bit     6,(iy+vars.flags6)
 	call    nz,_510a
+	
 	ld      a,($d28c)
 	and     a
 	call    nz,_568f
-	bit     0,(iy+$07)
+	
+	bit     0,(iy+vars.timeLightningFlags)
 	call    nz,_5100
-	bit     0,(iy+$08)
+	
+	bit     0,(iy+vars.unknown0)
 	call    nz,_4ff5
+	
 	bit     4,(ix+$18)
 	call    nz,_5009
+	
 	ld      a,($d28b)
 	and     a
 	call    nz,_5285
+	
 	ld      a,($d28a)
 	and     a
 	jp      nz,_5117
-	bit     6,(iy+$08)
+	
+	bit     6,(iy+vars.unknown0)
 	jp      nz,_5193
-	bit     7,(iy+$08)
+	
+	bit     7,(iy+vars.unknown0)
 	call    nz,_529c
+	
 	bit     4,(ix+$18)
 	jp      z,+
+	
 	ld      hl,_4ddd
-	ld      de,$d20e
+	ld      de,RAM_TEMP1
 	ld      bc,$0009
 	ldir    
+	
 	ld      hl,$0100
 	ld      ($d240),hl
 	ld      hl,$fd80
@@ -8233,12 +8728,15 @@ _48c8:
 +	ld      a,(ix+$15)
 	and     a
 	jr      nz,++
-	bit     0,(iy+$07)
+	
+	bit     0,(iy+vars.timeLightningFlags)
 	jr      nz,+
+	
 -	ld      hl,_4dcb
-	ld      de,$d20e
+	ld      de,RAM_TEMP1
 	ld      bc,$0009
 	ldir    
+	
 	ld      hl,$0300
 	ld      ($d240),hl
 	ld      hl,$fc80
@@ -8251,10 +8749,12 @@ _48c8:
 	
 +	bit     7,(ix+$18)
 	jr      nz,-
+	
 	ld      hl,_4dd4
-	ld      de,$d20e
+	ld      de,RAM_TEMP1
 	ld      bc,$0009
 	ldir    
+	
 	ld      hl,$0c00
 	ld      ($d240),hl
 	ld      hl,$fc80
@@ -8266,7 +8766,7 @@ _48c8:
 	jp      +++
 	
 ++	ld      hl,_4de6
-	ld      de,$d20e
+	ld      de,RAM_TEMP1
 	ld      bc,$0009
 	ldir    
 	ld      hl,$0600
@@ -8281,9 +8781,9 @@ _48c8:
 	ld      a,($d223)
 	and     $03
 	call    z,_4fec
-+++	bit     1,(iy+$03)
++++	bit     1,(iy+vars.joypad)
 	call    z,_50c1
-	bit     1,(iy+$03)
+	bit     1,(iy+vars.joypad)
 	call    nz,_50e3
 	ld      a,15
 	ld      (SMS_PAGE_2),a
@@ -8335,7 +8835,7 @@ _48c8:
 	sbc     hl,de
 	call    c,_3618
 	ld      hl,$0000
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jr      nz,+
 	ld      de,($d403)
@@ -8348,7 +8848,7 @@ _48c8:
 	ld      hl,($d299)
 	inc     hl
 +	ld      ($d299),hl
-	bit     7,(iy+$06)
+	bit     7,(iy+vars.flags6)
 	call    nz,_50e8
 	ld      (ix+$14),$05
 	ld      hl,($d299)
@@ -8356,10 +8856,10 @@ _48c8:
 	and     a
 	sbc     hl,de
 	call    nc,_5105
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	cp      $fe
 	call    z,_4edd
-	bit     0,(iy+$03)
+	bit     0,(iy+vars.joypad)
 	call    nz,_4fd3
 	bit     0,(ix+$18)
 	jp      nz,_532e
@@ -8377,9 +8877,9 @@ _48c8:
 	ld      c,$00
 	ld      e,c
 	ld      d,c
-	bit     3,(iy+$03)
+	bit     3,(iy+vars.joypad)
 	jp      z,_4f01
-	bit     2,(iy+$03)
+	bit     2,(iy+vars.joypad)
 	jp      z,_4f5c
 	ld      a,h
 	or      l
@@ -8388,7 +8888,7 @@ _48c8:
 	ld      (ix+$14),$01
 	bit     7,b
 	jr      nz,+
-	ld      de,($d212)
+	ld      de,(RAM_TEMP4)
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -8405,7 +8905,7 @@ _48c8:
 	pop     de
 	pop     hl
 	jr      c,_4b1b
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -8418,7 +8918,7 @@ _48c8:
 	ld      (ix+$14),a
 	jp      _4b1b
 	
-+	ld      de,($d212)
++	ld      de,(RAM_TEMP4)
 	ld      c,$00
 	push    hl
 	push    de
@@ -8435,7 +8935,7 @@ _48c8:
 	pop     de
 	pop     hl
 	jr      c,_4b1b
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	ld      a,($d216)
 	ld      (ix+$14),a
 _4b1b:
@@ -8482,9 +8982,9 @@ _4b49:
 	jr      z,++
 	bit     3,(ix+$18)
 	jr      nz,+
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jr      z,++
-+	bit     5,(iy+$03)
++	bit     5,(iy+vars.joypad)
 	jr      nz,+++
 _4b7f:
 	ld      a,($d28e)
@@ -8510,14 +9010,16 @@ _4b7f:
 _4bac:
 	bit     7,h
 	jr      nz,+
-	ld      a,($d215)
+	ld      a,(RAM_TEMP7)
 	cp      h
 	jr      z,+++++
 	jr      c,+++++
 +	ld      de,($d244)
 	ld      c,$00
-+++++	bit     0,(iy+$06)
+	
++++++	bit     0,(iy+vars.flags6)
 	jr      z,+
+	
 	push    hl
 	ld      a,e
 	cpl     
@@ -8589,9 +9091,9 @@ _4c39:
 	ld      a,($d28c)
 	and     a
 	call    nz,_51b3
-	bit     6,(iy+$06)
+	bit     6,(iy+vars.flags6)
 	call    nz,_51bc
-	bit     2,(iy+$08)
+	bit     2,(iy+vars.unknown0)
 	call    nz,_51dd
 	ld      a,($d410)
 	cp      $0a
@@ -8627,7 +9129,7 @@ _4c39:
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      bc,_7000
-+	bit     5,(iy+$06)
++	bit     5,(iy+vars.flags6)
 	call    nz,_5206
 	ld      a,($d302)
 	and     a
@@ -8644,10 +9146,12 @@ _4c39:
 	add     a,d
 	ld      h,a
 	add     hl,bc
-	ld      ($d28f),hl
+	ld      (RAM_SONIC_CURRENT_FRAME),hl
 	ld      hl,_591d
-	bit     0,(iy+$06)
+	
+	bit     0,(iy+vars.flags6)
 	call    nz,_520f
+	
 	ld      a,($d410)
 	cp      $13
 	call    z,_5213
@@ -8682,9 +9186,9 @@ _4c39:
 	jr      c,+
 	add     hl,de
 	ld      ($d401),hl
-+	bit     7,(iy+$06)
++	bit     7,(iy+vars.flags6)
 	call    nz,_5224
-	bit     0,(iy+$08)
+	bit     0,(iy+vars.unknown0)
 	call    nz,_4e8d
 	ld      a,($d2e1)
 	and     a
@@ -8692,7 +9196,7 @@ _4c39:
 	ld      a,($d321)
 	and     a
 	call    nz,_4e51
-	bit     1,(iy+$06)
+	bit     1,(iy+vars.flags6)
 	jr      nz,++
 	ld      hl,(RAM_LEVEL_CROPLEFT)
 	ld      bc,$0008
@@ -8792,15 +9296,18 @@ _4de6:
 
 _4def:
 	ex      de,hl
+	
 	ld      hl,($d401)
 	ld      bc,($d25d)
 	and     a
 	sbc     hl,bc
 	ret     c
+	
 	ld      bc,$0010
 	and     a
 	sbc     hl,bc
 	ret     c
+	
 	ld      hl,($d3fe)
 	ld      bc,$000c
 	add     hl,bc
@@ -8861,21 +9368,21 @@ _4e51:
 	dec     a
 	ld      ($d321),a
 	ld      hl,($d31d)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,($d31f)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffe
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	cp      $03
 	jr      c,+
 	ld      a,$b2
 	call    _3581
 	ld      hl,$0008
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$0002
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 +	ld      a,$5a
 	call    _3581
 	ret
@@ -8883,23 +9390,23 @@ _4e51:
 ;____________________________________________________________________________[$4E88]___
 
 _4e88:
-	set     1,(iy+$08)
+	set     1,(iy+vars.unknown0)
 	ret
 
 ;____________________________________________________________________________[$4E8D]___
 
 _4e8d:
 	ld      hl,($d3fe)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,($d401)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$d2f3
 	ld      a,($d223)
 	rrca    
 	rrca    
 	jr      nc,+
 	ld      hl,$d2f7
-+	ld      de,$d212
++	ld      de,RAM_TEMP4
 	ldi     
 	ldi     
 	ldi     
@@ -8955,7 +9462,7 @@ _4f01:
 	res     1,(ix+$18)
 	bit     7,b
 	jr      nz,+
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	ld      c,$00
 	ld      (ix+$14),$01
 	push    hl
@@ -8989,7 +9496,7 @@ _4f01:
 	and     a
 	sbc     hl,de
 	pop     hl
-	ld      de,($d210)
+	ld      de,(RAM_TEMP3)
 	ld      c,$00
 	jp      nc,_4b1b
 	res     1,(ix+$18)
@@ -9002,7 +9509,7 @@ _4f5c:
 	jr      z,+
 	bit     7,b
 	jr      z,_4fa6
-+	ld      de,($d20e)
++	ld      de,(RAM_TEMP1)
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -9045,7 +9552,7 @@ _4f5c:
 _4fa6:
 	res     1,(ix+$18)
 	ld      (ix+$14),$0a
-	ld      de,($d210)
+	ld      de,(RAM_TEMP3)
 	ld      a,e
 	cpl     
 	ld      e,a
@@ -9107,7 +9614,7 @@ _4ff5:
 	ld      hl,$d28d
 	dec     (hl)
 	ret     nz
-	res     0,(iy+$08)
+	res     0,(iy+vars.unknown0)
 	
 	ld      a,(RAM_LEVEL_MUSIC)
 	rst     $18			;`playMusic`
@@ -9133,11 +9640,11 @@ _5009:
 	ld      a,$05
 	sub     h
 	jr      nc,+
-	res     5,(iy+$06)
-	res     6,(iy+$06)
-	res     0,(iy+$08)
-	set     3,(iy+$08)
-	set     0,(iy+$05)
+	res     5,(iy+vars.flags6)
+	res     6,(iy+vars.flags6)
+	res     0,(iy+vars.unknown0)
+	set     3,(iy+vars.unknown0)
+	set     0,(iy+vars.scrollRingFlags)
 	ld      a,$c0
 	ld      ($d287),a
 	
@@ -9232,13 +9739,13 @@ _50c1:
 	jr      z,+
 	ld      a,$06
 	rst     $28			;`playSFX`
-+	set     2,(iy+$07)
++	set     2,(iy+vars.timeLightningFlags)
 	ret
 
 ;____________________________________________________________________________[$50E3]___
 
 _50e3:
-	res     2,(iy+$07)
+	res     2,(iy+vars.timeLightningFlags)
 	ret
 
 ;____________________________________________________________________________[$50E8]___
@@ -9269,7 +9776,7 @@ _5105:
 ;____________________________________________________________________________[$510A]___
 
 _510a:
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ld      a,($d414)
 	and     $fa
 	ld      ($d414),a
@@ -9308,7 +9815,7 @@ _5117:
 	jr      z,+++
 	jp      m,+
 	ld      ($d2d3),a
-	set     4,(iy+$06)
+	set     4,(iy+vars.flags6)
 	jr      ++	
 +	set     2,(iy+$0d)
 ++	ld      a,$01
@@ -9359,7 +9866,7 @@ _5193:
 	ld      a,($d40f)
 	cp      $12
 	jp      c,_4c39
-	res     6,(iy+$08)
+	res     6,(iy+vars.unknown0)
 	set     2,(ix+$18)
 	jp      _4c39
 
@@ -9380,7 +9887,7 @@ _51bc:
 	ret     nz
 	bit     7,(ix+$18)
 	ret     z
-	res     6,(iy+$06)
+	res     6,(iy+vars.flags6)
 	xor     a
 	ld      ($d403),a
 	ld      ($d404),a
@@ -9397,7 +9904,7 @@ _51dd:
 	ld      hl,$d2fb
 	dec     (hl)
 	ret     nz
-	res     2,(iy+$08)
+	res     2,(iy+vars.unknown0)
 	ret
 
 ;____________________________________________________________________________[$51F3]___
@@ -9463,7 +9970,7 @@ _5231:
 	jr      c,+
 	cp      $0a
 	ret     c
-+	ld      a,(iy+$0a)
++	ld      a,(iy+vars.spriteCount)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -9479,16 +9986,17 @@ _5231:
 	and     a
 	sbc     hl,bc
 	ld      bc,_526e
-	call    _LABEL_350F_95
+	call    processSpriteLayout
 	pop     hl
 	pop     af
 	ld      ($d23c),hl
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	ret
 
 _526e:
-.db $00, $02, $04, $06, $ff, $ff, $20, $22, $24, $26, $ff, $ff, $ff, $ff, $ff, $ff
-.db $ff, $ff
+.db $00, $02, $04, $06, $FF, $FF
+.db $20, $22, $24, $26, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$5280]___
 
@@ -9506,22 +10014,22 @@ _5285:
 	ld      a,(RAM_LEVEL_MUSIC)
 	rst     $18			;`playMusic`
 	
-	ld      c,(iy+$0a)
-	res     0,(iy+$00)
+	ld      c,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),c
+	ld      (iy+vars.spriteCount),c
 	ret
 
 ;____________________________________________________________________________[$529C]___
 
 _529c:
-	ld      (iy+$03),$fb
+	ld      (iy+vars.joypad),$fb
 	ld      hl,($d3fe)
 	ld      de,$1b60
 	and     a
 	sbc     hl,de
 	ret     nc
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ld      hl,($d403)
 	ld      a,l
 	or      h
@@ -9598,9 +10106,9 @@ _532e:
 	or      b
 	jp      z,++++
 	ld      (ix+$14),$09
-	bit     2,(iy+$03)
+	bit     2,(iy+vars.joypad)
 	jr      nz,++
-	bit     1,(iy+$03)
+	bit     1,(iy+vars.joypad)
 	jr      z,++
 	bit     7,(ix+$18)
 	jp      z,+
@@ -9613,9 +10121,9 @@ _532e:
 	ld      c,$ff
 	jp      _4b1b
 	
-++	bit     3,(iy+$03)
+++	bit     3,(iy+vars.joypad)
 	jr      nz,+++
-	bit     1,(iy+$03)
+	bit     1,(iy+vars.joypad)
 	jr      z,+++
 	bit     7,(ix+$18)
 	jp      z,+
@@ -9684,9 +10192,9 @@ _5407:
 	jr      z,++
 	bit     3,(ix+$18)
 	jr      nz,+
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jr      z,++
-+	bit     5,(iy+$03)
++	bit     5,(iy+vars.joypad)
 	jr      nz,+++
 	res     0,(ix+$18)
 	ld      a,($d403)
@@ -9713,18 +10221,18 @@ _543c:
 	ld      de,($d401)
 	sbc     hl,de
 	jr      nc,+
-	bit     2,(iy+$06)
+	bit     2,(iy+vars.flags6)
 	jr      nz,+
 	ld      a,$01
 	ld      ($d283),a
 	ld      hl,RAM_LIVES
 	dec     (hl)
-	set     2,(iy+$06)
+	set     2,(iy+vars.flags6)
 	jp      _54aa
 	
 +	xor     a
 	ld      hl,$0080
-	bit     3,(iy+$08)
+	bit     3,(iy+vars.unknown0)
 	jr      nz,+++
 	ld      de,($d406)
 	bit     7,d
@@ -9758,7 +10266,7 @@ _543c:
 
 _54aa:
 	ld      (ix+$14),$0b
-	bit     3,(iy+$08)
+	bit     3,(iy+vars.unknown0)
 	jp      z,_4c39
 	ld      (ix+$14),$15
 	jp      _4c39
@@ -9766,7 +10274,7 @@ _54aa:
 ;____________________________________________________________________________[$54BC]___
 ;referenced by table at _58e5
 _54bc:
-	bit     7,(iy+$06)
+	bit     7,(iy+vars.flags6)
 	ret     nz
 	res     4,(ix+$18)
 	ret
@@ -9775,7 +10283,7 @@ _54bc:
 ;referenced by table at _58e5
 
 _54c6:
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	jp      z,_35fd
 	ret
 
@@ -9849,7 +10357,7 @@ _552d:
 	ld      a,($d2b9)
 	and     $80
 	ret     nz
-	res     6,(iy+$06)
+	res     6,(iy+vars.flags6)
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
@@ -9866,7 +10374,7 @@ _5556:
 	and     $1f
 	cp      $10
 	ret     nc
-	res     6,(iy+$06)
+	res     6,(iy+vars.flags6)
 	ld      (ix+$07),$00
 	ld      (ix+$08),$08
 	ld      (ix+$09),$00
@@ -9932,7 +10440,7 @@ _55b6:
 	ld      a,($d2b9)
 	and     $80
 	ret     nz
-	res     6,(iy+$06)
+	res     6,(iy+vars.flags6)
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$f4
 	ld      (ix+$0c),$ff
@@ -9954,7 +10462,7 @@ _55e2:
 ;referenced by table at _58e5
 
 _55eb:
-	bit     4,(iy+$06)
+	bit     4,(iy+vars.flags6)
 	ret     nz
 	ld      a,($d3fe)
 	add     a,$0c
@@ -10050,9 +10558,9 @@ _568a:
 ;called by _48c8 (OBJECT: Sonic)
 
 _568f:
-	ld      a,(iy+$03)
+	ld      a,(iy+vars.joypad)
 	or      $0f
-	ld      (iy+$03),a
+	ld      (iy+vars.joypad),a
 	ld      hl,$0004
 	ld      ($d407),hl
 	res     0,(ix+$18)
@@ -10286,7 +10794,7 @@ _57f6:
 	and     a
 	sbc     hl,de
 	ret     c
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	jp      z,_35fd
 	ret
 
@@ -10425,7 +10933,7 @@ _58d0:
 	and     a
 	sbc     hl,de
 	ret     nc
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ret
 
 ;lookup table to the functions above
@@ -10437,15 +10945,22 @@ _58e5:
 .dw _5808, _584b, _5883, _58d0
 
 _591d:
-.db $B4, $B6, $B8, $FF, $FF, $FF, $BA, $BC, $BE, $FF, $FF, $FF, $FF, $FF
-_592b:
-.db $B8, $B6, $B4, $FF, $FF, $FF, $BE, $BC, $BA, $FF, $FF, $FF, $FF, $FF
-_5939:
-.db $B4, $B6, $B8, $FF, $FF, $FF, $BA, $BC, $BE, $FF, $FF, $FF, $98, $9A, $FF, $FF
+.db $B4, $B6, $B8, $FF, $FF, $FF
+.db $BA, $BC, $BE, $FF, $FF, $FF
 .db $FF, $FF
+_592b:
+.db $B8, $B6, $B4, $FF, $FF, $FF
+.db $BE, $BC, $BA, $FF, $FF, $FF
+.db $FF, $FF
+_5939:
+.db $B4, $B6, $B8, $FF, $FF, $FF
+.db $BA, $BC, $BE, $FF, $FF, $FF
+.db $98, $9A, $FF, $FF, $FF, $FF
 _594b:
-.db $B4, $B6, $B8, $FF, $FF, $FF, $BA, $BC, $BE, $FF, $FF, $FF, $FE, $9C, $9E, $FF
-.db $FF, $FF, $00, $00, $00, $00, $00, $00, $00, $00
+.db $B4, $B6, $B8, $FF, $FF, $FF
+.db $BA, $BC, $BE, $FF, $FF, $FF
+.db $FE, $9C, $9E, $FF, $FF, $FF
+.db $00, $00, $00, $00, $00, $00, $00, $00
 _5965:
 .db $99, $59, $99, $59, $CB, $59, $DD, $59, $DF, $59, $E2, $59, $E5, $59, $FB, $59, $FE, $59, $01, $5A, $53, $5A, $65, $5A, $68, $5A, $6B, $5A, $AF, $5A, $C5, $5A, $CC, $5A, $D0, $5A, $DE, $5A, $E1, $5A, $E4, $5A, $E7, $5A, $EA, $5A, $00, $5B, $03, $5B, $06, $5B, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $01, $01, $01, $02, $02, $02, $02, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $FF, $00, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $FF, $00, $FF, $00, $13, $FF, $00, $06, $FF, $00, $08, $08, $08, $08, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $FF, $00, $07, $FF, $00, $00, $FF, $00, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $FF, $00, $13, $13, $13, $13, $13, $13, $13, $13, $25, $25, $25, $25, $25, $25, $25, $25, $FF, $00, $11, $FF, $00, $14, $FF, $00, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $FF, $22, $19, $19, $19, $19, $1A, $1A, $1B, $1B, $1C, $1C, $1D, $1D, $1E, $1E, $1F, $1F, $20, $20, $21, $21, $FF, $12, $0C, $08, $09, $0A, $0B, $FF, $00, $12, $12, $FF, $00, $12, $12, $12, $12, $12, $12, $24, $24, $24, $24, $24, $24, $FF, $00, $00, $FF, $00, $26, $FF, $00, $22, $FF, $00, $23, $FF, $00, $21, $21, $20, $20, $1F, $1F, $1E, $1E, $1D, $1D, $1C, $1C, $1B, $1B, $1A, $1A, $19, $19, $19, $19, $FF, $12, $19, $FF, $00, $1A, $FF, $00, $1B, $FF, $00
 
@@ -10457,7 +10972,7 @@ _5b09:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
@@ -10491,7 +11006,7 @@ _5b34:
 	adc     a,(ix+$09)
 	ld      l,h
 	ld      h,a
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$04)
 	ld      h,(ix+$05)
 	ld      a,(ix+$06)
@@ -10503,15 +11018,15 @@ _5b34:
 	adc     a,(ix+$0c)
 +	ld      l,h
 	ld      h,a
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0004
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$0000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,$5c
 	call    _3581
 	ld      hl,$000c
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$5e
 	call    _3581
 	bit     1,(ix+$18)
@@ -10528,9 +11043,13 @@ _5b34:
 	ret
 
 _5bbf:
-.db $54, $56, $58, $FF, $FF, $FF, $AA, $AC, $AE, $FF, $FF, $FF, $FF
+.db $54, $56, $58, $FF, $FF, $FF
+.db $AA, $AC, $AE, $FF, $FF, $FF
+.db $FF
 _5bcc:
-.db $54, $FE, $58, $FF, $FF, $FF, $AA, $AC, $AE, $FF, $FF, $FF, $FF
+.db $54, $FE, $58, $FF, $FF, $FF
+.db $AA, $AC, $AE, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$5BD9]___
 
@@ -10540,7 +11059,7 @@ _5bd9:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
@@ -10570,7 +11089,7 @@ _5c05:
 	jp      _5b29
 	
 +	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
@@ -10656,12 +11175,12 @@ _5cd7:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
 	jr      c,+
-	set     5,(iy+$06)
+	set     5,(iy+vars.flags6)
 	jp      _5b29
 	
 +	ld      hl,$5300
@@ -10675,12 +11194,12 @@ _5cff:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
 	jr      c,+
-	set     0,(iy+$08)
+	set     0,(iy+vars.unknown0)
 	ld      a,$f0
 	ld      ($d28d),a
 	
@@ -10700,7 +11219,7 @@ _5d2f:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
@@ -10746,12 +11265,12 @@ _5d80:
 	ld      (ix+$0e),$18
 	call    _5da8
 	ld      hl,$0003
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _5deb
 	jr      c,+
-	set     3,(iy+$09)
+	set     3,(iy+vars.flags9)
 	jp      _5b29
 	
 +	ld      hl,$5500
@@ -10793,7 +11312,7 @@ _5da8:
 
 _5deb:
 	ld      hl,$0804
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      a,($d414)
 	and     $01
 	jr      nz,++
@@ -10892,7 +11411,7 @@ _5ea2:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      hl,$d30b
@@ -10930,7 +11449,8 @@ _5ea2:
 	ret
 
 _5f10:
-.db $5C, $5E, $FF, $FF, $FF, $FF, $FF
+.db $5C, $5E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$5F17]___
 
@@ -10940,8 +11460,8 @@ _5f17:
 	ld      (ix+$0e),$30
 	bit     0,(ix+$11)
 	jr      nz,+
-	res     7,(iy+$06)
-	res     3,(iy+$05)
+	res     7,(iy+vars.flags6)
+	res     3,(iy+vars.scrollRingFlags)
 	
 	;end sign sprite set
 	ld      hl,$4294
@@ -11019,11 +11539,11 @@ _5f17:
 	set     3,(ix+$11)
 	ld      a,$a0
 	ld      ($d289),a
-	set     1,(iy+$06)
+	set     1,(iy+vars.flags6)
 	jp      ++
 	
 +	ld      hl,$0a0a
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	bit     7,(ix+$0c)
@@ -11051,7 +11571,7 @@ _5f17:
 	ld      (ix+$15),h
 	ld      (ix+$12),$00
 	set     1,(ix+$11)
-	res     3,(iy+$06)
+	res     3,(iy+vars.flags6)
 	ld      a,$0b
 	rst     $28			;`playSFX`
 ++	ld      de,_6157
@@ -11193,7 +11713,41 @@ __	ld      l,(ix+$12)
 	ret
 
 _6157:
-.db $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $04, $04, $FF, $00, $00, $FF, $00, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $01, $01, $01, $01, $01, $01, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $05, $05, $05, $05, $05, $05, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $06, $06, $06, $06, $06, $06, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $07, $07, $07, $07, $07, $07, $FF, $12, $4E, $50, $52, $54, $FF, $FF, $6E, $70, $72, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $08, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $FE, $12, $14, $FF, $FF, $FF, $FE, $32, $34, $FF, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $16, $18, $1A, $1C, $FF, $FF, $36, $38, $3A, $3C, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $56, $58, $5A, $5C, $FF, $FF, $76, $78, $7A, $7C, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $00, $02, $04, $06, $FF, $FF, $20, $22, $24, $26, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $4E, $4A, $4C, $54, $FF, $FF, $6E, $6A, $6C, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF, $4E, $46, $48, $54, $FF, $FF, $6E, $66, $68, $74, $FF, $FF, $FE, $42, $44, $FF, $FF, $FF
+.db $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $04, $04, $FF, $00, $00, $FF, $00, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $01, $01, $01, $01, $01, $01, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $05, $05, $05, $05, $05, $05, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $06, $06, $06, $06, $06, $06, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $07, $07, $07, $07, $07, $07, $FF, $12
+
+;these are sprite layouts
+
+.db $4E, $50, $52, $54, $FF, $FF
+.db $6E, $70, $72, $74, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $08, $0A, $0C, $0E, $FF, $FF
+.db $28, $2A, $2C, $2E, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $FE, $12, $14, $FF, $FF, $FF
+.db $FE, $32, $34, $FF, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $16, $18, $1A, $1C, $FF, $FF
+.db $36, $38, $3A, $3C, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $56, $58, $5A, $5C, $FF, $FF
+.db $76, $78, $7A, $7C, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $00, $02, $04, $06, $FF, $FF
+.db $20, $22, $24, $26, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $4E, $4A, $4C, $54, $FF, $FF
+.db $6E, $6A, $6C, $74, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
+
+.db $4E, $46, $48, $54, $FF, $FF
+.db $6E, $66, $68, $74, $FF, $FF
+.db $FE, $42, $44, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$626C]___
 
@@ -11314,7 +11868,7 @@ _65ee:
 	ld      d,$00
 -	ld      hl,_66c5
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,(hl)
 	and     a
 	jr      nz,+
@@ -11346,9 +11900,9 @@ _65ee:
 	cp      $20
 	jp      nz,+
 	ld      hl,$ffff
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffc
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jp      c,+
 	ld      de,$0000
@@ -11356,9 +11910,9 @@ _65ee:
 	ld      b,d
 	call    _ac96
 	ld      hl,$0001
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffc
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jr      c,+
 	ld      de,$000e
@@ -11386,7 +11940,7 @@ _65ee:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      a,(hl)
 	add     a,a
 	ld      e,a
@@ -11398,19 +11952,40 @@ _65ee:
 	ld      de,_66f9
 	call    _7c41
 	ld      hl,$0a04
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0804
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ret
 
 _66c5:
 .db $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $03, $03, $04, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $03, $03, $04, $00
 _66e0:
-.db $EA, $66, $EA, $66, $EA, $66, $F3, $66, $F6, $66, $00, $0C, $01, $0C, $02, $0C, $01, $0C, $FF, $01, $01, $FF, $03, $01, $FF
-_66f9:
-.db $00, $02, $04, $FF, $FF, $FF, $20, $22, $24, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $00, $02, $44, $FF, $FF, $FF, $46, $22, $4A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $40, $02, $44, $FF, $FF, $FF, $26, $22, $2A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $40, $02, $04, $FF, $FF, $FF, $46, $22, $4A, $FF, $FF, $FF, $FF
+.dw _66ea, _66ea, _66ea, _66f3, _66f6
+_66ea:
+.db $00, $0C, $01, $0C, $02, $0C, $01, $0C, $FF
+_66f3:
+.db $01, $01, $FF
+_66f6:
+.db $03, $01, $FF
+
+_66f9:					;sprite layouts
+.db $00, $02, $04, $FF, $FF, $FF
+.db $20, $22, $24, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $00, $02, $44, $FF, $FF, $FF
+.db $46, $22, $4A, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $40, $02, $44, $FF, $FF, $FF
+.db $26, $22, $2A, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $40, $02, $04, $FF, $FF, $FF
+.db $46, $22, $4A, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$673C]___
 
@@ -11442,7 +12017,7 @@ _673c:
 	ld      (ix+$0e),$10
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,_682f
 	ld      e,(ix+$11)
 	ld      d,$00
@@ -11459,10 +12034,10 @@ _673c:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	and     a
 	sbc     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	inc     bc
 	ld      d,$00
 	ld      a,(bc)
@@ -11479,11 +12054,11 @@ _673c:
 	and     a
 	jp      m,+
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      hl,($d3fe)
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	add     hl,de
 	ld      ($d3fe),hl
 	ld      bc,$0010
@@ -11515,15 +12090,135 @@ _673c:
 	res     1,(ix+$18)
 	ret
 
+;this is swinging position data
 _682f:
-.db $B3, $00, $B3, $01, $B3, $02, $B3, $02, $B3, $03, $B3, $04, $B3, $05, $B3, $06, $B4, $07, $B4, $08, $B4, $09, $B4, $0B, $B4, $0C, $B4, $0D, $B5, $0E, $B5, $0F, $B5, $11, $B5, $12, $B6, $13, $B6, $15, $B7, $16, $B7, $18, $B8, $19, $B8, $1B, $B9, $1D, $B9, $1E, $BA, $20, $BB, $22, $BC, $23, $BD, $25, $BE, $27, $BF, $29, $C0, $2B, $C2, $2D, $C3, $2F, $C4, $31, $C6, $32, $C8, $34, $CA, $36, $CC, $38, $CE, $3A, $D0, $3C, $D2, $3E, $D4, $3F, $D7, $41, $DA, $43, $DC, $44, $DF, $45, $E2, $47, $E5, $48, $E8, $49, $EC, $4A, $EF, $4B, $F2, $4C, $F6, $4C, $F9, $4C, $FC, $4D, $00, $4D, $03, $4D, $07, $4C, $0A, $4C, $0E, $4C, $11, $4B, $14, $4A, $18, $49, $1B, $48, $1E, $47, $21, $45, $24, $44, $27, $42, $29, $41, $2C, $3F, $2E, $3D, $31, $3B, $33, $3A, $35, $38, $37, $36, $39, $34, $3A, $32, $3C, $30, $3E, $2E, $3F, $2C, $40, $2A, $41, $28, $43, $26, $44, $24, $45, $23, $45, $21, $46, $1F, $47, $1D, $48, $1C, $48, $1A, $49, $18, $49, $17, $4A, $15, $4A, $14, $4B, $12, $4B, $11, $4B, $0F, $4B, $0E, $4C, $0D, $4C, $0C, $4C, $0A, $4C, $09, $4C, $08, $4C, $07, $4D, $06, $4D, $05, $4D, $04, $4D, $03, $4D, $02, $4D, $01, $4D, $00
+.db $B3, $00
+.db $B3, $01
+.db $B3, $02
+.db $B3, $02
+.db $B3, $03
+.db $B3, $04
+.db $B3, $05
+.db $B3, $06
+.db $B4, $07
+.db $B4, $08
+.db $B4, $09
+.db $B4, $0B
+.db $B4, $0C
+.db $B4, $0D
+.db $B5, $0E
+.db $B5, $0F
+.db $B5, $11
+.db $B5, $12
+.db $B6, $13
+.db $B6, $15
+.db $B7, $16
+.db $B7, $18
+.db $B8, $19
+.db $B8, $1B
+.db $B9, $1D
+.db $B9, $1E
+.db $BA, $20
+.db $BB, $22
+.db $BC, $23
+.db $BD, $25
+.db $BE, $27
+.db $BF, $29
+.db $C0, $2B
+.db $C2, $2D
+.db $C3, $2F
+.db $C4, $31
+.db $C6, $32
+.db $C8, $34
+.db $CA, $36
+.db $CC, $38
+.db $CE, $3A
+.db $D0, $3C
+.db $D2, $3E
+.db $D4, $3F
+.db $D7, $41
+.db $DA, $43
+.db $DC, $44
+.db $DF, $45
+.db $E2, $47
+.db $E5, $48
+.db $E8, $49
+.db $EC, $4A
+.db $EF, $4B
+.db $F2, $4C
+.db $F6, $4C
+.db $F9, $4C
+.db $FC, $4D
+.db $00, $4D
+.db $03, $4D
+.db $07, $4C
+.db $0A, $4C
+.db $0E, $4C
+.db $11, $4B
+.db $14, $4A
+.db $18, $49
+.db $1B, $48
+.db $1E, $47
+.db $21, $45
+.db $24, $44
+.db $27, $42
+.db $29, $41
+.db $2C, $3F
+.db $2E, $3D
+.db $31, $3B
+.db $33, $3A
+.db $35, $38
+.db $37, $36
+.db $39, $34
+.db $3A, $32
+.db $3C, $30
+.db $3E, $2E
+.db $3F, $2C
+.db $40, $2A
+.db $41, $28
+.db $43, $26
+.db $44, $24
+.db $45, $23
+.db $45, $21
+.db $46, $1F
+.db $47, $1D
+.db $48, $1C
+.db $48, $1A
+.db $49, $18
+.db $49, $17
+.db $4A, $15
+.db $4A, $14
+.db $4B, $12
+.db $4B, $11
+.db $4B, $0F
+.db $4B, $0E
+.db $4C, $0D
+.db $4C, $0C
+.db $4C, $0A
+.db $4C, $09
+.db $4C, $08
+.db $4C, $07
+.db $4D, $06
+.db $4D, $05
+.db $4D, $04
+.db $4D, $03
+.db $4D, $02
+.db $4D, $01
+.db $4D, $00
 
+;sprite layout
 _6911:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $18, $1A, $18, $1A, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $18, $1A, $18, $1A, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 _6923:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6E, $48, $FF, $FF, $FF, $FF
-.db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6C, $6E, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $6C, $6E, $6E, $48, $FF, $FF
+.db $FF, $FF, $FE, $FF, $FF, $FF
+.db $FF, $FF
+
+.db $6C, $6E, $6C, $6E, $FF, $FF
+.db $FF, $FF
 
 ;____________________________________________________________________________[$693F]___
 
@@ -11538,7 +12233,7 @@ _693f:
 	ld      (ix+$15),$aa
 	ld      (ix+$16),a
 	ld      (ix+$17),a
-	bit     5,(iy+$00)
+	bit     5,(iy+vars.flags0)
 	jr      z,+
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $12
@@ -11585,7 +12280,16 @@ _693f:
 _69b7:
 .db $00, $08, $01, $08, $02, $08, $ff
 _69be:
-.db $74, $76, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $78, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $7C, $7E, $FF, $FF, $FF, $FF, $FF
+.db $74, $76, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $78, $7A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $7C, $7E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$69E9]___
 
@@ -11600,7 +12304,7 @@ _69e9:
 	and     a
 	jp      m,++
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0000
@@ -11654,7 +12358,7 @@ _6a47:
 	and     a
 	jp      m,+
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      (ix+$16),$01
@@ -11688,7 +12392,7 @@ _6ac1:
 	ld      (ix+$0d),$02
 	ld      (ix+$0e),$02
 	ld      hl,$0303
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      l,(ix+$0a)
@@ -11703,13 +12407,13 @@ _6ac1:
 	ld      (ix+$0c),a
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),hl
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,_6b72
@@ -11806,7 +12510,7 @@ _6b74:
 	ld      d,$00
 -	ld      hl,$6cd7
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,(hl)
 	and     a
 	jr      nz,+
@@ -11895,7 +12599,7 @@ _6b74:
 	add     hl,de
 	ld      (ix+$11),l
 	ld      (ix+$12),h
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      a,(hl)
 	add     a,a
 	ld      e,a
@@ -11907,19 +12611,49 @@ _6b74:
 	ld      de,_6cf9
 	call    _7c41
 	ld      hl,$1000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$1004
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ret
 
 _6cd7:
 .db $01, $01, $01, $01, $00, $02, $02, $03, $01, $01, $00
 _6ce2:
-.db $EA, $6C, $EA, $6C, $EF, $6C, $F4, $6C, $00, $02, $01, $02, $FF, $02, $02, $03, $02, $FF, $04, $02, $05, $02, $FF
+.dw _6cea, _6cea, _6cef, _6cf4
+_6cea:
+.db $00, $02, $01, $02, $FF
+_6cef:
+.db $02, $02, $03, $02, $FF
+_6cf4:
+.db $04, $02, $05, $02, $FF
+
+;sprite layout
 _6cf9:
-.db $FE, $0A, $FF, $FF, $FF, $FF, $0C, $0E, $10, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $0C, $0E, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $0A, $FF, $FF, $FF, $FF, $12, $14, $16, $FF, $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $12, $14, $16, $FF, $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FE, $0A, $FF, $FF, $FF, $FF, $12, $14, $16, $FF, $FF, $FF, $30, $34, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $12, $14, $16, $FF, $FF, $FF, $30, $34, $FF, $FF, $FF, $FF
+.db $FE, $0A, $FF, $FF, $FF, $FF
+.db $0C, $0E, $10, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $0C, $0E, $2C, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $0A, $FF, $FF, $FF, $FF
+.db $12, $14, $16, $FF, $FF, $FF
+.db $32, $34, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $12, $14, $16, $FF, $FF, $FF
+.db $32, $34, $FF, $FF, $FF, $FF
+
+.db $FE, $0A, $FF, $FF, $FF, $FF
+.db $12, $14, $16, $FF, $FF, $FF
+.db $30, $34, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $12, $14, $16, $FF, $FF, $FF
+.db $30, $34, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$6D65]___
 
@@ -11944,7 +12678,7 @@ _6d65:
 	and     a
 	jp      m,+
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      c,$00
 	jr      c,+
@@ -12002,7 +12736,7 @@ _6e0c:
 	ld      d,$00
 -	ld      hl,_6e96
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,(hl)
 	and     a
 	jr      nz,+
@@ -12036,7 +12770,7 @@ _6e0c:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$02
 	ld      (ix+$0c),$00
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      a,(hl)
 	add     a,a
 	ld      e,a
@@ -12049,19 +12783,45 @@ _6e0c:
 	ld      de,_6ecb
 	call    _7c41
 	ld      hl,$0203
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ret
 
 _6e96
-.db $01, $01, $01, $01, $01, $01, $01, $01, $01, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $00  
+.db $01, $01, $01, $01, $01, $01, $01, $01, $01
+.db $03, $03, $03, $03, $02, $02, $02, $02, $02
+.db $02, $02, $02, $02, $04, $04, $04, $04, $00
+
 _6eb1:
-.db $BB, $6E, $BB, $6E, $C0, $6E, $C5, $6E, $C8, $6E, $00, $08, $01, $08, $FF, $02, $08, $03, $08, $FF, $00, $FF, $FF, $02, $FF, $FF
+.dw _6ebb, _6ebb, _6ec0, _6ec5, _6ec8
+_6ebb:
+.db $00, $08, $01, $08, $FF
+_6ec0:
+.db $02, $08, $03, $08, $FF
+_6ec5:
+.db $00, $FF, $FF
+_6ec8:
+.db $02, $FF, $FF
+
+;sprite layout
 _6ecb:
-.db $60, $62, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $68, $6A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $FF, $FF, $FF, $FF, $FF
+.db $60, $62, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $64, $66, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $68, $6A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $6C, $6E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$6F08]___
 
@@ -12149,17 +12909,22 @@ _6f08:
 ++++	ld      (ix+$0f),c
 	ld      (ix+$10),b
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ret   
 
+;sprite layout
 _6fed:  
-.db $1C, $1E, $FF, $FF, $FF, $FF, $FE, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $40
+.db $1C, $1E, $FF, $FF, $FF, $FF
+.db $FE, $3E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $40					;odd?
 _7000:
-.db $42, $FF, $FF, $FF, $FF, $FE, $62, $FF, $FF, $FF, $FF, $FF
+.db $42, $FF, $FF, $FF, $FF, $FE
+.db $62, $FF, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$700C]___
 
@@ -12220,7 +12985,7 @@ _700c:
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,(hl)
 	and     a
 	jr      nz,+
@@ -12373,7 +13138,7 @@ _700c:
 ++	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      e,(hl)
 	ld      d,$00
 	ld      hl,_72c8
@@ -12405,6 +13170,8 @@ _724b:
 .db $AC, $70, $EC, $70, $2C, $71, $5D, $71, $65, $71, $96, $71, $9D, $71, $A3, $71, $B7, $71, $00, $00, $9D, $71, $00, $14, $28, $28, $3C, $3C, $3C, $50, $50, $50, $50, $64, $64, $64, $64, $64, $64, $64, $64, $64, $64, $50, $50, $50, $50, $3C, $3C, $3C, $28, $28, $14, $00, $00, $EC, $D8, $D8, $C4, $C4, $C4, $B0, $B0, $B0, $B0, $9C, $9C, $9C, $9C, $9C, $9C, $9C, $9C, $9C, $9C, $B0, $B0, $B0, $B0, $C4, $C4, $C4, $D8, $D8, $EC, $00, $01, $00, $00, $02, $00, $00, $03, $00, $00, $05, $00, $00, $09, $00, $00, $07, $07, $07, $07, $04, $04, $04, $04, $04, $08, $00, $00, $0B, $0B, $0B, $0B, $06, $06, $06, $06, $06, $08, $00, $00   
 _72c8:
 .db $00, $00, $02, $02, $02, $00, $00, $02, $02, $00, $02, $00, $00, $00, $01, $04, $01, $00, $01, $04, $01, $01, $01, $04, $01, $01, $01, $04, $01, $FF, $02, $02, $01, $05, $01, $02, $01, $05, $01, $03, $01, $05, $01, $03, $01, $05, $01, $FF
+
+;sprite layout
 _72f8:
 .db $20, $22, $24, $26, $28, $FF
 .db $40, $42, $44, $46, $48, $FF
@@ -12476,7 +13243,7 @@ _732c:
 	add     hl,de
 	ld      ($d275),hl
 	ld      hl,$0002
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jp      c,+++
 	ld      a,($d408)
@@ -12544,15 +13311,15 @@ _732c:
 	ret     nz
 	ld      (ix+$0f),<_7540
 	ld      (ix+$10),>_7540
-	bit     1,(iy+$06)
+	bit     1,(iy+vars.flags6)
 	jr      nz,++
-	set     1,(iy+$06)
+	set     1,(iy+vars.flags6)
 +	xor     a
 	ld      l,a
 	ld      h,a
 	ld      ($d403),hl
 	ld      ($d405),a
-+++	bit     1,(iy+$06)
++++	bit     1,(iy+vars.flags6)
 	ret     z
 ++	ld      a,(ix+$12)
 	cp      $08
@@ -12578,7 +13345,7 @@ _732c:
 +	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	res     5,(iy+$00)
+	res     5,(iy+vars.flags0)
 	ld      a,($d223)
 	and     $0f
 	ret     nz
@@ -12636,15 +13403,21 @@ _74b6:
 _750e:
 .db $15, $12, $11, $10, $10, $0F, $0E, $0D, $03, $03, $03, $03, $03, $03, $03, $03
 .db $03, $03, $03, $03, $03, $03, $03, $03, $0D, $0E, $0F, $10, $10, $11, $12, $15
+
+;sprite layout
 _752e:
-.db $00, $02, $04, $06, $FF, $FF, $20, $22, $24, $26, $FF, $FF, $40, $42, $44, $46
-.db $FF, $FF
+.db $00, $02, $04, $06, $FF, $FF
+.db $20, $22, $24, $26, $FF, $FF
+.db $40, $42, $44, $46, $FF, $FF
 _7540:
-.db $00, $08, $0A, $06, $FF, $FF, $20, $22, $24, $26, $FF, $FF, $40, $42, $44, $46
-.db $FF, $FF
+.db $00, $08, $0A, $06, $FF, $FF
+.db $20, $22, $24, $26, $FF, $FF
+.db $40, $42, $44, $46, $FF, $FF
 _7552:
-.db $00, $68, $6A, $06, $FF, $FF, $20, $22, $24, $26, $FF, $FF, $40, $42, $44, $46
-.db $FF, $FF
+.db $00, $68, $6A, $06, $FF, $FF
+.db $20, $22, $24, $26, $FF, $FF
+.db $40, $42, $44, $46, $FF, $FF
+
 _7564:
 .db $00, $00, $30, $00, $60, $19, $62, $19, $61, $19, $63, $19, $10, $00, $30, $00
 .db $64, $19, $66, $19, $65, $19, $67, $19
@@ -12720,13 +13493,30 @@ _762e:
 .db $02, $04, $03, $04, $ff
 _7633:
 .db $04, $03, $05, $03, $ff
+
+;sprite layout
 _7638:
-.db $10, $12, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $6E, $0E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $28, $2A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $2C, $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $30, $32, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF
+.db $10, $12, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $6E, $0E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $28, $2A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $2C, $2E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $30, $32, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $50, $52, $FF, $FF, $FF, $FF
 .db $FF
 
 ;____________________________________________________________________________[$7699]___
@@ -12806,22 +13596,41 @@ _7699:
 	ld      (ix+$11),$00
 	jp      _7612
 
+;sprite layout
 _7752:
-.db $70, $72, $FF, $FF, $FF, $FF, $54, $56, $FF, $FF, $FF, $FF, $FF, $FF
+.db $70, $72, $FF, $FF, $FF, $FF
+.db $54, $56, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _7760:
-.db $5C, $5E, $FF, $FF, $FF, $FF, $58, $5A, $FF, $FF, $FF, $FF, $FF
+.db $5C, $5E, $FF, $FF, $FF, $FF
+.db $58, $5A, $FF, $FF, $FF, $FF
+.db $FF
 _776d:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $34, $36, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $34, $36, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _777b:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $38, $3A, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $38, $3A, $FF, $FF, $FF, $FF
+.db $FF
 _7788:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $1C, $1E, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $3C, $3E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FE, $FF, $FF, $FF
+
+.db $FF, $FF, $1C, $1E, $FF, $FF
+.db $FF, $FF, $FF
 _77a3:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $14, $16, $FF, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $14, $16, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _77b1:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $18, $1A, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $18, $1A, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$77BE]___
+;called by the boss object code -- probably the exploded egg ship
 
 _77be:
 	ld      a,($d2ec)
@@ -12831,10 +13640,10 @@ _77be:
 	and     a
 	jp      nz,++
 	ld      hl,$0c08
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz
 	ld      a,($d414)
 	rrca    
@@ -12941,10 +13750,10 @@ _77be:
 	ld      a,(RAM_LEVEL_MUSIC)
 	rst     $18			;`playMusic`
 	
-	ld      a,(iy+$0a)
-	res     0,(iy+$00)
+	ld      a,(iy+vars.spriteCount)
+	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 +	ld      (ix+$07),$00
 	ld      (ix+$08),$03
 	ld      (ix+$09),$00
@@ -12965,22 +13774,69 @@ _77be:
 	ld      ($d275),hl
 	ld      hl,$0000
 	ld      ($d27b),hl
-	set     5,(iy+$00)
-	set     0,(iy+$02)
-	res     1,(iy+$02)
+	set     5,(iy+vars.flags0)
+	set     0,(iy+vars.flags2)
+	res     1,(iy+vars.flags2)
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0b
 	jr      nz,+
-	set     1,(iy+$09)
+	set     1,(iy+vars.flags9)
 +	;UNKNOWN
 	ld      hl,$da28
 	ld      de,$2000
 	ld      a,12
 	call    decompressArt
 	ret
-    
+   
+  ;sprite layout
 _7922:
-.db $2A, $2C, $2E, $30, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $10, $12, $14, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $2A, $16, $18, $1A, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $3A, $3C, $3E, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70, $72, $FF, $20, $10, $12, $14, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $54, $56, $66, $68, $FF, $2A, $16, $18, $1A, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $5A, $5C, $70, $72, $FF, $20, $3A, $3C, $3E, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $54, $56, $66, $68, $FF, $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $5A, $5C, $70, $72, $FF, $20, $06, $08, $0A, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $20, $06, $08, $0A, $28, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF, $0E, $10, $12, $14, $16, $FF, $40, $42, $44, $46, $48, $FF, $60, $62, $64, $66, $68, $FF
+.db $2A, $2C, $2E, $30, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $6C, $6E, $70, $72, $FF
+
+.db $20, $10, $12, $14, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+.db $2A, $16, $18, $1A, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $6C, $6E, $70, $72, $FF
+
+.db $20, $3A, $3C, $3E, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+.db $2A, $34, $36, $38, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $6C, $6E, $70, $72, $FF
+
+.db $20, $10, $12, $14, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $54, $56, $66, $68, $FF
+
+.db $2A, $16, $18, $1A, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $5A, $5C, $70, $72, $FF
+
+.db $20, $3A, $3C, $3E, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $54, $56, $66, $68, $FF
+
+.db $2A, $34, $36, $38, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $5A, $5C, $70, $72, $FF
+
+.db $20, $06, $08, $0A, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+.db $20, $06, $08, $0A, $28, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
+
+.db $0E, $10, $12, $14, $16, $FF
+.db $40, $42, $44, $46, $48, $FF
+.db $60, $62, $64, $66, $68, $FF
 
 ;____________________________________________________________________________[$79FA]___
 
@@ -12994,10 +13850,10 @@ _79fa:
 	and     $02
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$fff8
 	ld      de,$0010
 	ld      c,$04
@@ -13005,8 +13861,8 @@ _79fa:
 	jr      z,+
 	ld      hl,$0028
 	ld      c,$00
-+	ld      ($d212),hl
-	ld      ($d214),de
++	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),de
 	add     a,c
 	call    _3581
 	ret
@@ -13021,12 +13877,12 @@ _7a3a:
 	and     $1f
 	ld      l,a
 	ld      h,$00
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    _LABEL_625_57
 	and     $1f
 	ld      l,a
 	ld      h,$00
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	pop     hl
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
@@ -13038,12 +13894,12 @@ _7a3a:
 	xor     a
 	ld      (ix+$00),$0a
 	ld      (ix+$01),a
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	ld      (ix+$04),a
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	add     hl,bc
 	ld      (ix+$05),l
 	ld      (ix+$06),h
@@ -13069,10 +13925,10 @@ _7aa7:
 	ld      (ix+$0d),$40
 	ld      (ix+$0e),$40
 	ld      hl,$0000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
-	bit     6,(iy+$06)
+	bit     6,(iy+vars.flags6)
 	ret     nz
 	ld      a,($d414)
 	and     $80
@@ -13087,8 +13943,8 @@ _7aa7:
 	ld      ($d404),hl
 	ld      hl,$d414
 	res     1,(hl)
-	set     6,(iy+$06)
-	ld      (iy+$03),$ff
+	set     6,(iy+vars.flags6)
+	ld      (iy+vars.joypad),$ff
 	ld      a,$11
 	rst     $28			;`playSFX`
 	ret
@@ -13161,7 +14017,7 @@ _7b85:
 
 _7b95:
 	set     5,(ix+$18)
-	set     0,(iy+$09)
+	set     0,(iy+vars.flags9)
 	ld      a,($d223)
 	and     $01
 	jp      z,+
@@ -13202,7 +14058,7 @@ _7b95:
 	sbc     hl,de
 	jr      nc,+
 	ld      (ix+$00),$ff
-	res     0,(iy+$09)
+	res     0,(iy+vars.flags9)
 	ret
 	
 +	ld      (ix+$07),a
@@ -13225,12 +14081,17 @@ _7c17:
 .db <_7c29, >_7c29, $1D
 .db <_7c31, >_7c31, $1D
 .db <_7c39, >_7c39, $1D
+
+;sprite layout
 _7c29:
-.db $B4, $B6, $FF, $FF, $FF, $FF, $FF, $FF
+.db $B4, $B6, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _7c31:
-.db $B8, $BA, $FF, $FF, $FF, $FF, $FF, $FF
+.db $B8, $BA, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _7c39:
-.db $BC, $BE, $FF, $FF, $FF, $FF, $FF, $FF
+.db $BC, $BE, $FF, $FF, $FF, $FF
+.db $FF, $FF
 
 ;____________________________________________________________________________[$7C41]___
 
@@ -13315,22 +14176,22 @@ _7ca6:
 	and     a
 	sbc     hl,de
 	ret     nz
-	res     5,(iy+$00)
+	res     5,(iy+vars.flags0)
 	ret 
 
 ;____________________________________________________________________________[$7CC1]___
 
 _LABEL_7CC1_12:
-	bit  6, (iy+6)
+	bit  6, (iy+vars.flags6)
 	ret  nz
-	ld   l, (ix+4)
-	ld   h, (ix+5)
+	ld   l, (ix+$04)
+	ld   h, (ix+$05)
 	xor  a
 	bit  7, d
 	jr   z, +
 	dec  a
 +	add  hl, de
-	adc  a, (ix+6)
+	adc  a, (ix+$06)
 	ld   l, h
 	ld   h, a
 	add  hl, bc
@@ -13432,20 +14293,25 @@ _7cf6:
 	ld      (ix+$0f),<_7df7
 	ld      (ix+$10),>_7df7
 +	ld      hl,$0204
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ret
 
 _7ddc:
 .db $00, $04, $01, $04, $FF
+
+;this looks like sprite layout data, but isn't quite normal
 _7de1:
-.db $60, $62, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $64, $66, $FF, $FF
+.db $60, $62, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $64, $66, $FF, $FF
 _7df7:
-.db $FF, $FF, $FF, $FF, $68, $6A, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $68, $6A
+.db $FF, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$7E02]___
 
@@ -13477,7 +14343,7 @@ _7e3c:
 	and  a
 	jp   m, +
 	ld   hl, $0806
-	ld   ($D214), hl
+	ld   (RAM_TEMP6), hl
 	call _LABEL_3956_11
 	jr   c, +
 	ld   bc, $0010
@@ -13500,9 +14366,11 @@ _7e3c:
 	ld   (ix+6), a
 	ret
 
+;sprite layout
 _7e89:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $18, $1A, $FF, $FF, $FF, $FF, $28, $2E, $FF, $FF
-.db $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $18, $1A, $FF, $FF, $FF, $FF
+.db $28, $2E, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$7E9B]___
 ;OBJECT: log - horizontal (Jungle)
@@ -13527,8 +14395,11 @@ _7e9b:
 	set     0,(ix+$18)
 	jp      _7e3c
 
+;sprite layout
 _7ed9:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6E, $48, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $6C, $6E, $6E, $48, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$7EE6]___
 ;OBJECT: log - floating (Jungle)
@@ -13560,7 +14431,7 @@ _7ee6:
 	and     a
 	jp      m,_8003
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jp      c,_8003
 	ld      bc,$0010
@@ -13677,8 +14548,20 @@ _800b:
 
 _8019:
 .db $00, $00, $00, $12, $12, $12, $24, $24, $24
+
+;sprite layout
 _8022:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $3A, $3C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $36, $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $4C, $4E, $FF, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $3A, $3C, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $36, $38, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $4C, $4E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$8053]___
 ;OBJECT: boss (Jungle)
@@ -13842,6 +14725,7 @@ _8053:
 	call    _79fa
 	ret
 
+;sprite layout
 _81f4:
 .db $20, $22, $24, $26, $28, $FF
 .db $40, $42, $44, $46, $48, $FF
@@ -13859,7 +14743,7 @@ _8218:
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$10
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      l,(ix+$07)
@@ -13928,9 +14812,15 @@ _82c1:
 .db $00, $04, $01, $04, $FF
 _82c6:
 .db $01, $0C, $02, $0C, $03, $0C, $FF
+
+;sprite layout
 _82cd:
-.db $08, $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $0C, $0E, $FF, $FF, $FF, $FF, $FF
+.db $08, $0A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0C, $0E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$82E6]___
 ;OBJECT: badnick - Yadrin (Bridge)
@@ -13939,16 +14829,16 @@ _82e6:
 	ld      (ix+$0d),$10
 	ld      (ix+$0e),$0f
 	ld      hl,$0408
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      (ix+$0d),$14
 	ld      (ix+$0e),$20
 	ld      hl,$1006
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0404
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
@@ -13990,12 +14880,24 @@ _8374:
 .db $00, $06, $01, $06, $FF
 _8379:
 .db $02, $06, $03, $06, $FF
+
+;sprite layout
 _837e:
-.db $FE, $00, $02, $FF, $FF, $FF, $20, $22, $24, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FE, $00, $02, $FF, $FF, $FF, $26, $28, $2A, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $4A, $4C, $4E, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $44, $46, $48, $FF
-.db $FF, $FF, $FF
+.db $FE, $00, $02, $FF, $FF, $FF
+.db $20, $22, $24, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $00, $02, $FF, $FF, $FF
+.db $26, $28, $2A, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $40, $42, $FF, $FF, $FF, $FF
+.db $4A, $4C, $4E, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $40, $42, $FF, $FF, $FF, $FF
+.db $44, $46, $48, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$83C1]___
 ;OBJECT: UNKNOWN
@@ -14011,7 +14913,7 @@ _83c1:
 	ld      (ix+$10),a
 	ld      l,a
 	ld      h,a
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	bit     1,(ix+$18)
 	jr      nz,+
 	call    _LABEL_625_57
@@ -14054,7 +14956,7 @@ _83c1:
 ++	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      de,($d25d)
 	inc     d
 	ld      l,(ix+$05)
@@ -14066,19 +14968,24 @@ _83c1:
 	ret
 	
 ++++	ld      hl,$0402
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
 	ld      a,($d408)
 	and     a
 	ret     m
-	ld      de,($d20e)
+	ld      de,(RAM_TEMP1)
 	ld      bc,$0010
 	call    _LABEL_7CC1_12
 	ret
+
+;sprite layout
 _8481:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF, $FF, $00, $00, $00
-.db $00, $00, $00, $00, $00
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $70, $72, $FF, $FF, $FF, $FF
+.db $FF
+
+.db $00, $00, $00, $00, $00, $00, $00, $00
 
 ;____________________________________________________________________________[$8496]___
 ;OBJECT: boss (Bridge)
@@ -14187,26 +15094,26 @@ _8496:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,bc
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	pop     hl
 	ld      b,$03
 	
 -	push    bc
 	ld      a,(hl)
-	ld      ($d212),a
+	ld      (RAM_TEMP4),a
 	inc     hl
 	ld      a,(hl)
-	ld      ($d213),a
+	ld      (RAM_TEMP5),a
 	inc     hl
 	ld      a,(hl)
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	inc     hl
 	ld      a,(hl)
-	ld      ($d215),a
+	ld      (RAM_TEMP7),a
 	inc     hl
 	push    hl
 	ld      c,$10
@@ -14246,11 +15153,11 @@ _85d1:
 	pop     ix
 	xor     a
 	ld      (ix+$00),$0d
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	ld      (ix+$01),a
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
 	ld      (ix+$05),l
 	ld      (ix+$06),h
@@ -14260,7 +15167,7 @@ _85d1:
 	ld      (ix+$15),a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	xor     a
 	bit     7,h
 	jr      z,+
@@ -14268,7 +15175,7 @@ _85d1:
 +	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	xor     a
 	bit     7,h
 	jr      z,+
@@ -14285,6 +15192,8 @@ _863a:
 .db $00, $00, $F6, $FF, $C0, $FE, $00, $FC, $60, $FE, $80, $FD, $C0, $FD, $00, $FF
 _864a:
 .db $20, $00, $F6, $FF, $40, $01, $00, $FC, $A0, $01, $80, $FD, $40, $02, $00, $FF
+
+;sprite layout
 _865a:
 .db $20, $22, $24, $26, $28, $FF
 .db $40, $42, $44, $46, $48, $FF
@@ -14373,47 +15282,47 @@ _866c:
 	ld      (ix+$16),a
 ++++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      l,(ix+$11)
 	ld      de,$0010
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,_8830
 	call    _881a
 	ld      hl,$0028
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$1c
 	sub     (ix+$11)
 	ld      l,a
 	ld      h,$00
 	ld      de,$0010
 	add     hl,de
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,_8830
 	call    _881a
 	ld      hl,$002c
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      l,(ix+$15)
 	ld      h,(ix+$16)
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,_8834
 	call    _881a
 	res     1,(ix+$18)
 	ld      (ix+$0d),$14
 	ld      a,$02
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	ld      a,(ix+$11)
 	ld      c,a
 	add     a,$08
 	ld      (ix+$0e),a
 	ld      a,c
 	add     a,$04
-	ld      ($d215),a
+	ld      (RAM_TEMP7),a
 	call    _LABEL_3956_11
 	jr      nc,+
 	ld      a,($d408)
@@ -14421,7 +15330,7 @@ _866c:
 	ret     m
 	ld      (ix+$0d),$3c
 	ld      a,$2a
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	ld      a,$1c
 	sub     (ix+$11)
 	add     a,$08
@@ -14429,7 +15338,7 @@ _866c:
 	ld      a,$1c
 	sub     (ix+$11)
 	add     a,$04
-	ld      ($d215),a
+	ld      (RAM_TEMP7),a
 	call    _LABEL_3956_11
 	jr      nc,++
 	ret
@@ -14465,7 +15374,7 @@ _866c:
 	ld      h,(ix+$06)
 	ld      bc,$0010
 	add     hl,bc
-	ld      a,($d215)
+	ld      a,(RAM_TEMP7)
 	sub     $04
 	ld      c,a
 	add     hl,bc
@@ -14486,10 +15395,10 @@ _881a:
 	ret     m
 	push    hl
 	call    _3581
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      de,$0008
 	add     hl,de
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	pop     hl
 	inc     hl
 	jp      _881a
@@ -14513,10 +15422,10 @@ _8837:
 	ld      (ix+$0d),$14
 	ld      (ix+$0e),$0c
 	ld      hl,$0a02
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0008
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      de,_88be
 	ld      bc,_88b4
@@ -14529,10 +15438,10 @@ _8837:
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$0c
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      de,_88be
 	ld      bc,_88b9
@@ -14550,11 +15459,23 @@ _88b4:
 .db $00, $04, $01, $04, $FF
 _88b9:
 .db $02, $04, $03, $04, $FF
+
+;sprite layout
 _88be:
-.db $04, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $0C, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $0E, $10, $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $0E, $10, $0C, $FF, $FF, $FF, $FF
+.db $04, $2A, $2C, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0C, $2A, $2C, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0E, $10, $0A, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0E, $10, $0C, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$88FB]___
 ;OBJECT: spike ball (Labyrinth)
@@ -14605,7 +15526,7 @@ _88fb:
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	ld      hl,$0204
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      (ix+$0f),<_8987
@@ -14617,8 +15538,11 @@ _88fb:
 	ld      (ix+$11),$00
 	ret
 
+;sprite layout
 _8987:
-.db $60, $62, $FF, $FF, $FF, $FF, $FF
+.db $60, $62, $FF, $FF, $FF, $FF
+.db $FF
+
 ;I imagine this a set of X/Y positions to do the spiked-ball rotation
 _898e:
 ;180 lines, ergo 2deg per frame?
@@ -14819,12 +15743,12 @@ _8af6:
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,($d223)
 	rlca    
 	rlca    
@@ -14880,7 +15804,7 @@ _8af6:
 	jp      m,+
 	push    hl
 	ld      d,$00
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	call    _3581
 	pop     hl
 +	pop     bc
@@ -14889,7 +15813,7 @@ _8af6:
 	ld      (ix+$10),b
 	ld      d,(hl)
 	ld      e,$04
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	inc     hl
 	ld      a,(hl)
 	ld      (ix+$0d),$01
@@ -14990,7 +15914,7 @@ _8c16:
 	bit     7,(ix+$18)
 	jr      nz,+
 	ld      hl,$0402
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      e,(ix+$02)
@@ -15034,10 +15958,13 @@ _8c16:
 	ld      (ix+$11),$96
 	jp      -
 
+;sprite layout
 _8d39:
-.db $2E, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $2E, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _8d41:
-.db $30, $FF, $FF, $FF, $FF, $FF, $FF
+.db $30, $FF, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$8D48]___
 ;OBJECT: meta - water line position (Labyrinth)
@@ -15088,7 +16015,7 @@ _8d48:
 	sbc     hl,de
 	jr      c,+
 	ld      a,e
-+	ld      ($d2db),a
++	ld      (RAM_WATERLINE),a
 	and     a
 	ret     z
 	cp      $ff
@@ -15096,12 +16023,12 @@ _8d48:
 	add     a,$09
 	ld      l,a
 	ld      h,$00
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      hl,($d25a)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,($d25d)
-	ld      ($d210),hl
-	ld      a,(iy+$0a)
+	ld      (RAM_TEMP3),hl
+	ld      a,(iy+vars.spriteCount)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -15126,13 +16053,13 @@ _8d48:
 	add     a,c
 	ld      l,a
 	ld      h,$00
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$00
 	call    _3581
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      de,$0008
 	add     hl,de
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$02
 	call    _3581
 	pop     hl
@@ -15142,7 +16069,7 @@ _8d48:
 	pop     hl
 	pop     af
 	ld      ($d23c),hl
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	ret
 	
 _8e16:
@@ -15170,10 +16097,10 @@ _8e56:
 	call    nz,_91eb
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      a,(ix+$11)
 	add     a,a
 	ld      e,a
@@ -15181,10 +16108,10 @@ _8e56:
 	ld      hl,_8eb6
 	add     hl,de
 	ld      e,(hl)
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	inc     hl
 	ld      e,(hl)
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	ld      a,$0c
 	call    _3581
 	inc     (ix+$12)
@@ -15232,7 +16159,7 @@ _8eca:
 	ld      (ix+$0c),$ff
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ex      de,hl
 	ld      hl,($d25a)
 	ld      bc,$0008
@@ -15252,7 +16179,7 @@ _8eca:
 	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ex      de,hl
 	ld      hl,($d2dc)
 	and     a
@@ -15272,8 +16199,8 @@ _8eca:
 	jr      nc,++
 +	ld      (ix+$00),$ff
 ++	ld      hl,$0000
-	ld      ($d212),hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,$0c
 	call    _3581
 	inc     (ix+$11)
@@ -15292,10 +16219,10 @@ _8f6d:
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$20
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0800
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      l,(ix+$0a)
 	ld      h,(ix+$0b)
@@ -15377,14 +16304,32 @@ _904f:
 .db $04, $04, $04, $04, $FF
 _9054:
 .db $05, $04, $05, $04, $FF
+
+;sprite layout
 _9059:
-.db $44, $46, $FF, $FF, $FF, $FF, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $48, $4A, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $4C, $4E, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $68, $6A
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF
-.db $6C, $6E, $FF, $FF, $FF, $FF, $FF
+.db $44, $46, $FF, $FF, $FF, $FF
+.db $64, $66, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $44, $46, $FF, $FF, $FF, $FF
+.db $48, $4A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $50, $52, $FF, $FF, $FF, $FF
+.db $70, $72, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $50, $52, $FF, $FF, $FF, $FF
+.db $4C, $4E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $44, $46, $FF, $FF, $FF, $FF
+.db $68, $6A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $50, $52, $FF, $FF, $FF, $FF
+.db $6C, $6E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$90C0]___
 ;OBJECT: platform - float up (Labyrinth)
@@ -15496,7 +16441,7 @@ _90c0:
 	ret
 	
 ++	ld      hl,$0e02
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
 	set     0,(ix+$18)
@@ -15513,8 +16458,11 @@ _90c0:
 	call    _LABEL_7CC1_12
 	ret
 
+;sprite layout
 _91de:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $16, $18, $1A, $1C, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $16, $18, $1A, $1C, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$91EB]___
 
@@ -15588,7 +16536,7 @@ _9267:
 	ld      hl,$02d0
 	ld      de,$0290
 	call    _7c8c
-	set     1,(iy+$09)
+	set     1,(iy+vars.flags9)
 	
 	;UNKNOWN
 	ld      hl,$e508
@@ -15678,12 +16626,12 @@ _9267:
 	ld      h,(ix+$03)
 	ld      de,$000f
 	add     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0022
 	add     hl,bc
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      a,(ix+$13)
 	and     a
 	jp      z,_9432
@@ -15697,11 +16645,11 @@ _9267:
 	pop     ix
 	xor     a
 	ld      (ix+$00),$2f
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	ld      (ix+$01),a
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
 	ld      (ix+$05),l
 	ld      (ix+$06),h
@@ -15757,14 +16705,14 @@ __	ld      hl,$00a2
 	ret     z
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0010
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$0030
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,($d223)
 	and     $02
 	call    _3581
@@ -15774,25 +16722,25 @@ _9432:
 	ld      h,(ix+$03)
 	ld      de,$0004
 	add     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$fffa
 	add     hl,de
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$ff00
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$ff00
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      c,$04
 	call    _85d1
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0020
 	add     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      hl,$0100
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      c,$04
 	call    _85d1
 	ld      a,$01
@@ -15805,6 +16753,8 @@ _9487:
 .db $28, $03, $B0, $02, $B0
 _948c:
 .db $02, $60, $03, $60, $02, $60, $02
+
+;sprite layout
 _9493:
 .db $20, $22, $24, $26, $28, $FF
 .db $40, $42, $44, $46, $48, $FF
@@ -15818,7 +16768,7 @@ _94a5:
 	ld      (ix+$0d),$08
 	ld      (ix+$0e),$0a
 	ld      hl,$0404
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	bit     1,(ix+$18)
@@ -15995,10 +16945,10 @@ _94a5:
 	jr      z,+
 	ld      de,$000f
 +	add     hl,de
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      a,($d223)
 	and     $0f
 	ret     nz
@@ -16009,11 +16959,11 @@ _94a5:
 	pop     ix
 	xor     a
 	ld      (ix+$00),$2a
-	ld      hl,($d20e)
+	ld      hl,(RAM_TEMP1)
 	ld      (ix+$01),a
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      hl,($d210)
+	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
 	ld      (ix+$05),l
 	ld      (ix+$06),h
@@ -16028,10 +16978,15 @@ _94a5:
 	pop     ix
 	ret
 
+;sprite layout
 _9688:
-.db $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $38, $3A, $FF, $FF, $FF, $FF, $FF, $FF
+.db $3C, $3E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $38, $3A, $FF, $FF
+.db $FF, $FF, $FF, $FF
 _9698:
-.db $56, $58, $FF, $FF, $FF, $FF, $FF, $FF, $5A, $5C, $FF, $FF, $FF, $FF, $FF, $FF
+.db $56, $58, $FF, $FF, $FF, $FF
+.db $FF, $FF, $5A, $5C, $FF, $FF
+.db $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$96A8]___
 ;OBJECT: UNKNOWN
@@ -16043,14 +16998,14 @@ _96a8:
 	ld      (ix+$10),a
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      l,a
 	ld      h,a
-	ld      ($d212),hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),hl
 	ld      e,(ix+$12)
 	ld      d,$00
 	ld      hl,_96f5
@@ -16080,7 +17035,7 @@ _96f8:
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	ld      a,(iy+$0a)
+	ld      a,(iy+vars.spriteCount)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -16094,29 +17049,29 @@ _96f8:
 	ld      ($d23c),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,(ix+$12)
 	and     a
 	jr      z,+
 	cp      $08
 	jr      nc,+
 	ld      hl,$0004
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$0c
 	jr      ++
 	
 +	ld      a,$40
 	call    _3581
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      de,$0008
 	add     hl,de
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$42
 ++	call    _3581
 	ld      a,($d2de)
@@ -16125,7 +17080,7 @@ _96f8:
 +++	pop     hl
 	pop     af
 	ld      ($d23c),hl
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$0c
 	ld      a,(ix+$12)
@@ -16143,7 +17098,7 @@ _96f8:
 	jp      ++
 	
 +	ld      hl,$0206
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      bc,($d401)
@@ -16169,7 +17124,7 @@ _96f8:
 	ld      ($d408),a
 	ld      ($d28e),a
 	ld      ($d29b),hl
-	set     2,(iy+$08)
+	set     2,(iy+vars.unknown0)
 	ld      a,$20
 	ld      ($d2fb),a
 	ld      (ix+$12),$10
@@ -16241,7 +17196,7 @@ _9866:
 	set     5,(ix+$18)
 	ld      (ix+$0f),<_9a7e
 	ld      (ix+$10),>_9a7e
-	bit     5,(iy+$03)
+	bit     5,(iy+vars.joypad)
 	jr      nz,+
 	ld      a,(ix+$11)
 	ld      (ix+$12),a
@@ -16259,7 +17214,7 @@ _9866:
 	cp      $01
 	jr      nc,+
 	ld      hl,$140c
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$16
 	call    _LABEL_3956_11
@@ -16285,7 +17240,7 @@ _9866:
 	ld      (ix+$0f),<_9a90
 	ld      (ix+$10),>_9a90
 	ld      hl,$080f
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$16
 	call    _LABEL_3956_11
@@ -16350,7 +17305,7 @@ _9866:
 +	ld      (ix+$0f),<_9aa2
 	ld      (ix+$10),>_9aa2
 	ld      hl,$021a
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$16
 	call    _LABEL_3956_11
@@ -16390,14 +17345,20 @@ _9a3e:
 .db $00, $F6, $80, $F5, $00, $F5, $C0, $F4, $80, $F4, $40, $F4, $00, $F4, $00, $F4
 .db $00, $F4, $00, $F4, $40, $F4, $80, $F4, $C0, $F4, $00, $F5, $00, $F6, $00, $F7
 .db $00, $F9, $00, $FA, $00, $FC, $80, $FC, $00, $FD, $C0, $FD, $00, $FF, $00, $FF
+
+;sprite layout
 _9a7e:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $38, $3A, $3C, $3E, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $38, $3A, $3C, $3E, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 _9a90:
-.db $48, $4A, $4C, $4E, $FF, $FF, $68, $6A, $6C, $6E, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF
+.db $48, $4A, $4C, $4E, $FF, $FF
+.db $68, $6A, $6C, $6E, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 _9aa2:
-.db $FE, $12, $14, $16, $FF, $FF, $FE, $32, $34, $36, $FF, $FF, $FF
+.db $FE, $12, $14, $16, $FF, $FF
+.db $FE, $32, $34, $36, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$9AAF]___
 
@@ -16472,7 +17433,7 @@ _9afb:
 	and     a
 	jr      nz,+
 	ld      hl,$0602
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
 	ld      a,($d2e8)
@@ -16502,8 +17463,10 @@ _9afb:
 +	dec     (ix+$11)
 	ret
 
+;sprite layout
 _9b6e:
-.db $08, $0A, $28, $2A, $FF, $FF, $FF
+.db $08, $0A, $28, $2A, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$9B75]___
 ;OBJECT: UNKNOWN
@@ -16513,7 +17476,7 @@ _9b75:
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$60
 	ld      hl,$0000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      l,(ix+$02)
@@ -16551,7 +17514,7 @@ _9b75:
 	ld      ($d2d3),a
 	ld      a,$01
 	ld      ($d289),a
-	set     4,(iy+$06)
+	set     4,(iy+vars.flags6)
 	jp      ++
 	
 +	inc     hl
@@ -16594,7 +17557,7 @@ _9bfc:
 	cp      $64
 	jr      nc,+
 	ld      hl,$0400
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 +	inc     (ix+$13)
@@ -16622,8 +17585,10 @@ _9bfc:
 	ld      (ix+$09),a
 	ret
 
+;sprite layout
 _9c69:
-.db $0C, $0E, $FF, $FF, $FF, $FF, $FF
+.db $0C, $0E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$9C70]___
 ;OBJECT: UNKNOWN
@@ -16636,8 +17601,10 @@ _9c70:
 	ld      (ix+$10),>_9c87
 	jp      _9bfc
 
+;sprite layout
 _9c87:
-.db $2C, $2E, $FF, $FF, $FF, $FF, $FF
+.db $2C, $2E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$9C8E]___
 ;OBJECT: flame thrower - scrap brain
@@ -16663,12 +17630,12 @@ _9c8e:
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,(ix+$11)
 	srl     a
 	srl     a
@@ -16709,7 +17676,7 @@ _9c8e:
 	inc     hl
 	ld      d,$00
 	push    hl
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	call    _3581
 	pop     hl
 	pop     bc
@@ -16719,7 +17686,7 @@ _9c8e:
 	and     a
 	jr      z,+
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 +	inc     (ix+$11)
@@ -16757,7 +17724,7 @@ _9dfa:
 	cp      $28
 	jr      nc,++
 	ld      hl,$0005
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
@@ -16908,12 +17875,20 @@ _9ed4:
 	set     0,(ix+$18)
 	ret
 
+;sprite layout
 _9f2b:
-.db $0A, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $0A, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $0A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF
+
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $0A, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0A, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$9F62]___
 ;OBJECT: door - one way right (Scrap Brain)
@@ -16925,7 +17900,7 @@ _9f62:
 	cp      $28
 	jr      nc,++
 	ld      hl,$0005
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
@@ -16977,12 +17952,20 @@ _9f62:
 ++	ld      de,_9fee
 	jp      _9e7e
 
+;sprite layout
 _9fee:
-.db $36, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $36, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $36, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $36, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF
+
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $36, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $36, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$A025]___
 ;OBJECT: door (Scrap Brain)
@@ -16994,7 +17977,7 @@ _a025:
 	cp      $28
 	jr      nc,++
 	ld      hl,$0005
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
@@ -17047,12 +18030,20 @@ _a025:
 ++	ld      de,_a0b1
 	jp      _9e7e
 
+;sprite layout
 _a0b1:
-.db $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF
-.db $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $38, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF
+
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF
+
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$A0E8]___
 ;OBJECT: electric sphere (Scrap Brain)
@@ -17083,7 +18074,7 @@ _a0e8:
 	ld      a,$13
 	rst     $28			;`playSFX`
 +	ld      hl,$0000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      de,_a173
@@ -17112,11 +18103,20 @@ _a167:
 .db $00, $01, $01, $01, $02, $01, $FF
 _a16e:
 .db $02, $01, $03, $01, $FF
+
+;sprite layout
 _a173:
-.db $02, $04, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FE, $FE, $FE, $FE
-.db $02, $04, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FE, $FE
-.db $16, $18, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $02, $04, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FE, $FE, $FE, $02, $04
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FE, $16, $18, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 .db $FF
 
 ;____________________________________________________________________________[$A1AA]___
@@ -17126,10 +18126,10 @@ _a1aa:
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$20
 	ld      hl,$0803
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0e00
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$01
@@ -17236,15 +18236,32 @@ _a2d2:
 .db $00, $1C, $01, $06, $FF
 _a2d7:
 .db $02, $18, $FF
+
+;sprite layout
 _a2da:
-.db $40, $42, $FF, $FF, $FF, $FF, $60, $62, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $44, $46, $FF, $FF, $FF, $FF, $64, $66, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $40, $42, $FF, $FF, $FF, $FF, $68, $6A, $FF, $FF, $FF, $FF
+.db $40, $42, $FF, $FF, $FF, $FF
+.db $60, $62, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $44, $46, $FF, $FF, $FF, $FF
+.db $64, $66, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $40, $42, $FF, $FF, $FF, $FF
+.db $68, $6A, $FF, $FF, $FF, $FF
 .db $FF
+
 _a30b:
-.db $50, $52, $FF, $FF, $FF, $FF, $70, $72, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $4C, $4E, $FF, $FF, $FF, $FF, $6C, $6E, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $50, $52, $FF, $FF, $FF, $FF, $48, $4A, $FF, $FF, $FF, $FF
+.db $50, $52, $FF, $FF, $FF, $FF
+.db $70, $72, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $4C, $4E, $FF, $FF, $FF, $FF
+.db $6C, $6E, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $50, $52, $FF, $FF, $FF, $FF
+.db $48, $4A, $FF, $FF, $FF, $FF
 .db $FF
 
 ;____________________________________________________________________________[$A33C]___
@@ -17255,7 +18272,7 @@ _a33c:
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$0f
 	ld      hl,$0101
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	bit     7,(ix+$18)
@@ -17298,11 +18315,23 @@ _a3b1:
 .db $00, $08, $FF
 _a3b4:
 .db $01, $0C, $02, $0C, $03, $0C, $FF
+
+;sprite layout
 _a3bb:
-.db $20, $22, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $74, $76, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $78, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $7C, $7E, $FF, $FF, $FF, $FF, $FF
+.db $20, $22, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $74, $76, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $78, $7A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $7C, $7E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$A3F8]___
 ;OBJECT: switch
@@ -17320,7 +18349,7 @@ _a3f8:
 	ld      (ix+$03),h
 	set     0,(ix+$18)
 +	ld      hl,$0001
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      a,($d408)
@@ -17362,12 +18391,17 @@ _a3f8:
 	ld      (ix+$0c),a
 	ret
 
+;sprite layout
 _a48b:
-.db $1A, $1C, $FF, $FF, $FF, $FF, $FF, $FF
+.db $1A, $1C, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _a493:
-.db $3A, $3C, $FF, $FF, $FF, $FF, $FF, $FF
+.db $3A, $3C, $FF, $FF, $FF, $FF
+.db $FF, $FF
 _a49b:
-.db $38, $3A, $FF, $FF, $FF, $FF, $FF, $FF, $34, $36, $FF, $FF, $FF, $FF, $FF, $FF
+.db $38, $3A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $34, $36, $FF, $FF
+.db $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$A4AB]___
 ;OBJECT: switch door
@@ -17379,7 +18413,7 @@ _a4ab:
 	cp      $28
 	jr      nc,++
 	ld      hl,$0005
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
@@ -17424,11 +18458,20 @@ _a4ab:
 +	ld      de,_a51a
 	jp      _9e7e
 
+;sprite layout
 _a51a:
-.db $3E, $FF, $FF, $FF, $FF, $FF, $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF
-.db $FF, $FF, $38, $FF, $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $3E, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $38, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+
+.db $38, $FF, $FF, $FF, $FF, $FF
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $3E, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$A551]___
 ;OBJECT: badnick - Caterkiller
@@ -17480,10 +18523,10 @@ _a551:
 +	ld      (ix+$14),c
 +++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	bit     1,(ix+$18)
 	jr      nz,++
 	ld      hl,_a711
@@ -17500,17 +18543,17 @@ _a551:
 	call    _a6a2
 	ld      (ix+$0d),$06
 	ld      hl,$0802
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	jr      c,+
 	call    _35e5
 	jr      +++
 	
 +	ld      (ix+$0d),$16
 	ld      hl,$0806
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	jr      +++
@@ -17529,7 +18572,7 @@ _a551:
 	call    _a6a2
 	ld      (ix+$0d),$10
 	ld      hl,$0401
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	call    _35fd
@@ -17537,10 +18580,10 @@ _a551:
 	
 +	ld      (ix+$0d),$16
 	ld      hl,$0410
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$0000
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 +++	ld      (ix+$0b),$01
 	ld      a,($d223)
@@ -17567,10 +18610,10 @@ _a688:
 	push    hl
 	ld      e,(hl)
 	ld      d,$00
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	ld      l,(ix+$13)
 	ld      h,(ix+$14)
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _3581
 	pop     hl
 	ld      de,$0016
@@ -17583,9 +18626,9 @@ _a6a2:
 	push    hl
 	ld      e,(hl)
 	ld      d,$00
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	ld      hl,$0000
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _3581
 	pop     hl
 	ld      de,$0016
@@ -17695,7 +18738,7 @@ _a7ed:
 	ld      hl,$0530
 	ld      de,$0220
 	call    _7c8c
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ld      hl,$05a0
 	ld      (ix+$01),$00
 	ld      (ix+$02),l
@@ -17711,7 +18754,7 @@ _a7ed:
 	
 +	bit     3,(ix+$18)
 	jr      nz,+
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -17746,7 +18789,7 @@ _a7ed:
 	ld      ($d414),a
 	ld      hl,$05a0
 	ld      ($d3fe),hl
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,$028e
@@ -17772,7 +18815,7 @@ _a7ed:
 	
 	ld      a,$a0
 	ld      ($d289),a
-	set     1,(iy+$06)
+	set     1,(iy+vars.flags6)
 	ret
 	
 ++	ld      a,(ix+$11)
@@ -17801,7 +18844,7 @@ _a7ed:
 	and     a
 	sbc     hl,bc
 	ld      bc,_a9c0
-	call    _LABEL_350F_95
+	call    processSpriteLayout
 	ld      a,(ix+$11)
 	and     $1f
 	cp      $0f
@@ -17812,15 +18855,18 @@ _a7ed:
 
 _a9b7:
 .db $03, $08, $04, $07, $05, $08, $04, $07, $FF
+
+;sprite layout
 _a9c0:
-.db $74, $76, $76, $78, $FF, $FF, $FF
+.db $74, $76, $76, $78, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$A9C7]___
 ;OBJECT: meta - clouds (Sky Base)
 
 _a9c7:
 	set     5,(ix+$18)
-	ld      a,(iy+$0a)
+	ld      a,(iy+vars.spriteCount)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -17852,14 +18898,14 @@ _a9c7:
 	and     a
 	sbc     hl,bc
 	ld      bc,_aa63
-	call    _LABEL_350F_95
+	call    processSpriteLayout
 	ld      a,($d2de)
 	add     a,$0c
 	ld      ($d2de),a
 +	pop     hl
 	pop     af
 	ld      ($d23c),hl
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 	ld      hl,($d25a)
 	ld      de,$ffe0
 	add     hl,de
@@ -17887,8 +18933,10 @@ _a9c7:
 	ld      (ix+$10),$00
 	ret
 
+;sprite layout
 _aa63:
-.db $40, $42, $44, $46, $FF, $FF, $FF
+.db $40, $42, $44, $46, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$AA6A]___
 ;OBJECT: propeller (Sky Base)
@@ -17914,10 +18962,10 @@ _aa6a:
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,_ab01
@@ -17931,11 +18979,11 @@ _aa6a:
 	ld      a,(de)
 	ld      l,a
 	ld      h,$00
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	inc     de
 	ld      a,(de)
 	ld      l,a
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	inc     de
 	ld      a,(de)
 	inc     de
@@ -17948,7 +18996,7 @@ _aa6a:
 	djnz    -
 	
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      (ix+$0f),$00
@@ -18023,9 +19071,9 @@ _ab21:
 	cp      $67
 	jp      nz,+++
 	ld      hl,$fffe
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffc
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jp      c,++++
 	ld      de,$0000
@@ -18033,27 +19081,27 @@ _ab21:
 	ld      b,d
 	call    _ac96
 	ld      hl,$0003
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffc
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jp      c,++++
 	ld      de,$0008
 	ld      bc,$0000
 	call    _ac96
 	ld      hl,$fffe
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffe
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jp      c,++++
 	ld      de,$0000
 	ld      bc,$0008
 	call    _ac96
 	ld      hl,$0003
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fffe
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _7c7b
 	jp      c,++++
 	ld      de,$0008
@@ -18096,7 +19144,7 @@ _ab21:
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
 ++++	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      a,($d223)
@@ -18139,11 +19187,11 @@ _ac96:
 	ld      (ix+$16),a
 	ld      (ix+$17),a
 	ld      (ix+$07),a
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      (ix+$08),l
 	ld      (ix+$09),h
 	ld      (ix+$0a),a
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	ld      (ix+$0b),l
 	ld      (ix+$0c),h
 	pop     ix
@@ -18159,15 +19207,31 @@ _acfe:
 .db $03, $20, $FF
 _ad01:
 .db $01, $02, $04, $02, $FF, $03, $02, $05, $02, $FF
+
+;sprite layout
 _ad0b:
-.db $0A, $0C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $0E, $10, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $2E, $30, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, 
+.db $0A, $0C, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $0E, $10, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $2A, $2C, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $2E, $30, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
 _ad53:
-.db $12, $14, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FF
+.db $12, $14, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $32, $34, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$AD6C]___
 ;OBJECT: canon (Sky Base)
@@ -18232,10 +19296,19 @@ _ad6c:
 
 _adfd:
 .db $00, $08, $01, $08, $02, $08, $FF
+
+;sprite layout
 _ae04:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $74, $76, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $78, $7A, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $FE, $FF, $FF, $FF, $FF, $FF, $7C, $7E, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $74, $76, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $78, $7A, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $7C, $7E, $FF, $FF, $FF, $FF
 .db $FF
 
 ;____________________________________________________________________________[$AE35]___
@@ -18255,7 +19328,7 @@ _ae35:
 	jr      nc,+
 	ld      (ix+$00),$ff
 +	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	xor     a
@@ -18269,8 +19342,10 @@ _ae35:
 	ld      (ix+$10),>_ae81
 	ret
 
+;sprite layout
 _ae81:
-.db $02, $04, $FF, $FF, $FF, $FF, $FF
+.db $02, $04, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$AE88]___
 ;OBJECT: badnick - Unidos (Sky Base)
@@ -18313,17 +19388,17 @@ _ae88:
 ++	ld      (ix+$0d),$1c
 	ld      (ix+$0e),$1c
 	ld      hl,$1212
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ld      hl,$1010
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	push    ix
 	pop     hl
 	ld      de,$0011
@@ -18342,24 +19417,24 @@ _ae88:
 	add     hl,de
 	push    hl
 	ld      e,(hl)
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	inc     hl
 	ld      e,(hl)
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	ld      a,$24
 	call    _3581
 	pop     hl
 	ld      a,(hl)
 	inc     a
 	inc     a
-	ld      ($d214),a
+	ld      (RAM_TEMP6),a
 	add     a,$04
 	ld      (ix+$0d),a
 	inc     hl
 	ld      a,(hl)
 	inc     a
 	inc     a
-	ld      ($d215),a
+	ld      (RAM_TEMP7),a
 	add     a,$04
 	ld      (ix+$0e),a
 	call    _LABEL_3956_11
@@ -18486,11 +19561,16 @@ _b0ac:
 .db $0E, $02, $0D, $02, $0C, $02, $0B, $03, $0B, $03, $0A, $03, $09, $04, $09, $04
 .db $08, $04, $07, $05, $07, $05, $06, $06, $06, $06, $05, $07, $05, $07, $04, $08
 .db $04, $09, $04, $09, $03, $0A, $03, $0B, $03
+
+;sprite layout
 _b0d5:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $26, $28, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $FE, $26, $28, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
 _b0e7:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $20, $22, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $FE, $20, $22, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$B0F4]___
 ;OBJECT: UNKNOWN
@@ -18502,12 +19582,12 @@ _b0f4:
 	ld      (ix+$0d),$04
 	ld      (ix+$0e),$0a
 	ld      hl,$0602
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ex      de,hl
 	ld      hl,($d25a)
 	ld      bc,$fff0
@@ -18523,7 +19603,7 @@ _b0f4:
 	jr      c,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ex      de,hl
 	ld      hl,($d25d)
 	ld      bc,$fff0
@@ -18538,8 +19618,8 @@ _b0f4:
 	sbc     hl,de
 	jr      c,+
 	ld      hl,$0000
-	ld      ($d212),hl
-	ld      ($d214),hl
+	ld      (RAM_TEMP4),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,$24
 	call    _3581
 	ret
@@ -18562,10 +19642,10 @@ _b16c:
 	ld      (ix+$10),$00
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      a,(ix+$11)
 	add     a,a
 	add     a,a
@@ -18582,14 +19662,14 @@ _b16c:
 	bit     7,e
 	jr      z,+
 	ld      d,$ff
-+	ld      ($d212),de
++	ld      (RAM_TEMP4),de
 	inc     hl
 	ld      d,$00
 	ld      e,(hl)
 	bit     7,e
 	jr      z,+
 	ld      d,$ff
-+	ld      ($d214),de
++	ld      (RAM_TEMP6),de
 	inc     hl
 	ld      a,(hl)
 	inc     hl
@@ -18627,11 +19707,11 @@ _b16c:
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	inc     hl
 	ld      e,(hl)
 	ld      d,$00
@@ -18688,7 +19768,7 @@ _b297:
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$10
 	ld      hl,$0a02
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      hl,$0030
@@ -18715,12 +19795,12 @@ _b297:
 	ld      ($d3ff),a
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$fff8
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,_b388
@@ -18731,7 +19811,7 @@ _b297:
 	ld      e,(hl)
 	ld      d,$00
 	inc     hl
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	ld      a,(hl)
 	inc     hl
 	cp      $ff
@@ -18752,8 +19832,12 @@ _b297:
 	ld      (ix+$11),$00
 	ret
 
+;sprite layout
 _b37b:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $36, $36, $36, $36, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $36, $36, $36, $36, $FF, $FF
+.db $FF
+
 _b388:
 .db $08, $1C, $18, $3C, $08, $1E, $18, $3E, $08, $38, $18, $3A, $0C, $1A, $00, $FF
 
@@ -18774,7 +19858,7 @@ _b398:
 	ld      (ix+$0f),<_b45b
 	ld      (ix+$10),>_b45b
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 
 	call    _LABEL_3956_11
 	call    nc,_35fd
@@ -18786,18 +19870,18 @@ _b398:
 	adc     a,$00
 	ld      l,h
 	ld      h,a
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      ($d210),hl
+	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      hl,$fff0
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      a,$16
 	call    _3581
 	ld      hl,$0008
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      a,$18
 	call    _3581
 	ld      l,(ix+$02)
@@ -18837,9 +19921,11 @@ _b398:
 	ld      (ix+$09),a
 	ret
 
+;sprite layout
 _b45b:
-.db $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF, $FF, $FF, $16, $18, $FF, $FF
-.db $FF, $FF
+.db $16, $18, $FF, $FF, $FF, $FF
+.db $16, $18, $FF, $FF, $FF, $FF
+.db $16, $18, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$B46D]___
 ;OBJECT: fixed turret (Sky Base)
@@ -18878,12 +19964,12 @@ _b46d:
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($d214),de
+	ld      (RAM_TEMP6),de
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
@@ -18935,7 +20021,7 @@ _b50e:
 	ld      (ix+$10),h
 	ld      a,$50
 	ld      ($d216),a
-	call    +
+	call    _b53b
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $a0
@@ -18943,7 +20029,10 @@ _b50e:
 	ld      (ix+$11),$00
 	ret
 
-+	ld      a,($d216)
+;----------------------------------------------------------------------------[$B53B]---
+
+_b53b:
+	ld      a,($d216)
 	ld      l,a
 	ld      de,$0010
 	ld      c,$00
@@ -18989,7 +20078,7 @@ _b50e:
 	ld      (ix+$0d),$1e
 	ld      (ix+$0e),$1c
 	ld      hl,$0802
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
 	ld      e,(ix+$0a)
@@ -18998,8 +20087,11 @@ _b50e:
 	call    _LABEL_7CC1_12
 	ret
 
+;sprite layout
 _b5b5:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $6C, $6E, $6C, $6E, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $6C, $6E, $6C, $6E, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$B5C2]___
 
@@ -19036,7 +20128,7 @@ _b5c2:
 	ld      (ix+$15),a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	bit     7,h
 	jr      z,+
 	ld      a,$ff
@@ -19044,7 +20136,7 @@ _b5c2:
 	ld      (ix+$08),h
 	ld      (ix+$09),a
 	xor     a
-	ld      hl,($d214)
+	ld      hl,(RAM_TEMP6)
 	bit     7,h
 	jr      z,+
 	ld      a,$ff
@@ -19094,7 +20186,7 @@ _b634:
 	ld      a,index_music_boss3
 	rst     $18			;`playMusic`
 	
-	set     4,(iy+$08)
+	set     4,(iy+vars.unknown0)
 	set     0,(ix+$18)
 +	ld      a,(ix+$15)
 	and     a
@@ -19196,7 +20288,7 @@ _b634:
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      hl,_ba3b
-+	ld      de,$d20e
++	ld      de,RAM_TEMP1
 	ldi     
 	ldi     
 	ldi     
@@ -19209,10 +20301,10 @@ _b634:
 	inc     hl
 	push    hl
 	call    _3581
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	ld      de,$0008
 	add     hl,de
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	pop     hl
 	ld      a,(hl)
 	call    _3581
@@ -19224,7 +20316,7 @@ _b634:
 	ld      (ix+$16),a
 	ld      (ix+$17),a
 	set     2,(ix+$18)
-	res     4,(iy+$08)
+	res     4,(iy+vars.unknown0)
 	
 	ld      a,index_music_scrapBrain
 	rst     $18			;`playMusic`
@@ -19239,7 +20331,7 @@ _b7e6:
 	ld      a,($d2b1)
 	and     a
 	ret     nz
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz
 	ld      a,($d414)
 	rrca    
@@ -19297,8 +20389,8 @@ _b821:
 	ld      a,(ix+$11)
 	cp      $0f
 	jr      nz,+
-	set     5,(iy+$00)
-	res     1,(iy+$02)
+	set     5,(iy+vars.flags0)
+	res     1,(iy+vars.flags2)
 	ld      hl,$0550
 	ld      ($d275),hl
 +	ld      e,(ix+$02)
@@ -19398,7 +20490,7 @@ _b821:
 	call    _7c41
 	ret
 	
-++++	ld      (iy+$03),$ff
+++++	ld      (iy+vars.joypad),$ff
 	call    _b99f
 	ld      a,(ix+$16)
 	cp      $30
@@ -19465,7 +20557,7 @@ _b99f:
 ;____________________________________________________________________________[$B9D5]___
 
 _b9d5:
-	bit     5,(iy+$08)
+	bit     5,(iy+vars.unknown0)
 	ret     nz
 	call    _7c7b
 	ret     c
@@ -19514,19 +20606,41 @@ _ba3b:
 .db $90, $01, $00, $00, $00, $00, $00, $00, $00, $00, $20, $04, $A0, $01, $5A, $10
 .db $5B, $10, $37, $10, $3B, $10, $30, $04, $A0, $01, $5C, $10, $5D, $10, $3C, $10
 .db $00, $10, $40, $04, $A0, $01, $5E, $10, $5F, $10, $00, $10, $2D, $10
+
+;sprite layout
 _baf9:
-.db $FE, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $4A, $4C, $4E
-.db $FF, $FF, $FE, $0A, $0C, $0E, $FF, $FF, $28, $2A, $2C, $2E, $FF, $FF, $FE, $02
-.db $04, $06, $FF, $FF
+.db $FE, $0A, $0C, $0E, $FF, $FF
+.db $28, $2A, $2C, $2E, $FF, $FF
+.db $FE, $4A, $4C, $4E, $FF, $FF
+
+.db $FE, $0A, $0C, $0E, $FF, $FF
+.db $28, $2A, $2C, $2E, $FF, $FF
+.db $FE, $02, $04, $06, $FF, $FF
 _bb1d:
-.db $10, $12, $14, $16, $FF, $FF, $30, $32, $34, $FE, $FF, $FF, $50, $52, $54, $FE
-.db $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E, $FF, $FF, $FE, $64
-.db $66, $68, $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E, $FF, $FF
-.db $FE, $6A, $6C, $6E, $FF, $FF, $18, $1A, $1C, $1E, $FF, $FF, $FE, $3A, $3C, $3E
-.db $FF, $FF, $70, $72, $5A, $5C, $5E, $FF, $00, $0A, $0C, $0E, $FF, $FF, $28, $2A
-.db $2C, $2E, $FF, $FF, $00, $4A, $4C, $4E, $FF, $FF
+.db $10, $12, $14, $16, $FF, $FF
+.db $30, $32, $34, $FE, $FF, $FF
+.db $50, $52, $54, $FE, $FF, $FF
+
+.db $18, $1A, $1C, $1E, $FF, $FF
+.db $FE, $3A, $3C, $3E, $FF, $FF
+.db $FE, $64, $66, $68, $FF, $FF
+
+.db $18, $1A, $1C, $1E, $FF, $FF
+.db $FE, $3A, $3C, $3E, $FF, $FF
+.db $FE, $6A, $6C, $6E, $FF, $FF
+
+.db $18, $1A, $1C, $1E, $FF, $FF
+.db $FE, $3A, $3C, $3E, $FF, $FF
+.db $70, $72, $5A, $5C, $5E, $FF
+
+.db $00, $0A, $0C, $0E, $FF, $FF
+.db $28, $2A, $2C, $2E, $FF, $FF
+.db $00, $4A, $4C, $4E, $FF, $FF
+
 _bb77:
-.db $FE, $FF, $FF, $FF, $FF, $FF, $FE, $44, $46, $FF, $FF, $FF, $FF
+.db $FE, $FF, $FF, $FF, $FF, $FF
+.db $FE, $44, $46, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$BB84]___
 ;OBJECT: boss - electric beam (Sky Base)
@@ -19547,22 +20661,22 @@ _bb84:
 	ld      (ix+$12),$01
 	set     0,(ix+$18)
 +	ld      hl,$0390
-	ld      ($d20e),hl
+	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$11)
 	ld      h,$00
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	ld      l,h
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	ld      de,$011a
 	ld      hl,_bcdd
 	call    _bca5
 	ld      e,(ix+$11)
 	ld      d,$00
-	ld      ($d212),de
+	ld      (RAM_TEMP4),de
 	ld      de,$01d2
 	ld      hl,_bcdd
 	call    _bca5
-	bit     4,(iy+$08)
+	bit     4,(iy+vars.unknown0)
 	ret     z
 	bit     1,(ix+$18)
 	jr      z,+
@@ -19606,7 +20720,7 @@ _bb84:
 	and     a
 	sbc     hl,bc
 	jr      c,+
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	call    z,_35fd
 +	ld      a,($d2ec)
 	cp      $06
@@ -19671,7 +20785,7 @@ _bb84:
 ;____________________________________________________________________________[$BAC5]___
 
 _bca5:
-	ld      ($d210),de
+	ld      (RAM_TEMP3),de
 	ld      a,(hl)
 	inc     hl
 	push    hl
@@ -19680,14 +20794,14 @@ _bca5:
 	ld      a,(hl)
 	inc     hl
 	push    hl
-	ld      hl,($d212)
+	ld      hl,(RAM_TEMP4)
 	push    hl
 	ld      de,$0008
 	add     hl,de
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	call    _3581
 	pop     hl
-	ld      ($d212),hl
+	ld      (RAM_TEMP4),hl
 	pop     hl
 	ret
 
@@ -19702,12 +20816,12 @@ _bcdd:
 
 _bcdf:
 	set     5,(ix+$18)
-	set     5,(iy+$08)
+	set     5,(iy+vars.unknown0)
 	ld      hl,$0202
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
-	bit     0,(iy+$05)
+	bit     0,(iy+vars.scrollRingFlags)
 	call    z,_35fd
 	jp      ++++
 	
@@ -19794,25 +20908,34 @@ _bcdf:
 +	ld      bc,_bdc7
 	ld      de,_bdce
 	call    _7c41
-	bit     4,(iy+$08)
+	bit     4,(iy+vars.unknown0)
 	ret     nz
 ++++	ld      (ix+$00),$ff
-	res     5,(iy+$08)
+	res     5,(iy+vars.unknown0)
 	ret
 
 _bdc7:
 .db $00, $01, $01, $01, $02, $01, $FF
+
+;sprite layout
 _bdce:
-.db $44, $46, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $48, $08, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-.db $FF, $FF, $FF, $FF, $60, $62, $FF, $FF, $FF, $FF, $FF
+.db $44, $46, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $48, $08, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+.db $FF, $FF, $FF, $FF, $FF, $FF
+
+.db $60, $62, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$BDF9]___
 ;OBJECT: final animation
 
 _bdf9:
 	set     5,(ix+$18)
-	ld      (iy+$03),$ff
+	ld      (iy+vars.joypad),$ff
 	bit     1,(ix+$18)
 	jr      nz,+
 	ld      hl,S1_BossPalette
@@ -19823,7 +20946,7 @@ _bdf9:
 	ld      hl,$0000
 	ld      ($d401),hl
 	ld      (ix+$12),$ff
-	set     6,(iy+$07)
+	set     6,(iy+vars.timeLightningFlags)
 	set     1,(ix+$18)
 +	ld      a,($d223)
 	rrca    
@@ -19845,7 +20968,7 @@ _bdf9:
 	ld      ($d401),hl
 	xor     a
 	ld      ($d3fc),a
-	set     6,(iy+$08)
+	set     6,(iy+vars.unknown0)
 	ld      a,$06
 	rst     $28			;`playSFX`
 +	ld      (ix+$0d),$20
@@ -19857,7 +20980,7 @@ _bdf9:
 	ld      (ix+$0a),a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
-	bit     6,(iy+$07)
+	bit     6,(iy+vars.timeLightningFlags)
 	jr      z,+
 	ld      de,($d25a)
 	ld      hl,$0040
@@ -19874,7 +20997,7 @@ _bdf9:
 	bit     0,(ix+$18)
 	jr      nz,+
 	ld      hl,$1008
-	ld      ($d214),hl
+	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      de,$0001
@@ -19891,7 +21014,7 @@ _bdf9:
 	adc     a,$00
 	ld      ($d406),hl
 	ld      ($d408),a
-	res     6,(iy+$07)
+	res     6,(iy+vars.timeLightningFlags)
 	set     0,(ix+$18)
 	ld      (ix+$11),$01
 	ld      a,$01
@@ -19916,7 +21039,7 @@ _bdf9:
 	ld      a,($d27f)
 	cp      $06
 	jr      c,+
-	set     7,(iy+$08)
+	set     7,(iy+vars.unknown0)
 	ret
 	
 +	ld      a,($d289)
@@ -19930,9 +21053,14 @@ _bdf9:
 _bf21:
 .db $2A, $2C, $2E, $30, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70
 .db $72, $FF
+
+;sprite layout
 _bf33:
-.db $2A, $34, $36, $38, $32, $FF, $4A, $4C, $4E, $50, $52, $FF, $6A, $6C, $6E, $70
-.db $72, $FF, $5C, $5E, $FF, $FF, $FF, $FF, $FF
+.db $2A, $34, $36, $38, $32, $FF
+.db $4A, $4C, $4E, $50, $52, $FF
+.db $6A, $6C, $6E, $70, $72, $FF
+.db $5C, $5E, $FF, $FF, $FF, $FF
+.db $FF
 
 ;____________________________________________________________________________[$BF4C]___
 ;OBJECT: all emeralds animation
@@ -19941,8 +21069,10 @@ _bf4c:
 	set     5,(ix+$18)
 	ld      hl,$5400
 	call    _c1d
+	
 	bit     0,(ix+$18)
 	jr      nz,+
+	
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -19970,7 +21100,7 @@ _bf4c:
 	ld      a,($d223)
 	rrca    
 	jr      nc,+
-	ld      a,(iy+$0a)
+	ld      a,(iy+vars.spriteCount)
 	ld      hl,($d23c)
 	push    af
 	push    hl
@@ -19988,11 +21118,11 @@ _bf4c:
 	and     a
 	sbc     hl,bc
 	ld      bc,_bff1
-	call    _LABEL_350F_95
+	call    processSpriteLayout
 	pop     hl
 	pop     af
 	ld      ($d23c),hl
-	ld      (iy+$0a),a
+	ld      (iy+vars.spriteCount),a
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$0020
@@ -20006,8 +21136,12 @@ _bf4c:
 	set     2,(iy+$0d)
 	ret
 
+;sprite layout
 _bff1:
-.db $5C, $5E, $FF, $FF, $FF, $FF, $FF, $49, $43, $20, $54, $48, $45, $20, $48
+.db $5C, $5E, $FF, $FF, $FF, $FF
+.db $FF
+
+.db $49, $43, $20, $54, $48, $45, $20, $48
 
 ;======================================================================================
 ;music code and song data

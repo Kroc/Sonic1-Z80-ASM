@@ -3,6 +3,8 @@ RAM MAP:
 c000-cfff?	Floor Layout
 
 d000-d0c0	Sprite table? (X:Y:I)
+d024
+d03F
 
 d200-d20e						set to 0 during initialisation
 d20e/f		absolute address to the art data in `decompressArt`,
@@ -15,9 +17,9 @@ d214/5		where the UniqueRows list begins in `decompressArt`
 d216/7		Address for the list of banks in use by the current level (e.g. 5 & 6)
 d218-d229	VDP register cache
 d223/4							Counts down from $1000? when starting a level
-d225/6							set in _323
-d227/8							set in _323
-d229/a							set in _323
+d225/6		UNUSED?					set in _323
+d227/8		UNUSED?					set in _323
+d229/a		UNUSED?					set in _323
 d22b/c		
 d22f		
 d22b/e		Palette address to load on IRQ		Set to the address of the Initial Palette
@@ -71,7 +73,7 @@ d298/a
 d29f/a0		Time					Set to $FFFE during level load
 d2a4		LevelHeader: Cycle Speed
 d2a5		Set to above
-d2a6		Set to 0 after doing above
+d2a6		current cycle
 d2a7		LevelHeader: Colour Cycles
 d2a8/9		Address of the cycle palette for the current level
 d2aa		Ring count				set to 0 during level load
@@ -87,6 +89,7 @@ d2b7							set to 0 during level load
 d2be-c2							Set to $A0 $A2 $A4 $00 $FF in _2e5a
 d2ce/d/f						Set to $01, $30, $00 loading level
 d2d2		Current music number?
+d2d3
 d2d4		LevelHeader: Solidity Pointer
 d2d7/8
 d2db		water line height on the screen - copied into $D248 to do the raster split
@@ -106,9 +109,8 @@ d31f/20
 d32e+							Level number lookup table
 d354-d37c	Level header
 
-d37e-d39e	current on-screen objects?		16 16-bit numbers, checked in _329b
+d37e-d3bd?	current on-screen objects?		31 16-bit numbers, checked in _329b
 
-d3bc
 d3fc-d8f7?	Object data (ID, X*32, Y*32)
 
 d403-d416						Set to 0 in _235e
@@ -160,7 +162,7 @@ iy+5		LevelHeader: Scrolling/Ring HUD		copied to iy+11 during level load
  7		- No scroll down
 
 iy+6		LevelHeader: Underwater flag		copied to iy+12 during level load
- 0
+ 0		- ?					checked in updateSonicSpriteFrame
  1		- ?
  3		- ?					Set after loading level
  4		- ?					
@@ -176,7 +178,7 @@ iy+7		LevelHeader: Time HUD / Lightning	Used in the pause handler, could be the 
  4		- underwater boss palette
  5		- Time
  6		- Scroll lock
- 7		- ?					Tested in _LABEL_F7_25
+ 7		- flag to update Sonic sprite frame
 
 iy+8		LevelHeader: 00, unknown byte
  0		- ?					Reset after level load
@@ -184,6 +186,7 @@ iy+8		LevelHeader: 00, unknown byte
 iy+9
  0		- ?					Reset after level load
  1							interrupts dis/enabled in `decompressArt`
+
 iy+10/a		Number of sprites?			Set to $40 in _LABEL_5E2_64
 
 iy+11/b		Copy of IY+5 (Scrolling/RingHUD) during level load
