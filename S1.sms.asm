@@ -229,6 +229,11 @@
 .DEF RAM_RING_CURRENT_FRAME	$D293
 .DEF RAM_RING_PREVIOUS_FRAME	$D295
 
+;a pointer to a position within a sprite table, consisting of three bytes each entry:
+ ;X-position, Y-position and sprite index number. this is used to set where the next
+ ;sprites will be created in the table, e.g. `processSpriteLayout`
+.DEF RAM_SPRITETABLE_CURRENT	$D23C
+
 ;======================================================================================
 
 .BANK 0
@@ -1276,7 +1281,7 @@ _rowIndexTable:
 decompressScreen:
 ;BC : length of the compressed data
 ;DE : VDP register number (D) and value byte (E) to send to the VDP
-;HL : Absolute address to the start of the compressed screen data
+;HL : absolute address to the start of the compressed screen data
 	di				;disable interrupts
 	
 	;configure the VDP based on the DE parameter
@@ -1388,7 +1393,7 @@ loadPalette:
 ;A  : which palette(s) to set
     ;  bit 0 - tile palette (0-15)
     ;  bit 1 - sprite palette (16-31)
-;HL : Address of palette
+;HL : address of palette
 	push af
 	
 	ld   b, 16			;we will copy 16 colours
@@ -1462,7 +1467,7 @@ readJoypad:
 ;____________________________________________________________________________[$05AF]___
 
 print:
-;HL : Address to memory with column and row numbers, then data terminated with $FF
+;HL : address to memory with column and row numbers, then data terminated with $FF
 	
 	;get the column number
 	ld   c, (hl)
@@ -1527,12 +1532,12 @@ hideSprites:
 	ld   e, l
 	ld   d, h
 	ld   bc, $00BD
-	;set the first two bytes as #$E0
+	;set the first two bytes as #$E0 (X&Y position)
 	ld   a, $E0
 	ld   (de), a
 	inc  de
 	ld   (de), a
-	;then move forward another two bytes
+	;then move forward another two bytes (skips the sprite index number)
 	inc  de
 	inc  de
 	;copy 189 bytes from $D000 to $D003+ (up to $D0C0)
@@ -1879,6 +1884,7 @@ _06bd:
 +++	ret
 
 ;____________________________________________________________________________[$07DB]___
+;fill in new tiles when the screen has scrolled
 
 _LABEL_7DB_26:
 	bit  0, (iy+vars.flags2)
@@ -1889,69 +1895,94 @@ _LABEL_7DB_26:
 	push de
 	push bc
 	
+	;------------------------------------------------------------------------------
+	;calculate the number of bytes to offset by to get to the correct row in the
+	 ;screen table
+	
 	ld   a, (RAM_SCROLL_VERTICAL)
-	and  %11111000
+	and  %11111000			;round the scroll to the nearest 8 pixels
+	
+	;multiply the vertical scroll offset by 8. since the scroll offset will be a
+	 ;multiple of 8, this will give you 64 bytes per screen row, the correct amount
 	ld   b, $00
-	add  a, a
+	add  a, a			;x2
 	rl   b
-	add  a, a
+	add  a, a			;x4
 	rl   b
-	add  a, a
+	add  a, a			;x8
 	rl   b
 	ld   c, a
+	
+	;------------------------------------------------------------------------------
+	;calculate the number of bytes to get from the beginning of a row to the 
+	 ;horizontal scroll position
+	
 	ld   a, (RAM_SCROLL_HORIZONTAL)
 	
 	bit  6, (iy+vars.flags0)
 	jr   z, +
+	add  a, 8			;add 8 pixels (left screen border?)
++	and  %11111000			;and then round to the nearest 8 pixels
 	
-	add  a, $08
-+	and  %11111000
-	srl  a
-	srl  a
+	srl  a				;divide by 2 ...
+	srl  a				;divide by 4
 	add  a, c
 	ld   c, a
-	ld   hl, $3800
-	add  hl, bc
-	set  6, h
-	ld   bc, $0040
-	ld   d, $7F
-	ld   e, $07
+	
+	ld   hl, $3800			;beginning of the screen table
+	add  hl, bc			;offset to the top of the column needed
+	set  6, h			;add bit 6 to label as a VDP VRAM address
+	
+	ld   bc, 64			;there are 32 tiles (16-bit) per screen-width
+	ld   d, $3F|%01000000		;upper limit of the screen table
+					 ;(bit 6 is set as it is a VDP VRAM address)
+	ld   e, 7
+	
+	;------------------------------------------------------------------------------
 	exx
 	ld   hl, $D180
+	
+	;find where in a block the scroll offset sits (this is needed to find which
+	 ;of the 4 tiles width in a block have to be referenced)
 	ld   a, (RAM_SCROLL_VERTICAL)
-	and  $1F
-	srl  a
-	srl  a
-	srl  a
-	ld   c, a
+	and  %00011111			;MOD 32
+	srl  a				;divide by 2 ...
+	srl  a				;divide by 4 ...
+	srl  a				;divide by 8
+	ld   c, a			;load this into BC
 	ld   b, $00
+	add  hl, bc			;add twice to HL
 	add  hl, bc
-	add  hl, bc
-	ld   b, $32
+	ld   b, $32			;set BC to $BE32
 	ld   c, $BE
-
+	
+	;set the VDP address calculated earlier
 -	exx
 	ld   a, l
 	out  (SMS_VDP_CONTROL), a
 	ld   a, h
 	out  (SMS_VDP_CONTROL), a
+	
+	;move to the next row
 	add  hl, bc
 	ld   a, h
-	cp   d
+	cp   d				;don't go outside the screen table
 	jp   nc, +++
 	
 --	exx
-	outi
-	outi
+	outi				;send the tile index
+	outi				;send the tile meta
 	jp   nz, -
+	
 	exx
 	pop  bc
 	pop  de
 	pop  hl
 	exx
-
+	
+	;------------------------------------------------------------------------------
 ++	bit  1, (iy+vars.flags2)
-	jp   z, ++
+	jp   z, ++			;could  optimise to `ret z`?
 	ld   a, (RAM_SCROLL_VERTICAL)
 	ld   b, $00
 	srl  a
@@ -2020,12 +2051,14 @@ _LABEL_7DB_26:
 	out  (SMS_VDP_CONTROL), a
 	ld   a, d
 	out  (SMS_VDP_CONTROL), a
+	
 -	outi
 	outi
 	jp   nz, -
 
 ++	ret
 
+	;------------------------------------------------------------------------------
 +++	sub  e
 	ld   h, a
 	jp   --
@@ -2123,8 +2156,10 @@ _08d5:
 	ret
 
 ;____________________________________________________________________________[$0966]___
+;draw a block on screen?
 
 _0966:
+	;page in banks 4 & 5 (containing the block mappings)
 	di      			;disable interrupts
 	ld      a,4
 	ld      (SMS_PAGE_1),a
@@ -2133,8 +2168,9 @@ _0966:
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
 	
-	ld      bc,$0000
+	ld      bc,$0000		;$10000
 	call    _08d5
+	
 	ld      de,$3800
 	ld      b,$06
 
@@ -2246,6 +2282,7 @@ _0966:
 	pop     bc
 	dec     b
 	jp      nz,---
+	
 	ei      
 	ret
 
@@ -2254,7 +2291,7 @@ _0966:
 loadFloorLayout:
 ;HL : address of Floor Layout data
 ;BC : length of compressed data
-	ld      de,$c000		;where in RAM the floor layout will go
+	ld      de,$C000		;where in RAM the floor layout will go
 
 --	;RLE decompress floor layout:
 	;------------------------------------------------------------------------------
@@ -2547,10 +2584,10 @@ _b60:
 	djnz    -
 	
 	ld      hl,$d3bc
-	ld      a,$03
+	ld      a,%00000011
 	call loadPaletteOnInterrupt
-	ld      b,$0a
 	
+	ld      b,10
 -	ld      a,(iy+vars.spriteCount)
 	res     0,(iy+vars.flags0)
 	call wait
@@ -2592,30 +2629,36 @@ _LABEL_C02_135:
 	ret
 
 ;____________________________________________________________________________[$0C1D]___
-	
+;copy power-up icon into sprite RAM
+
 _c1d:
+;HL : absolute address to uncompressed art data for the icons, assuming that slot 1
+ ;    ($4000-$7FFF) is loaded with bank 5 ($14000-$17FFF)
+
 	di      
-	ld      a,5
+	ld      a,5			;temporarily switch to bank 5 for the function
 	ld      (SMS_PAGE_1),a
 	
 	ld      a,($d223)
-	and     $0f
-	add     a,a
-	add     a,a
-	add     a,a
-	ld      e,a
+	and     %00001111
+	add     a,a			;x2
+	add     a,a			;x4
+	add     a,a			;x8
+	ld      e,a			;put it into DE
 	ld      d,$00
-	add     hl,de
+	add     hl,de			;offset into HL parameter
+	
 	ex      de,hl
-	ld      bc,$2b80
+	ld      bc,$2B80
+	
 	add     hl,bc
 	ld      a,l
 	out     (SMS_VDP_CONTROL),a
 	ld      a,h
-	or      $40
+	or      %01000000
 	out     (SMS_VDP_CONTROL),a
-	ld      b,$04
-
+	
+	ld      b,4
 -	ld      a,(de)
 	out     (SMS_VDP_DATA),a
 	nop     
@@ -2626,12 +2669,14 @@ _c1d:
 	inc     de
 	djnz    -
 	
+	;return to the previous bank number
 	ld      a,(RAM_PAGE_1)
 	ld      (SMS_PAGE_1),a
 	ei      
 	ret
 
 ;____________________________________________________________________________[$0C52]___
+;map screen
 
 _LABEL_C52_106:
 	;reset horizontal / vertical scroll
@@ -2887,7 +2932,7 @@ _0dd9:
 	cp      $ff
 	jp      nz,_b
 	push    bc
-	ld      bc,$0e7a
+	ld      bc,_0e7a
 	call    _0edd
 	pop     bc
 	inc     hl
@@ -2941,9 +2986,13 @@ _0e4b:
 	jp      _b
 
 _0e72:	
-.db $29, $11, $04, $01, $3B, $11, $04, $00, $4D, $11, $04, $01, $5F, $11, $04, $00
+.db <_1129, >_1129, $04, $01
+.db <_113b, >_113b, $04, $00
+_0e7a:
+.db <_114d, >_114d, $04, $01
+.db <_115f, >_115f, $04, $00
 _0e82:
-.db $83, $11, $04, $00
+.db <_1183, >_1183, $04, $00
 
 ;____________________________________________________________________________[$0E86]___
 
@@ -2991,7 +3040,7 @@ _LABEL_E86_110:
 	ld   de, $D2BE
 	call _LABEL_35CC_117
 	
-	ld   ($D23C), hl
+	ld   (RAM_SPRITETABLE_CURRENT), hl
 	pop  hl
 	ld   (RAM_TEMP1), hl
 	
@@ -3003,34 +3052,44 @@ _LABEL_E86_110:
 ;____________________________________________________________________________[$0EDD]___
 
 _0edd:
+;BC : address
+	
 	push    hl
 	push    de
 	
+	;copy BC to HL
 	ld      l,c
 	ld      h,b
+	
 	ld      a,(RAM_TEMP2)
-	add     a,a
-	add     a,a
+	add     a,a			;x2
+	add     a,a			;x4
 	ld      e,a
 	ld      d,$00
 	add     hl,de
+	
+	;read the address of a sprite layout from the list
 	ld      c,(hl)
 	inc     hl
 	ld      b,(hl)
 	inc     hl
+	
 	ld      a,(RAM_TEMP1)
 	cp      (hl)
 	jr      c,+
+	
 	inc     hl
 	ld      a,(hl)
 	ld      (RAM_TEMP2),a
 	xor     a
 	ld      (RAM_TEMP1),a
-+	pop     de
-	pop     hl
+	
++	pop     de			;Y-position
+	pop     hl			;X-position
 	push    hl
 	push    de
 	call    processSpriteLayout
+	
 	ld      a,(RAM_TEMP1)
 	inc     a
 	ld      (RAM_TEMP1),a
@@ -3187,12 +3246,12 @@ _113b:					;Scrap Brain Act 3 - step 2
 .db $10, $12, $14, $18, $FF, $FF
 .db $30, $32, $34, $38, $FF, $FF
 .db $FF, $FF, $FF, $FF, $FF, $FF
-_114d:					;unused -- Robotnik flying right - frame 1
-.db $50, $54, $56, $58, $FF, $FF
+_114d:					;Robotnik flying right - frame 1
+.db $50, $54, $56, $58, $FF, $FF	 ;referenced by the table at `_0e7a`
 .db $70, $74, $76, $78, $FF, $FF
 .db $FF, $FF, $FF, $FF, $FF, $FF
-_115f:					;unused -- Robotnik flying right - frame 2
-.db $52, $54, $56, $58, $FF, $FF
+_115f:					;Robotnik flying right - frame 2
+.db $52, $54, $56, $58, $FF, $FF	 ;referenced by the table at `_0e7a`
 .db $72, $74, $76, $78, $FF, $FF
 .db $FF, $FF, $FF, $FF, $FF, $FF
 _1171:					;unused -- same as _114d
@@ -3229,6 +3288,7 @@ _11ef:					;Sky Base Act 2 / 3
 .db $FF, $FF, $FF, $FF, $FF, $FF
 
 ;----------------------------------------------------------------------------[$1201]---
+;list of functions that handle extra animations on the map screen
 
 _1201:
 .dw _0dd9
@@ -3386,7 +3446,7 @@ titleScreen:
 	
 	;set sprite table to use?
 +	ld   hl, $D000
-	ld   ($D23C), hl
+	ld   (RAM_SPRITETABLE_CURRENT), hl
 	
 	ld   hl, $0080
 	ld   de, $0018
@@ -3549,7 +3609,7 @@ _1401:
 	ld      c,$8c
 	ld      b,$5e
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
 	pop     bc
 	bit     5,(iy+vars.joypad)
@@ -4019,17 +4079,17 @@ _1860:
 	call    wait
 	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$d2ba
 	ld      de,$d2be
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$90
 	ld      b,$80
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      a,($d216)
 	and     a
 	jr      nz,+
@@ -4038,21 +4098,21 @@ _1860:
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$90
 	ld      b,$60
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,_19ae
 	ld      de,$d2be
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$a0
 	ld      b,$60
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	jr      ++
 	
 +	dec     a
@@ -4063,11 +4123,11 @@ _1860:
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$a0
 	ld      b,$60
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	jr      ++
 	
 +	ld      hl,$d2ff
@@ -4075,11 +4135,11 @@ _1860:
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$a0
 	ld      b,$60
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
 ++	pop     bc
 	dec     bc
@@ -4196,23 +4256,23 @@ _1a14:
 _1a18:
 	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$d2ba
 	ld      de,$d2be
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$88
 	ld      b,$50
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,RAM_RINGS
 	ld      de,$d2be
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$98
 	ld      b,$80
 	ld      a,(RAM_CURRENT_LEVEL)
@@ -4220,7 +4280,7 @@ _1a18:
 	jr      c,+
 	ld      b,$68
 +	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
@@ -4239,9 +4299,9 @@ _1a18:
 	ld      b,$80
 ++	ld      c,$c0
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	call    _1aca
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
@@ -4251,11 +4311,11 @@ _1a18:
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$88
 	ld      b,$68
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 	
 +	ld      hl,$d284
@@ -4263,11 +4323,11 @@ _1a18:
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      c,$a8
 	ld      b,$80
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 
 ;____________________________________________________________________________[$1ACA]___
@@ -4305,10 +4365,10 @@ _1aca:
 	jr      nz,+
 	ld      b,$60
 	ld      c,$90
-+	ld      hl,($d23c)
++	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 
 ;____________________________________________________________________________[$1B13]___
@@ -4371,8 +4431,8 @@ _1b69:
 .db $00, $00, $00, $00
 
 ;____________________________________________________________________________[$1B8D]___
-
 ;"Sonic Has Passed" screen palette:
+
 S1_ActComplete_Palette:
 .db $35, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $25, $2B, $00, $3F
 .db $35, $20, $35, $1B, $16, $2A, $00, $3F, $01, $03, $3A, $06, $0F, $00, $00, $00
@@ -4452,6 +4512,7 @@ _LABEL_1C49_62:
 	jr   c, _LABEL_1C9F_104
 	
 	set  1, (iy+vars.scrollRingFlags)
+	
 _LABEL_1C9F_104:
 	;are we on the end sequence?
 	ld   a, (RAM_CURRENT_LEVEL)
@@ -4465,6 +4526,7 @@ _LABEL_1C9F_104:
 	bit  1, (iy+vars.scrollRingFlags)
 	jr   z, _LABEL_1CBD_120
 	jp   c, --
+	
 _LABEL_1CBD_120:
 	call _LABEL_A40_121
 	call hideSprites
@@ -4683,7 +4745,7 @@ _1de2:					;jump to here from _2067
 	ld      ($d2de),a
 	ld      (iy+vars.spriteCount),$15
 	ld      hl,$d03f		;lives icon sprite table entry
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$d001
 	ld      b,$07
 	ld      de,$0003
@@ -5570,7 +5632,7 @@ loadLevel:
 	rst     $18			;`playMusic`
 
 	;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
-+	ld      b,$20
++	ld      b,32
 	ld      hl,$d37c
 	xor     a			;set A to 0
 
@@ -5870,7 +5932,7 @@ _LABEL_258B_133:
 	ld      b,$60
 	ld      de,_2825
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	pop     bc
 	djnz    -
 	
@@ -5888,7 +5950,7 @@ _LABEL_258B_133:
 	res     0,(iy+vars.flags0)
 	call    wait
 	ld      de,$d000
-	ld      ($d23c),de
+	ld      (RAM_SPRITETABLE_CURRENT),de
 	ld      b,$03
 	
 -	push    bc
@@ -5903,9 +5965,9 @@ _LABEL_258B_133:
 	inc     hl
 	push    bc
 	ld      de,_2825
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	pop     bc
 	pop     hl
 	ld      a,(hl)
@@ -5920,9 +5982,9 @@ _LABEL_258B_133:
 	inc     hl
 	push    hl
 	ld      de,_2825
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	pop     hl
 	pop     bc
 	djnz    -
@@ -6037,7 +6099,7 @@ _2718:
 	
 	ld      (iy+vars.spriteCount),$00
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$d322
 	ld      b,$04
 	
@@ -6522,10 +6584,10 @@ _2e5a:
 	
 	ld      c,$10
 	ld      b,172			;Y-position of lives display
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
 	;show rings?
 	bit     2,(iy+vars.scrollRingFlags)
@@ -6600,14 +6662,14 @@ _2ee6:
 	ld      ($d2c0),a
 	ld      c,$14
 	ld      b,$00
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      de,_2e52
 	call    _LABEL_35CC_117
 	ld      c,$28
 	ld      b,$00
 	ld      de,$d2be
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 
 ;____________________________________________________________________________[$2F1F]___
@@ -6648,10 +6710,10 @@ _2f1f:
 	ld      c,$70
 	ld      b,$38
 	
-+	ld      hl,($d23c)
++	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	ld      de,$d2be
 	call    _LABEL_35CC_117
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 
 ;____________________________________________________________________________[$2F66]___
@@ -7131,13 +7193,13 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	;at this point, $D37E-$D3BD is known to be empty
 	
 	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)		;pointer to sprite table to use?
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	
 	push    af
 	push    hl
 	
 	ld      hl,$d024		;Sonic's sprite table entry
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
 	ld      de,$d3fc		;current level's object list
 	call    doObjectCode
@@ -7145,7 +7207,7 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	pop     hl
 	pop     af
 	
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 	ret
 
@@ -7540,7 +7602,8 @@ processSpriteLayout:
 	cp   $FE			;is it >= than $FE?
 	jr   nc, +			;if so, skip
 	
-	ld   de, ($D23C)		;get the address of the sprite table entry
+	;get the address of the sprite table entry
+	ld   de, (RAM_SPRITETABLE_CURRENT)	
 	ld   a, l			;take the current X-position
 	ld   (de), a			;and set the sprite's X-position
 	inc  e				
@@ -7552,9 +7615,10 @@ processSpriteLayout:
 	ld   a, (bc)			;read the layout byte
 	ld   (de), a			;set the sprite index number
 	
+	;move to the next sprite table entry
 	inc  e
-	ld   ($D23C), de		;move to the next sprite table entry
-	inc  (vars.spriteCount)		;increase the number of sprites to draw
+	ld   (RAM_SPRITETABLE_CURRENT), de	
+	inc  (iy+vars.spriteCount)	;increase the number of sprites to draw
 	
 	;move across 8 pixels
 +	inc  bc
@@ -7633,7 +7697,7 @@ _3581:
 	cp      $c0
 	ret     nc
 ++	ld      h,c
-	ld      bc,($d23c)
+	ld      bc,(RAM_SPRITETABLE_CURRENT)
 	ld      a,l
 	ld      (bc),a
 	inc     c
@@ -7643,7 +7707,7 @@ _3581:
 	ld      a,h
 	ld      (bc),a
 	inc     c
-	ld      ($d23c),bc
+	ld      (RAM_SPRITETABLE_CURRENT),bc
 	inc     (iy+vars.spriteCount)
 	ret
 
@@ -7653,7 +7717,7 @@ _LABEL_35CC_117:
 ;e.g.
 ; C : $10
 ;B  : 172
-;HL : ($d23c)
+;HL : (RAM_SPRITETABLE_CURRENT)
 ;DE : $D2BE	: $A0, $A2, $A4, ($80 + RAM_LIVES * 2), $FF
 	ld   a, (de)
 	cp   $FF
@@ -8659,8 +8723,8 @@ S1_SolidityData_7:			;[$3F28] Sky Base 2 & 3 (interior)
 .db $80, $80, $80, $80, $80, $80, $80, $80
 
 ;____________________________________________________________________________[$48C8]___
-
 ;OBJECT - Sonic
+
 _48c8:
 	res     1,(iy+vars.unknown0)
 	
@@ -9971,11 +10035,11 @@ _5231:
 	cp      $0a
 	ret     c
 +	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      de,($d25d)
 	ld      hl,($d2e4)
 	and     a
@@ -9985,11 +10049,13 @@ _5231:
 	ld      hl,($d2e2)
 	and     a
 	sbc     hl,bc
-	ld      bc,_526e
+	ld      bc,_526e		;address of sprite layout
 	call    processSpriteLayout
+	
 	pop     hl
 	pop     af
-	ld      ($d23c),hl
+	
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 	ret
 
@@ -10986,7 +11052,7 @@ _5b29:
 	ld      (ix+$10),a
 	ret  
 	
-+	ld      hl,$5180
++	ld      hl,$5180		;$15180 - blinking items art
 _5b34:
 	call    _c1d
 	ld      (ix+$0f),<_5bbf
@@ -11444,7 +11510,7 @@ _5ea2:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	ld      hl,$5400
+	ld      hl,$5400		;$15400 - emerald in the blinking items art
 	call    _c1d
 	ret
 
@@ -16029,11 +16095,11 @@ _8d48:
 	ld      hl,($d25d)
 	ld      (RAM_TEMP3),hl
 	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      a,($d223)
 	and     $03
 	add     a,a
@@ -16068,7 +16134,7 @@ _8d48:
 	
 	pop     hl
 	pop     af
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 	ret
 	
@@ -17036,7 +17102,7 @@ _96f8:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
 	ld      a,($d2de)
@@ -17046,7 +17112,7 @@ _96f8:
 	ld      d,$00
 	ld      hl,$d000
 	add     hl,de
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
@@ -17079,7 +17145,7 @@ _96f8:
 	ld      ($d2de),a
 +++	pop     hl
 	pop     af
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$0c
@@ -18843,7 +18909,7 @@ _a7ed:
 	ld      bc,($d25a)
 	and     a
 	sbc     hl,bc
-	ld      bc,_a9c0
+	ld      bc,_a9c0		;address of sprite layout
 	call    processSpriteLayout
 	ld      a,(ix+$11)
 	and     $1f
@@ -18867,7 +18933,7 @@ _a9c0:
 _a9c7:
 	set     5,(ix+$18)
 	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
 	ld      a,($d2de)
@@ -18877,7 +18943,7 @@ _a9c7:
 	ld      d,$00
 	ld      hl,$d000
 	add     hl,de
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      a,($d2a3)
 	ld      c,a
 	ld      de,($d2a1)
@@ -18897,14 +18963,14 @@ _a9c7:
 	ld      bc,($d25a)
 	and     a
 	sbc     hl,bc
-	ld      bc,_aa63
+	ld      bc,_aa63		;address of sprite layout
 	call    processSpriteLayout
 	ld      a,($d2de)
 	add     a,$0c
 	ld      ($d2de),a
 +	pop     hl
 	pop     af
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 	ld      hl,($d25a)
 	ld      de,$ffe0
@@ -21067,7 +21133,7 @@ _bf33:
 
 _bf4c:
 	set     5,(ix+$18)
-	ld      hl,$5400
+	ld      hl,$5400		;$15400 - emerald image
 	call    _c1d
 	
 	bit     0,(ix+$18)
@@ -21101,11 +21167,11 @@ _bf4c:
 	rrca    
 	jr      nc,+
 	ld      a,(iy+vars.spriteCount)
-	ld      hl,($d23c)
+	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
 	ld      hl,$d000
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,($d25d)
@@ -21117,11 +21183,11 @@ _bf4c:
 	ld      bc,($d25a)
 	and     a
 	sbc     hl,bc
-	ld      bc,_bff1
+	ld      bc,_bff1		;address of sprite layout
 	call    processSpriteLayout
 	pop     hl
 	pop     af
-	ld      ($d23c),hl
+	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)

@@ -1,10 +1,34 @@
 ;Sonic 1 Master System Sound Driver
  ;disassembled by ValleyBell and formatted by Kroc Camen
 ;======================================================================================
+/* Terminology:
 
+"PSG":
+	Short for Programmable Sound Generator, it is the Yamaha SN76489 sound	processor in the Master System
+
+"Channel":
+	The PSG has four channels of sound that the chip mixes into the mono output.
+	Three of the channels produce waves (notes) and the fourth produces noise
+	(for percussion or sound effects)
+*/
+
+;each of the five tracks have a large set of variables for managing their state.
+ ;below is the general definition of the track variables, which is duplicated five
+ ;times in the RAM (see the Enum that follows this structure)
 .STRUCT TRACK
 	channelFrequencyPSG	db	;+$00
+	;to set a frequency on the PSG a data byte is written to the sound port with
+	 ;bit 7 set and bits 6 & 5 forming the sound channel number 0-3. this variable
+	 ;holds the bit mask for the track's particular channel to set the frequency
+	 ;(see `_PSGchannelBits` for the particulars)
+	
 	channelVolumePSG	db	;+$01
+	;to set the volume of a channel, a data byte is written to the sound port with
+	 ;bits 7 & 4 set and bits 6 & 5 forming the sound channel number 0-3. bits 0-3
+	 ;form the volume level where 1111 is silence is 0000 is maximum. this variable
+	 ;holds the bit mask for the track's particular channel to set the volume
+	 ;(see `_initPSGValues` for examples)
+	
 	tickStep		dw	;+$02
 	fadeTicks		dw	;+$04
 	noteFrequencey		dw	;+$06 - can't find direct reference
@@ -41,8 +65,9 @@
 
 ;define the variables in RAM:
 ;--------------------------------------------------------------------------------------
+;(NB: in the original ROM, $DC00-$DC03 go unused)
 .ENUM $DC04
-	playbackMode		db	;bit 3 dis/enables fading out
+	playbackMode		db	;bit 4 dis/enables fading out
 	overriddenTrack		db	;which music track the SFX is overriding
 	SFXpriority		db	;priority level of current SFX
 	noiseMode		db	;high/med/low noise mode and frequency mode
@@ -112,11 +137,11 @@ _loadMusic:
 	 ;after the header, the first value is always $000A (9)
 	
 	ld      ix,track0dataPointer
-	ld      a,5			;we'll set up five tracks
 	
--	;begin a loop over the five tracks
+	;begin a loop over the five tracks
+	ld      a,5
 	
-	;fetch the track's offset value from the header and add it to the base address
+-	;fetch the track's offset value from the header and add it to the base address
 	 ;giving you an absolute address to the track data
 	ld      e,(hl)
 	inc     hl
@@ -126,9 +151,9 @@ _loadMusic:
 	add     hl,bc			;add the song's base address to it
 	
 	;now fill the track's data pointer with the absolute address to the track data
-	ld      (ix+0),l
+	ld      (ix),l
 	inc     ix
-	ld      (ix+0),h
+	ld      (ix),h
 	inc     ix
 	ex      de,hl
 	
@@ -136,7 +161,7 @@ _loadMusic:
 	dec     a
 	jp      nz,-
 	
-	;intialise track variables (16-bit values)
+	;initialise track variables (16-bit values)
 	;------------------------------------------------------------------------------
 	;the referenced table contains a list of addresses and 16-bit values to set
 	ld      hl,initTrackValues_words
@@ -195,9 +220,13 @@ _loadMusic:
 	
 	ret
 
-;______________________________________________________________________________________
+;--------------------------------------------------------------------------------------
+;this data is used by `loadMusic` to initialise the values of the 5 tracks
 
 initTrackValues_words:
+
+;set the master loop address to 0 so that the song will, by default, loop wholly:
+ ;the point of the master loop can be set by the '88' command in the music data
 .dw track0vars.masterLoopAddress, $0000
 .dw track1vars.masterLoopAddress, $0000
 .dw track2vars.masterLoopAddress, $0000
@@ -229,6 +258,8 @@ initTrackValues_words:
 
 .dw tickDivider1, $0001
 .dw $FFFF
+
+;--------------------------------------------------------------------------------------
 
 initTrackValues_bytes:
 .dw track0vars.channelFrequencyPSG
@@ -290,14 +321,16 @@ initTrackValues_bytes:
 .db %00000000
 .dw $FFFF
 
-initPSGValues:
+;______________________________________________________________________________________
+
+_initPSGValues:
 ;    +xx+yyyy	;set channel xx volume to yyyy (0000 is max, 1111 is off)
 .db %10011111	;mute channel 0
 .db %10111111	;mute channel 1
 .db %11011111	;mute channel 2
 .db %11111111	;mute channel 3
 
-;______________________________________________________________________________________
+;--------------------------------------------------------------------------------------
 
 _stop:			
 	;put any current values for these registers aside
@@ -326,14 +359,14 @@ _stop:
 	and     %11111101
 	ld      (track4vars.flags),a
 	
-	;reset the SFX priority
+	;reset the SFX priority, any sound effect will now play
 	xor     a			;set A to 0
 	ld      (SFXpriority),a
 	
 	;mute all sound channels by sending the right bytes to the sound chip
 	ld      b,4
 	ld      c,SMS_SOUND_PORT
-	ld      hl,initPSGValues
+	ld      hl,_initPSGValues
 	otir
 	
 	ld      a,(playbackMode)
@@ -365,10 +398,12 @@ _loadSFX:
 	jr      c,++			;if so, the SFX is not high priority enough
 	
 +	;update the SFX priority with the new value
-	 ;(only sounds with higher priority will be played)
+	 ;(only sounds with higher priority will be played instead)
 	ld      a,e
 	ld      (SFXpriority),a
 	
+	;point the track at the sound data
+	 ;(all SFX go through track 4)
 	ld      (track4vars.baseAddress),hl
 	
 	;mute the track:
@@ -378,6 +413,9 @@ _loadSFX:
 	out     (SMS_SOUND_PORT),a	;send change to the PSG
 	
 	;--- SFX header ---------------------------------------------------------------
+	;get which track the sound effect should override -- there are only four
+	 ;channels on the PSG (one is white noise), but five tracks, allowing for SFX
+	 ;to occur whilst the music continues
 	ld      a,(hl)
 	ld      (overriddenTrack),a
 	
@@ -428,6 +466,8 @@ _loadSFX:
 	pop     de
 	pop     af
 	ret
+
+;--------------------------------------------------------------------------------------
 
 _PSGchannelBits:
 .db %10000000
@@ -558,7 +598,7 @@ _update:
 	call    _processTrack
 	
 	ld      a,(playbackMode)
-	and     $08
+	and     %00001000
 	ret     z
 	
 	ld      hl,(fadeTicks)
@@ -831,7 +871,7 @@ _sendVolume:
 	or      (ix+TRACK.channelVolumePSG)
 	out     (SMS_SOUND_PORT),a
 	ld      a,(playbackMode)
-	and     $08
+	and     %00001000
 	ret     z
 	ld      a,(ix+TRACK.id)
 	cp      $04
@@ -994,7 +1034,7 @@ _cmd81_volumeSet:
 	cp      $04
 	jr      z,+
 	ld      a,(playbackMode)
-	and     $08
+	and     %00001000
 	jp      nz,_trackReadLoop
 	
 +	ld      a,(ix+TRACK.channelVolume)
@@ -1136,7 +1176,7 @@ _cmd8B_volumeUp:
 	ld      a,$0f
 +	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
-	and     $08
+	and     %00001000
 	jp      nz,_trackReadLoop
 	ld      a,(ix+TRACK.channelVolume)
 	ld      (ix+TRACK.fadeTicks+1),a
@@ -1152,7 +1192,7 @@ _cmd8C_volumeDown:
 	xor     a
 +	ld      (ix+TRACK.channelVolume),a
 	ld      a,(playbackMode)
-	and     $08
+	and     %00001000
 	jp      nz,_trackReadLoop
 	ld      a,(ix+TRACK.channelVolume)
 	ld      (ix+TRACK.fadeTicks+1),a
@@ -1215,12 +1255,13 @@ _playMusic:
 
 _playSFX:
 ;A: index number of SFX to play (see `S1_SFXPointers`)
+
 	push    hl
 	push    de
 	
 	;look up the index number in the SFX list
 	ld      hl,S1_SFXPointers	;begin with the list of SFX
-	add     a,a			;quadrouple the index number since the SFX
+	add     a,a			;quadruple the index number since the SFX
 	add     a,a			 ;list is four bytes each entry instead of two
 	ld      e,a			;put this index number into a 16-bit number
 	ld      d,$00
