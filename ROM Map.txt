@@ -160,43 +160,43 @@ $14980 - $1517F		Bonus Stage (128 tiles)
 $15180 - $1557F		Blinking Items Art (Box, etc...)
 $15580 - $155C9		Level Headers Pointers:
 -----------------------------------------------------------------------------
-$15580-81		Green Hill Act 1
-$15582-83		Green Hill Act 2
-$15584-85		Green Hill Act 3
-$15586-87		Bridge Act 1
-$15588-89		Bridge Act 2
-$1558A-8B		Bridge Act 3
-$1558C-8D		Jungle Act 1
-$1558E-8F		Jungle Act 2
-$15590-91		Jungle Act 3
-$15592-93		Labyrinth Act 1
-$15594-95		Labyrinth Act 2
-$15596-97		Labyrinth Act 3
-$15598-99		Scrap Brain Act 1
-$1559A-9B		Scrap Brain Act 2
-$1559C-9D		Scrap Brain Act 3
-$1559E-9F		Sky Base Act 1
-$155A0-A1		Sky Base Act 2
-$155A2-A3		Sky Base Act 3
-$155A4-A5		End Sequence
-$155A6-A7		*** UNUSED *** (invalid data)
-$155A8-A9		Scrap Brain Act 2 (Emerald Maze), from corridor
-$155AA-AB		Scrap Brain Act 2 (Ballhog Area)
-$155AC-AD		Scrap Brain Act 2, from transporter
-$155AE-AF		Scrap Brain Act 2 (Emerald Maze), from transporter
-$155B0-B1		Scrap Brain Act 2, from Emerald Maze
-$155B2-B3		Scrap Brain Act 2, from Ballhog Area
-$155B4-B5		Sky Base Act 2 (Interior)
-$155B6-B7		Sky Base Act 2 (Interior), this one is identical 
-$155B8-B9		Special Stage 1
-$155BA-BB		Special Stage 2
-$155BC-BD		Special Stage 3
-$155BE-BF		Special Stage 4
-$155C0-C1		Special Stage 5
-$155C2-C3		Special Stage 6
-$155C4-C5		Special Stage 7
-$155C6-C7		Special Stage 8
-$155C8-C9		*** UNUSED *** (invalid data)
+$15580-81		00: Green Hill Act 1
+$15582-83		01: Green Hill Act 2
+$15584-85		02: Green Hill Act 3
+$15586-87		03: Bridge Act 1
+$15588-89		04: Bridge Act 2
+$1558A-8B		05: Bridge Act 3
+$1558C-8D		06: Jungle Act 1
+$1558E-8F		07: Jungle Act 2
+$15590-91		08: Jungle Act 3
+$15592-93		09: Labyrinth Act 1
+$15594-95		10: Labyrinth Act 2
+$15596-97		11: Labyrinth Act 3
+$15598-99		12: Scrap Brain Act 1
+$1559A-9B		13: Scrap Brain Act 2
+$1559C-9D		14: Scrap Brain Act 3
+$1559E-9F		15: Sky Base Act 1
+$155A0-A1		16: Sky Base Act 2
+$155A2-A3		17: Sky Base Act 3
+$155A4-A5		18: End Sequence
+$155A6-A7		19: *** UNUSED *** (invalid data)
+$155A8-A9		20: Scrap Brain Act 2 (Emerald Maze), from corridor
+$155AA-AB		21: Scrap Brain Act 2 (Ballhog Area)
+$155AC-AD		22: Scrap Brain Act 2, from transporter
+$155AE-AF		23: Scrap Brain Act 2 (Emerald Maze), from transporter
+$155B0-B1		24: Scrap Brain Act 2, from Emerald Maze
+$155B2-B3		25: Scrap Brain Act 2, from Ballhog Area
+$155B4-B5		26: Sky Base Act 2 (Interior)
+$155B6-B7		27: Sky Base Act 2 (Interior), this one is identical 
+$155B8-B9		28: Special Stage 1
+$155BA-BB		29: Special Stage 2
+$155BC-BD		30: Special Stage 3
+$155BE-BF		31: Special Stage 4
+$155C0-C1		32: Special Stage 5
+$155C2-C3		33: Special Stage 6
+$155C4-C5		34: Special Stage 7
+$155C6-C7		35: Special Stage 8
+$155C8-C9		36: *** UNUSED *** (invalid data)
 -----------------------------------------------------------------------------
 $155CA - $15AB3		Level Headers:
 -----------------------------------------------------------------------------

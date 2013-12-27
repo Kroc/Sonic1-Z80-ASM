@@ -136,7 +136,7 @@
 	;bit 6 - unknown
 	;bit 7 - level underwater flag (enables water line)
 	
-	;taken from the leven header, this controls the presence of the time on
+	;taken from the level header, this controls the presence of the time on
 	 ;the HUD and if the lightning effect is in use
 	timeLightningFlags	DB	;IY+$07
 	;bit 0 - centers the time in the screen on special stages
@@ -203,7 +203,7 @@
 .DEF RAM_LIVES			$D246	;player's lives count
 .DEF RAM_TIME			$D29F	;the level's time
 
-;`loadPaletteOnInterrupt` and `_LABEL_174_38` use these to pass parameters
+;`loadPaletteOnInterrupt` and `loadPaletteFromInterrupt` use these to pass parameters
 .DEF RAM_LOADPALETTE_ADDRESS	$D22B
 .DEF RAM_LOADPALETTE_FLAGS	$D22F
 
@@ -427,9 +427,10 @@ _LABEL_F7_25:
 	out  (SMS_VDP_CONTROL), a
 	
 	bit  5, (iy+vars.flags0)			
-	call nz, _LABEL_7DB_26
+	call nz, fillScrollTiles
+	
 	bit  5, (iy+vars.flags0)			
-	call nz, _LABEL_174_38
+	call nz, loadPaletteFromInterrupt
 	
 	;turn the screen back on 
 	 ;(or if it was already blank before this function, leave it blank)
@@ -462,7 +463,7 @@ _LABEL_F7_25:
 	call nz, updateVDPSprites
 	
 	bit  5, (iy+vars.flags0)
-	call z, _LABEL_174_38
+	call z, loadPaletteFromInterrupt
 	
 	ld   a, ($D2AC)
 	and  %10000000
@@ -475,8 +476,9 @@ _LABEL_F7_25:
 	ret
 	
 ;----------------------------------------------------------------------------[$0174]---
-	
-_LABEL_174_38:
+;load a palette using the parameters set by `loadPaletteOnInterrupt`
+
+loadPaletteFromInterrupt:
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
 	ld   (RAM_PAGE_1), a
@@ -545,7 +547,7 @@ _LABEL_1BA_40:
 	bit  4, (iy+vars.timeLightningFlags)
 	jr   z, +			
 	ld   hl, S1_UnderwaterPalette_Boss
-
+	
 +	ld   a, %00000011		;"load tile & sprite palettes"
 	call loadPalette		;load the relevant underwater palette
 	ret
@@ -705,7 +707,6 @@ _init:
 	ld   a, $E0
 	call _clearVRAM
 	
-	;mute sound
 	call muteSound
 	
 	;initialise variables?
@@ -774,11 +775,11 @@ _InitVDPRegisterValues:							;	cache:
     ;......x.    stretch screen (33 columns)
     ;.....x..    unknown
     ;..x.....    hide left column (for scrolling)
-.db %10100010	;vDP Register 1:						$D219
+.db %10100010	;VDP Register 1:						$D219
     ;......x.    enable 8x16 sprites
     ;..x.....    enable vsync IRQ
-    ;.x......	 disable screen (no display)
-    ;x.......    unknown
+    ;.x......	 disable screen (no display)				;these caches
+    ;x.......    unknown						;are not used
 .db $FF		;VDP Register 2: place screen at VRAM:$3800			$D21A
 .db $FF		;VDP Register 3: unused						$D21B
 .db $FF		;VDP Register 4: unused						$D21C
@@ -1886,7 +1887,7 @@ _06bd:
 ;____________________________________________________________________________[$07DB]___
 ;fill in new tiles when the screen has scrolled
 
-_LABEL_7DB_26:
+fillScrollTiles:
 	bit  0, (iy+vars.flags2)
 	jp   z, ++
 	
@@ -1902,8 +1903,8 @@ _LABEL_7DB_26:
 	ld   a, (RAM_SCROLL_VERTICAL)
 	and  %11111000			;round the scroll to the nearest 8 pixels
 	
-	;multiply the vertical scroll offset by 8. since the scroll offset will be a
-	 ;multiple of 8, this will give you 64 bytes per screen row, the correct amount
+	;multiply the vertical scroll offset by 8. since the scroll offset is already
+	 ;a multiple of 8, this will give you 64 bytes per screen row (32 16-bit tiles)
 	ld   b, $00
 	add  a, a			;x2
 	rl   b
@@ -2064,23 +2065,25 @@ _LABEL_7DB_26:
 	jp   --
 
 ;____________________________________________________________________________[$08D5]___
+;something to do with block mappings?
 
 _08d5:
-	ld      a,(RAM_LEVEL_FLOORWIDTH)
+;BC : Address of Block Mappings?
+	ld      a,(RAM_LEVEL_FLOORWIDTH);width of the level in blocks
 	rlca    			;double it (x2)
-	jr      c,+
+	jr      c,+			;<128?
 	rlca    			;double it again (x4)
-	jr      c,++
+	jr      c,++			;<64?
 	rlca    			;double it again (x8)
-	jr      c,+++
+	jr      c,+++			;<32?
 	rlca    			;double it again (x16)
-	jr      c,++++
-	jp      +++++
+	jr      c,++++			;<16?
+	jp      +++++			;...?
 	
 +	ld      a,($d258)
 	add     a,b
 	ld      e,$00
-	srl     a
+	srl     a			;divide by 2
 	rr      e
 	ld      d,a
 	ld      a,($d257)
@@ -2161,10 +2164,10 @@ _08d5:
 _0966:
 	;page in banks 4 & 5 (containing the block mappings)
 	di      			;disable interrupts
-	ld      a,4
+	ld      a,:S1_BlockMappings
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
-	ld      a,5
+	ld      a,:S1_BlockMappings + 1
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
 	
@@ -2173,16 +2176,17 @@ _0966:
 	
 	ld      de,$3800
 	ld      b,$06
-
+	
 ---	push    bc
 	push    hl
 	push    de
 	ld      b,$08
 
---	;look up solidity value?
-	push    bc
+--	push    bc
 	push    hl
 	push    de
+	
+	;look up solidity value?
 	ld      a,(hl)
 	exx     
 	ld      e,a
@@ -2599,33 +2603,40 @@ _b60:
 	ret
 
 ;____________________________________________________________________________[$0C02]___
-	
-_LABEL_C02_135:
-;HL : e.g. $D311
+;each level has a bit flag beginning at HL
+
+getLevelBitFlag:
+;HL : an address to a series of 19 bits, one for each level
+    ; $D305+: set by life monitor
+    ; $D30B+: set by emerald
+    ; $D311+: set by continue monitor
+    ; $D317+: set by switch
 	ld   a, (RAM_CURRENT_LEVEL)
 	ld   c, a
-	;divide the level number by 8?
-	srl  a
-	srl  a
-	srl  a
+	srl  a				;divide by 2 ...
+	srl  a				;divide by 4 ...
+	srl  a				;divide by 8
 	
 	;put the result into DE
 	ld   e, a
 	ld   d, $00
-	;add that to the parameter (i.e. $D311)
+	;add that to the parameter (e.g. $D311)
 	add  hl, de
 	
 	ld   a, c			;return to the current level number
-	ld   c, $01
-	and  $07			;mod 8
+	ld   c, 1
+	and  %00000111			;MOD 8
 	ret  z				;if level 0, 8, 16, ... then return C = 1
-	ld   b, a			;B = 0-7
-	ld   a, c			;$01
+	ld   b, a			;B = 1-7
+	ld   a, c			;1
 	
 	;slide the bit up the byte between 0-7 depending on the level number
 -	rlca
 	djnz -
 	ld   c, a			;return via C
+	
+	;HL : address to the byte where the bit exists
+	; C : the bit mask, e.g. 1, 2, 4, 8, 16, 32, 64 or 128
 	ret
 
 ;____________________________________________________________________________[$0C1D]___
@@ -3512,6 +3523,7 @@ S1_TitleScreen_Palette:			;[$13E1]
 .db $00, $10, $34, $38, $06, $1B, $2F, $3F, $3D, $3E, $01, $03, $0B, $0F, $00, $3F
 
 ;____________________________________________________________________________[$1401]___
+;Act Complete screen?
 
 _1401:
 	;turn off the screen
@@ -3523,7 +3535,7 @@ _1401:
 	call    wait
 	di      
 	
-	;level complete sprite set
+	;act complete sprite set
 	ld      hl,$351f
 	ld      de,$0000
 	ld      a,9
@@ -3534,7 +3546,7 @@ _1401:
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
 	
-	;level complete background
+	;act complete background
 	ld      hl,$67fe
 	ld      bc,$0032
 	ld      de,$3800
@@ -3583,6 +3595,7 @@ _1401:
 	and     a
 	ret
 
+	;------------------------------------------------------------------------------
 +	ld      hl,_14de
 	ld      c,$0b
 	call    _16d9
@@ -3618,24 +3631,29 @@ _1401:
 	
 	ld      a,$1a
 	rst     $28			;`playSFX`
+	
 	ld      hl,$d216
 	ld      a,(hl)
 	and     a
 	ret     z
 	dec     (hl)
 	jr      --
-
+	
+	;get the bit flag for the level
 +	ld      hl,$d311
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,c
-	cpl     
+	cpl     			;invert the level bits (i.e. create a mask)
 	ld      c,a
+	
 	ld      a,(hl)
-	and     c
+	and     c			;remove the level bit
 	ld      (hl),a
-	ld      hl,$d284
+	
+	ld      hl,$D284
 	dec     (hl)
-	scf     
+	scf     			;set carry flag
+	
 	ret
 
 _14de:
@@ -3666,7 +3684,7 @@ _155e:
 	jp      z,_172f
 	
 	ld      a,(RAM_VDPREGISTER_1)
-	and     $bf
+	and     %10111111
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
@@ -3914,6 +3932,7 @@ _1719:
 	ret
 
 ;____________________________________________________________________________[$1726]___
+;called by Act Complete screen?
 
 _1726:
 	ld      hl,$d284
@@ -5170,12 +5189,12 @@ loadLevel:
 	ld   b, 29
 	call _fillMemoryWithValue
 	
-	;something to do with grouping the levels into 8:
+	;get the bit flag for the level:
 	 ;C returns a byte with bit x set, where x is the level number mod 8
 	 ;DE will be the level number divided by 8
 	 ;HL will be $D311 + the level number divided by 8
-	ld   hl, $D311
-	call _LABEL_C02_135
+	ld	hl, $D311
+	call	getLevelBitFlag
 	
 	;DE will now be $D311 + the level number divided by 8
 	ex   de, hl
@@ -5273,12 +5292,12 @@ loadLevel:
 	push    hl
 	push    hl
 	
-	;do the strange thing with dividing the level number by 8:
+	;get the level bit flag:
 	 ;C returns a byte with bit x set, where x is the level number mod 8
 	 ;DE will be the level number divided by 8
 	 ;HL will be $D311 + the level number divided by 8
 	ld      hl,$d311
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	
 	ld      a,(hl)
 	ex      de,hl			;DE will now be $D311+
@@ -5346,9 +5365,9 @@ loadLevel:
 	inc     hl
 	ld      a,(hl)
 	
-	sub     $03
+	sub     3
 	jr      nc,+
-	xor     a
+	xor     a			;set A to 0
 	
 +	ld      ($d258),a
 	ld      e,$00
@@ -11047,7 +11066,7 @@ _5b24:
 	ld      a,$10
 	call    _39ac
 _5b29:
-	xor     a
+	xor     a			;set A to 0
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	ret  
@@ -11143,15 +11162,18 @@ _5bd9:
 
 ;OBJECT: monitor - life
 _5c05:
-	ld      (ix+$0d),$14
-	ld      (ix+$0e),$18
+	ld      (ix+$0D),$14
+	ld      (ix+$0E),$18
 	call    _5da8
-	ld      hl,$d305
-	call    _LABEL_C02_135
+	
+	;check if the level has its bit flag set at $D305+
+	ld      hl,$D305
+	call    getLevelBitFlag
 	ld      a,(hl)
 	and     c
-	jr      z,+
-	ld      (ix+$00),$ff
+	jr      z,+			;if not set, skip ahead
+	
+	ld      (ix+$00),$FF
 	jp      _5b29
 	
 +	ld      hl,$0003
@@ -11164,23 +11186,30 @@ _5c05:
 	jp      nz,_5b24
 	ld      hl,RAM_LIVES
 	inc     (hl)
+	
+	;set the level's bit flag at $D305+
 	ld      hl,$d305
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
 	ld      (hl),a
-	xor     a
+	
+	xor     a			;set A to 0
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
+	
 	ld      a,$09
 	rst     $28			;`playSFX`
+	
 	ld      a,(RAM_CURRENT_LEVEL)
-	cp      $1c
+	cp      28			;special stage?
 	ret     nc
+	
 	ld      hl,$d280
 	inc     (hl)
 	ret
 	
+	;------------------------------------------------------------------------------
 +	ld      a,(RAM_CURRENT_LEVEL)
 	cp      4			;level 4 (Bridge Act 2)?
 	jr      z,+
@@ -11190,6 +11219,7 @@ _5c05:
 	jr      z,+++
 	cp      $11			;level 11 (Labyrinth Act 3)?
 	jr      z,++++
+	
 -	ld      hl,$5280
 	jp      _5b34
 
@@ -11212,7 +11242,7 @@ _5c05:
 	
 ++	set     2,(ix+$18)
 	ld      hl,$d317
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	ld      hl,$5180
 	and     c
@@ -11290,11 +11320,13 @@ _5d2f:
 	jr      c,+
 	call    _5deb
 	jr      c,+
+	
 	ld      hl,$d311
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
 	ld      (hl),a
+	
 	ld      a,(RAM_CURRENT_LEVEL)
 	add     a,a
 	ld      e,a
@@ -11466,7 +11498,7 @@ _5deb:
 ;OBJECT: chaos emerald	
 _5ea2:	
 	ld      hl,$d30b
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	and     c
 	jr      nz,+
@@ -11481,7 +11513,7 @@ _5ea2:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      hl,$d30b
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
 	ld      (hl),a
@@ -18435,7 +18467,7 @@ _a3f8:
 	jr      nz,+
 	set     1,(ix+$18)
 	ld      hl,$d317
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	ld      a,(hl)
 	xor     c
 	ld      (hl),a
@@ -18495,8 +18527,9 @@ _a4ab:
 	ld      ($d403),a
 	ld      ($d404),a
 	ld      ($d405),a
+	
 ++	ld      hl,$d317
-	call    _LABEL_C02_135
+	call    getLevelBitFlag
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      a,(hl)

@@ -151,9 +151,9 @@ _loadMusic:
 	add     hl,bc			;add the song's base address to it
 	
 	;now fill the track's data pointer with the absolute address to the track data
-	ld      (ix),l
+	ld      (ix+0),l
 	inc     ix
-	ld      (ix),h
+	ld      (ix+0),h
 	inc     ix
 	ex      de,hl
 	
