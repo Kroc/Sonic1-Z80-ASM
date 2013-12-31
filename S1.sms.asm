@@ -189,11 +189,9 @@
 ;level dimensions / crop
 .DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of level floor layout in blocks
 .DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of level floor layout in blocks
-.DEF RAM_LEVEL_CROPLEFT		$D273
-.DEF RAM_LEVEL_OFFSET_X		$D274
+.DEF RAM_LEVEL_OFFSETX		$D273
 .DEF RAM_LEVEL_WIDTH		$D276
-.DEF RAM_LEVEL_CROPTOP		$D277
-.DEF RAM_LEVEL_OFFSET_Y		$D278
+.DEF RAM_LEVEL_OFFSETY		$D277
 .DEF RAM_LEVEL_EXTENDHEIGHT	$D279
 .DEF RAM_LEVEL_HEIGHT		$D27A
 
@@ -1699,13 +1697,17 @@ _063e:
 	ret
 
 ;____________________________________________________________________________[$06BD]___
+;I believe this checks if the scroll offsets are such that new tiles need to filled in
+ ;in the overscroll area
 
 _06bd:
+	;scrolling enabled??
 	bit     5,(iy+vars.flags0)
 	ret     z
 	
 	di      
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
+	 ;Block Mappings?
 	ld      a,4
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
@@ -1714,9 +1716,12 @@ _06bd:
 	ld      (RAM_PAGE_2),a
 	ei      
 	
+	;------------------------------------------------------------------------------
+	;get the address of the solidity data for the level's tilemap:
+	
 	ld      a,(RAM_LEVEL_SOLIDITY)	;get the solidity index for the level
 	add     a,a			;double it (for a pointer)
-	ld      c,a			;and put it into a 16-bit number
+	ld      c,a			;and put it into a 16-bit number (BC)
 	ld      b,$00
 	
 	;lookup the index in the solidity pointer table
@@ -1731,8 +1736,11 @@ _06bd:
 	
 	;store the solidity data address in RAM
 	ld      (RAM_TEMP3),hl
+	
+	;------------------------------------------------------------------------------
+	;horizontal scrolling allowed?
 	bit     0,(iy+vars.flags2)
-	jp      z,+++
+	jp      z,+++			;skip forward to vertical scroll handling
 	
 	bit     6,(iy+vars.flags0)
 	jr      nz,+
@@ -1741,23 +1749,24 @@ _06bd:
 	ld      c,$08
 	jp      ++
 
+	;------------------------------------------------------------------------------
 +	ld      a,(RAM_SCROLL_HORIZONTAL)
-	and     %00011111
-	add     a,$08
-	rrca    
-	rrca    
-	rrca    
-	rrca    
-	rrca    
-	and     %00000001
-	ld      b,$00
+	and     %00011111		;MOD 32 (i.e. 0-31 looping)
+	add     a,8			;add 8 (ergo, 8-39)
+	rrca    			;divide by 2 ...
+	rrca    			;... 4
+	rrca    			;... 8
+	rrca    			;... 16
+	rrca    			;... 32
+	and     %00000001		;remove everything but bit 0
+	ld      b,$00			;load result into BC -- either $0000 or $0001
 	ld      c,a
 
 ++	call    _08d5
 	ld      a,(RAM_SCROLL_HORIZONTAL)
 	bit     6,(iy+vars.flags0)
 	jr      z,+
-	add     a,$08
+	add     a,8
 +	and     %00011111
 	srl     a
 	srl     a
@@ -1817,6 +1826,7 @@ _06bd:
 	add     hl,de
 	djnz    -
 	
+	;------------------------------------------------------------------------------
 +++	bit     1,(iy+vars.flags2)
 	jp      z,+++
 	bit     7,(iy+vars.flags0)
@@ -1828,6 +1838,7 @@ _06bd:
 +	ld      b,$00
 	ld      c,b
 	
+	;------------------------------------------------------------------------------
 ++	call    _08d5
 	ld      a,(RAM_SCROLL_VERTICAL)
 	and     $1f
@@ -1881,7 +1892,7 @@ _06bd:
 	exx     
 	inc     hl
 	djnz    -
-
+	
 +++	ret
 
 ;____________________________________________________________________________[$07DB]___
@@ -2065,21 +2076,26 @@ fillScrollTiles:
 	jp   --
 
 ;____________________________________________________________________________[$08D5]___
-;something to do with block mappings?
-
+;has something to do with checking if new tiles need to be filled in when scrolling
+ ;see `_06bd` for example
+ 
 _08d5:
-;BC : Address of Block Mappings?
-	ld      a,(RAM_LEVEL_FLOORWIDTH);width of the level in blocks
-	rlca    			;double it (x2)
-	jr      c,+			;<128?
-	rlca    			;double it again (x4)
-	jr      c,++			;<64?
-	rlca    			;double it again (x8)
-	jr      c,+++			;<32?
-	rlca    			;double it again (x16)
-	jr      c,++++			;<16?
-	jp      +++++			;...?
+;BC : a flag, $0000 or $0001 depending on callee
 	
+	;get the low-byte of the width of the level in blocks. many levels are 256
+	 ;blocks wide, ergo have a FloorWidth of $0100, making the low-byte $00
+	ld      a,(RAM_LEVEL_FLOORWIDTH)
+	rlca    			;double it (x2)
+	jr      c,+			;>128?
+	rlca    			;double it again (x4)
+	jr      c,++			;>64?
+	rlca    			;double it again (x8)
+	jr      c,+++			;>32?
+	rlca    			;double it again (x16)
+	jr      c,++++			;>16?
+	jp      +++++			;>255...?
+	
+	;------------------------------------------------------------------------------
 +	ld      a,($d258)
 	add     a,b
 	ld      e,$00
@@ -2093,7 +2109,8 @@ _08d5:
 	ld      hl,$c000
 	add     hl,de
 	ret
-
+	
+	;------------------------------------------------------------------------------
 ++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
@@ -2109,7 +2126,8 @@ _08d5:
 	ld      hl,$c000
 	add     hl,de
 	ret
-
+	
+	;------------------------------------------------------------------------------
 +++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
@@ -2127,7 +2145,8 @@ _08d5:
 	ld      hl,$c000
 	add     hl,de
 	ret
-
+	
+	;------------------------------------------------------------------------------
 ++++	ld      a,($d258)
 	add     a,b
 	ld      e,$00
@@ -2147,7 +2166,8 @@ _08d5:
 	ld      hl,$c000
 	add     hl,de
 	ret
-
+	
+	;------------------------------------------------------------------------------
 +++++	ld      a,($d258)
 	add     a,b
 	ld      d,a
@@ -2171,7 +2191,7 @@ _0966:
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
 	
-	ld      bc,$0000		;$10000
+	ld      bc,$0000
 	call    _08d5
 	
 	ld      de,$3800
@@ -4352,6 +4372,7 @@ _1a18:
 ;____________________________________________________________________________[$1ACA]___
 
 _1aca:
+	;load number of lives into HL
 	ld      a,(RAM_LIVES)
 	ld      l,a
 	ld      h,$00
@@ -4800,7 +4821,7 @@ _1de2:					;jump to here from _2067
 	jp      _1dae
 
 ++	ld      (iy+vars.joypad),$f7
-	ld      hl,(RAM_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_OFFSETX)
 	ld      de,$0112
 	add     hl,de
 	ex      de,hl
@@ -4851,19 +4872,22 @@ _1e9e:	;demo mode?
 
 _1ed8:
 	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
 	ret
 
 ;____________________________________________________________________________[$1EE2]___
+;move the left-hand side of the level across -- i.e. Bridge Act 2
 
 _1ee2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-	ld      hl,(RAM_LEVEL_CROPLEFT)
+	
+	;increase the left hand crop
+	ld      hl,(RAM_LEVEL_OFFSETX)
 	inc     hl
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
 	ret
 
@@ -5284,7 +5308,7 @@ loadLevel:
 	 ;LY: Level Y Offset
 	 ;XH: Extend Height
 	 ;LH: Level Height
-	ld      de,RAM_LEVEL_CROPLEFT
+	ld      de,RAM_LEVEL_OFFSETX
 	ld      bc,$0008
 	ldir    
 	
@@ -5338,8 +5362,8 @@ loadLevel:
 	
 	;is it greater than or equal to 3?
 	sub     3			
-	jr      nc,+			
-	xor     a
+	jr      nc,+
+	xor     a			;set A to 0
 +	ld      ($d257),a
 	
 	;using the number as the hi-byte, divide by 8 into DE, e.g.
@@ -6839,7 +6863,7 @@ _2f66:
 	jr      c,_f
 	ld      ($d25a),hl
 __	ld      hl,($d25a)
-	ld      de,(RAM_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_OFFSETX)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -6928,7 +6952,7 @@ __	ld      hl,($d25a)
 	jr      c,_f
 	ld      ($d25d),hl
 __	ld      hl,($d25d)
-	ld      de,(RAM_LEVEL_CROPTOP)
+	ld      de,(RAM_LEVEL_OFFSETY)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -6959,36 +6983,36 @@ _311f:
 ;____________________________________________________________________________[$3122]___
 
 _3122:
-	ld      de,(RAM_LEVEL_CROPTOP)
+	ld      de,(RAM_LEVEL_OFFSETY)
 	and     a
 	sbc     hl,de
 	ret     z
 	jr      c,+
 	inc     de
-	ld      (RAM_LEVEL_CROPTOP),de
+	ld      (RAM_LEVEL_OFFSETY),de
 	ld      (RAM_LEVEL_EXTENDHEIGHT),de
 	ret
 	
 +	dec     de
-	ld      (RAM_LEVEL_CROPTOP),de
+	ld      (RAM_LEVEL_OFFSETY),de
 	ld      (RAM_LEVEL_EXTENDHEIGHT),de
 	ret
 
 ;____________________________________________________________________________[$3140]___
 
 _3140:
-	ld      de,(RAM_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_OFFSETX)
 	and     a
 	sbc     hl,de
 	ret     z
 	jr      c,+
 	inc     de
-	ld      (RAM_LEVEL_CROPLEFT),de
+	ld      (RAM_LEVEL_OFFSETX),de
 	ld      ($d275),de
 	ret
 	
 +	dec     de
-	ld      (RAM_LEVEL_CROPLEFT),de
+	ld      (RAM_LEVEL_OFFSETX),de
 	ld      ($d275),de
 	ret
 
@@ -9281,7 +9305,7 @@ _4c39:
 	call    nz,_4e51
 	bit     1,(iy+vars.flags6)
 	jr      nz,++
-	ld      hl,(RAM_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_OFFSETX)
 	ld      bc,$0008
 	add     hl,bc
 	ex      de,hl
@@ -11572,7 +11596,7 @@ _5f17:
 	call    loadPaletteOnInterrupt
 	set     0,(ix+$11)
 +	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ff90
@@ -13103,7 +13127,7 @@ _700c:
 	ld      h,(hl)
 	ld      l,a
 	jp      (hl)
-	ld      hl,(RAM_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_OFFSETX)
 	ld      de,$0006
 	add     hl,de
 	ld      e,(ix+$02)
@@ -13125,7 +13149,7 @@ _700c:
 	ld      (ix+$15),$72
 	res     1,(ix+$11)
 	jp      ++
-	ld      hl,(RAM_LEVEL_CROPLEFT)
+	ld      hl,(RAM_LEVEL_OFFSETX)
 	ld      de,$00e0
 	add     hl,de
 	ld      e,(ix+$02)
@@ -13217,7 +13241,7 @@ _700c:
 	jp      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,(RAM_LEVEL_CROPLEFT)
+	ld      de,(RAM_LEVEL_OFFSETX)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -13334,7 +13358,7 @@ _732c:
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ff90
@@ -14254,10 +14278,10 @@ _7c8c:
 	ld      ($d27b),hl
 	ld      ($d27d),de
 	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
 
@@ -14694,10 +14718,10 @@ _8053:
 	xor     a
 	ld      ($d2ec),a
 	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$01f0
 	ld      ($d27b),hl
@@ -18770,11 +18794,11 @@ _a7ed:
 	bit     0,(ix+$18)
 	jr      nz,+
 	ld      hl,$0340
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      hl,$0540
 	ld      ($d275),hl
 	ld      hl,($d25d)
-	ld      (RAM_LEVEL_CROPTOP),hl
+	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$0220
 	ld      ($d27d),hl
@@ -18796,7 +18820,7 @@ _a7ed:
 +	bit     1,(ix+$18)
 	jr      nz,+++
 	ld      hl,($d25a)
-	ld      (RAM_LEVEL_CROPLEFT),hl
+	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      de,_baf9
 	ld      bc,_a9b7
 	call    _7c41
