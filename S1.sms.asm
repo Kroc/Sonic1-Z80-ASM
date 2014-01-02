@@ -179,8 +179,8 @@
 .DEF RAM_PAGE_1			$D235	;used to keep track of what bank is in page 1
 .DEF RAM_PAGE_2			$D236	;used to keep track of what bank is in page 2
 
-.DEF RAM_SCROLL_HORIZONTAL	$D251
-.DEF RAM_SCROLL_VERTICAL	$D252
+.DEF RAM_VDPSCROLL_HORIZONTAL	$D251
+.DEF RAM_VDPSCROLL_VERTICAL	$D252
 
 ;--------------------------------------------------------------------------------------
 
@@ -231,6 +231,9 @@
  ;X-position, Y-position and sprite index number. this is used to set where the next
  ;sprites will be created in the table, e.g. `processSpriteLayout`
 .DEF RAM_SPRITETABLE_CURRENT	$D23C
+
+.DEF RAM_CAMERA_X		$D25A
+.DEF RAM_CAMERA_Y		$D25D
 
 ;======================================================================================
 
@@ -412,14 +415,14 @@ _LABEL_F7_25:
 	out  (SMS_VDP_CONTROL), a
 	
 	;horizontal scroll
-	ld   a, (RAM_SCROLL_HORIZONTAL)
+	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	neg				;I don't understand the reason for this
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 8			;VDP register 8
 	out  (SMS_VDP_CONTROL), a
 	
 	;vertical scroll
-	ld   a, (RAM_SCROLL_VERTICAL)
+	ld   a, (RAM_VDPSCROLL_VERTICAL)
 	out  (SMS_VDP_CONTROL), a
 	ld   a, $80 + 9			;VDP register 9
 	out  (SMS_VDP_CONTROL), a
@@ -1633,8 +1636,8 @@ _LABEL_625_57:
 ;____________________________________________________________________________[$063E]___
 
 _063e:
-	ld      bc,(RAM_SCROLL_HORIZONTAL)
-	ld      hl,($d25a)
+	ld      bc,(RAM_VDPSCROLL_HORIZONTAL)
+	ld      hl,(RAM_CAMERA_X)
 	ld      de,($d26f)
 	and     a
 	sbc     hl,de
@@ -1650,7 +1653,7 @@ _063e:
 	ld      c,a
 	set     6,(iy+vars.flags0)
 	
-++	ld      hl,($d25d)
+++	ld      hl,(RAM_CAMERA_Y)
 	ld      de,($d271)
 	and     a
 	sbc     hl,de
@@ -1672,8 +1675,8 @@ _063e:
 +	ld      b,a
 	set     7,(iy+vars.flags0)
 
-+++	ld      (RAM_SCROLL_HORIZONTAL),bc
-	ld      hl,($d25a)
++++	ld      (RAM_VDPSCROLL_HORIZONTAL),bc
+	ld      hl,(RAM_CAMERA_X)
 	sla     l
 	rl      h
 	sla     l
@@ -1681,7 +1684,7 @@ _063e:
 	sla     l
 	rl      h
 	ld      c,h
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	sla     l
 	rl      h
 	sla     l
@@ -1690,9 +1693,9 @@ _063e:
 	rl      h
 	ld      b,h
 	ld      ($d257),bc
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      ($d26f),hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      ($d271),hl
 	ret
 
@@ -1750,7 +1753,7 @@ _06bd:
 	jp      ++
 
 	;------------------------------------------------------------------------------
-+	ld      a,(RAM_SCROLL_HORIZONTAL)
++	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	and     %00011111		;MOD 32 (i.e. 0-31 looping)
 	add     a,8			;add 8 (ergo, 8-39)
 	rrca    			;divide by 2 ...
@@ -1763,7 +1766,7 @@ _06bd:
 	ld      c,a
 
 ++	call    _08d5
-	ld      a,(RAM_SCROLL_HORIZONTAL)
+	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	bit     6,(iy+vars.flags0)
 	jr      z,+
 	add     a,8
@@ -1840,7 +1843,7 @@ _06bd:
 	
 	;------------------------------------------------------------------------------
 ++	call    _08d5
-	ld      a,(RAM_SCROLL_VERTICAL)
+	ld      a,(RAM_VDPSCROLL_VERTICAL)
 	and     $1f
 	srl     a
 	and     $fc
@@ -1911,7 +1914,7 @@ fillScrollTiles:
 	;calculate the number of bytes to offset by to get to the correct row in the
 	 ;screen table
 	
-	ld   a, (RAM_SCROLL_VERTICAL)
+	ld   a, (RAM_VDPSCROLL_VERTICAL)
 	and  %11111000			;round the scroll to the nearest 8 pixels
 	
 	;multiply the vertical scroll offset by 8. since the scroll offset is already
@@ -1929,7 +1932,7 @@ fillScrollTiles:
 	;calculate the number of bytes to get from the beginning of a row to the 
 	 ;horizontal scroll position
 	
-	ld   a, (RAM_SCROLL_HORIZONTAL)
+	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	
 	bit  6, (iy+vars.flags0)
 	jr   z, +
@@ -1956,7 +1959,7 @@ fillScrollTiles:
 	
 	;find where in a block the scroll offset sits (this is needed to find which
 	 ;of the 4 tiles width in a block have to be referenced)
-	ld   a, (RAM_SCROLL_VERTICAL)
+	ld   a, (RAM_VDPSCROLL_VERTICAL)
 	and  %00011111			;MOD 32
 	srl  a				;divide by 2 ...
 	srl  a				;divide by 4 ...
@@ -1995,7 +1998,7 @@ fillScrollTiles:
 	;------------------------------------------------------------------------------
 ++	bit  1, (iy+vars.flags2)
 	jp   z, ++			;could  optimise to `ret z`?
-	ld   a, (RAM_SCROLL_VERTICAL)
+	ld   a, (RAM_VDPSCROLL_VERTICAL)
 	ld   b, $00
 	srl  a
 	srl  a
@@ -2016,7 +2019,7 @@ fillScrollTiles:
 	add  a, a
 	rl   b
 	ld   c, a
-	ld   a, (RAM_SCROLL_HORIZONTAL)
+	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	add  a, $08
 	and  $F8
 	srl  a
@@ -2028,7 +2031,7 @@ fillScrollTiles:
 	set  6, h
 	ex   de, hl
 	ld   hl, $D100
-	ld   a, (RAM_SCROLL_HORIZONTAL)
+	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	and  $1F
 	add  a, $08
 	srl  a
@@ -2712,8 +2715,8 @@ _c1d:
 _LABEL_C52_106:
 	;reset horizontal / vertical scroll
 	xor  a				;set A to 0
-	ld   (RAM_SCROLL_HORIZONTAL), a
-	ld   (RAM_SCROLL_VERTICAL), a
+	ld   (RAM_VDPSCROLL_HORIZONTAL), a
+	ld   (RAM_VDPSCROLL_VERTICAL), a
 	
 	ld   a, $FF
 	ld   ($D216), a
@@ -3406,8 +3409,8 @@ titleScreen:
 	
 	;reset horizontal / vertical scroll
 	xor  a				;set A to zero
-	ld   (RAM_SCROLL_HORIZONTAL), a
-	ld   (RAM_SCROLL_VERTICAL), a
+	ld   (RAM_VDPSCROLL_HORIZONTAL), a
+	ld   (RAM_VDPSCROLL_VERTICAL), a
 	
 	;load the palette
 	ld   hl, S1_TitleScreen_Palette
@@ -3575,8 +3578,8 @@ _1401:
 	call    decompressScreen
 	
 	xor     a
-	ld      (RAM_SCROLL_HORIZONTAL),a
-	ld      (RAM_SCROLL_VERTICAL),a
+	ld      (RAM_VDPSCROLL_HORIZONTAL),a
+	ld      (RAM_VDPSCROLL_VERTICAL),a
 	ld      hl,_14fc
 	ld      a,$03
 	call    loadPaletteOnInterrupt
@@ -3788,8 +3791,8 @@ _155e:
 	djnz    -
 	
 +	xor     a
-	ld      (RAM_SCROLL_HORIZONTAL),a
-	ld      (RAM_SCROLL_VERTICAL),a
+	ld      (RAM_VDPSCROLL_HORIZONTAL),a
+	ld      (RAM_VDPSCROLL_VERTICAL),a
 	ld      hl,$1b8d
 	ld      a,$03
 	call    loadPaletteOnInterrupt
@@ -4871,7 +4874,7 @@ _1e9e:	;demo mode?
 ;____________________________________________________________________________[$1ED8]___
 
 _1ed8:
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
 	ret
@@ -4905,7 +4908,7 @@ _1ef2:
 ;____________________________________________________________________________[$1EFF]___
 
 _1eff:
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
 
@@ -5200,8 +5203,8 @@ loadLevel:
 	ld   l, a			;set HL to #$0000
 	ld   h, a
 	;clear some variables
-	ld   (RAM_SCROLL_HORIZONTAL), a
-	ld   (RAM_SCROLL_VERTICAL), a
+	ld   (RAM_VDPSCROLL_HORIZONTAL), a
+	ld   (RAM_VDPSCROLL_VERTICAL), a
 	ld   ($D27B), hl
 	ld   ($D27D), hl
 	ld   ($D2B7), hl
@@ -5382,7 +5385,7 @@ loadLevel:
 	rr      e
 	and     %00011111		;mask off the top 3 bits from the rotation
 	ld      d,a
-	ld      ($d25a),de
+	ld      (RAM_CAMERA_X),de
 	ld      ($d26f),de
 	
 	;move to the second byte, repeat the same process
@@ -5403,7 +5406,7 @@ loadLevel:
 	rr      e
 	and     %00011111		;mask off the top 3 bits from the rotation
 	ld      d,a
-	ld      ($d25d),de
+	ld      (RAM_CAMERA_Y),de
 	ld      ($d271),de
 	
 	;return to the "SX" byte in the level header
@@ -5924,8 +5927,8 @@ _LABEL_258B_133:
 	call wait
 	
 	xor  a
-	ld   (RAM_SCROLL_HORIZONTAL), a
-	ld   (RAM_SCROLL_VERTICAL), a		;vertical scroll
+	ld   (RAM_VDPSCROLL_HORIZONTAL), a
+	ld   (RAM_VDPSCROLL_VERTICAL), a		;vertical scroll
 	
 	ld   hl, $2828
 	ld   a, $03
@@ -6805,7 +6808,7 @@ _2f66:
 	ld      ($d265),de
 	ld      bc,($d25f)
 	ld      de,($d3fe)
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	add     hl,bc
 	and     a
 	sbc     hl,de
@@ -6826,15 +6829,15 @@ _2f66:
 	jr      z,+
 	ld      hl,$0001
 +	ex      de,hl
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	jr      c,_f
-	ld      ($d25a),hl
+	ld      (RAM_CAMERA_X),hl
 	jp      _f
 	
 +++	ld      bc,($d261)
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	add     hl,bc
 	and     a
 	sbc     hl,de
@@ -6858,29 +6861,29 @@ _2f66:
 	bit     5,(iy+vars.scrollRingFlags)
 	jr      z,+
 	ld      hl,$0001
-+	ld      de,($d25a)
++	ld      de,(RAM_CAMERA_X)
 	add     hl,de
 	jr      c,_f
-	ld      ($d25a),hl
-__	ld      hl,($d25a)
+	ld      (RAM_CAMERA_X),hl
+__	ld      hl,(RAM_CAMERA_X)
 	ld      de,(RAM_LEVEL_OFFSETX)
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      ($d25a),de
+	ld      (RAM_CAMERA_X),de
 	jr      ++
 	
-+	ld      hl,($d25a)
++	ld      hl,(RAM_CAMERA_X)
 	ld      de,($d275)
 	and     a
 	sbc     hl,de
 	jr      c,++
-	ld      ($d25a),de
+	ld      (RAM_CAMERA_X),de
 ++	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_3164
 	ld      bc,($d263)
 	ld      de,($d401)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_31cf
 	bit     7,(iy+vars.scrollRingFlags)
@@ -6911,15 +6914,15 @@ __	ld      hl,($d25a)
 	jr      nz,+
 	ld      hl,$0000
 +	ex      de,hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	jr      c,_f
-	ld      ($d25d),hl
+	ld      (RAM_CAMERA_Y),hl
 	jp      _f
 	
 +++	ld      bc,($d265)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	add     hl,bc
 	bit     7,(iy+vars.scrollRingFlags)
 	call    z,_31db
@@ -6947,22 +6950,22 @@ __	ld      hl,($d25a)
 	ld      h,$00
 ++	bit     4,(iy+vars.scrollRingFlags)
 	jr      nz,_f
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	add     hl,de
 	jr      c,_f
-	ld      ($d25d),hl
-__	ld      hl,($d25d)
+	ld      (RAM_CAMERA_Y),hl
+__	ld      hl,(RAM_CAMERA_Y)
 	ld      de,(RAM_LEVEL_OFFSETY)
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      ($d25d),de
-+	ld      hl,($d25d)
+	ld      (RAM_CAMERA_Y),de
++	ld      hl,(RAM_CAMERA_Y)
 	ld      de,(RAM_LEVEL_EXTENDHEIGHT)
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      ($d25d),de
+	ld      (RAM_CAMERA_Y),de
 +	ret
 
 ;____________________________________________________________________________[$311A]___
@@ -6981,8 +6984,10 @@ _311f:
 	ret
 
 ;____________________________________________________________________________[$3122]___
+;set scroll Y?
 
 _3122:
+;HL : ?
 	ld      de,(RAM_LEVEL_OFFSETY)
 	and     a
 	sbc     hl,de
@@ -6999,13 +7004,16 @@ _3122:
 	ret
 
 ;____________________________________________________________________________[$3140]___
+;set the left the hand side of the level and scroll towards it accordingly:
 
 _3140:
+;HL : ($D27B)
 	ld      de,(RAM_LEVEL_OFFSETX)
-	and     a
+	and     a			;reset the carry so it doesn't affect `sbc`
 	sbc     hl,de
-	ret     z
-	jr      c,+
+	ret     z			;if HL = DE then return -- no change
+	jr      c,+			;is DE > HL?
+	
 	inc     de
 	ld      (RAM_LEVEL_OFFSETX),de
 	ld      ($d275),de
@@ -7150,7 +7158,7 @@ _31e6:
 	ldi     
 	ldi     
 	ldi     
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	xor     a
 	sbc     hl,bc
 	jr      nc,+
@@ -7162,12 +7170,12 @@ _31e6:
 	sbc     hl,de
 	jp      nc,++
 	ld      hl,(RAM_TEMP1)
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	add     hl,bc
 	xor     a
 	sbc     hl,de
 	jp      c,++
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,(RAM_TEMP3)
 	sbc     hl,bc
 	jr      nc,+
@@ -7179,7 +7187,7 @@ _31e6:
 	sbc     hl,de
 	jp      nc,++
 	ld      hl,(RAM_TEMP4)
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	add     hl,bc
 	xor     a
 	sbc     hl,de
@@ -7556,13 +7564,13 @@ _32e2:
 _34e6:
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
 	ex      de,hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,bc
 	ld      c,(ix+$0f)
@@ -7712,14 +7720,14 @@ _3581:
 	ld      hl,(RAM_TEMP3)
 	ld      bc,(RAM_TEMP6)
 	add     hl,bc
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
 	ex      de,hl
 	ld      hl,(RAM_TEMP1)
 	ld      bc,(RAM_TEMP4)
 	add     hl,bc
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,bc
 	ld      c,a
@@ -8216,7 +8224,7 @@ _LABEL_38B0_51:
 	and  %11111000
 	ld   l, a
 	
-	ld   de, ($D25A)
+	ld   de, (RAM_CAMERA_X)
 	ld   a, e
 	and  %11111000
 	ld   e, a
@@ -8233,7 +8241,7 @@ _LABEL_38B0_51:
 	ret  c
 	
 	ld   d, a
-	ld   a, (RAM_SCROLL_HORIZONTAL)
+	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	and  %11111000
 	ld   e, a
 	add  hl, de
@@ -8251,7 +8259,7 @@ _LABEL_38B0_51:
 	ld   a, l
 	and  $F8
 	ld   l, a
-	ld   de, ($D25D)
+	ld   de, (RAM_CAMERA_Y)
 	ld   a, e
 	and  $F8
 	ld   e, a
@@ -8264,7 +8272,7 @@ _LABEL_38B0_51:
 	cp   $C0
 	ret  nc
 	ld   d, $00
-	ld   a, (RAM_SCROLL_VERTICAL)
+	ld   a, (RAM_VDPSCROLL_VERTICAL)
 	and  $F8
 	ld   e, a
 	add  hl, de
@@ -9405,7 +9413,7 @@ _4def:
 	ex      de,hl
 	
 	ld      hl,($d401)
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
 	ret     c
@@ -9781,14 +9789,14 @@ _5009:
 	rrca    
 	ret     nc
 	ld      hl,($d3fe)
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ld      a,l
 	add     a,$08
 	ld      c,a
 	ld      hl,($d401)
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ld      a,l
@@ -10083,12 +10091,12 @@ _5231:
 	push    hl
 	ld      hl,$d000
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	ld      hl,($d2e4)
 	and     a
 	sbc     hl,de
 	ex      de,hl
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	ld      hl,($d2e2)
 	and     a
 	sbc     hl,bc
@@ -10324,7 +10332,7 @@ _543c:
 	ld      a,($d287)
 	cp      $60
 	jr      z,_54aa
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$00c0
 	add     hl,de
 	ld      de,($d401)
@@ -11038,7 +11046,7 @@ _58d0:
 	bit     7,(ix+$18)
 	ret     z
 	ld      hl,($d401)
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ret     nc
@@ -11582,6 +11590,7 @@ _5f17:
 	ld      (ix+$0e),$30
 	bit     0,(ix+$11)
 	jr      nz,+
+	
 	res     7,(iy+vars.flags6)
 	res     3,(iy+vars.scrollRingFlags)
 	
@@ -11591,12 +11600,16 @@ _5f17:
 	ld      a,9
 	call    decompressArt
 	
+	;load the end-sign palette
 	ld      hl,S1_EndSign_Palette
 	ld      a,$02
 	call    loadPaletteOnInterrupt
+	
 	set     0,(ix+$11)
-+	ld      hl,($d25a)
+	
++	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
+	
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ff90
@@ -12495,7 +12508,7 @@ _6a47:
 	ld      hl,_6923
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$00c0
 	add     hl,de
 	ld      e,(ix+$05)
@@ -12558,7 +12571,7 @@ _6ac1:
 	ld      h,b
 	ld      de,$fff8
 	add     hl,de
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -12572,7 +12585,7 @@ _6ac1:
 	ld      h,b
 	ld      de,$0010
 	add     hl,de
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -12607,7 +12620,7 @@ _6b74:
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0100
 	add     hl,bc
 	sbc     hl,de
@@ -12646,7 +12659,7 @@ _6b74:
 	ld      h,(ix+$03)
 	ld      de,$0030
 	add     hl,de
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -13083,9 +13096,11 @@ _700c:
 	ld      (ix+$12),a
 	ld      (ix+$14),$a1
 	ld      (ix+$15),$72
+	
 	ld      hl,$0760
 	ld      de,$00e8
 	call    _7c8c
+	
 	set     0,(ix+$11)
 +	ld      a,(ix+$13)
 	and     $3f
@@ -13174,7 +13189,7 @@ _700c:
 	ld      (ix+$0a),$60
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$0074
 	add     hl,de
 	ld      e,(ix+$05)
@@ -13195,7 +13210,7 @@ _700c:
 	ld      (ix+$0a),$60
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$0074
 	add     hl,de
 	ld      e,(ix+$05)
@@ -13228,7 +13243,7 @@ _700c:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$001a
 	add     hl,de
 	ld      e,(ix+$05)
@@ -13357,7 +13372,7 @@ _732c:
 	ld      hl,_7552
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
@@ -13602,7 +13617,7 @@ _7612:
 	ld      h,(ix+$03)
 	ld      de,$0010
 	add     hl,de
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ret     nc
@@ -13886,23 +13901,28 @@ _77be:
 	ld      (ix+$10),>_7922
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	inc     d
 	and     a
 	sbc     hl,de
 	ret     c
+	
 	ld      (ix+$00),$ff
 	ld      hl,$2000
 	ld      ($d275),hl
 	ld      hl,$0000
 	ld      ($d27b),hl
+	
 	set     5,(iy+vars.flags0)
 	set     0,(iy+vars.flags2)
 	res     1,(iy+vars.flags2)
+	
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0b
 	jr      nz,+
+	
 	set     1,(iy+vars.flags9)
+	
 +	;UNKNOWN
 	ld      hl,$da28
 	ld      de,$2000
@@ -14174,7 +14194,7 @@ _7b95:
 	ld      (ix+$0c),a
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	inc     h
 	xor     a
 	sbc     hl,de
@@ -14273,14 +14293,19 @@ _7c7b:
 	ret
 
 ;____________________________________________________________________________[$7C8C]___
+;used by bosses to lock the screen?
 
 _7c8c:
+;HL : ?
+;DE : ?
 	ld      ($d27b),hl
 	ld      ($d27d),de
-	ld      hl,($d25a)
+	
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
-	ld      hl,($d25d)
+	
+	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ret
@@ -14289,12 +14314,12 @@ _7c8c:
 
 _7ca6:
 	ld      hl,($d27b)
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ret     nz
 	ld      hl,($d27d)
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ret     nz
@@ -14717,17 +14742,22 @@ _8053:
 	
 	xor     a
 	ld      ($d2ec),a
-	ld      hl,($d25a)
+	
+	;there's a routine at `_7c8c` for setting the scroll positions that should
+	 ;have been used here?
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      ($d275),hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$01f0
 	ld      ($d27b),hl
 	ld      hl,$0048
 	ld      ($d27d),hl
+	
 	set     0,(ix+$18)
+	
 +	call    _7ca6
 	bit     0,(ix+$11)
 	jr      nz,+
@@ -15079,7 +15109,7 @@ _83c1:
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
 	ld      (RAM_TEMP1),hl
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	inc     d
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
@@ -15121,6 +15151,7 @@ _8496:
 	ld      (ix+$10),>_865a
 	bit     0,(ix+$18)
 	jr      nz,+
+	
 	ld      hl,$03a0
 	ld      de,$0300
 	call    _7c8c
@@ -16041,13 +16072,13 @@ _8c16:
 	call    nc,_35fd
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0110
 	add     hl,bc
 	and     a
@@ -16055,13 +16086,13 @@ _8c16:
 	jr      c,+
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00d0
 	add     hl,bc
 	and     a
@@ -16122,7 +16153,7 @@ _8d48:
 	jr      c,+
 	ld      (ix+$11),$00
 +	ld      ($d2dc),hl
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	ld      a,$ff
 	sbc     hl,de
@@ -16146,9 +16177,9 @@ _8d48:
 	ld      l,a
 	ld      h,$00
 	ld      (RAM_TEMP6),hl
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_TEMP1),hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_TEMP3),hl
 	ld      a,(iy+vars.spriteCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
@@ -16283,7 +16314,7 @@ _8eca:
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
 	ex      de,hl
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0008
 	xor     a
 	sbc     hl,bc
@@ -16293,7 +16324,7 @@ _8eca:
 +	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0100
 	add     hl,bc
 	and     a
@@ -16307,13 +16338,13 @@ _8eca:
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00c0
 	add     hl,bc
 	and     a
@@ -16520,26 +16551,26 @@ _90c0:
 	ld      (ix+$0c),c
 ++	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$ffe0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	inc     h
 	and     a
 	sbc     hl,de
 	jr      c,+
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$ffe0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00e0
 	add     hl,bc
 	and     a
@@ -16655,9 +16686,11 @@ _9267:
 	ld      (ix+$10),>_9493
 	bit     0,(ix+$18)
 	jr      nz,+
+	
 	ld      hl,$02d0
 	ld      de,$0290
 	call    _7c8c
+	
 	set     1,(iy+vars.flags9)
 	
 	;UNKNOWN
@@ -16932,7 +16965,7 @@ _94a5:
 	ld      b,(ix+$03)
 	ld      hl,$fff0
 	add     hl,bc
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -16946,7 +16979,7 @@ _94a5:
 	ld      b,(ix+$06)
 	ld      hl,$fff0
 	add     hl,bc
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -17272,7 +17305,7 @@ _96f8:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ex      de,hl
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0008
 	xor     a
 	sbc     hl,bc
@@ -17282,7 +17315,7 @@ _96f8:
 +	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0100
 	add     hl,bc
 	and     a
@@ -17295,13 +17328,13 @@ _96f8:
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00c0
 	add     hl,bc
 	and     a
@@ -18797,7 +18830,7 @@ _a7ed:
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      hl,$0540
 	ld      ($d275),hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_LEVEL_OFFSETY),hl
 	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
 	ld      hl,$0220
@@ -18819,7 +18852,7 @@ _a7ed:
 	set     0,(ix+$18)
 +	bit     1,(ix+$18)
 	jr      nz,+++
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_OFFSETX),hl
 	ld      de,_baf9
 	ld      bc,_a9b7
@@ -18858,9 +18891,11 @@ _a7ed:
 	
 +++	bit     2,(ix+$18)
 	jr      nz,+
+	
 	ld      hl,$0530
 	ld      de,$0220
 	call    _7c8c
+	
 	ld      (iy+vars.joypad),$ff
 	ld      hl,$05a0
 	ld      (ix+$01),$00
@@ -18928,7 +18963,7 @@ _a7ed:
 	ld      a,(ix+$11)
 	cp      $c0
 	jr      nz,++++
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	inc     h
 	ld      ($d3fe),hl
 	set     4,(ix+$18)
@@ -18958,12 +18993,12 @@ _a7ed:
 	ld      hl,$02af
 	and     a
 	sbc     hl,de
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
 	ex      de,hl
 	ld      hl,$05a0
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,bc
 	ld      bc,_a9c0		;address of sprite layout
@@ -19011,13 +19046,13 @@ _a9c7:
 	adc     a,c
 	ld      l,h
 	ld      h,a
-	ld      bc,($d25d)
+	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
 	ex      de,hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,bc
 	ld      bc,_aa63		;address of sprite layout
@@ -19029,7 +19064,7 @@ _a9c7:
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteCount),a
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      de,$ffe0
 	add     hl,de
 	ex      de,hl
@@ -19043,7 +19078,7 @@ _a9c7:
 	add     a,a
 	ld      c,a
 	rl      b
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      de,$01b4
 	add     hl,de
 	add     hl,bc
@@ -19441,7 +19476,7 @@ _ae35:
 	set     5,(ix+$18)
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$0c
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      de,$0110
 	add     hl,de
 	ld      e,(ix+$02)
@@ -19712,13 +19747,13 @@ _b0f4:
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
 	ex      de,hl
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$0110
 	add     hl,bc
 	and     a
@@ -19728,13 +19763,13 @@ _b0f4:
 	ld      h,(ix+$06)
 	ld      (RAM_TEMP3),hl
 	ex      de,hl
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff0
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00d0
 	add     hl,bc
 	and     a
@@ -20020,7 +20055,7 @@ _b398:
 	ld      b,(ix+$06)
 	ld      hl,$0040
 	add     hl,bc
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -20284,9 +20319,11 @@ _b634:
 	call    _b7e6
 	bit     0,(ix+$18)
 	jr      nz,+
+	
 	ld      hl,$0350
 	ld      de,$0120
 	call    _7c8c
+	
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$0008
@@ -20587,9 +20624,11 @@ _b821:
 	ld      (ix+$12),$05
 	ld      (ix+$13),$60
 	ld      (ix+$14),$01
+	
 	ld      hl,$0550
 	ld      de,$0120
 	call    _7c8c
+	
 	set     3,(ix+$18)
 	jp      ++++
 	
@@ -20953,13 +20992,13 @@ _bcdf:
 	jp      c,+++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	ld      bc,$fff4
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jp      nc,++++
-	ld      hl,($d25a)
+	ld      hl,(RAM_CAMERA_X)
 	inc     h
 	and     a
 	sbc     hl,de
@@ -20990,13 +21029,13 @@ _bcdf:
 	ld      (ix+$09),a
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff4
 	add     hl,bc
 	and     a
 	sbc     hl,de
 	jr      nc,++++
-	ld      hl,($d25d)
+	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$00c0
 	add     hl,de
 	and     a
@@ -21105,7 +21144,7 @@ _bdf9:
 	ld      (ix+$0c),a
 	bit     6,(iy+vars.timeLightningFlags)
 	jr      z,+
-	ld      de,($d25a)
+	ld      de,(RAM_CAMERA_X)
 	ld      hl,$0040
 	add     hl,de
 	ld      c,(ix+$02)
@@ -21114,7 +21153,7 @@ _bdf9:
 	sbc     hl,bc
 	jr      nc,+
 	inc     de
-	ld      ($d25a),de
+	ld      (RAM_CAMERA_X),de
 +	ld      (ix+$0f),<_bf21
 	ld      (ix+$10),>_bf21
 	bit     0,(ix+$18)
@@ -21231,13 +21270,13 @@ _bf4c:
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ex      de,hl
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      bc,($d25a)
+	ld      bc,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,bc
 	ld      bc,_bff1		;address of sprite layout
@@ -21250,7 +21289,7 @@ _bf4c:
 	ld      h,(ix+$06)
 	ld      de,$0020
 	add     hl,de
-	ld      de,($d25d)
+	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ret     nc
