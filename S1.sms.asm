@@ -187,13 +187,14 @@
 .DEF RAM_CURRENT_LEVEL		$D23E
 
 ;level dimensions / crop
-.DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of level floor layout in blocks
-.DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of level floor layout in blocks
-.DEF RAM_LEVEL_OFFSETX		$D273
-.DEF RAM_LEVEL_WIDTH		$D276
-.DEF RAM_LEVEL_OFFSETY		$D277
-.DEF RAM_LEVEL_EXTENDHEIGHT	$D279
-.DEF RAM_LEVEL_HEIGHT		$D27A
+.DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of the floor layout in blocks
+.DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of the floor layout in blocks
+.DEF RAM_LEVEL_LEFT		$D273
+;prevents the level scrolling past this left-most point
+ ;(i.e. sets an effective right-hand limit to the level -- this + width of the screen)
+.DEF RAM_LEVEL_RIGHT		$D275
+.DEF RAM_LEVEL_TOP		$D277
+.DEF RAM_LEVEL_BOTTOM		$D279
 
 .DEF RAM_LEVEL_SOLIDITY		$D2D4
 
@@ -234,6 +235,9 @@
 
 .DEF RAM_CAMERA_X		$D25A
 .DEF RAM_CAMERA_Y		$D25D
+
+.DEF RAM_CAMERA_X_LEFT		$D26F	;used to check when the camera goes left
+.DEF RAM_CAMERA_Y_UP		$D271	;used to check when the camera goes up
 
 ;======================================================================================
 
@@ -800,7 +804,7 @@ wait:
 	jr   z, wait
 	ret
 
-;___ UNUSED! ________________________________________________________________[$0323]___
+;___ UNUSED! (15 bytes) _____________________________________________________[$0323]___
 
 _323:
 	set     2,(iy+vars.flags0)
@@ -889,7 +893,7 @@ updateVDPSprites:
 	ld   (iy+vars.spriteCount), b
 	ret
 
-;___ UNUSED! ________________________________________________________________[$0397]___	
+;___ UNUSED! (20 bytes) _____________________________________________________[$0397]___	
 
 ;fill VRAM from memory?
 _0397:
@@ -915,7 +919,7 @@ _0397:
 	
 	ret
 	
-;___ UNUSED! ________________________________________________________________[$03AC]___
+;___ UNUSED! (88 bytes) _____________________________________________________[$03AC]___
 
 _03ac:
 ;A  : bank number for page 1, A+1 will be used as the bank number for page 2
@@ -1638,7 +1642,7 @@ _LABEL_625_57:
 _063e:
 	ld      bc,(RAM_VDPSCROLL_HORIZONTAL)
 	ld      hl,(RAM_CAMERA_X)
-	ld      de,($d26f)
+	ld      de,(RAM_CAMERA_X_LEFT)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -1654,7 +1658,7 @@ _063e:
 	set     6,(iy+vars.flags0)
 	
 ++	ld      hl,(RAM_CAMERA_Y)
-	ld      de,($d271)
+	ld      de,(RAM_CAMERA_Y_UP)
 	and     a
 	sbc     hl,de
 	jr      c,++
@@ -1694,9 +1698,9 @@ _063e:
 	ld      b,h
 	ld      ($d257),bc
 	ld      hl,(RAM_CAMERA_X)
-	ld      ($d26f),hl
+	ld      (RAM_CAMERA_X_LEFT),hl
 	ld      hl,(RAM_CAMERA_Y)
-	ld      ($d271),hl
+	ld      (RAM_CAMERA_Y_UP),hl
 	ret
 
 ;____________________________________________________________________________[$06BD]___
@@ -4824,7 +4828,7 @@ _1de2:					;jump to here from _2067
 	jp      _1dae
 
 ++	ld      (iy+vars.joypad),$f7
-	ld      hl,(RAM_LEVEL_OFFSETX)
+	ld      hl,(RAM_LEVEL_LEFT)
 	ld      de,$0112
 	add     hl,de
 	ex      de,hl
@@ -4872,11 +4876,13 @@ _1e9e:	;demo mode?
 	ret
 
 ;____________________________________________________________________________[$1ED8]___
+;lock the screen -- prevents the screen scrolling left or right
+ ;(i.e. during boss battles)
 
 _1ed8:
 	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	ld      (RAM_LEVEL_RIGHT),hl
 	ret
 
 ;____________________________________________________________________________[$1EE2]___
@@ -4887,11 +4893,12 @@ _1ee2:
 	rrca    
 	ret     nc
 	
-	;increase the left hand crop
-	ld      hl,(RAM_LEVEL_OFFSETX)
+	;increase the left hand crop by a pixel
+	ld      hl,(RAM_LEVEL_LEFT)
 	inc     hl
-	ld      (RAM_LEVEL_OFFSETX),hl
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	;prevent scrolling to the right by limiting the width of the level to the same
+	ld      (RAM_LEVEL_RIGHT),hl
 	ret
 
 ;____________________________________________________________________________[$1EF2]___
@@ -4900,16 +4907,16 @@ _1ef2:
 	ld      a,($d223)
 	rrca    
 	ret     nc
-	ld      hl,(RAM_LEVEL_EXTENDHEIGHT)
+	ld      hl,(RAM_LEVEL_BOTTOM)
 	dec     hl
-	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_BOTTOM),hl
 	ret
 
 ;____________________________________________________________________________[$1EFF]___
 
 _1eff:
 	ld      hl,(RAM_CAMERA_Y)
-	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_BOTTOM),hl
 	ret
 
 ;____________________________________________________________________________[$1F06]___
@@ -5256,6 +5263,7 @@ loadLevel:
 	
 	ld   hl, _2402
 	
+	;set number of collected rings to 0
 +	xor  a				;set A to 0
 	ld   (RAM_RINGS), a
 	
@@ -5285,6 +5293,9 @@ loadLevel:
 	ld   a, 9
 	call decompressArt
 	
+	;------------------------------------------------------------------------------
+	;begin reading the level header:
+	
 	pop     hl			;get back the address to the level header
 	;SP: Solidity Pointer
 	ld      a,(hl)
@@ -5303,16 +5314,14 @@ loadLevel:
 	inc     hl
 	ld      (RAM_LEVEL_FLOORHEIGHT),de
 	;copy the next 8 bytes to $D273+
-	 ;CL: Crop Left
-	 ;LX: Level X Offset
-	 ;??: Unknown
-	 ;LW: Level Width
-	 ;CT: Crop Top
-	 ;LY: Level Y Offset
+	 ;$D273/4 - LX: Level X Offset
+	 ;$D275/6 - LW: Level Width (Level X Offset Max)
+	 ;$D277/8 - LY: Level Y Offset
+	 ;$D279/A - LH: Level Height
 	 ;XH: Extend Height
 	 ;LH: Level Height
-	ld      de,RAM_LEVEL_OFFSETX
-	ld      bc,$0008
+	ld      de,RAM_LEVEL_LEFT
+	ld      bc,8
 	ldir    
 	
 	;currently HL will be sitting on byte 14 ("SX") of the level header
@@ -5323,7 +5332,7 @@ loadLevel:
 	 ;C returns a byte with bit x set, where x is the level number mod 8
 	 ;DE will be the level number divided by 8
 	 ;HL will be $D311 + the level number divided by 8
-	ld      hl,$d311
+	ld      hl,$D311
 	call    getLevelBitFlag
 	
 	ld      a,(hl)
@@ -5343,6 +5352,7 @@ loadLevel:
 	ld      (de),a			
 	
 	;copy 3 bytes from $2402 to $D2CE, these will be $01, $30 & $00
+	 ;(purpose unknown)
 	ld      hl,_2402
 	ld      de,$d2ce
 	ld      bc,$0003
@@ -5358,7 +5368,7 @@ loadLevel:
 	
 	;NOTE: since other data in RAM begins at $D354 (a copy of the level header)
 	 ;this places a limit -- 19 -- on the number of main levels.
-	 ;special stages and levels visited by teleporter are not included
+	 ;special stages and levels visited by teleporter are not included -- AFAIK
 	
 +	ld      ($d216),hl		
 	ld      a,(hl)			;get the value at that RAM address	
@@ -5386,7 +5396,7 @@ loadLevel:
 	and     %00011111		;mask off the top 3 bits from the rotation
 	ld      d,a
 	ld      (RAM_CAMERA_X),de
-	ld      ($d26f),de
+	ld      (RAM_CAMERA_X_LEFT),de
 	
 	;move to the second byte, repeat the same process
 	inc     hl
@@ -5407,7 +5417,7 @@ loadLevel:
 	and     %00011111		;mask off the top 3 bits from the rotation
 	ld      d,a
 	ld      (RAM_CAMERA_Y),de
-	ld      ($d271),de
+	ld      (RAM_CAMERA_Y_UP),de
 	
 	;return to the "SX" byte in the level header
 	pop     hl
@@ -5506,7 +5516,7 @@ loadLevel:
 	;return to our position in the level header
 	pop     hl
 	
-	;get the bank number for the sprite art
+	;SB: get the bank number for the sprite art
 	ld      a,(hl)
 	inc     hl
 	
@@ -5954,7 +5964,7 @@ _LABEL_258B_133:
 	call    decompressScreen
 	
 	ld      a,(RAM_VDPREGISTER_1)
-	or      $40
+	or      %01000000
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
@@ -6866,7 +6876,7 @@ _2f66:
 	jr      c,_f
 	ld      (RAM_CAMERA_X),hl
 __	ld      hl,(RAM_CAMERA_X)
-	ld      de,(RAM_LEVEL_OFFSETX)
+	ld      de,(RAM_LEVEL_LEFT)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -6874,7 +6884,7 @@ __	ld      hl,(RAM_CAMERA_X)
 	jr      ++
 	
 +	ld      hl,(RAM_CAMERA_X)
-	ld      de,($d275)
+	ld      de,(RAM_LEVEL_RIGHT)
 	and     a
 	sbc     hl,de
 	jr      c,++
@@ -6955,13 +6965,13 @@ __	ld      hl,(RAM_CAMERA_X)
 	jr      c,_f
 	ld      (RAM_CAMERA_Y),hl
 __	ld      hl,(RAM_CAMERA_Y)
-	ld      de,(RAM_LEVEL_OFFSETY)
+	ld      de,(RAM_LEVEL_TOP)
 	and     a
 	sbc     hl,de
 	jr      nc,+
 	ld      (RAM_CAMERA_Y),de
 +	ld      hl,(RAM_CAMERA_Y)
-	ld      de,(RAM_LEVEL_EXTENDHEIGHT)
+	ld      de,(RAM_LEVEL_BOTTOM)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -6988,19 +6998,19 @@ _311f:
 
 _3122:
 ;HL : ?
-	ld      de,(RAM_LEVEL_OFFSETY)
+	ld      de,(RAM_LEVEL_TOP)
 	and     a
 	sbc     hl,de
 	ret     z
 	jr      c,+
 	inc     de
-	ld      (RAM_LEVEL_OFFSETY),de
-	ld      (RAM_LEVEL_EXTENDHEIGHT),de
+	ld      (RAM_LEVEL_TOP),de
+	ld      (RAM_LEVEL_BOTTOM),de
 	ret
 	
 +	dec     de
-	ld      (RAM_LEVEL_OFFSETY),de
-	ld      (RAM_LEVEL_EXTENDHEIGHT),de
+	ld      (RAM_LEVEL_TOP),de
+	ld      (RAM_LEVEL_BOTTOM),de
 	ret
 
 ;____________________________________________________________________________[$3140]___
@@ -7008,20 +7018,20 @@ _3122:
 
 _3140:
 ;HL : ($D27B)
-	ld      de,(RAM_LEVEL_OFFSETX)
+	ld      de,(RAM_LEVEL_LEFT)
 	and     a			;reset the carry so it doesn't affect `sbc`
 	sbc     hl,de
 	ret     z			;if HL = DE then return -- no change
 	jr      c,+			;is DE > HL?
 	
 	inc     de
-	ld      (RAM_LEVEL_OFFSETX),de
-	ld      ($d275),de
+	ld      (RAM_LEVEL_LEFT),de
+	ld      (RAM_LEVEL_RIGHT),de
 	ret
 	
 +	dec     de
-	ld      (RAM_LEVEL_OFFSETX),de
-	ld      ($d275),de
+	ld      (RAM_LEVEL_LEFT),de
+	ld      (RAM_LEVEL_RIGHT),de
 	ret
 
 ;____________________________________________________________________________[$315E]___
@@ -7100,6 +7110,9 @@ _31cf:
 _31d3:
 	ld      bc,$0070
 	ret
+
+;___ UNUSED! (4 bytes) ______________________________________________________[$31D7]___
+
 	ld      bc,$0070
 	ret
 
@@ -8943,7 +8956,7 @@ _48c8:
 	ld      de,$0024
 	add     hl,de
 	ex      de,hl
-	ld      hl,(RAM_LEVEL_EXTENDHEIGHT)
+	ld      hl,(RAM_LEVEL_BOTTOM)
 	ld      bc,$00c0
 	add     hl,bc
 	xor     a
@@ -9313,7 +9326,7 @@ _4c39:
 	call    nz,_4e51
 	bit     1,(iy+vars.flags6)
 	jr      nz,++
-	ld      hl,(RAM_LEVEL_OFFSETX)
+	ld      hl,(RAM_LEVEL_LEFT)
 	ld      bc,$0008
 	add     hl,bc
 	ex      de,hl
@@ -9331,9 +9344,10 @@ _4c39:
 	ld      ($d405),a
 	jp      ++
 	
-+	ld      hl,($d275)
-	ld      de,$00f8
++	ld      hl,(RAM_LEVEL_RIGHT)
+	ld      de,$00f8		;248 -- screen width less 8?
 	add     hl,de
+	
 	ex      de,hl
 	ld      hl,($d3fe)
 	ld      c,$18
@@ -11608,17 +11622,19 @@ _5f17:
 	set     0,(ix+$11)
 	
 +	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
+	ld      (RAM_LEVEL_LEFT),hl
 	
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,$ff90
+	ld      de,$FF90
 	add     hl,de
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_RIGHT),hl
+	
 	ld      hl,$0080
 	ld      ($d26b),hl
 	ld      hl,$0088
 	ld      ($d26d),hl
+	
 	ld      c,(ix+$13)
 	ld      a,($d414)
 	and     $80
@@ -13142,7 +13158,7 @@ _700c:
 	ld      h,(hl)
 	ld      l,a
 	jp      (hl)
-	ld      hl,(RAM_LEVEL_OFFSETX)
+	ld      hl,(RAM_LEVEL_LEFT)
 	ld      de,$0006
 	add     hl,de
 	ld      e,(ix+$02)
@@ -13164,7 +13180,7 @@ _700c:
 	ld      (ix+$15),$72
 	res     1,(ix+$11)
 	jp      ++
-	ld      hl,(RAM_LEVEL_OFFSETX)
+	ld      hl,(RAM_LEVEL_LEFT)
 	ld      de,$00e0
 	add     hl,de
 	ld      e,(ix+$02)
@@ -13256,7 +13272,7 @@ _700c:
 	jp      c,++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,(RAM_LEVEL_OFFSETX)
+	ld      de,(RAM_LEVEL_LEFT)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -13373,12 +13389,15 @@ _732c:
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	
+	;something to do with scrolling
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,$ff90
+	ld      de,$FF90
 	add     hl,de
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_RIGHT),hl
+	
 	ld      hl,$0002
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
@@ -13908,8 +13927,8 @@ _77be:
 	ret     c
 	
 	ld      (ix+$00),$ff
-	ld      hl,$2000
-	ld      ($d275),hl
+	ld      hl,$2000		;8192 -- max width of a level in pixels
+	ld      (RAM_LEVEL_RIGHT),hl
 	ld      hl,$0000
 	ld      ($d27b),hl
 	
@@ -14302,12 +14321,12 @@ _7c8c:
 	ld      ($d27d),de
 	
 	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	ld      (RAM_LEVEL_RIGHT),hl
 	
 	ld      hl,(RAM_CAMERA_Y)
-	ld      (RAM_LEVEL_OFFSETY),hl
-	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_TOP),hl
+	ld      (RAM_LEVEL_BOTTOM),hl
 	ret
 
 ;____________________________________________________________________________[$7CA6]___
@@ -14746,11 +14765,12 @@ _8053:
 	;there's a routine at `_7c8c` for setting the scroll positions that should
 	 ;have been used here?
 	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	ld      (RAM_LEVEL_RIGHT),hl
+	
 	ld      hl,(RAM_CAMERA_Y)
-	ld      (RAM_LEVEL_OFFSETY),hl
-	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_TOP),hl
+	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$01f0
 	ld      ($d27b),hl
 	ld      hl,$0048
@@ -18827,12 +18847,16 @@ _a7ed:
 	bit     0,(ix+$18)
 	jr      nz,+
 	ld      hl,$0340
-	ld      (RAM_LEVEL_OFFSETX),hl
+	ld      (RAM_LEVEL_LEFT),hl
+	
+	;lock the screen at 1344 pixels, 42 blocks
+	 ;(near the boss lift in Scrap Brain Act 3)
 	ld      hl,$0540
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_RIGHT),hl
+	
 	ld      hl,(RAM_CAMERA_Y)
-	ld      (RAM_LEVEL_OFFSETY),hl
-	ld      (RAM_LEVEL_EXTENDHEIGHT),hl
+	ld      (RAM_LEVEL_TOP),hl
+	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$0220
 	ld      ($d27d),hl
 
@@ -18853,7 +18877,7 @@ _a7ed:
 +	bit     1,(ix+$18)
 	jr      nz,+++
 	ld      hl,(RAM_CAMERA_X)
-	ld      (RAM_LEVEL_OFFSETX),hl
+	ld      (RAM_LEVEL_LEFT),hl
 	ld      de,_baf9
 	ld      bc,_a9b7
 	call    _7c41
@@ -20551,8 +20575,11 @@ _b821:
 	jr      nz,+
 	set     5,(iy+vars.flags0)
 	res     1,(iy+vars.flags2)
+	
+	;something to do with scrolling
 	ld      hl,$0550
-	ld      ($d275),hl
+	ld      (RAM_LEVEL_RIGHT),hl
+	
 +	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	ld      hl,$05e0
