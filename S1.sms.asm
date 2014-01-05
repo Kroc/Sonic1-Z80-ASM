@@ -93,7 +93,8 @@
 	;bit 1 - unknown (set at level load)
 	;bit 3 - flag to load palette on IRQ
 	;bit 5 - unknown
-	;bit 6 - unknown
+	;bit 6 - set when the camera has moved left
+	;bit 7 - set when the camera has moved up
 	
 	;this is used only as the comparison byte in `loadFloorLayout`
 	temp			DB	;IY+$01
@@ -238,6 +239,12 @@
 
 .DEF RAM_CAMERA_X_LEFT		$D26F	;used to check when the camera goes left
 .DEF RAM_CAMERA_Y_UP		$D271	;used to check when the camera goes up
+
+.DEF RAM_BLOCK_X		$D257	;number of blocks across the camera is
+.DEF RAM_BLOCK_Y		$D258	;number of blocks down the camera is
+
+;absolute address of the block mappings when in page 1 (i.e. $4000)
+.DEF RAM_BLOCKMAPPINGS		$D24F
 
 ;======================================================================================
 
@@ -1638,74 +1645,106 @@ _LABEL_625_57:
 	ret
 
 ;____________________________________________________________________________[$063E]___
+;calculate the VDP scroll offset according to the camera position?
 
 _063e:
+	;fill B with vertical and C with horizontal VDP scroll values
 	ld      bc,(RAM_VDPSCROLL_HORIZONTAL)
+	
+	;------------------------------------------------------------------------------
+	;has the camera scrolled left?
 	ld      hl,(RAM_CAMERA_X)
 	ld      de,(RAM_CAMERA_X_LEFT)
-	and     a
-	sbc     hl,de
-	jr      c,+
+	and     a			;clear carry flag
+	sbc     hl,de			;is `RAM_CAMERA_X_LEFT` > `RAM_CAMERA_X`?
+	jr      c,+			;jump if the camera has moved left
+	
+	;HL will contain the amount the screen has scrolled since the last time this
+	 ;function was called
+	
+	;camera moved right:
 	ld      a,l
 	add     a,c
 	ld      c,a
 	res     6,(iy+vars.flags0)
 	jp      ++
 	
+	;camera moved left:
 +	ld      a,l
 	add     a,c
 	ld      c,a
 	set     6,(iy+vars.flags0)
 	
+	;------------------------------------------------------------------------------
+	;has the camera scrolled up?
+	
 ++	ld      hl,(RAM_CAMERA_Y)
 	ld      de,(RAM_CAMERA_Y_UP)
-	and     a
-	sbc     hl,de
-	jr      c,++
+	and     a			;clear carry flag
+	sbc     hl,de			;is `RAM_CAMERA_Y_UP` > `RAM_CAMERA_Y`?
+	jr      c,++			;jump if the camera has moved up
+	
+	;camera moved down:
 	ld      a,l
 	add     a,b
-	cp      $e0
+	cp      224			;if greater than 224 (bottom of the screen)
 	jr      c,+
-	add     a,$20
+	add     a,32			;add 32 to wrap it around 256 back to 0+
 +	ld      b,a
 	res     7,(iy+vars.flags0)
 	jp      +++
-
+	
+	;camera moved up:
 ++	ld      a,l
 	add     a,b
-	cp      $e0
+	cp      224
 	jr      c,+
-	sub     $20
+	sub     32
 +	ld      b,a
 	set     7,(iy+vars.flags0)
-
+	
+	;------------------------------------------------------------------------------
+	;update the VDP horizontal / vertical scroll values in the RAM,
+	 ;the interrupt routine will send the values to the chip
 +++	ld      (RAM_VDPSCROLL_HORIZONTAL),bc
+	
+	;get the number of blocks across / down the camera is located:
+	 ;we do this by multiplying the camera position by 8 and taking only the high
+	 ;byte (effectively dividing by 256) so that everything below 32 pixels of
+	 ;precision is lost
+	
 	ld      hl,(RAM_CAMERA_X)
-	sla     l
+	sla     l			;x2 ...
 	rl      h
-	sla     l
+	sla     l			;x4 ...
 	rl      h
-	sla     l
+	sla     l			;x8
 	rl      h
-	ld      c,h
+	ld      c,h			;take the high byte
+	
 	ld      hl,(RAM_CAMERA_Y)
-	sla     l
+	sla     l			;x2 ...
 	rl      h
-	sla     l
+	sla     l			;x4 ...
 	rl      h
-	sla     l
+	sla     l			;x8
 	rl      h
-	ld      b,h
-	ld      ($d257),bc
+	ld      b,h			;take the high byte
+	
+	;now store the block X & Y counts
+	ld      (RAM_BLOCK_X),bc
+	
+	;update the left / up values now that the camera has moved
 	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_CAMERA_X_LEFT),hl
 	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_CAMERA_Y_UP),hl
+	
 	ret
 
 ;____________________________________________________________________________[$06BD]___
-;I believe this checks if the scroll offsets are such that new tiles need to filled in
- ;in the overscroll area
+;I believe this checks if the scroll offsets are such that new tiles need to be filled
+ ;in in the overscroll area
 
 _06bd:
 	;scrolling enabled??
@@ -1749,6 +1788,7 @@ _06bd:
 	bit     0,(iy+vars.flags2)
 	jp      z,+++			;skip forward to vertical scroll handling
 	
+	;has the camera moved left?
 	bit     6,(iy+vars.flags0)
 	jr      nz,+
 	
@@ -1769,8 +1809,10 @@ _06bd:
 	ld      b,$00			;load result into BC -- either $0000 or $0001
 	ld      c,a
 
-++	call    _08d5
+++	call    getFloorLayoutRAMPosition
 	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
+	
+	;has the camera moved left?
 	bit     6,(iy+vars.flags0)
 	jr      z,+
 	add     a,8
@@ -1809,7 +1851,7 @@ _06bd:
 	and     $10
 	ld      hl,(RAM_TEMP1)
 	add     hl,bc
-	ld      bc,($d24f)
+	ld      bc,(RAM_BLOCKMAPPINGS)
 	add     hl,bc
 	ld      bc,$0004
 	ldi     
@@ -1836,7 +1878,7 @@ _06bd:
 	;------------------------------------------------------------------------------
 +++	bit     1,(iy+vars.flags2)
 	jp      z,+++
-	bit     7,(iy+vars.flags0)
+	bit     7,(iy+vars.flags0)	;camera moved up?
 	jr      nz,+
 	ld      b,$06
 	ld      c,$00
@@ -1846,7 +1888,7 @@ _06bd:
 	ld      c,b
 	
 	;------------------------------------------------------------------------------
-++	call    _08d5
+++	call    getFloorLayoutRAMPosition
 	ld      a,(RAM_VDPSCROLL_VERTICAL)
 	and     $1f
 	srl     a
@@ -1882,7 +1924,7 @@ _06bd:
 	and     $10
 	ld      hl,(RAM_TEMP1)
 	add     hl,bc
-	ld      bc,($d24f)
+	ld      bc,(RAM_BLOCKMAPPINGS)
 	add     hl,bc
 	ldi     
 	ld      (de),a
@@ -1938,7 +1980,7 @@ fillScrollTiles:
 	
 	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	
-	bit  6, (iy+vars.flags0)
+	bit  6, (iy+vars.flags0)	;camera moved left?
 	jr   z, +
 	add  a, 8			;add 8 pixels (left screen border?)
 +	and  %11111000			;and then round to the nearest 8 pixels
@@ -2007,7 +2049,7 @@ fillScrollTiles:
 	srl  a
 	srl  a
 	srl  a
-	bit  7, (iy+vars.flags0)
+	bit  7, (iy+vars.flags0)	;camera moved up?
 	jr   nz, +
 	add  a, $18
 +	cp   $1C
@@ -2083,10 +2125,10 @@ fillScrollTiles:
 	jp   --
 
 ;____________________________________________________________________________[$08D5]___
-;has something to do with checking if new tiles need to be filled in when scrolling
- ;see `_06bd` for example
- 
-_08d5:
+;convert block X & Y coords into a location in the Floor Layout in RAM
+;(this whole function appears very inefficient, I'm sure a lookup table would help)
+
+getFloorLayoutRAMPosition:
 ;BC : a flag, $0000 or $0001 depending on callee
 	
 	;get the low-byte of the width of the level in blocks. many levels are 256
@@ -2100,25 +2142,27 @@ _08d5:
 	jr      c,+++			;>32?
 	rlca    			;double it again (x16)
 	jr      c,++++			;>16?
-	jp      +++++			;>255...?
+	jp      +++++			;255...?
 	
 	;------------------------------------------------------------------------------
-+	ld      a,($d258)
++	ld      a,(RAM_BLOCK_Y)
 	add     a,b
 	ld      e,$00
 	srl     a			;divide by 2
 	rr      e
 	ld      d,a
-	ld      a,($d257)
+	
+	ld      a,(RAM_BLOCK_X)
 	add     a,c
 	add     a,e
 	ld      e,a
-	ld      hl,$c000
+	
+	ld      hl,$C000
 	add     hl,de
 	ret
 	
 	;------------------------------------------------------------------------------
-++	ld      a,($d258)
+++	ld      a,(RAM_BLOCK_Y)
 	add     a,b
 	ld      e,$00
 	srl     a
@@ -2126,35 +2170,18 @@ _08d5:
 	srl     a
 	rr      e
 	ld      d,a
-	ld      a,($d257)
+	
+	ld      a,(RAM_BLOCK_X)
 	add     a,c
 	add     a,e
 	ld      e,a
-	ld      hl,$c000
+	
+	ld      hl,$C000
 	add     hl,de
 	ret
 	
 	;------------------------------------------------------------------------------
-+++	ld      a,($d258)
-	add     a,b
-	ld      e,$00
-	srl     a
-	rr      e
-	srl     a
-	rr      e
-	srl     a
-	rr      e
-	ld      d,a
-	ld      a,($d257)
-	add     a,c
-	add     a,e
-	ld      e,a
-	ld      hl,$c000
-	add     hl,de
-	ret
-	
-	;------------------------------------------------------------------------------
-++++	ld      a,($d258)
++++	ld      a,(RAM_BLOCK_Y)
 	add     a,b
 	ld      e,$00
 	srl     a
@@ -2163,32 +2190,56 @@ _08d5:
 	rr      e
 	srl     a
 	rr      e
-	srl     a
-	rr      e
 	ld      d,a
-	ld      a,($d257)
+	ld      a,(RAM_BLOCK_X)
 	add     a,c
 	add     a,e
 	ld      e,a
-	ld      hl,$c000
+	
+	ld      hl,$C000
 	add     hl,de
 	ret
 	
 	;------------------------------------------------------------------------------
-+++++	ld      a,($d258)
+++++	ld      a,(RAM_BLOCK_Y)
+	add     a,b
+	ld      e,$00
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	srl     a
+	rr      e
+	ld      d,a
+	ld      a,(RAM_BLOCK_X)
+	add     a,c
+	add     a,e
+	ld      e,a
+	
+	ld      hl,$C000
+	add     hl,de
+	ret
+	
+	;------------------------------------------------------------------------------
++++++	ld      a,(RAM_BLOCK_Y)
 	add     a,b
 	ld      d,a
-	ld      a,($d257)
+	ld      a,(RAM_BLOCK_X)
 	add     a,c
 	ld      e,a
-	ld      hl,$c000
+	
+	ld      hl,$C000
 	add     hl,de
 	ret
 
 ;____________________________________________________________________________[$0966]___
-;draw a block on screen?
+;this routine is only called once (during level loading) to populate the screen with
+ ;the visible portion of the Floor Layout. Scrolling fills in the new tiles so a full
+ ;refresh of the screen is not required
 
-_0966:
+fillScreenWithFloorLayout:
 	;page in banks 4 & 5 (containing the block mappings)
 	di      			;disable interrupts
 	ld      a,:S1_BlockMappings
@@ -2199,59 +2250,79 @@ _0966:
 	ld      (RAM_PAGE_2),a
 	
 	ld      bc,$0000
-	call    _08d5
+	call    getFloorLayoutRAMPosition
 	
-	ld      de,$3800
-	ld      b,$06
+	;------------------------------------------------------------------------------
+	ld      de,$3800		;beginning of the screen name table
+	ld      b,6			;the screen is 6 blocks tall
 	
 ---	push    bc
 	push    hl
 	push    de
-	ld      b,$08
-
+	ld      b,8			;the screen is 8 blocks wide
+	
 --	push    bc
 	push    hl
 	push    de
 	
-	;look up solidity value?
+	;get the block index at the current location in the Floor Layout
 	ld      a,(hl)
+	
 	exx     
-	ld      e,a
-	ld      a,(RAM_LEVEL_SOLIDITY)
-	add     a,a
-	ld      c,a
+	ld      e,a			;copy the block index to E'
+	ld      a,(RAM_LEVEL_SOLIDITY)	;now load A with the level's solidity index
+	add     a,a			;double it (i.e. for a 16-bit pointer)
+	ld      c,a			;put it into BC'
 	ld      b,$00
-	ld      hl,S1_SolidityPointers
-	add     hl,bc
-	ld      a,(hl)
+	ld      hl,S1_SolidityPointers	;get the address of the solidity pointer list
+	add     hl,bc			;offset the solidity index into the list
+	ld      a,(hl)			;read the data pointer into HL'
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      d,$00
-	add     hl,de
-	ld      a,(hl)
-	rrca    
-	rrca    
-	rrca    
-	and     $10
+	ld      d,$00			;DE' is the block index
+	add     hl,de			;offset the block index into the solidity data
+	ld      a,(hl)			;and get the solidity value
+	
+	;in the solidity data, bit 7 determines that the tile should appear in front
+	 ;of sprites. rotate the byte three times to position bit 7 at bit 4. 
+	 ;this byte will form the high-byte of the 16-bit value for the name table
+	 ;entry (bit 4 will therefore become bit 12)
+	rrca
+	rrca
+	rrca
+	
+	;bit 12 of a name table entry specifies if the tile should appear in front of 
+	 ;sprites. allow just this bit if it's set
+	and     %00010000
 	ld      c,a
-	exx     
+	exx
+	
+	;return the block index to HL
 	ld      l,(hl)
 	ld      h,$00
-	add     hl,hl
-	add     hl,hl
-	add     hl,hl
-	add     hl,hl
-	ld      bc,($d24f)
+	;block mappings are 16 bytes each
+	add     hl,hl			;x2 ...
+	add     hl,hl			;x4 ...
+	add     hl,hl			;x8 ...
+	add     hl,hl			;x16
+	ld      bc,(RAM_BLOCKMAPPINGS)
 	add     hl,bc
+	
+	;DE will be the address of block mapping
+	;HL will be an address in the screen name table
 	ex      de,hl
-	ld      b,$04
-
+	
+	;------------------------------------------------------------------------------
+	ld      b,4			;4 rows of the block mapping
+	
+	;set the screen name address
 -	ld      a,l
 	out     (SMS_VDP_CONTROL),a
 	ld      a,h
-	or      $40
+	or      %01000000
 	out     (SMS_VDP_CONTROL),a
+	
 	ld      a,(de)
 	out     (SMS_VDP_DATA),a
 	inc     de
@@ -2287,7 +2358,7 @@ _0966:
 	exx     
 	out     (SMS_VDP_DATA),a
 	ld      a,b
-	ld      bc,$0040
+	ld      bc,64
 	add     hl,bc
 	ld      b,a
 	djnz    -
@@ -2314,7 +2385,7 @@ _0966:
 	dec     b
 	jp      nz,---
 	
-	ei      
+	ei      			;enable interrupts
 	ret
 
 ;____________________________________________________________________________[$0A10]___
@@ -4650,7 +4721,7 @@ _LABEL_1CED_131:
 	res     0,(iy+vars.flags9)
 	res     6,(iy+vars.flags6)
 	res     0,(iy+vars.unknown0)
-	res     6,(iy+vars.flags0)
+	res     6,(iy+vars.flags0)	;camera moved left flag
 	
 	;auto scroll right?
 	bit     3,(iy+vars.scrollRingFlags)
@@ -5377,7 +5448,7 @@ loadLevel:
 	sub     3			
 	jr      nc,+
 	xor     a			;set A to 0
-+	ld      ($d257),a
++	ld      (RAM_BLOCK_X),a
 	
 	;using the number as the hi-byte, divide by 8 into DE, e.g.
 	 ;4	A: 00000100 E: 00000000 (1024) -> A: 00000000 E: 10000000 (128)
@@ -5406,7 +5477,7 @@ loadLevel:
 	jr      nc,+
 	xor     a			;set A to 0
 	
-+	ld      ($d258),a
++	ld      (RAM_BLOCK_Y),a
 	ld      e,$00
 	rrca    
 	rr      e
@@ -5488,7 +5559,7 @@ loadLevel:
 	;rebase the Block Mapping address to Page 1
 	ld      bc,$4000
 	add     hl,bc
-	ld      ($d24f),hl
+	ld      (RAM_BLOCKMAPPINGS),hl
 	
 	;swap back DE & HL
 	 ;HL will be current position in the level header
@@ -5568,7 +5639,7 @@ loadLevel:
 	res     0,(iy+vars.flags0)
 	call    wait
 	
-	call    _0966
+	call    fillScreenWithFloorLayout
 	
 	pop     hl
 	inc     hl
