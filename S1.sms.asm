@@ -183,6 +183,8 @@
 .DEF RAM_VDPSCROLL_HORIZONTAL	$D251
 .DEF RAM_VDPSCROLL_VERTICAL	$D252
 
+.DEF RAM_SPRITETABLE		$D000	;X/Y/I data for the 64 sprites
+
 ;--------------------------------------------------------------------------------------
 
 .DEF RAM_CURRENT_LEVEL		$D23E
@@ -206,6 +208,9 @@
 ;`loadPaletteOnInterrupt` and `loadPaletteFromInterrupt` use these to pass parameters
 .DEF RAM_LOADPALETTE_ADDRESS	$D22B
 .DEF RAM_LOADPALETTE_FLAGS	$D22F
+;`loadPalette` use these to pass the addresses of the tile/sprite palettes to load
+.DEF RAM_LOADPALETTE_TILE	$D230
+.DEF RAM_LOADPALETTE_SPRITE	$D232
 
 ;a copy of the level music index is kept so that the music can be started again (?)
  ;after other sound events like invincibility
@@ -218,6 +223,7 @@
 .DEF RAM_CYCLEPALETTE_POINTER	$D2A8
 ;the current palette in the cycle palette being used
 .DEF RAM_CYCLEPALETTE_INDEX	$D2A6
+.DEF RAM_CYCLEPALETTE_SPEED	$D2A4
 
 .DEF RAM_RASTERSPLIT_STEP	$D247
 .DEF RAM_RASTERSPLIT_LINE	$D248
@@ -815,9 +821,9 @@ wait:
 
 _323:
 	set     2,(iy+vars.flags0)
-	ld      ($d225),hl		;unused RAM location
-	ld      ($d227),de		;unused RAM location
-	ld      ($d229),bc		;unused RAM location
+	ld      ($D225),hl		;unused RAM location
+	ld      ($D227),de		;unused RAM location
+	ld      ($D229),bc		;unused RAM location
 	ret
 
 ;____________________________________________________________________________[$0333]___
@@ -842,8 +848,8 @@ updateVDPSprites:
 	out  (SMS_VDP_CONTROL), a
 	
 	ld   b, (iy+vars.spriteCount)
-	ld   hl, $D001			;Y-position of the first sprite
-	ld   de, $0003			;sprite table is 3 bytes per sprite
+	ld   hl, RAM_SPRITETABLE+1	;Y-position of the first sprite
+	ld   de, 3			;sprite table is 3 bytes per sprite
 	
 	ld   a, b
 	and  a				;is A zero?
@@ -876,7 +882,7 @@ updateVDPSprites:
 	and  a
 	ret  z
 	
-	ld   hl, $D000			;first X-position in the sprite table
+	ld   hl, RAM_SPRITETABLE	;first X-position in the sprite table
 	ld   b, (iy+vars.spriteCount)
 	
 	;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
@@ -1415,7 +1421,7 @@ loadPalette:
 	bit  0, a			;are we loading a tile palette?
 	jr   z, +			;if no, skip ahead to the sprite palette
 	
-	ld   ($D230), hl		;store the address of the tile palette
+	ld   (RAM_LOADPALETTE_TILE), hl	;store the address of the tile palette
 	call _sendPalette		;send the palette colours to the VDP
 	
 +	pop  af
@@ -1423,7 +1429,8 @@ loadPalette:
 	bit  1, a			;are we loading a sprite palette?
 	ret  z				;if no, finish here
 	
-	ld   ($D232), hl		;store the address of the sprite palette
+	;store the address of the sprite palette
+	ld   (RAM_LOADPALETTE_SPRITE), hl
 	
 	ld   b, 16			;we will copy 16 colours
 	ld   c, 16			;beginning at palette index 16 (sprites)
@@ -1541,7 +1548,7 @@ print:
 ;____________________________________________________________________________[$05E2]___
 
 hideSprites:
-	ld   hl, $D000
+	ld   hl, RAM_SPRITETABLE
 	ld   e, l
 	ld   d, h
 	ld   bc, $00BD
@@ -1824,7 +1831,7 @@ _06bd:
 	ld      b,$00
 	ld      (RAM_TEMP1),bc
 	exx     
-	ld      de,$d180
+	ld      de,$D180
 	exx     
 	ld      de,(RAM_LEVEL_FLOORWIDTH)
 	ld      b,$07
@@ -1897,7 +1904,7 @@ _06bd:
 	ld      b,$00
 	ld      (RAM_TEMP1),bc
 	exx     
-	ld      de,$d100
+	ld      de,$D100
 	exx     
 	ld      b,$09
 
@@ -2459,11 +2466,11 @@ _LABEL_A40_121:
 	ld   b, $04
 	
 --	push bc
-	ld   hl, ($D230)
+	ld   hl, (RAM_LOADPALETTE_TILE)
 	ld   de, $D3BC
 	ld   b, $10
 	call _a90
-	ld   hl, ($D232)
+	ld   hl, (RAM_LOADPALETTE_SPRITE)
 	ld   b, $10
 	call _a90
 	ld   hl, $D3BC
@@ -2512,8 +2519,8 @@ _a90:
 
 _aae:
 	ld      (RAM_TEMP6),hl
-	ld      hl,($d230)
-	ld      de,$d3bc
+	ld      hl,(RAM_LOADPALETTE_TILE)
+	ld      de,$D3BC
 	ld      bc,$0020
 	ldir    
 	ld      a,1
@@ -2522,8 +2529,8 @@ _aae:
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
-	ld      hl,$d3bc
-	ld      a,$03
+	ld      hl,$D3BC
+	ld      a,%00000011
 	call    loadPaletteOnInterrupt
 	ld      c,(iy+vars.spriteCount)
 	ld      a,(RAM_VDPREGISTER_1)
@@ -2543,7 +2550,7 @@ _aae:
 
 --	push    bc
 	ld      hl,(RAM_TEMP6)
-	ld      de,$d3bc
+	ld      de,$D3BC
 	ld      b,$20
 
 -	push    bc
@@ -2580,8 +2587,8 @@ _aae:
 	inc     de
 	pop     bc
 	djnz    -
-	ld      hl,$d3bc
-	ld      a,$03
+	ld      hl,$D3BC
+	ld      a,%00000011
 	call loadPaletteOnInterrupt
 	ld      b,$0a
 
@@ -2599,7 +2606,7 @@ _aae:
 
 _b50:
 	ld      (RAM_TEMP6),hl
-	ld      hl,$d3bc
+	ld      hl,$D3BC
 	ld      b,$20
 	
 -	ld      (hl),$00
@@ -2611,8 +2618,8 @@ _b50:
 
 _b60:
 	ld      (RAM_TEMP6),hl
-	ld      hl,($d230)
-	ld      de,$d3bc
+	ld      hl,(RAM_LOADPALETTE_TILE)
+	ld      de,$D3BC
 	ld      bc,$0020
 	ldir    
 	
@@ -2622,8 +2629,8 @@ _b60:
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
-	ld      hl,$d3bc
-	ld      a,$03
+	ld      hl,$D3BC
+	ld      a,%00000011
 	call loadPaletteOnInterrupt
 	ld      c,(iy+vars.spriteCount)
 	ld      a,(RAM_VDPREGISTER_1)
@@ -2644,7 +2651,7 @@ _b60:
 	
 --	push    bc
 	ld      hl,(RAM_TEMP6)
-	ld      de,$d3bc
+	ld      de,$D3BC
 	ld      b,$20
 	
 -	push    bc
@@ -2685,7 +2692,7 @@ _b60:
 	pop     bc
 	djnz    -
 	
-	ld      hl,$d3bc
+	ld      hl,$D3BC
 	ld      a,%00000011
 	call loadPaletteOnInterrupt
 	
@@ -2748,7 +2755,7 @@ _c1d:
 	ld      a,5			;temporarily switch to bank 5 for the function
 	ld      (SMS_PAGE_1),a
 	
-	ld      a,($d223)
+	ld      a,($D223)
 	and     %00001111
 	add     a,a			;x2
 	add     a,a			;x4
@@ -3145,7 +3152,7 @@ _LABEL_E86_110:
 	ld   ($D2C0), a
 	ld   b, $A7
 	ld   c, $28
-	ld   hl, $D000
+	ld   hl, RAM_SPRITETABLE
 	ld   de, $D2BE
 	call _LABEL_35CC_117
 	
@@ -3554,7 +3561,7 @@ titleScreen:
 	ld   (RAM_TEMP4), de
 	
 	;set sprite table to use?
-+	ld   hl, $D000
++	ld   hl, RAM_SPRITETABLE
 	ld   (RAM_SPRITETABLE_CURRENT), hl
 	
 	ld   hl, $0080
@@ -3656,7 +3663,7 @@ _1401:
 	ld      (RAM_VDPSCROLL_HORIZONTAL),a
 	ld      (RAM_VDPSCROLL_VERTICAL),a
 	ld      hl,_14fc
-	ld      a,$03
+	ld      a,%00000011
 	call    loadPaletteOnInterrupt
 	ei      
 	ld      b,$78
@@ -3671,7 +3678,7 @@ _1401:
 	
 	djnz    -
 	
-	ld      a,($d284)
+	ld      a,($D284)
 	and     a
 	jr      nz,+
 	
@@ -3702,21 +3709,21 @@ _1401:
 	ld      hl,_14f1
 	call    print
 	ld      a,$09
-	ld      ($d216),a
+	ld      ($D216),a
 --	ld      b,$3c
 	
 -	push    bc
 	res     0,(iy+vars.flags0)
 	call    wait
 	ld      (iy+vars.spriteCount),$00
-	ld      hl,$d216
-	ld      de,$d2be
+	ld      hl,$D216
+	ld      de,$D2BE
 	ld      b,$01
 	call    _1b13
 	
 	ex      de,hl
 	
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      c,$8c
 	ld      b,$5e
 	call    _LABEL_35CC_117
@@ -3730,7 +3737,7 @@ _1401:
 	ld      a,$1a
 	rst     $28			;`playSFX`
 	
-	ld      hl,$d216
+	ld      hl,$D216
 	ld      a,(hl)
 	and     a
 	ret     z
@@ -3738,7 +3745,7 @@ _1401:
 	jr      --
 	
 	;get the bit flag for the level
-+	ld      hl,$d311
++	ld      hl,$D311
 	call    getLevelBitFlag
 	ld      a,c
 	cpl     			;invert the level bits (i.e. create a mask)
@@ -3824,7 +3831,7 @@ _155e:
 	
 	ld      hl,_1711
 	ld      c,$10
-	ld      a,($d27f)
+	ld      a,($D27F)
 	and     a
 	call    nz,_16d9
 	
@@ -3833,9 +3840,9 @@ _155e:
 	jr      nc,+
 	
 	ld      a,$15
-	ld      ($d2be),a
+	ld      ($D2BE),a
 	ld      a,$04
-	ld      ($d2bf),a
+	ld      ($D2BF),a
 	ld      a,(RAM_CURRENT_LEVEL)
 	ld      e,a
 	ld      d,$00
@@ -3848,7 +3855,7 @@ _155e:
 	
 -	push    bc
 	push    hl
-	ld      de,$d2bf
+	ld      de,$D2BF
 	ld      a,(de)
 	inc     a
 	ld      (de),a
@@ -3857,7 +3864,7 @@ _155e:
 	ldi     
 	ld      a,$ff
 	ld      (de),a
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	call    print
 	pop     hl
 	pop     bc
@@ -3869,18 +3876,18 @@ _155e:
 	ld      (RAM_VDPSCROLL_HORIZONTAL),a
 	ld      (RAM_VDPSCROLL_VERTICAL),a
 	ld      hl,$1b8d
-	ld      a,$03
+	ld      a,%00000011
 	call    loadPaletteOnInterrupt
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
-	ld      hl,$d281
+	ld      hl,$D281
 	inc     (hl)
 	bit     2,(iy+vars.flags9)
 	jr      nz,+
-	ld      hl,$d282
+	ld      hl,$D282
 	inc     (hl)
-	ld      hl,$d285
+	ld      hl,$D285
 	inc     (hl)
 
 +	bit     2,(iy+vars.flags9)
@@ -3893,11 +3900,11 @@ _155e:
 	ld      de,$154e
 	ld      b,$08
 	
--	ld      a,($d2ce)
+-	ld      a,($D2CE)
 	cp      (hl)
 	jr      nz,+
 	inc     hl
-	ld      a,($d2cf)
+	ld      a,($D2CF)
 	cp      (hl)
 	jr      nc,+++
 	inc     hl
@@ -3950,9 +3957,9 @@ _155e:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      28
 	call    c,_19df
-	ld      a,($d216)
+	ld      a,($D216)
 	inc     a
-	ld      ($d216),a
+	ld      ($D216),a
 	and     $03
 	jr      nz,+
 	ld      a,$02
@@ -3984,7 +3991,7 @@ _155e:
 _16d9:
 	ld      b,a
 	push    bc
-	ld      de,$d2be
+	ld      de,$D2BE
 	srl     a
 	ld      b,a
 	ld      a,c
@@ -4002,14 +4009,14 @@ _16d9:
 	ld      (RAM_TEMP1),a
 	
 -	push    bc
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	call    print
-	ld      hl,$d2c3
+	ld      hl,$D2C3
 	call    print
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	inc     (hl)
 	inc     (hl)
-	ld      hl,$d2c3
+	ld      hl,$D2C3
 	inc     (hl)
 	inc     (hl)
 	pop     bc
@@ -4033,7 +4040,7 @@ _1719:
 ;called by Act Complete screen?
 
 _1726:
-	ld      hl,$d284
+	ld      hl,$D284
 	inc     (hl)
 	res     3,(iy+vars.flags9)
 	ret
@@ -4043,34 +4050,34 @@ _1726:
 
 _172f:
 	ld      a,$ff
-	ld      ($d2fd),a
+	ld      ($D2FD),a
 	ld      c,$00
-	ld      a,($d27f)
+	ld      a,($D27F)
 	cp      $06
 	jr      c,+
 	ld      c,$05
-+	ld      a,($d280)
++	ld      a,($D280)
 	cp      $12
 	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-+	ld      a,($d281)
++	ld      a,($D281)
 	cp      $08
 	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-+	ld      a,($d282)
++	ld      a,($D282)
 	cp      $08
 	jr      c,+
 	ld      a,c
 	add     a,$05
 	daa     
 	ld      c,a
-+	ld      a,($d283)
++	ld      a,($D283)
 	and     a
 	jr      nz,+
 	ld      a,c
@@ -4086,7 +4093,7 @@ _172f:
 	add     a,$0a
 	daa     
 	ld      c,a
-+	ld      hl,$d2ff
++	ld      hl,$D2FF
 	ld      (hl),c
 	inc     hl
 	ld      (hl),$00
@@ -4109,17 +4116,17 @@ _172f:
 	ld      hl,_197e
 	call    print
 	xor     a
-	ld      ($d216),a
+	ld      ($D216),a
 	ld      bc,$00b4
 	call    _1860
 	
 -	ld      bc,$003c
 	call    _1860
-	ld      a,($d27f)
+	ld      a,($D27F)
 	and     a
 	jr      z,+
 	dec     a
-	ld      ($d27f),a
+	ld      ($D27F),a
 	ld      de,$0000
 	ld      c,$02
 	call    _39d8
@@ -4130,7 +4137,7 @@ _172f:
 +	ld      bc,$00b4
 	call    _1860
 	ld      a,$01
-	ld      ($d216),a
+	ld      ($D216),a
 	ld      hl,_198e
 	call    print
 	ld      bc,$00b4
@@ -4153,7 +4160,7 @@ _172f:
 +	ld      bc,$00b4
 	call    _1860
 	ld      a,$02
-	ld      ($d216),a
+	ld      ($D216),a
 	ld      hl,_199e
 	call    print
 	ld      hl,_197a
@@ -4163,7 +4170,7 @@ _172f:
 
 -	ld      bc,$001e
 	call    _1860
-	ld      a,($d2ff)
+	ld      a,($D2FF)
 	and     a
 	jr      z,++
 	dec     a
@@ -4175,7 +4182,7 @@ _172f:
 	sub     $06
 	ld      c,a
 +	ld      a,c
-	ld      ($d2ff),a
+	ld      ($D2FF),a
 	ld      de,$0000
 	ld      c,$01
 	call    _39d8
@@ -4195,10 +4202,10 @@ _1860:
 	res     0,(iy+vars.flags0)
 	call    wait
 	ld      (iy+vars.spriteCount),$00
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      hl,$d2ba
-	ld      de,$d2be
+	ld      hl,$D2BA
+	ld      de,$D2BE
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
@@ -4207,11 +4214,11 @@ _1860:
 	ld      b,$80
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      a,($d216)
+	ld      a,($D216)
 	and     a
 	jr      nz,+
-	ld      hl,$d27f
-	ld      de,$d2be
+	ld      hl,$D27F
+	ld      de,$D2BE
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
@@ -4221,7 +4228,7 @@ _1860:
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,_19ae
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
@@ -4236,7 +4243,7 @@ _1860:
 	jr      nz,+
 	call    _1aca
 	ld      hl,_19b1
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
@@ -4247,8 +4254,8 @@ _1860:
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	jr      ++
 	
-+	ld      hl,$d2ff
-	ld      de,$d2be
++	ld      hl,$D2FF
+	ld      de,$D2BE
 	ld      b,$03
 	call    _1b13
 	ex      de,hl
@@ -4321,9 +4328,9 @@ _19b4:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
-	ld      a,($d285)
+	ld      a,($D285)
 	ld      d,a
-	ld      a,($d286)
+	ld      a,($D286)
 	ld      e,a
 +	call    _39d8
 	ret
@@ -4372,10 +4379,10 @@ _1a14:
 
 _1a18:
 	ld      (iy+vars.spriteCount),$00
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      hl,$d2ba
-	ld      de,$d2be
+	ld      hl,$D2BA
+	ld      de,$D2BE
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
@@ -4385,7 +4392,7 @@ _1a18:
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,RAM_RINGS
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
@@ -4402,15 +4409,15 @@ _1a18:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $1c
 	jr      c,+
-	ld      hl,$d285
-	ld      de,$d2be
+	ld      hl,$D285
+	ld      de,$D2BE
 	ld      b,$02
 	call    _1b13
 	ld      b,$68
 	jr      ++
 	
 +	ld      hl,$151c
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      b,$02
 	call    _1b13
 	ld      b,$80
@@ -4424,7 +4431,7 @@ _1a18:
 	cp      $1c
 	jr      nc,+
 	ld      hl,RAM_TEMP4
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      b,$04
 	call    _1b13
 	ex      de,hl
@@ -4435,8 +4442,8 @@ _1a18:
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
 	
-+	ld      hl,$d284
-	ld      de,$d2be
++	ld      hl,$D284
+	ld      de,$D2BE
 	ld      b,$01
 	call    _1b13
 	ex      de,hl
@@ -4460,7 +4467,7 @@ _1aca:
 	ld      a,l
 	add     a,a
 	add     a,$80
-	ld      ($d2be),a
+	ld      ($D2BE),a
 	ld      c,$0a
 	call    _LABEL_5FC_114
 	
@@ -4473,9 +4480,9 @@ _1aca:
 	ld      a,l
 	add     a,a
 	add     a,$80
-	ld      ($d2bf),a
+	ld      ($D2BF),a
 	ld      a,$ff
-	ld      ($d2c0),a
+	ld      ($D2C0),a
 	ld      c,$38
 	ld      b,$9f
 	ld      a,(RAM_CURRENT_LEVEL)
@@ -4484,7 +4491,7 @@ _1aca:
 	ld      b,$60
 	ld      c,$90
 +	ld      hl,(RAM_SPRITETABLE_CURRENT)
-	ld      de,$d2be
+	ld      de,$D2BE
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
@@ -4511,7 +4518,7 @@ _1b13:
 	dec     de
 	ld      a,$80
 	ld      (de),a
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	ret
 	
 __	ld      a,(hl)
@@ -4534,7 +4541,7 @@ __	ld      a,(hl)
 	djnz    _b
 	ld      a,$ff
 	ld      (de),a
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	ret
 
 ;____________________________________________________________________________[$1B51]___
@@ -4558,17 +4565,17 @@ S1_ActComplete_Palette:
 ;______________________________________________________________________________________
 
 _1bad:
-	ld      hl,($d2b5)
+	ld      hl,($D2B5)
 	ld      de,_1bc6
 	add     hl,de
 	ld      a,(hl)
 	ld      (iy+vars.joypad),a
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $1f
 	ret     nz
-	ld      hl,($d2b5)
+	ld      hl,($D2B5)
 	inc     hl
-	ld      ($d2b5),hl
+	ld      ($D2B5),hl
 	ret
 
 _1bc6:
@@ -4680,8 +4687,9 @@ _fillMemoryWithValue:
 	ret
 
 ;____________________________________________________________________________[$1CED]___
-
 ;start level?
+;(could be main gameplay loop)
+
 _LABEL_1CED_131:
 	;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
 	ld   a, 5
@@ -4735,9 +4743,9 @@ _LABEL_1CED_131:
 	
 	ld      (iy+vars.joypad),$ff	;clear joypad input
 	
-	ld      hl,($d223)
+	ld      hl,($D223)
 	inc     hl
-	ld      ($d223),hl
+	ld      ($D223),hl
 	
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
 	ld      a,11
@@ -4749,16 +4757,16 @@ _LABEL_1CED_131:
 	call    nz,updateRingFrame
 	
 	ld      hl,$0060
-	ld      ($d25f),hl
+	ld      ($D25F),hl
 	
 	ld      hl,$0088
-	ld      ($d261),hl
+	ld      ($D261),hl
 	
 	ld      hl,$0060
-	ld      ($d263),hl
+	ld      ($D263),hl
 	
 	ld      hl,$0070
-	ld      ($d265),hl
+	ld      ($D265),hl
 	
 	call    _239c
 	
@@ -4784,7 +4792,7 @@ _LABEL_1CED_131:
 	jr      z,_1dae
 	
 	ld      hl,$0000
-	ld      ($d2b5),hl
+	ld      ($D2B5),hl
 	ld      (iy+vars.spriteCount),h
 _1dae:
 	res     0,(iy+vars.flags0)
@@ -4802,21 +4810,21 @@ _1dae:
 	bit     3,(iy+vars.flags6)		
 	call    nz,_3a03
 	
-	ld      a,($d223)
+	ld      a,($D223)
 	and     %00000001
 	jr      nz,+
 	
-	ld      a,($d289)
+	ld      a,($D289)
 	and     a
 	call    nz,_1fa9
 	
 	jr      ++
 	
-+	ld      a,($d287)
++	ld      a,($D287)
 	and     a
 	jp      nz,_2067
 _1de2:					;jump to here from _2067
-	ld      a,($d2b1)
+	ld      a,($D2B1)
 	and     a
 	call    nz,_1f06
 	
@@ -4836,9 +4844,9 @@ _1de2:					;jump to here from _2067
 	
 	call    _1bad			;process demo mode?
 	
-+	ld      hl,($d223)
++	ld      hl,($D223)
 	inc     hl
-	ld      ($d223),hl
+	ld      ($D223),hl
 	
 	;auto scrolling to the right? (ala Bridge 2)
 	bit     3,(iy+vars.scrollRingFlags)
@@ -4850,7 +4858,7 @@ _1de2:					;jump to here from _2067
 	
 	;no down scrolling (ala Jungle 2)
 	bit     7,(iy+vars.scrollRingFlags)
-	call    nz,_1eff
+	call    nz,dontScrollDown
 	
 	call    _23c9
 	
@@ -4859,12 +4867,12 @@ _1de2:					;jump to here from _2067
 	call    nz,_239c
 	
 	xor     a			;set A to 0
-	ld      ($d302),a
-	ld      ($d2de),a
+	ld      ($D302),a
+	ld      ($D2DE),a
 	ld      (iy+vars.spriteCount),$15
-	ld      hl,$d03f		;lives icon sprite table entry
+	ld      hl,$D03F		;lives icon sprite table entry
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      hl,$d001
+	ld      hl,RAM_SPRITETABLE+1	;sprite Y-value
 	ld      b,$07
 	ld      de,$0003
 	ld      a,$e0
@@ -4903,17 +4911,17 @@ _1de2:					;jump to here from _2067
 	ld      de,$0112
 	add     hl,de
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	xor     a
 	sbc     hl,de
 	ret     c
 	ld      (iy+vars.joypad),$ff
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D403),hl
+	ld      ($D405),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	ret
 
 ;____________________________________________________________________________[$1E9E]___
@@ -4960,7 +4968,7 @@ _1ed8:
 ;move the left-hand side of the level across -- i.e. Bridge Act 2
 
 _1ee2:
-	ld      a,($d223)
+	ld      a,($D223)
 	rrca    
 	ret     nc
 	
@@ -4975,7 +4983,7 @@ _1ee2:
 ;____________________________________________________________________________[$1EF2]___
 
 _1ef2:
-	ld      a,($d223)
+	ld      a,($D223)
 	rrca    
 	ret     nc
 	ld      hl,(RAM_LEVEL_BOTTOM)
@@ -4984,8 +4992,10 @@ _1ef2:
 	ret
 
 ;____________________________________________________________________________[$1EFF]___
+;fix the bottom of the level to the current screen position, 
+ ;i.e. Jungle Act 2
 
-_1eff:
+dontScrollDown:
 	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_LEVEL_BOTTOM),hl
 	ret
@@ -4994,7 +5004,7 @@ _1eff:
 
 _1f06:
 	dec     a
-	ld      ($d2b1),a
+	ld      ($D2B1),a
 	ld      e,a
 	di      
 	ld      a,1
@@ -5004,25 +5014,25 @@ _1f06:
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
 	ld      e,$00
-	ld      a,($d2b2)
-	ld      hl,($d230)
+	ld      a,($D2B2)
+	ld      hl,(RAM_LOADPALETTE_TILE)
 	and     a
 	jp      p,+
 	and     $7f
-	ld      hl,($d232)
+	ld      hl,(RAM_LOADPALETTE_SPRITE)
 	ld      e,$10
 +	ld      c,a
 	ld      b,$00
 	add     hl,bc
 	add     a,e
 	out     (SMS_VDP_CONTROL),a
-	ld      a,$c0
+	ld      a,%11000000
 	out     (SMS_VDP_CONTROL),a
-	ld      a,($d2b1)
+	ld      a,($D2B1)
 	and     $01
 	ld      a,(hl)
 	jr      z,+
-	ld      a,($d2b3)
+	ld      a,($D2B3)
 +	out     (SMS_VDP_DATA),a
 	ei      
 	ret
@@ -5030,7 +5040,7 @@ _1f06:
 ;____________________________________________________________________________[$1F49]___
 
 _1f49:	;lightning is enabled...
-	ld      de,($d2e9)
+	ld      de,($D2E9)
 	ld      hl,$00aa
 	xor     a
 	sbc     hl,de
@@ -5059,7 +5069,7 @@ _1f49:	;lightning is enabled...
 	rst     $28			;`playSFX`
 	pop     bc
 	
-++	ld      hl,$d2a4
+++	ld      hl,RAM_CYCLEPALETTE_SPEED
 	ld      a,(bc)
 	ld      (hl),a
 	inc     hl
@@ -5078,7 +5088,7 @@ _1f49:	;lightning is enabled...
 	ld      h,a
 	ld      (RAM_CYCLEPALETTE_POINTER),hl
 +++	inc     de
-	ld      ($d2e9),de
+	ld      ($D2E9),de
 	ret    
 	
 ;lightning palette control:
@@ -5096,11 +5106,11 @@ _1fa5:
 
 _1fa9:
 	dec     a
-	ld      ($d289),a
+	ld      ($D289),a
 	jr      z,+
 	cp      $88
 	ret     nz
-	ld      a,($d288)
+	ld      a,($D288)
 	add     a,a
 	ld      e,a
 	ld      d,$00
@@ -5136,14 +5146,14 @@ _1fa9:
 	call    _b60
 	ld      a,(RAM_CURRENT_LEVEL)
 	push    af
-	ld      a,($d23f)
+	ld      a,($D23F)
 	ld      (RAM_CURRENT_LEVEL),a
 	inc     a
-	ld      ($d23f),a
+	ld      ($D23F),a
 	call    _LABEL_1CED_131
 	pop     af
 	ld      (RAM_CURRENT_LEVEL),a
-+	ld      hl,$d23e
++	ld      hl,RAM_CURRENT_LEVEL	;note use of HL here
 	inc     (hl)
 	ld      a,$01
 	ret
@@ -5152,7 +5162,7 @@ _1fa9:
 	ld      a,$ff
 	ret
 	
-+++	ld      hl,$d23e
++++	ld      hl,RAM_CURRENT_LEVEL	;note use of HL here
 	inc     (hl)
 ++++	ld      a,$ff
 	ret
@@ -5193,7 +5203,7 @@ _2047:
 
 _2067:
 	dec	a
-	ld      ($d287),a
+	ld      ($D287),a
 	jp      nz,_1de2
 	
 	;demo mode?
@@ -5274,6 +5284,7 @@ loadLevel:
 	ld   (iy+$0b), a		;take a copy
 	ld   a, (iy+vars.flags6)	;read the current underwater flag value
 	ld   (iy+vars.origFlags6), a	;take a copy
+	
 	ld   a, $FF
 	ld   ($D2AB), a
 	
@@ -5386,11 +5397,9 @@ loadLevel:
 	ld      (RAM_LEVEL_FLOORHEIGHT),de
 	;copy the next 8 bytes to $D273+
 	 ;$D273/4 - LX: Level X Offset
-	 ;$D275/6 - LW: Level Width (Level X Offset Max)
+	 ;$D275/6 - LW: Level Width
 	 ;$D277/8 - LY: Level Y Offset
 	 ;$D279/A - LH: Level Height
-	 ;XH: Extend Height
-	 ;LH: Level Height
 	ld      de,RAM_LEVEL_LEFT
 	ld      bc,8
 	ldir    
@@ -5425,7 +5434,7 @@ loadLevel:
 	;copy 3 bytes from $2402 to $D2CE, these will be $01, $30 & $00
 	 ;(purpose unknown)
 	ld      hl,_2402
-	ld      de,$d2ce
+	ld      de,$D2CE
 	ld      bc,$0003
 	ldir    
 	
@@ -5434,18 +5443,23 @@ loadLevel:
 	ld      e,a			;put it into DE
 	ld      d,$00
 	
-	ld      hl,$d32e		
+	ld      hl,$D32E		
 	add     hl,de			;$D32E + (level number * 2)
 	
 	;NOTE: since other data in RAM begins at $D354 (a copy of the level header)
 	 ;this places a limit -- 19 -- on the number of main levels.
 	 ;special stages and levels visited by teleporter are not included -- AFAIK
 	
-+	ld      ($d216),hl		
+	;------------------------------------------------------------------------------
+	;set starting X position:
+	
++	ld      ($D216),hl		
 	ld      a,(hl)			;get the value at that RAM address	
 	
-	;is it greater than or equal to 3?
-	sub     3			
+	;if the value is less than 3, just use 0
+	 ;(this is so that if the player starting position is at the left of the level
+	 ; it doesn't try and place the camera before the level's left edge)
+	sub     3
 	jr      nc,+
 	xor     a			;set A to 0
 +	ld      (RAM_BLOCK_X),a
@@ -5469,7 +5483,9 @@ loadLevel:
 	ld      (RAM_CAMERA_X),de
 	ld      (RAM_CAMERA_X_LEFT),de
 	
-	;move to the second byte, repeat the same process
+	;------------------------------------------------------------------------------
+	;set starting Y position:
+	
 	inc     hl
 	ld      a,(hl)
 	
@@ -5515,7 +5531,7 @@ loadLevel:
 	
 	ex      de,hl			;HL will be the Floor Layout address
 	ld      a,h			;look at the hi-byte of the Floor Layout
-	di      
+	di      			;disable interrupts
 	cp      $40			;is it $40xx or above?
 	jr      c,+
 	sub     $40
@@ -5633,7 +5649,7 @@ loadLevel:
 	ld      l,a
 	
 	;queue the palette to be loaded via the interrupt
-	ld      a,$03
+	ld      a,%00000011
 	call    loadPaletteOnInterrupt
 	
 	res     0,(iy+vars.flags0)
@@ -5645,7 +5661,7 @@ loadLevel:
 	inc     hl
 	
 	;CS: Cycle Speed
-	ld      de,$d2a4
+	ld      de,RAM_CYCLEPALETTE_SPEED
 	ld      a,(hl)
 	ld      (de),a
 	inc     de
@@ -5654,7 +5670,8 @@ loadLevel:
 	inc     de
 	inc     hl
 	;store 0 at the next byte in RAM
-	xor     a
+	 ;(RAM_CYCLEPALETTE_INDEX)
+	xor     a			;set A to 0
 	ld      (de),a
 	inc     de
 	
@@ -5760,7 +5777,7 @@ loadLevel:
 
 	;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
 +	ld      b,32
-	ld      hl,$d37c
+	ld      hl,$D37C
 	xor     a			;set A to 0
 
 -	ld      (hl),a
@@ -5782,10 +5799,10 @@ _232b:
 ;HL : address of an object layout?
 	push    hl
 	
-	ld      ix,$d3fc		;current level's object list
+	ld      ix,$D3FC		;current level's object list
 	ld      de,$001a
 	ld      c,$00
-	ld      hl,($d216)
+	ld      hl,($D216)
 	ld      a,$00
 	call    _235e
 	
@@ -5794,7 +5811,7 @@ _232b:
 	ld      a,(hl)			;number of objects
 	inc     hl
 	
-	ld      ($d2f2),a
+	ld      ($D2F2),a
 	dec     a
 	ld      b,a
 
@@ -5804,7 +5821,7 @@ _232b:
 	call    _235e
 	djnz    -
 	
-	ld      a,($d2f2)
+	ld      a,($D2F2)
 	ld      b,a
 	ld      a,$20
 	sub     b
@@ -5875,11 +5892,11 @@ _235e:
 
 ;animate ring
 _239c:
-;ld      ($d25f) = $0060	
-;ld      ($d261) = $0088	
-;ld      ($d263) = $0060
-;ld      ($d265) = $0070
-	ld      a,($d297)
+;ld      ($D25F) = $0060	
+;ld      ($D261) = $0088	
+;ld      ($D263) = $0060
+;ld      ($D265) = $0070
+	ld      a,($D297)
 	ld      e,a
 	ld      d,$00
 	ld      hl,_23f9
@@ -5892,7 +5909,7 @@ _239c:
 	ld      de,$7cf0
 	add     hl,de
 	ld      (RAM_RING_CURRENT_FRAME),hl
-	ld      hl,$d298
+	ld      hl,$D298
 	ld      a,(hl)
 	inc     a
 	ld      (hl),a
@@ -5911,9 +5928,10 @@ _239c:
 ;____________________________________________________________________________[$23C9]___
 
 _23c9:
-	ld      a,($d2a4)		;palette Cycle Speed
+	;this doesn't seem right?
+	ld      a,(RAM_CYCLEPALETTE_SPEED)
 	dec     a
-	ld      ($d2a4),a
+	ld      (RAM_CYCLEPALETTE_SPEED),a
 	ret     nz
 	
 	ld      a,(RAM_CYCLEPALETTE_INDEX)
@@ -5925,7 +5943,7 @@ _23c9:
 	add     hl,hl
 	ld      de,(RAM_CYCLEPALETTE_POINTER)
 	add     hl,de
-	ld      a,$01
+	ld      a,%00000001
 	call    loadPaletteOnInterrupt
 	ld      hl,(RAM_CYCLEPALETTE_INDEX)
 	ld      a,l
@@ -5935,8 +5953,8 @@ _23c9:
 	xor     a
 +	ld      l,a
 	ld      (RAM_CYCLEPALETTE_INDEX),hl
-	ld      a,($d2a5)
-	ld      ($d2a4),a
+	ld      a,($D2A5)
+	ld      (RAM_CYCLEPALETTE_SPEED),a
 	ret
 
 _23f9:
@@ -6011,8 +6029,8 @@ _LABEL_258B_133:
 	ld   (RAM_VDPSCROLL_HORIZONTAL), a
 	ld   (RAM_VDPSCROLL_VERTICAL), a		;vertical scroll
 	
-	ld   hl, $2828
-	ld   a, $03
+	ld   hl, _2828
+	ld   a, %00000011
 	call loadPaletteOnInterrupt
 	
 	;load the map screen 1
@@ -6044,7 +6062,7 @@ _LABEL_258B_133:
 	ld      a,1
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
-	ld      a,($d27f)
+	ld      a,($D27F)
 	cp      $06
 	jp      c,+
 	ld      b,$3c
@@ -6054,7 +6072,7 @@ _LABEL_258B_133:
 	res     0,(iy+vars.flags0)
 	call    wait
 	
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      c,$70
 	ld      b,$60
 	ld      de,_2825
@@ -6076,7 +6094,7 @@ _LABEL_258B_133:
 	ld      (iy+vars.spriteCount),c
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      de,$d000
+	ld      de,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),de
 	ld      b,$03
 	
@@ -6171,8 +6189,8 @@ _LABEL_258B_133:
 	ld      (RAM_TEMP1),a
 	call    decompressScreen
 	
-	xor     a
-	ld      hl,$d322
+	xor     a			;set A to 0
+	ld      hl,$D322
 	ld      (hl),$48
 	inc     hl
 	ld      (hl),$28
@@ -6225,9 +6243,9 @@ _2718:
 	call    wait
 	
 	ld      (iy+vars.spriteCount),$00
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      hl,$d322
+	ld      hl,$D322
 	ld      b,$04
 	
 -	push    bc
@@ -6325,7 +6343,7 @@ _275a:
 ;____________________________________________________________________________[$2795]___
 
 _2795:
-	ld      de,$d2be
+	ld      de,$D2BE
 	ldi     
 	ldi     
 	inc     de
@@ -6349,12 +6367,12 @@ __	ld      a,(hl)
 	jr      _b
 	
 +	push    hl
-	ld      ($d2c0),a
+	ld      ($D2C0),a
 	ld      bc,$0008
 	call    _2718
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	call    print
-	ld      hl,$d2be
+	ld      hl,$D2BE
 	inc     (hl)
 	pop     hl
 	jr      _b
@@ -6418,21 +6436,44 @@ __	ld      a,(hl)
 
 _2825:
 .db $5c, $5e, $ff
-_2828:
+_2828:		;unknown palette!
 .db $35, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $25, $2B, $00, $3F
 .db $35, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $00, $3C, $00, $3F
+
 .db $96, $02, $29, $86, $9F, $28, $E9, $02, $29, $6F, $9F, $28, $FF, $48, $28, $36
 .db $B1, $28, $48, $BA, $28, $54, $A8, $28, $1E, $B1, $28, $44, $BA, $28, $FF, $57
 .db $28, $23, $C3, $28, $23, $CC, $28, $FF, $69, $28, $E4, $F3, $28, $19, $E4, $28
 .db $19, $D5, $28, $19, $E4, $28, $19, $D5, $28, $FA, $F3, $28, $85, $E4, $28, $E8
 .db $F3, $28, $19, $E4, $28, $19, $D5, $28, $19, $E4, $28, $19, $D5, $28, $19, $E4
-.db $28, $19, $D5, $28, $FF, $72, $28, $40, $48, $50, $FF, $FF, $FF, $FF, $FF, $FF
-.db $40, $58, $4A, $FF, $FF, $FF, $FF, $FF, $FF, $40, $58, $4C, $FF, $FF, $FF, $FF
-.db $FF, $FF, $40, $58, $4E, $FF, $FF, $FF, $FF, $FF, $FF, $40, $78, $6A, $6C, $6E
-.db $FF, $FF, $FF, $FF, $40, $78, $70, $72, $74, $FF, $FF, $FF, $FF, $48, $50, $0A
-.db $0C, $FF, $FF, $FF, $FF, $2A, $2C, $FF, $FF, $FF, $FF, $FF, $48, $50, $0E, $10
-.db $FF, $FF, $FF, $FF, $2E, $30, $FF, $FF, $FF, $FF, $FF, $48, $60, $12, $14, $FF
-.db $FF, $FF, $FF, $32, $34, $FF, $FF, $FF, $FF, $FF, $40, $48, $FF
+.db $28, $19, $D5, $28, $FF, $72, $28
+
+;unknown sprite layouts?
+.db $40, $48, $50, $FF, $FF, $FF
+.db $FF, $FF, $FF
+.db $40, $58, $4A, $FF, $FF, $FF
+.db $FF, $FF, $FF
+.db $40, $58, $4C, $FF, $FF, $FF
+.db $FF, $FF, $FF
+.db $40, $58, $4E, $FF, $FF, $FF
+.db $FF, $FF, $FF
+.db $40, $78, $6A, $6C, $6E, $FF
+.db $FF, $FF, $FF
+.db $40, $78, $70, $72, $74, $FF
+.db $FF, $FF, $FF
+.db $48, $50, $0A, $0C, $FF, $FF
+.db $FF, $FF
+
+.db $2A, $2C, $FF, $FF, $FF, $FF
+.db $FF
+.db $48, $50, $0E, $10, $FF, $FF
+.db $FF, $FF
+.db $2E, $30, $FF, $FF, $FF, $FF
+.db $FF
+.db $48, $60, $12, $14, $FF, $FF
+.db $FF, $FF
+.db $32, $34, $FF, $FF, $FF, $FF
+.db $FF
+.db $40, $48, $FF
 
 S1_Credits_Text:			;[$2905]
 
@@ -6559,7 +6600,7 @@ S1_Object_Pointers:
 .dw _5f17				;#07: end sign
 .dw _65ee				;#08: badnick - crabmeat
 .dw _673c				;#09: wooden platform - swinging (Green Hill)
-.dw _693f				;#0A: UNKNOWN
+.dw _693f				;#0A: explosion
 .dw _69e9				;#0B: wooden platform (Green Hill)
 .dw _6a47				;#0C: wooden platform - falling (Green Hill)
 .dw _6ac1				;#0D: UNKNOWN
@@ -6568,16 +6609,16 @@ S1_Object_Pointers:
 .dw _6e0c				;#10: badnick - motobug
 .dw _6f08				;#11: badnick - newtron
 .dw _700c				;#12: boss (Green Hill)
-.dw _9b75				;#13: UNKNOWN
-.dw _9be8				;#14: UNKNOWN
-.dw _9c70				;#15: UNKNOWN
+.dw _9b75				;#13: UNKNOWN - bullet?
+.dw _9be8				;#14: UNKNOWN - fireball right?
+.dw _9c70				;#15: UNKNOWN - fireball left?
 .dw _9c8e				;#16: flame thrower (Scrap Brain)
 .dw _9dfa				;#17: door - one way left (Scrap Brain)
 .dw _9f62				;#18: door - one way right (Scrap Brain)
 .dw _a025				;#19: door (Scrap Brain)
 .dw _a0e8				;#1A: electric sphere (Scrap Brain)
 .dw _a1aa				;#1B: badnick - ball hog (Scrap Brain)
-.dw _a33c				;#1C: UNKNOWN (ball from ball hog?)
+.dw _a33c				;#1C: UNKNOWN - ball from ball hog?
 .dw _a3f8				;#1D: switch
 .dw _a4ab				;#1E: switch door
 .dw _a551				;#1F: badnick - caterkiller
@@ -6595,15 +6636,15 @@ S1_Object_Pointers:
 .dw _8218				;#2B: UNKNOWN
 .dw _8053				;#2C: boss (Jungle)
 .dw _82e6				;#2D: badnick - yadrin (Bridge)
-.dw _83c1				;#2E: UNKNOWN
-.dw _94a5				;#2F: UNKNOWN
+.dw _83c1				;#2E: falling bridge (Bridge)
+.dw _94a5				;#2F: UNKNOWN - wave moving projectile?
 .dw _a9c7				;#30: meta - clouds (Sky Base)
 .dw _aa6a				;#31: propeller (Sky Base)
 .dw _ab21				;#32: badnick - bomb (Sky Base)
 .dw _ad6c				;#33: canon (Sky Base)
-.dw _ae35				;#34: UNKNOWN
+.dw _ae35				;#34: UNKNOWN - flies right, no-clipping
 .dw _ae88				;#35: badnick - unidos (Sky Base)
-.dw _b0f4				;#36: UNKNOWN
+.dw _b0f4				;#36: UNKNOWN - stationary, lethal
 .dw _b16c				;#37: rotating turret (Sky Base)
 .dw _b297				;#38: flying platform (Sky Base)
 .dw _b398				;#39: moving spiked wall (Sky Base)
@@ -6696,7 +6737,7 @@ _2e5a:
 	res     7,(iy+vars.timeLightningFlags)
 	
 	ld      hl,_2e55
-	ld      de,$d2be
+	ld      de,$D2BE
 	ld      bc,$0005
 	ldir
 	
@@ -6707,12 +6748,12 @@ _2e5a:
 	
 +	add     a,a			
 	add     a,$80			
-	ld      ($d2c1),a
+	ld      ($D2C1),a
 	
 	ld      c,$10
 	ld      b,172			;Y-position of lives display
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
-	ld      de,$d2be
+	ld      de,$D2BE
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	
@@ -6725,7 +6766,7 @@ _2e5a:
 	call    nz,_2f1f
 	
 	ld      de,$0060
-	ld      hl,$d267
+	ld      hl,$D267
 	ld      a,(hl)
 	inc     hl
 	or      (hl)
@@ -6759,12 +6800,14 @@ _2e5a:
 	call    z,_2f66
 	
 	ld      hl,$0000
-	ld      ($d267),hl
-	ld      ($d269),hl
-	ld      ($d26b),hl
-	ld      ($d26d),hl
+	ld      ($D267),hl
+	ld      ($D269),hl
+	ld      ($D26B),hl
+	ld      ($D26D),hl
 	call    _31e6
-	call    _329b
+	
+	;run the code for all the different objects on screen (including the player)
+	call    doObjects
 	ret
 
 ;____________________________________________________________________________[$2EE6]___
@@ -6779,14 +6822,14 @@ _2ee6:
 	and     $0f
 	add     a,a
 	add     a,$80
-	ld      ($d2be),a
+	ld      ($D2BE),a
 	ld      a,c
 	and     $0f
 	add     a,a
 	add     a,$80
-	ld      ($d2bf),a
+	ld      ($D2BF),a
 	ld      a,$ff
-	ld      ($d2c0),a
+	ld      ($D2C0),a
 	ld      c,$14
 	ld      b,$00
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
@@ -6794,7 +6837,7 @@ _2ee6:
 	call    _LABEL_35CC_117
 	ld      c,$28
 	ld      b,$00
-	ld      de,$d2be
+	ld      de,$D2BE
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
@@ -6802,8 +6845,8 @@ _2ee6:
 ;____________________________________________________________________________[$2F1F]___
 
 _2f1f:
-	ld      hl,$d2be
-	ld      a,($d2ce)
+	ld      hl,$D2BE
+	ld      a,($D2CE)
 	and     $0f
 	add     a,a
 	add     a,$80
@@ -6811,7 +6854,7 @@ _2f1f:
 	inc     hl
 	ld      (hl),$b0
 	inc     hl
-	ld      a,($d2cf)
+	ld      a,($D2CF)
 	ld      c,a
 	srl     a
 	srl     a
@@ -6838,7 +6881,7 @@ _2f1f:
 	ld      b,$38
 	
 +	ld      hl,(RAM_SPRITETABLE_CURRENT)
-	ld      de,$d2be
+	ld      de,$D2BE
 	call    _LABEL_35CC_117
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ret
@@ -6849,46 +6892,46 @@ _2f66:
 	bit     6,(iy+vars.timeLightningFlags)
 	ret     nz
 	
-	ld      hl,($d27b)
+	ld      hl,($D27B)
 	ld      a,l
 	or      h
 	call    nz,_3140
 	
-	ld      hl,($d27d)
+	ld      hl,($D27D)
 	ld      a,l
 	or      h
 	call    nz,_3122
 	
-	ld      hl,($d267)
-	ld      de,($d25f)
+	ld      hl,($D267)
+	ld      de,($D25F)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
 	
-	ld      ($d25f),de
-	ld      hl,($d269)
-	ld      de,($d261)
+	ld      ($D25F),de
+	ld      hl,($D269)
+	ld      de,($D261)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
 	
-	ld      ($d261),de
-	ld      hl,($d26b)
-	ld      de,($d263)
+	ld      ($D261),de
+	ld      hl,($D26B)
+	ld      de,($D263)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
 	
-	ld      ($d263),de
-	ld      hl,($d26d)
-	ld      de,($d265)
+	ld      ($D263),de
+	ld      hl,($D26D)
+	ld      de,($D265)
 	and     a
 	sbc     hl,de
 	call    nz,_315e
 	
-	ld      ($d265),de
-	ld      bc,($d25f)
-	ld      de,($d3fe)
+	ld      ($D265),de
+	ld      bc,($D25F)
+	ld      de,($D3FE)
 	ld      hl,(RAM_CAMERA_X)
 	add     hl,bc
 	and     a
@@ -6917,7 +6960,7 @@ _2f66:
 	ld      (RAM_CAMERA_X),hl
 	jp      _f
 	
-+++	ld      bc,($d261)
++++	ld      bc,($D261)
 	ld      hl,(RAM_CAMERA_X)
 	add     hl,bc
 	and     a
@@ -6962,8 +7005,8 @@ __	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_CAMERA_X),de
 ++	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_3164
-	ld      bc,($d263)
-	ld      de,($d401)
+	ld      bc,($D263)
+	ld      de,($D401)
 	ld      hl,(RAM_CAMERA_Y)
 	bit     6,(iy+vars.scrollRingFlags)
 	call    nz,_31cf
@@ -7002,7 +7045,7 @@ __	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_CAMERA_Y),hl
 	jp      _f
 	
-+++	ld      bc,($d265)
++++	ld      bc,($D265)
 	ld      hl,(RAM_CAMERA_Y)
 	add     hl,bc
 	bit     7,(iy+vars.scrollRingFlags)
@@ -7118,7 +7161,7 @@ _315e:
 ;____________________________________________________________________________[$3164]___
 	
 _3164:
-	ld      hl,($d29d)
+	ld      hl,($D29D)
 	ld      de,(RAM_TIME)
 	add     hl,de
 	ld      bc,$0200
@@ -7131,26 +7174,26 @@ _3164:
 	jr      c,+
 	ld      l,c
 	ld      h,b
-+	ld      ($d29d),hl
++	ld      ($D29D),hl
 	ld      c,l
 	ld      b,h
-	ld      hl,($d25c)
-	ld      a,($d25e)
+	ld      hl,($D25C)		;between RAM_CAMERA_X & Y
+	ld      a,($D25E)		;high-byte of RAM_CAMERA_X
 	add     hl,bc
 	ld      e,$00
 	bit     7,b
 	jr      z,+
 	ld      e,$ff
 +	adc     a,e
-	ld      ($d25c),hl
-	ld      ($d25e),a
-	ld      hl,($d2a1)
-	ld      a,($d2a3)
+	ld      ($D25C),hl
+	ld      ($D25E),a
+	ld      hl,($D2A1)
+	ld      a,($D2A3)
 	add     hl,bc
 	adc     a,e
-	ld      ($d2a1),hl
-	ld      ($d2a3),a
-	ld      hl,($d2a2)
+	ld      ($D2A1),hl
+	ld      ($D2A3),a
+	ld      hl,($D2A2)
 	bit     7,h
 	jr      z,+
 	ld      bc,$ffe0
@@ -7161,7 +7204,7 @@ _3164:
 	ld      (RAM_TIME),hl
 	ret
 	
-+	ld      hl,($d2a2)
++	ld      hl,($D2A2)
 	ld      bc,$0020
 	and     a
 	sbc     hl,bc
@@ -7192,29 +7235,29 @@ _31d3:
 _31db:
 	bit     6,(iy+vars.scrollRingFlags)
 	ret     nz
-	ld      bc,($d2b7)
+	ld      bc,($D2B7)
 	add     hl,bc
 	ret
 
 ;____________________________________________________________________________[$31E6]___
 
 _31e6:
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	ld      c,a
 	ld      hl,$0068
 	call    _LABEL_5FC_114
-	ld      de,$d3fc			;current level's object list
+	ld      de,$D3FC			;current level's object list
 	add     hl,de
 	ex      de,hl
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	add     a,a
 	add     a,a
 	add     a,a
 	ld      c,a
 	ld      b,$00
-	ld      hl,$d37c
+	ld      hl,$D37C			;list of current on-screen objects
 	add     hl,bc
 	ld      c,b
 	ld      b,$04
@@ -7306,8 +7349,10 @@ _31e6:
 	ret    
 
 ;____________________________________________________________________________[$392B]___
-	
-_329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
+;runs the code for each of the objects in memory
+
+doObjects:
+	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	 ;or 31 numbers have been read
 	ld      hl,$D37E
 	ld      b,31
@@ -7325,18 +7370,16 @@ _329b:	;starting from $D37E, read 16-bit numbers until a non-zero one is found,
 	;keep reading memory until either something non-zero is found or we hit $D3BC
 	djnz    -
 	
-	;at this point, $D37E-$D3BD is known to be empty
-	
 	ld      a,(iy+vars.spriteCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	
 	push    af
 	push    hl
 	
-	ld      hl,$d024		;Sonic's sprite table entry
+	;process the player:
+	ld      hl,$D024		;Sonic's sprite table entry
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	
-	ld      de,$d3fc		;current level's object list
+	ld      de,$D3FC		;current level's object list
 	call    doObjectCode
 	
 	pop     hl
@@ -7882,7 +7925,7 @@ _35e5:
 	ret     nz
 	bit     0,(iy+vars.unknown0)
 	jp      nz,_36be
-	ld      a,($d414)
+	ld      a,($D414)
 	rrca    
 	jp      c,_36be
 	and     $02
@@ -7905,14 +7948,14 @@ _35fd:
 ;----------------------------------------------------------------------------[$3618]---
 _3618:
 	set     0,(iy+vars.scrollRingFlags)
-	ld      hl,$d414
+	ld      hl,$D414
 	set     7,(hl)
 	ld      hl,$fffa
 	xor     a
-	ld      ($d406),a
-	ld      ($d407),hl
+	ld      ($D406),a
+	ld      ($D407),hl
 	ld      a,$60
-	ld      ($d287),a
+	ld      ($D287),a
 	res     6,(iy+vars.flags6)
 	res     5,(iy+vars.flags6)
 	res     6,(iy+vars.flags6)
@@ -7934,10 +7977,10 @@ _3644:
 	ld      (ix+$00),$55
 	ld      (ix+$11),$06
 	ld      (ix+$12),$00
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      (ix+$05),l
 	ld      (ix+$06),h
 	ld      (ix+$0a),$00
@@ -7945,14 +7988,14 @@ _3644:
 	ld      (ix+$0c),$ff
 	pop     ix
 _367e:
-	ld      hl,$d414
+	ld      hl,$D414
 	ld      de,$fffc
 	xor     a
 	bit     4,(hl)
 	jr      z,+
 	ld      de,$fffe
-+	ld      ($d406),a
-	ld      ($d407),de
++	ld      ($D406),a
+	ld      ($D407),de
 	bit     1,(hl)
 	jr      z,+
 	ld      a,(hl)
@@ -7965,8 +8008,8 @@ _367e:
 +	res     1,(hl)
 	xor     a
 	ld      de,$fffe
-++	ld      ($d403),a
-	ld      ($d404),de
+++	ld      ($D403),a
+	ld      ($D404),de
 	res     5,(iy+vars.flags6)
 	set     6,(iy+vars.flags6)
 	ld      (iy+vars.joypad),$ff
@@ -8423,20 +8466,20 @@ _LABEL_38B0_51:
 ;____________________________________________________________________________[$3956]___
 
 _LABEL_3956_11:
-	bit  0, (iy+5)
+	bit  0, (iy+$05)
 	scf
 	ret  nz
-	ld   l, (ix+2)
-	ld   h, (ix+3)
-	ld   c, (ix+13)
+	ld   l, (ix+$02)
+	ld   h, (ix+$03)
+	ld   c, (ix+$0D)
 	ld   b, $00
 	add  hl, bc
 	ld   de, ($D3FE)
 	xor  a
 	sbc  hl, de
 	ret  c
-	ld   l, (ix+2)
-	ld   h, (ix+3)
+	ld   l, (ix+$02)
+	ld   h, (ix+$03)
 	ld   a, (RAM_TEMP6)
 	ld   c, a
 	add  hl, bc
@@ -8447,16 +8490,16 @@ _LABEL_3956_11:
 	xor  a
 	sbc  hl, de
 	ret  c
-	ld   l, (ix+5)
-	ld   h, (ix+6)
-	ld   c, (ix+14)
+	ld   l, (ix+$05)
+	ld   h, (ix+$06)
+	ld   c, (ix+$0E)
 	add  hl, bc
 	ld   de, ($D401)
 	xor  a
 	sbc  hl, de
 	ret  c
-	ld   l, (ix+5)
-	ld   h, (ix+6)
+	ld   l, (ix+$05)
+	ld   h, (ix+$06)
 	ld   a, (RAM_TEMP7)
 	ld   c, a
 	add  hl, bc
@@ -8469,6 +8512,7 @@ _LABEL_3956_11:
 	ret
 
 ;____________________________________________________________________________[$39AC]___
+;looks like this handles increasing the number of rings?
 
 _39ac:
 	ld      c,a
@@ -8499,8 +8543,9 @@ _39ac:
 	ret
 
 ;____________________________________________________________________________[$39D8]___
+
 _39d8:
-	ld      hl,$d2bd
+	ld      hl,$D2BD
 	ld      a,e
 	add     a,(hl)
 	daa     
@@ -8521,7 +8566,7 @@ _39d8:
 	adc     a,(hl)
 	daa     
 	ld      (hl),a
-	ld      hl,$d2fd
+	ld      hl,$D2FD
 	ld      a,c
 	cp      (hl)
 	ret     c
@@ -8541,7 +8586,7 @@ _39d8:
 _3a03:
 	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz	
-	ld      hl,$d2d0
+	ld      hl,$D2D0
 	bit     0,(iy+vars.timeLightningFlags)
 	jr      nz,++
 	ld      a,(hl)
@@ -8596,7 +8641,7 @@ _3a03:
 	cp      $60
 	jr      c,+
 	ld      a,$01
-	ld      ($d289),a
+	ld      ($D289),a
 	set     2,(iy+vars.flags9)
 	xor     a
 +	ld      (hl),a
@@ -8872,7 +8917,7 @@ _48c8:
 	bit     0,(iy+vars.scrollRingFlags)
 	jp      nz,_543c
 	
-	ld      a,($d412)
+	ld      a,($D412)
 	and     a
 	call    nz,_4ff0
 	
@@ -8881,7 +8926,7 @@ _48c8:
 	bit     6,(iy+vars.flags6)
 	call    nz,_510a
 	
-	ld      a,($d28c)
+	ld      a,($D28C)
 	and     a
 	call    nz,_568f
 	
@@ -8894,11 +8939,11 @@ _48c8:
 	bit     4,(ix+$18)
 	call    nz,_5009
 	
-	ld      a,($d28b)
+	ld      a,($D28B)
 	and     a
 	call    nz,_5285
 	
-	ld      a,($d28a)
+	ld      a,($D28A)
 	and     a
 	jp      nz,_5117
 	
@@ -8917,11 +8962,11 @@ _48c8:
 	ldir    
 	
 	ld      hl,$0100
-	ld      ($d240),hl
+	ld      ($D240),hl
 	ld      hl,$fd80
-	ld      ($d242),hl
+	ld      ($D242),hl
 	ld      hl,$0010
-	ld      ($d244),hl
+	ld      ($D244),hl
 	jp      +++
 	
 +	ld      a,(ix+$15)
@@ -8937,13 +8982,13 @@ _48c8:
 	ldir    
 	
 	ld      hl,$0300
-	ld      ($d240),hl
+	ld      ($D240),hl
 	ld      hl,$fc80
-	ld      ($d242),hl
+	ld      ($D242),hl
 	ld      hl,$0038
-	ld      ($d244),hl
-	ld      hl,($dc0c)
-	ld      ($dc0a),hl
+	ld      ($D244),hl
+	ld      hl,($DC0C)
+	ld      ($DC0A),hl
 	jp      +++
 	
 +	bit     7,(ix+$18)
@@ -8955,13 +9000,13 @@ _48c8:
 	ldir    
 	
 	ld      hl,$0c00
-	ld      ($d240),hl
+	ld      ($D240),hl
 	ld      hl,$fc80
-	ld      ($d242),hl
+	ld      ($D242),hl
 	ld      hl,$0038
-	ld      ($d244),hl
-	ld      hl,($dc0c)
-	ld      ($dc0a),hl
+	ld      ($D244),hl
+	ld      hl,($DC0C)
+	ld      ($DC0A),hl
 	jp      +++
 	
 ++	ld      hl,_4de6
@@ -8969,15 +9014,15 @@ _48c8:
 	ld      bc,$0009
 	ldir    
 	ld      hl,$0600
-	ld      ($d240),hl
+	ld      ($D240),hl
 	ld      hl,$fc80
-	ld      ($d242),hl
+	ld      ($D242),hl
 	ld      hl,$0038
-	ld      ($d244),hl
-	ld      hl,($dc0c)
+	ld      ($D244),hl
+	ld      hl,($DC0C)
 	inc     hl
-	ld      ($dc0a),hl
-	ld      a,($d223)
+	ld      ($DC0A),hl
+	ld      a,($D223)
 	and     $03
 	call    z,_4fec
 +++	bit     1,(iy+vars.joypad)
@@ -9023,7 +9068,7 @@ _48c8:
 	push    de
 	jp      (hl)
 	
-+	ld      hl,($d401)
++	ld      hl,($D401)
 	ld      de,$0024
 	add     hl,de
 	ex      de,hl
@@ -9037,20 +9082,20 @@ _48c8:
 	ld      a,(iy+vars.joypad)
 	cp      $ff
 	jr      nz,+
-	ld      de,($d403)
+	ld      de,($D403)
 	ld      a,e
 	or      d
 	jr      nz,+
-	ld      a,($d414)
+	ld      a,($D414)
 	rlca    
 	jr      nc,+
-	ld      hl,($d299)
+	ld      hl,($D299)
 	inc     hl
-+	ld      ($d299),hl
++	ld      ($D299),hl
 	bit     7,(iy+vars.flags6)
 	call    nz,_50e8
 	ld      (ix+$14),$05
-	ld      hl,($d299)
+	ld      hl,($D299)
 	ld      de,$0168
 	and     a
 	sbc     hl,de
@@ -9065,13 +9110,13 @@ _48c8:
 	ld      a,(ix+$0e)
 	cp      $20
 	jr      z,+
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$fff8
 	add     hl,de
-	ld      ($d401),hl
+	ld      ($D401),hl
 +	ld      (ix+$0d),$18
 	ld      (ix+$0e),$20
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      b,(ix+$09)
 	ld      c,$00
 	ld      e,c
@@ -9098,7 +9143,7 @@ _48c8:
 	ld      c,$ff
 	push    hl
 	push    de
-	ld      de,($d240)
+	ld      de,($D240)
 	xor     a
 	sbc     hl,de
 	pop     de
@@ -9113,7 +9158,7 @@ _48c8:
 	ld      d,a
 	inc     de
 	ld      c,$ff
-	ld      a,($d216)
+	ld      a,($D216)
 	ld      (ix+$14),a
 	jp      _4b1b
 	
@@ -9128,14 +9173,14 @@ _48c8:
 	cpl     
 	ld      h,a
 	inc     hl
-	ld      de,($d240)
+	ld      de,($D240)
 	xor     a
 	sbc     hl,de
 	pop     de
 	pop     hl
 	jr      c,_4b1b
 	ld      de,(RAM_TEMP1)
-	ld      a,($d216)
+	ld      a,($D216)
 	ld      (ix+$14),a
 _4b1b:
 	ld      a,b
@@ -9145,7 +9190,7 @@ _4b1b:
 	adc     a,c
 	ld      c,a
 	jp      p,++
-	ld      a,($d403)
+	ld      a,($D403)
 	or      (ix+$08)
 	or      (ix+$09)
 	jr      z,++
@@ -9162,10 +9207,10 @@ _4b1b:
 	ld      l,c
 	ld      h,c
 ++	ld      a,c
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 _4b49:
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      b,(ix+$0c)
 	ld      c,$00
 	ld      e,c
@@ -9174,7 +9219,7 @@ _4b49:
 	call    nz,_50af
 	bit     0,(ix+$18)
 	jp      nz,_5407
-	ld      a,($d28e)
+	ld      a,($D28E)
 	and     a
 	jr      nz,+
 	bit     7,(ix+$18)
@@ -9186,17 +9231,17 @@ _4b49:
 +	bit     5,(iy+vars.joypad)
 	jr      nz,+++
 _4b7f:
-	ld      a,($d28e)
+	ld      a,($D28E)
 	and     a
 	call    z,_509d
-	ld      hl,($d242)
+	ld      hl,($D242)
 	ld      b,$ff
 	ld      c,$00
 	ld      e,c
 	ld      d,c
-	ld      a,($d28e)
+	ld      a,($D28E)
 	dec     a
-	ld      ($d28e),a
+	ld      ($D28E),a
 	set     2,(ix+$18)
 	jp      +++++
 	
@@ -9205,7 +9250,7 @@ _4b7f:
 	
 +++	set     3,(ix+$18)
 ++++	xor     a
-	ld      ($d28e),a
+	ld      ($D28E),a
 _4bac:
 	bit     7,h
 	jr      nz,+
@@ -9213,7 +9258,7 @@ _4bac:
 	cp      h
 	jr      z,+++++
 	jr      c,+++++
-+	ld      de,($d244)
++	ld      de,($D244)
 	ld      c,$00
 	
 +++++	bit     0,(iy+vars.flags6)
@@ -9237,8 +9282,8 @@ _4bac:
 +	add     hl,de
 	ld      a,b
 	adc     a,c
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	push    hl
 	ld      a,e
 	cpl     
@@ -9251,8 +9296,8 @@ _4bac:
 	ld      de,$0001
 	add     hl,de
 	adc     a,$00
-	ld      ($d2e6),hl
-	ld      ($d2e8),a
+	ld      ($D2E6),hl
+	ld      ($D2E8),a
 	pop     hl
 	bit     2,(ix+$18)
 	call    nz,_5280
@@ -9271,7 +9316,7 @@ _4bac:
 	and     a
 	sbc     hl,de
 	jr      nc,++
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $85
 	jr      nz,++
 	bit     7,(ix+$0c)
@@ -9287,14 +9332,14 @@ _4bac:
 	cp      $79
 	call    nc,_4def
 _4c39:
-	ld      a,($d28c)
+	ld      a,($D28C)
 	and     a
 	call    nz,_51b3
 	bit     6,(iy+vars.flags6)
 	call    nz,_51bc
 	bit     2,(iy+vars.unknown0)
 	call    nz,_51dd
-	ld      a,($d410)
+	ld      a,($D410)
 	cp      $0a
 	call    z,_51f3
 	ld      l,(ix+$14)
@@ -9306,11 +9351,11 @@ _4c39:
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-	ld      ($d40d),de
-	ld      a,($d2df)
+	ld      ($D40D),de
+	ld      a,($D2DF)
 	sub     c
 	call    nz,_521f
-	ld      a,($d40f)
+	ld      a,($D40F)
 	
 -	ld      h,$00
 	ld      l,a
@@ -9320,7 +9365,7 @@ _4c39:
 	jp      p,+
 	inc     hl
 	ld      a,(hl)
-	ld      ($d40f),a
+	ld      ($D40F),a
 	jp      -
 	
 +	ld      d,a
@@ -9330,7 +9375,7 @@ _4c39:
 	ld      bc,_7000
 +	bit     5,(iy+vars.flags6)
 	call    nz,_5206
-	ld      a,($d302)
+	ld      a,($D302)
 	and     a
 	call    nz,_4e48
 	ld      a,d
@@ -9351,15 +9396,15 @@ _4c39:
 	bit     0,(iy+vars.flags6)
 	call    nz,_520f
 	
-	ld      a,($d410)
+	ld      a,($D410)
 	cp      $13
 	call    z,_5213
-	ld      a,($d302)
+	ld      a,($D302)
 	and     a
 	call    nz,_4e4d
-	ld      ($d40b),hl
+	ld      ($D40B),hl
 	ld      c,$10
-	ld      a,($d404)
+	ld      a,($D404)
 	and     a
 	jp      p,+
 	neg     
@@ -9367,9 +9412,9 @@ _4c39:
 +	cp      $10
 	jr      c,+
 	ld      a,c
-	ld      ($d404),a
+	ld      ($D404),a
 +	ld      c,$10
-	ld      a,($d407)
+	ld      a,($D407)
 	and     a
 	jp      p,+
 	neg     
@@ -9377,22 +9422,22 @@ _4c39:
 +	cp      $10
 	jr      c,+
 	ld      a,c
-	ld      ($d407),a
-+	ld      de,($d401)
+	ld      ($D407),a
++	ld      de,($D401)
 	ld      hl,$0010
 	and     a
 	sbc     hl,de
 	jr      c,+
 	add     hl,de
-	ld      ($d401),hl
+	ld      ($D401),hl
 +	bit     7,(iy+vars.flags6)
 	call    nz,_5224
 	bit     0,(iy+vars.unknown0)
 	call    nz,_4e8d
-	ld      a,($d2e1)
+	ld      a,($D2E1)
 	and     a
 	call    nz,_5231
-	ld      a,($d321)
+	ld      a,($D321)
 	and     a
 	call    nz,_4e51
 	bit     1,(iy+vars.flags6)
@@ -9401,18 +9446,18 @@ _4c39:
 	ld      bc,$0008
 	add     hl,bc
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      ($d3fe),de
-	ld      a,($d405)
+	ld      ($D3FE),de
+	ld      a,($D405)
 	and     a
 	jp      p,++
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
 	jp      ++
 	
 +	ld      hl,(RAM_LEVEL_RIGHT)
@@ -9420,7 +9465,7 @@ _4c39:
 	add     hl,de
 	
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      c,$18
 	add     hl,bc
 	and     a
@@ -9429,22 +9474,22 @@ _4c39:
 	ex      de,hl
 	scf     
 	sbc     hl,bc
-	ld      ($d3fe),hl
-	ld      a,($d405)
+	ld      ($D3FE),hl
+	ld      a,($D405)
 	and     a
 	jp      m,++
-	ld      hl,($d404)
+	ld      hl,($D404)
 	or      h
 	or      l
 	jr      z,++
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
-++	ld      a,($d414)
-	ld      ($d2b9),a
-	ld      a,($d410)
-	ld      ($d2df),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
+++	ld      a,($D414)
+	ld      ($D2B9),a
+	ld      a,($D410)
+	ld      ($D2DF),a
 	ld      d,$01
 	ld      c,$30
 	cp      $01
@@ -9456,9 +9501,9 @@ _4c39:
 	inc     (ix+$13)
 	ret
 	
-+	ld      a,($d2e0)
++	ld      a,($D2E0)
 	ld      b,a
-	ld      hl,($d403)
+	ld      hl,($D403)
 	bit     7,h
 	jr      z,+
 	ld      a,l
@@ -9472,15 +9517,15 @@ _4c39:
 	rr      l
 	ld      a,l
 	add     a,b
-	ld      ($d2e0),a
+	ld      ($D2E0),a
 	ld      a,h
 	adc     a,d
 	adc     a,(ix+$13)
-	ld      ($d40f),a
+	ld      ($D40F),a
 	cp      c
 	ret     c
 	sub     c
-	ld      ($d40f),a
+	ld      ($D40F),a
 	ret
 
 _4dcb:
@@ -9497,7 +9542,7 @@ _4de6:
 _4def:
 	ex      de,hl
 	
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
@@ -9508,7 +9553,7 @@ _4def:
 	sbc     hl,bc
 	ret     c
 	
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,(de)
@@ -9527,24 +9572,24 @@ _4def:
 	ld      a,l
 	and     $f0
 	ld      l,a
-	ld      ($d2ab),hl
-	ld      ($d31d),hl
+	ld      ($D2AB),hl
+	ld      ($D31D),hl
 	ld      a,c
 	xor     b
 	ld      (de),a
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      bc,$0008
 	add     hl,bc
 	ld      a,l
 	and     $e0
 	add     a,$08
 	ld      l,a
-	ld      ($d2ad),hl
-	ld      ($d31f),hl
+	ld      ($D2AD),hl
+	ld      ($D31F),hl
 	ld      a,$06
-	ld      ($d321),a
-	ld      hl,$595d
-	ld      ($d2af),hl
+	ld      ($D321),a
+	ld      hl,_595d
+	ld      ($D2AF),hl
 	ld      a,$01
 	call    _39ac
 	ret
@@ -9566,10 +9611,10 @@ _4e4d:
 
 _4e51:
 	dec     a
-	ld      ($d321),a
-	ld      hl,($d31d)
+	ld      ($D321),a
+	ld      hl,($D31D)
 	ld      (RAM_TEMP1),hl
-	ld      hl,($d31f)
+	ld      hl,($D31F)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -9596,16 +9641,16 @@ _4e88:
 ;____________________________________________________________________________[$4E8D]___
 
 _4e8d:
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      (RAM_TEMP1),hl
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      (RAM_TEMP3),hl
-	ld      hl,$d2f3
-	ld      a,($d223)
+	ld      hl,$D2F3
+	ld      a,($D223)
 	rrca    
 	rrca    
 	jr      nc,+
-	ld      hl,$d2f7
+	ld      hl,$D2F7
 +	ld      de,RAM_TEMP4
 	ldi     
 	ldi     
@@ -9616,15 +9661,15 @@ _4e8d:
 	jr      nc,+
 	ld      a,$96
 +	call    _3581
-	ld      a,($d223)
+	ld      a,($D223)
 	ld      c,a
 	and     $07
 	ret     nz
 	ld      b,$02
-	ld      hl,$d2f3
+	ld      hl,$D2F3
 	bit     3,c
 	jr      z,_f
-	ld      hl,$d2f7
+	ld      hl,$D2F7
 __	push    hl
 	call    _LABEL_625_57
 	pop     hl
@@ -9639,15 +9684,15 @@ __	push    hl
 ;____________________________________________________________________________[$4EDD]___
 
 _4edd:
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      a,h
 	or      l
 	ret     nz
-	ld      a,($d414)
+	ld      a,($D414)
 	rlca    
 	ret     nc
 	ld      (ix+$14),$0c
-	ld      de,($d2b7)
+	ld      de,($D2B7)
 	bit     7,d
 	jr      nz,+
 	ld      hl,$002c
@@ -9655,7 +9700,7 @@ _4edd:
 	sbc     hl,de
 	ret     c
 +	inc     de
-	ld      ($d2b7),de
+	ld      ($D2B7),de
 	ret
 
 _4f01:
@@ -9668,7 +9713,7 @@ _4f01:
 	push    hl
 	exx     
 	pop     hl
-	ld      de,($d240)
+	ld      de,($D240)
 	xor     a
 	sbc     hl,de
 	exx     
@@ -9677,8 +9722,8 @@ _4f01:
 	ld      e,a
 	ld      d,a
 	ld      c,a
-	ld      hl,($d240)
-	ld      a,($d216)
+	ld      hl,($D240)
+	ld      a,($D216)
 	ld      (ix+$14),a
 	jp      _4b1b
 	
@@ -9729,7 +9774,7 @@ _4f5c:
 	cpl     
 	ld      h,a
 	inc     hl
-	ld      de,($d240)
+	ld      de,($D240)
 	xor     a
 	sbc     hl,de
 	exx     
@@ -9737,7 +9782,7 @@ _4f5c:
 	ld      e,a
 	ld      d,a
 	ld      c,a
-	ld      hl,($d240)
+	ld      hl,($D240)
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -9746,7 +9791,7 @@ _4f5c:
 	ld      h,a
 	inc     hl
 	ld      b,$ff
-	ld      a,($d216)
+	ld      a,($D216)
 	ld      (ix+$14),a
 	jp      _4b1b
 _4fa6:
@@ -9778,18 +9823,18 @@ _4fa6:
 _4fd3:
 	bit     0,(ix+$18)
 	ret     nz
-	ld      hl,($d2b7)
+	ld      hl,($D2B7)
 	ld      a,h
 	or      l
 	ret     z
 	bit     7,h
 	jr      z,+
 	inc     hl
-	ld      ($d2b7),hl
+	ld      ($D2B7),hl
 	ret
 	
 +	dec     hl
-	ld      ($d2b7),hl
+	ld      ($D2B7),hl
 	ret
 
 ;____________________________________________________________________________[$4FEC]___
@@ -9802,16 +9847,16 @@ _4fec:
 
 _4ff0:
 	dec     a
-	ld      ($d412),a
+	ld      ($D412),a
 	ret
 
 ;____________________________________________________________________________[$4FF5]___
 
 _4ff5:
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $03
 	ret     nz
-	ld      hl,$d28d
+	ld      hl,$D28D
 	dec     (hl)
 	ret     nz
 	res     0,(iy+vars.unknown0)
@@ -9830,9 +9875,9 @@ _5009:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $0b
 	ret     z
-	ld      hl,($d29b)
+	ld      hl,($D29B)
 	inc     hl
-	ld      ($d29b),hl
+	ld      ($D29B),hl
 	ld      de,$0300
 	and     a
 	sbc     hl,de
@@ -9846,7 +9891,7 @@ _5009:
 	set     3,(iy+vars.unknown0)
 	set     0,(iy+vars.scrollRingFlags)
 	ld      a,$c0
-	ld      ($d287),a
+	ld      ($D287),a
 	
 	ld      a,index_music_death
 	rst     $18			;`playMusic`
@@ -9859,36 +9904,36 @@ _5009:
 +	ld      e,a
 	add     a,a
 	add     a,$80
-	ld      ($d2be),a
+	ld      ($D2BE),a
 	ld      a,$ff
-	ld      ($d2bf),a
+	ld      ($D2BF),a
 	ld      d,$00
 	ld      hl,_5097
 	add     hl,de
-	ld      a,($d223)
+	ld      a,($D223)
 	and     (hl)
 	jr      nz,+
 	ld      a,$1a
 	rst     $28			;`playSFX`
-+	ld      a,($d223)
++	ld      a,($D223)
 	rrca    
 	ret     nc
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ld      a,l
 	add     a,$08
 	ld      c,a
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
 	ld      a,l
 	add     a,$ec
 	ld      b,a
-	ld      hl,$d03c
-	ld      de,$d2be
+	ld      hl,$D03C
+	ld      de,$D2BE
 	call    _LABEL_35CC_117
 	ret
 
@@ -9899,7 +9944,7 @@ _5097:
 
 _509d:
 	ld      a,$10
-	ld      ($d28e),a
+	ld      ($D28E),a
 	ld      a,$00
 	rst     $28			;`playSFX`
 	ret
@@ -9907,16 +9952,16 @@ _509d:
 ;unreferenced?
 _50a6:
 	xor     a
-	ld      ($d3fd),a
-	ld      ($d3fe),de
+	ld      ($D3FD),a
+	ld      ($D3FE),de
 	ret
 
 ;____________________________________________________________________________[$50AF]___
 
 _50af:
 	exx     
-	ld      hl,($d401)
-	ld      ($d2d9),hl
+	ld      hl,($D401)
+	ld      ($D2D9),hl
 	exx     
 	bit     2,(ix+$18)
 	ret     z
@@ -9933,7 +9978,7 @@ _50c1:
 	bit     7,(ix+$18)
 	ret     z
 	set     0,(ix+$18)
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      a,l
 	or      h
 	jr      z,+
@@ -9951,13 +9996,13 @@ _50e3:
 ;____________________________________________________________________________[$50E8]___
 
 _50e8:
-	ld      hl,($d2dc)
-	ld      de,($d401)
+	ld      hl,($D2DC)
+	ld      de,($D401)
 	and     a
 	sbc     hl,de
 	jp      c,_55a8
 	ld      hl,$0000
-	ld      ($d29b),hl
+	ld      ($D29B),hl
 	res     4,(ix+$18)
 	ret
 
@@ -9977,9 +10022,9 @@ _5105:
 
 _510a:
 	ld      (iy+vars.joypad),$ff
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $fa
-	ld      ($d414),a
+	ld      ($D414),a
 	ret
 
 ;____________________________________________________________________________[$5117]___
@@ -9987,17 +10032,17 @@ _510a:
 
 _5117:
 	dec     a
-	ld      ($d28a),a
+	ld      ($D28A),a
 	jr      z,++
 	cp      $14
 	jr      c,+
 	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),a
-	ld      ($d404),hl
-	ld      ($d406),a
-	ld      ($d407),hl
+	ld      ($D403),a
+	ld      ($D404),hl
+	ld      ($D406),a
+	ld      ($D407),hl
 	ld      (ix+$14),$0f
 	jp      _4c39
 	
@@ -10005,7 +10050,7 @@ _5117:
 	ld      (ix+$14),$0e
 	jp      _4c39
 	
-++	ld      hl,($d2d5)
+++	ld      hl,($D2D5)
 	ld      b,(hl)
 	inc     hl
 	ld      c,(hl)
@@ -10014,12 +10059,12 @@ _5117:
 	and     a
 	jr      z,+++
 	jp      m,+
-	ld      ($d2d3),a
+	ld      ($D2D3),a
 	set     4,(iy+vars.flags6)
 	jr      ++	
 +	set     2,(iy+$0d)
 ++	ld      a,$01
-	ld      ($d289),a
+	ld      ($D289),a
 	ret
 	
 +++	ld      a,b
@@ -10033,7 +10078,7 @@ _5117:
 	ld      l,a
 	ld      de,$0008
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	ld      a,c
 	ld      h,$00
 	add     a,a
@@ -10047,10 +10092,10 @@ _5117:
 	add     a,a
 	rl      h
 	ld      l,a
-	ld      ($d401),hl
+	ld      ($D401),hl
 	xor     a
-	ld      ($d3fd),a
-	ld      ($d400),a
+	ld      ($D3FD),a
+	ld      ($D400),a
 	ret
 
 ;____________________________________________________________________________[$5193]___
@@ -10060,10 +10105,10 @@ _5193:
 	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	ld      (ix+$14),$16
-	ld      a,($d40f)
+	ld      a,($D40F)
 	cp      $12
 	jp      c,_4c39
 	res     6,(iy+vars.unknown0)
@@ -10074,7 +10119,7 @@ _5193:
 
 _51b3:
 	dec     a
-	ld      ($d28c),a
+	ld      ($D28C),a
 	ld      (ix+$14),$11
 	ret
 
@@ -10089,19 +10134,19 @@ _51bc:
 	ret     z
 	res     6,(iy+vars.flags6)
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
 	ret
 
 ;____________________________________________________________________________[$51DD]___
 
 _51dd:
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $fa
-	ld      ($d414),a
+	ld      ($D414),a
 	ld      (ix+$14),$14
-	ld      hl,$d2fb
+	ld      hl,$D2FB
 	dec     (hl)
 	ret     nz
 	res     2,(iy+vars.unknown0)
@@ -10110,7 +10155,7 @@ _51dd:
 ;____________________________________________________________________________[$51F3]___
 
 _51f3:
-	ld      a,($d412)
+	ld      a,($D412)
 	and     a
 	ret     nz
 	bit     7,(ix+$18)
@@ -10118,13 +10163,13 @@ _51f3:
 	ld      a,$03
 	rst     $28			;`playSFX`
 	ld      a,$3c
-	ld      ($d412),a
+	ld      ($D412),a
 	ret
 
 ;____________________________________________________________________________[$5206]___
 
 _5206:
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	ret     nz
 	ld      d,$18
@@ -10156,7 +10201,7 @@ _521f:
 _5224:
 	bit     4,(ix+$18)
 	ret     z
-	ld      a,($d223)
+	ld      a,($D223)
 	and     a
 	call    z,_91eb
 	ret
@@ -10165,7 +10210,7 @@ _5224:
 
 _5231:
 	dec     a
-	ld      ($d2e1),a
+	ld      ($D2E1),a
 	cp      $06
 	jr      c,+
 	cp      $0a
@@ -10174,15 +10219,15 @@ _5231:
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      de,(RAM_CAMERA_Y)
-	ld      hl,($d2e4)
+	ld      hl,($D2E4)
 	and     a
 	sbc     hl,de
 	ex      de,hl
 	ld      bc,(RAM_CAMERA_X)
-	ld      hl,($d2e2)
+	ld      hl,($D2E2)
 	and     a
 	sbc     hl,bc
 	ld      bc,_526e		;address of sprite layout
@@ -10210,7 +10255,7 @@ _5280:
 
 _5285:
 	dec     a
-	ld      ($d28b),a
+	ld      ($D28B),a
 	ret     nz
 	
 	ld      a,(RAM_LEVEL_MUSIC)
@@ -10226,13 +10271,13 @@ _5285:
 
 _529c:
 	ld      (iy+vars.joypad),$fb
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      de,$1b60
 	and     a
 	sbc     hl,de
 	ret     nc
 	ld      (iy+vars.joypad),$ff
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      a,l
 	or      h
 	ret     nz
@@ -10240,7 +10285,7 @@ _529c:
 	pop     hl
 	set     1,(ix+$18)
 	ld      (ix+$14),$18
-	ld      hl,$d2fe
+	ld      hl,$D2FE
 	bit     0,(iy+$0d)
 	jr      nz,+
 	ld      (hl),$50
@@ -10254,13 +10299,13 @@ _529c:
 	ld      (ix+$11),a
 	ld      (ix+$18),a
 	ld      (ix+$01),a
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      de,$0002
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	ld      (ix+$04),a
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$000e
 	add     hl,de
 	ld      (ix+$05),l
@@ -10292,13 +10337,13 @@ _532e:
 	ld      a,(ix+$0e)
 	cp      $18
 	jr      z,+
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$0008
 	add     hl,de
-	ld      ($d401),hl
+	ld      ($D401),hl
 +	ld      (ix+$0d),$18
 	ld      (ix+$0e),$18
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      b,(ix+$09)
 	ld      c,$00
 	ld      e,c
@@ -10351,7 +10396,7 @@ _532e:
 	jr      z,++
 	ld      (ix+$14),$07
 	res     0,(ix+$18)
-	ld      de,($d2b7)
+	ld      de,($D2B7)
 	bit     7,d
 	jr      z,+
 	ld      hl,$ffb0
@@ -10359,7 +10404,7 @@ _532e:
 	sbc     hl,de
 	jp      nc,_4b49
 +	dec     de
-	ld      ($d2b7),de
+	ld      ($D2B7),de
 	jp      _4b49
 	
 ++	ld      (ix+$14),$09
@@ -10374,7 +10419,7 @@ _532e:
 	cpl     
 	ld      h,a
 	inc     hl
-++	ld      de,($d240)
+++	ld      de,($D240)
 	xor     a
 	sbc     hl,de
 	pop     hl
@@ -10399,9 +10444,9 @@ _5407:
 +	bit     5,(iy+vars.joypad)
 	jr      nz,+++
 	res     0,(ix+$18)
-	ld      a,($d403)
+	ld      a,($D403)
 	and     $f8
-	ld      ($d403),a
+	ld      ($D403),a
 	jp      _4b7f
 	
 ++	res     3,(ix+$18)
@@ -10414,19 +10459,19 @@ _5407:
 
 _543c:
 	set     5,(ix+$18)
-	ld      a,($d287)
+	ld      a,($D287)
 	cp      $60
 	jr      z,_54aa
 	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$00c0
 	add     hl,de
-	ld      de,($d401)
+	ld      de,($D401)
 	sbc     hl,de
 	jr      nc,+
 	bit     2,(iy+vars.flags6)
 	jr      nz,+
 	ld      a,$01
-	ld      ($d283),a
+	ld      ($D283),a
 	ld      hl,RAM_LIVES
 	dec     (hl)
 	set     2,(iy+vars.flags6)
@@ -10436,7 +10481,7 @@ _543c:
 	ld      hl,$0080
 	bit     3,(iy+vars.unknown0)
 	jr      nz,+++
-	ld      de,($d406)
+	ld      de,($D406)
 	bit     7,d
 	jr      nz,+
 	ld      hl,$0600
@@ -10455,13 +10500,13 @@ _543c:
 ++	add     hl,de
 	ld      a,b
 	adc     a,c
-+++	ld      ($d406),hl
-	ld      ($d408),a
++++	ld      ($D406),hl
+	ld      ($D408),a
 ++++	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 
 ;____________________________________________________________________________[$54AA]___
 ;jumped to from _48c8 (OBJECT: Sonic)
@@ -10498,7 +10543,7 @@ _54ce:
 	and     $1f
 	cp      $1a
 	ret     c
-	ld      a,($d414)
+	ld      a,($D414)
 	rrca    
 	jr      c,+
 	and     $02
@@ -10556,7 +10601,7 @@ _552d:
 	ret     c
 	bit     7,(ix+$18)
 	ret     z
-	ld      a,($d2b9)
+	ld      a,($D2B9)
 	and     $80
 	ret     nz
 	res     6,(iy+vars.flags6)
@@ -10591,13 +10636,13 @@ _5556:
 _5578:
 	bit     7,(ix+$18)
 	ret     z
-	ld      hl,($d3fd)
-	ld      a,($d3ff)
+	ld      hl,($D3FD)
+	ld      a,($D3FF)
 	ld      de,$fe80
 	add     hl,de
 	adc     a,$ff
-	ld      ($d3fd),hl
-	ld      ($d3ff),a
+	ld      ($D3FD),hl
+	ld      ($D3FF),a
 	ret
 
 ;____________________________________________________________________________[$5590]___
@@ -10606,13 +10651,13 @@ _5578:
 _5590:
 	bit     7,(ix+$18)
 	ret     z
-	ld      hl,($d3fd)
-	ld      a,($d3ff)
+	ld      hl,($D3FD)
+	ld      a,($D3FF)
 	ld      de,$0200
 	add     hl,de
 	adc     a,$00
-	ld      ($d3fd),hl
-	ld      ($d3ff),a
+	ld      ($D3FD),hl
+	ld      ($D3FF),a
 	ret
 
 ;____________________________________________________________________________[$55A8]___
@@ -10639,7 +10684,7 @@ _55b6:
 	ret     nc
 	bit     7,(ix+$18)
 	ret     z
-	ld      a,($d2b9)
+	ld      a,($D2B9)
 	and     $80
 	ret     nz
 	res     6,(iy+vars.flags6)
@@ -10666,14 +10711,14 @@ _55e2:
 _55eb:
 	bit     4,(iy+vars.flags6)
 	ret     nz
-	ld      a,($d3fe)
+	ld      a,($D3FE)
 	add     a,$0c
 	and     $1f
 	cp      $08
 	ret     c
 	cp      $18
 	ret     nc
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,l
@@ -10684,7 +10729,7 @@ _55eb:
 	add     a,a
 	rl      h
 	ld      e,h
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      bc,$0010
 	add     hl,bc
 	ld      a,l
@@ -10706,9 +10751,9 @@ _55eb:
 	cp      d
 	jr      nz,+
 	inc     hl
-	ld      ($d2d5),hl
+	ld      ($D2D5),hl
 	ld      a,$50
-	ld      ($d28a),a
+	ld      ($D28A),a
 	ld      a,$06
 	rst     $28			;`playSFX`
 	ret
@@ -10729,13 +10774,13 @@ _5643:
 ;referenced by table at _58e5
 
 _565c:
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	ld      de,$fff8
 	add     hl,de
 	adc     a,$ff
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	bit     4,(ix+$18)
 	jr      nz,+
 	ld      a,$12
@@ -10749,12 +10794,12 @@ _565c:
 _567c:
 	xor     a
 	ld      hl,$0005
-	ld      ($d403),a
-	ld      ($d404),hl
+	ld      ($D403),a
+	ld      ($D404),hl
 	res     1,(ix+$18)
 _568a:
 	ld      a,$06
-	ld      ($d28c),a
+	ld      ($D28C),a
 
 ;____________________________________________________________________________[$568F]___
 ;called by _48c8 (OBJECT: Sonic)
@@ -10764,7 +10809,7 @@ _568f:
 	or      $0f
 	ld      (iy+vars.joypad),a
 	ld      hl,$0004
-	ld      ($d407),hl
+	ld      ($D407),hl
 	res     0,(ix+$18)
 	res     2,(ix+$18)
 	ret
@@ -10775,8 +10820,8 @@ _568f:
 _56a6:
 	xor     a
 	ld      hl,$0006
-	ld      ($d403),a
-	ld      ($d404),hl
+	ld      ($D403),a
+	ld      ($D404),hl
 	res     1,(ix+$18)
 	jr      _568a
 
@@ -10786,8 +10831,8 @@ _56a6:
 _56b6:
 	xor     a
 	ld      hl,$fffb
-	ld      ($d403),a
-	ld      ($d404),hl
+	ld      ($D403),a
+	ld      ($D404),hl
 	set     1,(ix+$18)
 	jr      _568a
 
@@ -10797,8 +10842,8 @@ _56b6:
 _56c6:
 	xor     a
 	ld      hl,$fffa
-	ld      ($d403),a
-	ld      ($d404),hl
+	ld      ($D403),a
+	ld      ($D404),hl
 	set     1,(ix+$18)
 	jr      _568a
 	
@@ -10806,19 +10851,19 @@ _56c6:
 ;referenced by table at _58e5
 
 _56d6:
-	ld      a,($d2e1)
+	ld      a,($D2E1)
 	cp      $08
 	ret     nc
 	call    _5727
 	ld      de,$0001
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$00
@@ -10827,24 +10872,24 @@ _56d6:
 	ld      de,$ffc8
 	add     hl,de
 	adc     a,$ff
-+	ld      ($d406),hl
-	ld      ($d408),a
++	ld      ($D406),hl
+	ld      ($D408),a
 	ld      bc,$000c
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	add     hl,bc
 	ld      a,l
 	and     $e0
 	ld      l,a
-	ld      ($d2e2),hl
+	ld      ($D2E2),hl
 	ld      bc,$0010
-	ld      hl,($d401)
+	ld      hl,($D401)
 	add     hl,bc
 	ld      a,l
 	and     $e0
 	ld      l,a
-	ld      ($d2e4),hl
+	ld      ($D2E4),hl
 	ld      a,$10
-	ld      ($d2e1),a
+	ld      ($D2E1),a
 	ld      a,$07
 	rst     $28			;`playSFX`
 	ret
@@ -10852,12 +10897,12 @@ _56d6:
 ;____________________________________________________________________________[$5727]___
 
 _5727:
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	ld      c,a
 	and     $80
 	ld      b,a
-	ld      a,($d3fe)
+	ld      a,($D3FE)
 	add     a,$0c
 	and     $1f
 	sub     $10
@@ -10885,8 +10930,8 @@ _5727:
 	rr      e
 	add     hl,de
 	adc     a,c
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ret
 
 ;____________________________________________________________________________[$5761]___
@@ -10926,18 +10971,18 @@ _5781:
 ;referenced by table at _58e5
 
 _5791:
-	ld      a,($d2b1)
+	ld      a,($D2B1)
 	and     a
 	ret     nz
 	ld      de,$0001
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d405)
+	ld      a,($D405)
 	cpl     
 	add     hl,de
 	adc     a,$00
@@ -10948,10 +10993,10 @@ _5791:
 	ld      c,$00
 +	add     hl,de
 	adc     a,c
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 _57be:
-	ld      hl,$d2b1
+	ld      hl,$D2B1
 	ld      (hl),$04
 	inc     hl
 	ld      (hl),$0e
@@ -10967,14 +11012,14 @@ _57be:
 _57cd:
 	call    _5727
 	ld      de,$0001
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$00
@@ -10983,15 +11028,15 @@ _57cd:
 	ld      de,$ffc8
 	add     hl,de
 	adc     a,$ff
-+	ld      ($d406),hl
-	ld      ($d408),a
++	ld      ($D406),hl
+	ld      ($D408),a
 	jp      _57be
 
 ;____________________________________________________________________________[$57F6]___
 ;referenced by table at _58e5
 
 _57f6:
-	ld      hl,($d2e9)
+	ld      hl,($D2E9)
 	ld      de,$0082
 	and     a
 	sbc     hl,de
@@ -11004,10 +11049,10 @@ _57f6:
 ;referenced by table at _58e5
 
 _5808:
-	ld      a,($d414)
+	ld      a,($D414)
 	rlca    
 	ret     nc
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,l
@@ -11015,14 +11060,14 @@ _5808:
 	cp      $10
 	jr      nc,_5858
 _581b:
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,l
 	and     $e0
 	ld      c,a
 	ld      b,h
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$0010
 	add     hl,de
 	ld      a,l
@@ -11047,7 +11092,7 @@ _5849:
 ;referenced by table at _58e5
 
 _584b:
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,l
@@ -11060,7 +11105,7 @@ _5858:
 	add     a,$10
 	ld      c,a
 	ld      b,h
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$0010
 	add     hl,de
 	ld      a,l
@@ -11084,7 +11129,7 @@ _5858:
 ;referenced by table at _58e5
 
 _5883:
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      a,l
@@ -11130,7 +11175,7 @@ _5893:
 _58d0:
 	bit     7,(ix+$18)
 	ret     z
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
@@ -11162,9 +11207,13 @@ _594b:
 .db $B4, $B6, $B8, $FF, $FF, $FF
 .db $BA, $BC, $BE, $FF, $FF, $FF
 .db $FE, $9C, $9E, $FF, $FF, $FF
+_595d:
 .db $00, $00, $00, $00, $00, $00, $00, $00
 _5965:
-.db $99, $59, $99, $59, $CB, $59, $DD, $59, $DF, $59, $E2, $59, $E5, $59, $FB, $59, $FE, $59, $01, $5A, $53, $5A, $65, $5A, $68, $5A, $6B, $5A, $AF, $5A, $C5, $5A, $CC, $5A, $D0, $5A, $DE, $5A, $E1, $5A, $E4, $5A, $E7, $5A, $EA, $5A, $00, $5B, $03, $5B, $06, $5B, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $01, $01, $01, $02, $02, $02, $02, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $FF, $00, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $FF, $00, $FF, $00, $13, $FF, $00, $06, $FF, $00, $08, $08, $08, $08, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $FF, $00, $07, $FF, $00, $00, $FF, $00, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $FF, $00, $13, $13, $13, $13, $13, $13, $13, $13, $25, $25, $25, $25, $25, $25, $25, $25, $FF, $00, $11, $FF, $00, $14, $FF, $00, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $FF, $22, $19, $19, $19, $19, $1A, $1A, $1B, $1B, $1C, $1C, $1D, $1D, $1E, $1E, $1F, $1F, $20, $20, $21, $21, $FF, $12, $0C, $08, $09, $0A, $0B, $FF, $00, $12, $12, $FF, $00, $12, $12, $12, $12, $12, $12, $24, $24, $24, $24, $24, $24, $FF, $00, $00, $FF, $00, $26, $FF, $00, $22, $FF, $00, $23, $FF, $00, $21, $21, $20, $20, $1F, $1F, $1E, $1E, $1D, $1D, $1C, $1C, $1B, $1B, $1A, $1A, $19, $19, $19, $19, $FF, $12, $19, $FF, $00, $1A, $FF, $00, $1B, $FF, $00
+.db $99, $59, $99, $59, $CB, $59, $DD, $59, $DF, $59, $E2, $59, $E5, $59, $FB, $59
+.db $FE, $59, $01, $5A, $53, $5A, $65, $5A, $68, $5A, $6B, $5A, $AF, $5A, $C5, $5A
+.db $CC, $5A, $D0, $5A, $DE, $5A, $E1, $5A, $E4, $5A, $E7, $5A, $EA, $5A, $00, $5B
+.db $03, $5B, $06, $5B, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $01, $01, $01, $02, $02, $02, $02, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $FF, $00, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $FF, $00, $FF, $00, $13, $FF, $00, $06, $FF, $00, $08, $08, $08, $08, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $FF, $00, $07, $FF, $00, $00, $FF, $00, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $FF, $00, $13, $13, $13, $13, $13, $13, $13, $13, $25, $25, $25, $25, $25, $25, $25, $25, $FF, $00, $11, $FF, $00, $14, $FF, $00, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $17, $FF, $22, $19, $19, $19, $19, $1A, $1A, $1B, $1B, $1C, $1C, $1D, $1D, $1E, $1E, $1F, $1F, $20, $20, $21, $21, $FF, $12, $0C, $08, $09, $0A, $0B, $FF, $00, $12, $12, $FF, $00, $12, $12, $12, $12, $12, $12, $24, $24, $24, $24, $24, $24, $FF, $00, $00, $FF, $00, $26, $FF, $00, $22, $FF, $00, $23, $FF, $00, $21, $21, $20, $20, $1F, $1F, $1E, $1E, $1D, $1D, $1C, $1C, $1B, $1B, $1A, $1A, $19, $19, $19, $19, $FF, $12, $19, $FF, $00, $1A, $FF, $00, $1B, $FF, $00
 
 ;____________________________________________________________________________[$5B09]___
 
@@ -11193,7 +11242,7 @@ _5b34:
 	call    _c1d
 	ld      (ix+$0f),<_5bbf
 	ld      (ix+$10),>_5bbf
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	cp      $05
 	ret     nc
@@ -11267,7 +11316,7 @@ _5bd9:
 	call    _5deb
 	jr      c,+
 	ld      a,$f0
-	ld      ($d411),a
+	ld      ($D411),a
 	ld      a,$02
 	rst     $28			;`playSFX`
 	jp      _5b29
@@ -11305,7 +11354,7 @@ _5c05:
 	inc     (hl)
 	
 	;set the level's bit flag at $D305+
-	ld      hl,$d305
+	ld      hl,$D305
 	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
@@ -11322,7 +11371,7 @@ _5c05:
 	cp      28			;special stage?
 	ret     nc
 	
-	ld      hl,$d280
+	ld      hl,$D280
 	inc     (hl)
 	ret
 	
@@ -11358,7 +11407,7 @@ _5c05:
 	jr      -
 	
 ++	set     2,(ix+$18)
-	ld      hl,$d317
+	ld      hl,$D317
 	call    getLevelBitFlag
 	ld      a,(hl)
 	ld      hl,$5180
@@ -11374,7 +11423,7 @@ _5c05:
 	ld      (ix+$09),$00
 	jr      -
 	
-++++	ld      a,($d280)
+++++	ld      a,($D280)
 	cp      $11
 	jr      nc,-
 	ld      (ix+$00),$ff
@@ -11414,7 +11463,7 @@ _5cff:
 	jr      c,+
 	set     0,(iy+vars.unknown0)
 	ld      a,$f0
-	ld      ($d28d),a
+	ld      ($D28D),a
 	
 	ld      a,index_music_invincibility
 	rst     $18			;`playMusic`
@@ -11438,7 +11487,7 @@ _5d2f:
 	call    _5deb
 	jr      c,+
 	
-	ld      hl,$d311
+	ld      hl,$D311
 	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
@@ -11448,7 +11497,7 @@ _5d2f:
 	add     a,a
 	ld      e,a
 	ld      d,$00
-	ld      hl,$d32e
+	ld      hl,$D32E
 	add     hl,de
 	ex      de,hl			;DE is $D32E + level number * 2
 	ld      l,(ix+$02)
@@ -11528,10 +11577,10 @@ _5da8:
 _5deb:
 	ld      hl,$0804
 	ld      (RAM_TEMP1),hl
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $01
 	jr      nz,++
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	ld      c,(ix+$02)
 	ld      b,(ix+$03)
 	ld      hl,$ffee
@@ -11544,28 +11593,28 @@ _5deb:
 	and     a
 	sbc     hl,de
 	jr      c,+++
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $04
 	jr      nz,+
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      a,($d40a)
+	ld      a,($D40A)
 	ld      c,a
 	xor     a
 	ld      b,a
 	sbc     hl,bc
-	ld      ($d401),hl
-	ld      ($d28e),a
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
-	ld      hl,$d414
+	ld      ($D401),hl
+	ld      ($D28E),a
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
+	ld      hl,$D414
 	set     7,(hl)
 	scf     
 	ret
 
-+	ld      a,($d408)
++	ld      a,($D408)
 	and     a
 	jp      m,+
 ++	call    _36be
@@ -11577,14 +11626,14 @@ _5deb:
 	ld      (ix+$0c),$ff
 	ld      hl,$0400
 	xor     a
-	ld      ($d406),hl
-	ld      ($d408),a
-	ld      ($d28e),a
+	ld      ($D406),hl
+	ld      ($D408),a
+	ld      ($D28e),a
 	set     1,(ix+$18)
 	scf     
 	ret
 
-+++	ld      hl,($d3fe)
++++	ld      hl,($D3FE)
 	ld      de,$000c
 	add     hl,de
 	ex      de,hl
@@ -11600,13 +11649,13 @@ _5deb:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,bc
-	ld      ($d3fe),hl
+	ld      ($D3fe),hl
 	xor     a
-	ld      ($d3fd),a
+	ld      ($D3FD),a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),a
-	ld      ($d404),hl
+	ld      ($D403),a
+	ld      ($D404),hl
 	scf     
 	ret
 
@@ -11614,7 +11663,7 @@ _5deb:
 
 ;OBJECT: chaos emerald	
 _5ea2:	
-	ld      hl,$d30b
+	ld      hl,$D30B
 	call    getLevelBitFlag
 	ld      a,(hl)
 	and     c
@@ -11629,15 +11678,15 @@ _5ea2:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
-	ld      hl,$d30b
+	ld      hl,$D30B
 	call    getLevelBitFlag
 	ld      a,(hl)
 	or      c
 	ld      (hl),a
-	ld      hl,$d27f
+	ld      hl,$D27F
 	inc     (hl)
 	ld      a,$fe
-	ld      ($d28b),a
+	ld      ($D28B),a
 	
 	ld      a,index_music_emerald
 	rst     $18			;`playMusic`
@@ -11645,7 +11694,7 @@ _5ea2:
 +	ld      (ix+$00),$ff
 	ret
 
-++	ld      a,($d223)
+++	ld      a,($D223)
 	rrca    
 	jr      c,+
 	ld      (ix+$0f),<_5f10
@@ -11687,7 +11736,7 @@ _5f17:
 	
 	;load the end-sign palette
 	ld      hl,S1_EndSign_Palette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	
 	set     0,(ix+$11)
@@ -11702,12 +11751,12 @@ _5f17:
 	ld      (RAM_LEVEL_RIGHT),hl
 	
 	ld      hl,$0080
-	ld      ($d26b),hl
+	ld      ($D26B),hl
 	ld      hl,$0088
-	ld      ($d26d),hl
+	ld      ($D26D),hl
 	
 	ld      c,(ix+$13)
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $80
 	ld      (ix+$13),a
 	jr      z,++
@@ -11717,7 +11766,7 @@ _5f17:
 	jr      z,++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	bit     7,h
@@ -11760,7 +11809,7 @@ _5f17:
 	res     2,(ix+$11)
 	set     3,(ix+$11)
 	ld      a,$a0
-	ld      ($d289),a
+	ld      ($D289),a
 	set     1,(iy+vars.flags6)
 	jp      ++
 	
@@ -11772,7 +11821,7 @@ _5f17:
 	jr      nz,++
 	bit     1,(ix+$11)
 	jr      nz,++
-	ld      de,($d403)
+	ld      de,($D403)
 	bit     7,d
 	jr      z,+
 	ld      a,e
@@ -11840,7 +11889,7 @@ _5f17:
 	ld      de,$618e
 	ld      c,$01
 +++	ld      a,c
-	ld      ($d288),a
+	ld      ($D288),a
 __	ld      l,(ix+$12)
 	ld      h,$00
 	add     hl,de
@@ -11861,7 +11910,7 @@ __	ld      l,(ix+$12)
 	add     hl,hl
 	add     hl,hl
 	add     hl,de
-	ld      de,$61dc
+	ld      de,_61dc
 	add     hl,de
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
@@ -11938,7 +11987,7 @@ _6157:
 .db $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $04, $04, $04, $04, $04, $04, $FF, $00, $00, $FF, $00, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $01, $01, $01, $01, $01, $01, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $05, $05, $05, $05, $05, $05, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $06, $06, $06, $06, $06, $06, $FF, $12, $00, $00, $00, $00, $00, $00, $03, $03, $03, $03, $03, $03, $02, $02, $02, $02, $02, $02, $07, $07, $07, $07, $07, $07, $FF, $12
 
 ;these are sprite layouts
-
+_61dc:
 .db $4E, $50, $52, $54, $FF, $FF
 .db $6E, $70, $72, $74, $FF, $FF
 .db $FE, $42, $44, $FF, $FF, $FF
@@ -11971,7 +12020,7 @@ _6157:
 .db $6E, $66, $68, $74, $FF, $FF
 .db $FE, $42, $44, $FF, $FF, $FF
 
-;____________________________________________________________________________[$626C]___
+;----------------------------------------------------------------------------[$626C]---
 
 S1_EndSign_Palette:
 .db $38, $20, $35, $1b, $16, $2a, $00, $3f, $03, $0f, $01, $00, $00, $00, $00, $00
@@ -12215,13 +12264,13 @@ _66f9:					;sprite layouts
 _673c:
 	set     5,(ix+$18)
 	ld      hl,$0020
-	ld      ($d267),hl
+	ld      ($D267),hl
 	ld      hl,$0048
-	ld      ($d269),hl
+	ld      ($D269),hl
 	ld      hl,$0030
-	ld      ($d26b),hl
+	ld      ($D26B),hl
 	ld      hl,$0030
-	ld      ($d26d),hl
+	ld      ($D26D),hl
 	bit     0,(ix+$18)
 	jr      nz,+
 	ld      l,(ix+$02)
@@ -12272,17 +12321,17 @@ _673c:
 	add     hl,de
 	ld      (ix+$05),l
 	ld      (ix+$06),h
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+
 	ld      hl,$0806
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      de,(RAM_TEMP1)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	ld      bc,$0010
 	ld      de,$0000
 	call    _LABEL_7CC1_12
@@ -12436,15 +12485,18 @@ _6911:
 _6923:
 .db $FE, $FF, $FF, $FF, $FF, $FF
 .db $6C, $6E, $6E, $48, $FF, $FF
-.db $FF, $FF, $FE, $FF, $FF, $FF
+.db $FF, $FF
+
+_6931:
+.db $FE, $FF, $FF, $FF
 .db $FF, $FF
 
 .db $6C, $6E, $6C, $6E, $FF, $FF
 .db $FF, $FF
 
 ;____________________________________________________________________________[$693F]___
+;OBJECT: Explosion
 
-;OBJECT: UNKNOWN
 _693f:
 	set     5,(ix+$18)
 	ld      a,(ix+$15)
@@ -12460,28 +12512,28 @@ _693f:
 	ld      a,(RAM_CURRENT_LEVEL)
 	cp      $12
 	jr      z,+
-	ld      a,($d414)
+	ld      a,($D414)
 	rlca    
 	jr      c,+
-	ld      a,($d2e8)
-	ld      de,($d2e6)
+	ld      a,($D2E8)
+	ld      de,($D2E6)
 	inc     de
 	ld      c,a
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+
 	cpl     
 	add     hl,de
 	adc     a,c
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 +	xor     a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
@@ -12522,7 +12574,7 @@ _69e9:
 	ld      (ix+$0e),$10
 	ld      (ix+$0f),<_6911
 	ld      (ix+$10),>_6911
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,++
 	ld      hl,$0806
@@ -12574,9 +12626,9 @@ _6a47:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-+	ld      (ix+$0d),$1a
++	ld      (ix+$0d),$1a		;this can't mean `_101a`?
 	ld      (ix+$0e),$10
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+
 	ld      hl,$0806
@@ -12588,7 +12640,7 @@ _6a47:
 	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	call    _LABEL_7CC1_12
-+	ld      hl,$6911
++	ld      hl,_6911
 	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
@@ -12645,7 +12697,7 @@ _6ac1:
 	cp      $0b
 	jr      z,+
 	ld      hl,_6b70
-+	ld      a,($d223)
++	ld      a,($D223)
 	and     $01
 	ld      e,a
 	ld      d,$00
@@ -12717,7 +12769,7 @@ _6b74:
 	ld      (ix+$0e),$20
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -12886,17 +12938,17 @@ _6d65:
 	cp      $07
 	jr      z,+
 	ld      hl,$0020
-	ld      ($d267),hl
+	ld      ($D267),hl
 	ld      hl,$0048
-	ld      ($d269),hl
+	ld      ($D269),hl
 	ld      hl,$0030
-	ld      ($d26b),hl
+	ld      ($D26B),hl
 	ld      hl,$0030
-	ld      ($d26d),hl
+	ld      ($D26D),hl
 +	ld      (ix+$0d),$1a
 	ld      (ix+$0e),$10
 	ld      c,$00
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+
 	ld      hl,$0806
@@ -12932,14 +12984,14 @@ _6d65:
 	ld      a,c
 	and     a
 	jr      z,+
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	add     hl,de
-	ld      ($d3fe),hl
-+	ld      hl,$6911
+	ld      ($D3FE),hl
++	ld      hl,_6911
 	ld      a,(RAM_LEVEL_SOLIDITY)
 	and     a
 	jr      z,+
-	ld      hl,$6931
+	ld      hl,_6931
 	dec     a
 	jr      z,+
 	ld      hl,_6923
@@ -13057,7 +13109,7 @@ _6f08:
 	jr      z,+
 	and     a
 	jr      nz,+++
-+	ld      a,($d223)
++	ld      a,($D223)
 	and     $01
 	jr      z,+
 	ld      bc,$0000
@@ -13172,14 +13224,14 @@ _700c:
 	call    decompressArt
 	
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	
 	ld      a,index_music_boss1
 	rst     $18			;`playMusic`
 	
 	xor     a
-	ld      ($d2ec),a
+	ld      ($D2EC),a
 	ld      (ix+$12),a
 	ld      (ix+$14),$a1
 	ld      (ix+$15),$72
@@ -13380,7 +13432,7 @@ _700c:
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,$0012
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _77be
 	call    _79fa
 	inc     (ix+$13)
@@ -13428,7 +13480,7 @@ _732c:
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      hl,_757c
-+	ld      a,($d223)
++	ld      a,($D223)
 	rrca    
 	jr      nc,+
 	ld      de,$000c
@@ -13441,19 +13493,19 @@ _732c:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,bc
-	ld      ($d2ab),hl
+	ld      ($D2AB),hl
 	ex      de,hl
 	ld      c,(hl)
 	inc     hl
 	ld      b,(hl)
 	inc     hl
-	ld      ($d2af),hl
+	ld      ($D2AF),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,bc
-	ld      ($d2ad),hl
+	ld      ($D2AD),hl
 	ld      hl,_752e
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $10
 	jr      z,+
 	ld      hl,_7552
@@ -13473,12 +13525,12 @@ _732c:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jp      c,+++
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+++
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d401)
+	ld      hl,($D401)
 	and     a
 	sbc     hl,de
 	jr      c,++
@@ -13487,7 +13539,7 @@ _732c:
 	ld      de,$0010
 	add     hl,de
 	ld      de,$ffea
-	ld      bc,($d3fe)
+	ld      bc,($D3FE)
 	and     a
 	sbc     hl,bc
 	jr      nc,+
@@ -13495,10 +13547,10 @@ _732c:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	jp      +
 	
-++	ld      hl,($d3fe)
+++	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	ld      c,l
@@ -13526,12 +13578,12 @@ _732c:
 	ld      de,$ffe0
 	add     hl,de
 	add     hl,bc
-	ld      ($d401),hl
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
-	ld      hl,$d414
+	ld      ($D401),hl
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
+	ld      hl,$D414
 	set     7,(hl)
 	ld      a,c
 	cp      $03
@@ -13544,8 +13596,8 @@ _732c:
 +	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 +++	bit     1,(iy+vars.flags6)
 	ret     z
 ++	ld      a,(ix+$12)
@@ -13563,7 +13615,7 @@ _732c:
 +	bit     1,(ix+$18)
 	jr      nz,+
 	ld      a,$a0
-	ld      ($d289),a
+	ld      ($D289),a
 	
 	ld      a,index_music_actComplete
 	rst     $18			;`playMusic`
@@ -13573,7 +13625,7 @@ _732c:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	res     5,(iy+vars.flags0)
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $0f
 	ret     nz
 	call    _LABEL_625_57
@@ -13590,7 +13642,7 @@ _732c:
 ;____________________________________________________________________________[$74B6]___
 
 _74b6:
-	ld      ($d216),a
+	ld      ($D216),a
 	call    _7c7b
 	ret     c
 	ld      e,(ix+$02)
@@ -13600,7 +13652,7 @@ _74b6:
 	push    ix
 	push    hl
 	pop     ix
-	ld      a,($d216)
+	ld      a,($D216)
 	ld      (ix+$00),a
 	xor     a
 	ld      (ix+$16),a
@@ -13860,10 +13912,10 @@ _77b1:
 ;called by the boss object code -- probably the exploded egg ship
 
 _77be:
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $08
 	jr      nc,+++
-	ld      a,($d2b1)
+	ld      a,($D2B1)
 	and     a
 	jp      nz,++
 	ld      hl,$0c08
@@ -13872,42 +13924,42 @@ _77be:
 	ret     c
 	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz
-	ld      a,($d414)
+	ld      a,($D414)
 	rrca    
 	jr      c,+
 	and     $02
 	jp      z,_35fd
 +	ld      de,$0001
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$00
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ld      a,$18
-	ld      ($d2b1),a
+	ld      ($D2B1),a
 	ld      a,$8f
-	ld      ($d2b2),a
+	ld      ($D2B2),a
 	ld      a,$3f
-	ld      ($d2b3),a
+	ld      ($D2B3),a
 	ld      a,$01
 	rst     $28			;`playSFX`
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	inc     a
-	ld      ($d2ec),a
-++	ld      hl,($d216)
+	ld      ($D2EC),a
+++	ld      hl,($D216)
 	ld      de,_7922
 	add     hl,de
 	bit     1,(ix+$18)
@@ -13916,7 +13968,7 @@ _77be:
 	add     hl,de
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ld      hl,$d2ed
+	ld      hl,$D2ED
 	ld      (hl),$18
 	inc     hl
 	ld      (hl),$00
@@ -13930,7 +13982,7 @@ _77be:
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
 	ld      de,$0024
-	ld      hl,($d216)
+	ld      hl,($D216)
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      de,$0036
@@ -13939,7 +13991,7 @@ _77be:
 	add     hl,de
 	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ld      hl,$d2ee
+	ld      hl,$D2EE
 	ld      a,(hl)
 	cp      $0a
 	jp      nc,+
@@ -13952,7 +14004,7 @@ _77be:
 	call    _7a3a
 	ret
 	
-+	ld      a,($d2ee)
++	ld      a,($D2EE)
 	cp      $3a
 	jr      nc,+
 	ld      l,(ix+$04)
@@ -13964,7 +14016,7 @@ _77be:
 	ld      (ix+$04),l
 	ld      (ix+$05),h
 	ld      (ix+$06),a
-+	ld      hl,$d2ee
++	ld      hl,$D2EE
 	ld      a,(hl)
 	cp      $5a
 	jr      nc,+
@@ -14001,7 +14053,7 @@ _77be:
 	ld      hl,$2000		;8192 -- max width of a level in pixels
 	ld      (RAM_LEVEL_RIGHT),hl
 	ld      hl,$0000
-	ld      ($d27b),hl
+	ld      ($D27B),hl
 	
 	set     5,(iy+vars.flags0)
 	set     0,(iy+vars.flags2)
@@ -14014,7 +14066,7 @@ _77be:
 	set     1,(iy+vars.flags9)
 	
 +	;UNKNOWN
-	ld      hl,$da28
+	ld      hl,$DA28
 	ld      de,$2000
 	ld      a,12
 	call    decompressArt
@@ -14076,7 +14128,7 @@ _79fa:
 	ld      a,(ix+$07)
 	or      (ix+$08)
 	ret     z
-	ld      a,($d223)
+	ld      a,($D223)
 	bit     0,a
 	ret     nz
 	and     $02
@@ -14162,18 +14214,18 @@ _7aa7:
 	ret     c
 	bit     6,(iy+vars.flags6)
 	ret     nz
-	ld      a,($d414)
+	ld      a,($D414)
 	and     $80
 	ret     z
 	ld      hl,$fffb
 	xor     a
-	ld      ($d406),a
-	ld      ($d407),hl
+	ld      ($D406),a
+	ld      ($D407),hl
 	ld      hl,$0003
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),hl
-	ld      hl,$d414
+	ld      ($D403),a
+	ld      ($D404),hl
+	ld      hl,$D414
 	res     1,(hl)
 	set     6,(iy+vars.flags6)
 	ld      (iy+vars.joypad),$ff
@@ -14194,16 +14246,16 @@ _7aed:
 +	ld      bc,$0000
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d2ab),hl
+	ld      ($D2AB),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
-	ld      a,($d223)
+	ld      a,($D223)
 	rrca    
 	jr      nc,+
 	ld      de,$0010
 	add     hl,de
 	inc     bc
-+	ld      ($d2ad),hl
++	ld      ($D2AD),hl
 	ld      a,(ix+$12)
 	add     a,a
 	add     a,a
@@ -14221,11 +14273,11 @@ _7aed:
 	ld      d,$00
 	ld      hl,_7b5d
 	add     hl,de
-	ld      ($d2af),hl
+	ld      ($D2AF),hl
 	pop     hl
 	inc     hl
 	inc     hl
-	ld      a,($d223)
+	ld      a,($D223)
 	rrca    
 	ret     c
 	dec     (ix+$11)
@@ -14250,7 +14302,7 @@ _7b85:
 _7b95:
 	set     5,(ix+$18)
 	set     0,(iy+vars.flags9)
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	jp      z,+
 	ld      a,(ix+$12)
@@ -14268,7 +14320,7 @@ _7b95:
 	ld      a,(hl)
 	ld      (ix+$0f),e
 	ld      (ix+$10),d
-	ld      ($d302),a
+	ld      ($D302),a
 	jr      ++
 	
 +	ld      (ix+$0f),a
@@ -14369,7 +14421,7 @@ _7c41:
 ;____________________________________________________________________________[$7C7B]___	
 
 _7c7b:
-	ld      hl,$d416
+	ld      hl,$D416
 	ld      de,$001a
 	ld      b,$1f
 	
@@ -14388,8 +14440,8 @@ _7c7b:
 _7c8c:
 ;HL : ?
 ;DE : ?
-	ld      ($d27b),hl
-	ld      ($d27d),de
+	ld      ($D27B),hl
+	ld      ($D27D),de
 	
 	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_LEFT),hl
@@ -14403,12 +14455,12 @@ _7c8c:
 ;____________________________________________________________________________[$7CA6]___
 
 _7ca6:
-	ld      hl,($d27b)
+	ld      hl,($D27B)
 	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ret     nz
-	ld      hl,($d27d)
+	ld      hl,($D27D)
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
@@ -14556,9 +14608,9 @@ _7df7:
 _7e02:
 	set     5,(ix+$18)
 	ld      hl,$0030
-	ld      ($d267),hl
+	ld      ($D267),hl
 	ld      hl,$0058
-	ld      ($d269),hl
+	ld      ($D269),hl
 	ld      (ix+$0d),$0c
 	ld      (ix+$0e),$10
 	ld      (ix+$0f),<_7e89
@@ -14574,8 +14626,8 @@ _7e02:
 _7e3c:
 	ld      (ix+$0a),$80
 	xor     a
-	ld   (ix+11), a
-	ld   (ix+12), a
+	ld   (ix+$0B), a
+	ld   (ix+$0C), a
 	ld   a, ($D408)
 	and  a
 	jp   m, +
@@ -14584,23 +14636,23 @@ _7e3c:
 	call _LABEL_3956_11
 	jr   c, +
 	ld   bc, $0010
-	ld   e, (ix+10)
-	ld   d, (ix+11)
+	ld   e, (ix+$0A)
+	ld   d, (ix+$0B)
 	call _LABEL_7CC1_12
 +	ld   a, ($D223)
 	and  $03
 	ret  nz
-	inc  (ix+17)
-	ld   a, (ix+17)
-	cp   (ix+20)
+	inc  (ix+$11)
+	ld   a, (ix+$11)
+	cp   (ix+$14)
 	ret  c
 	xor  a
-	ld   (ix+17), a
-	ld   (ix+4), a
-	ld   a, (ix+18)
-	ld   (ix+5), a
-	ld   a, (ix+19)
-	ld   (ix+6), a
+	ld   (ix+$11), a
+	ld   (ix+$04), a
+	ld   a, (ix+$12)
+	ld   (ix+$05), a
+	ld   a, (ix+$13)
+	ld   (ix+$06), a
 	ret
 
 ;sprite layout
@@ -14615,9 +14667,9 @@ _7e89:
 _7e9b:
 	set     5,(ix+$18)
 	ld      hl,$0030
-	ld      ($d267),hl
+	ld      ($D267),hl
 	ld      hl,$0058
-	ld      ($d269),hl
+	ld      ($D269),hl
 	ld      (ix+$0d),$1a
 	ld      (ix+$0e),$10
 	ld      (ix+$0f),<_7ed9
@@ -14664,7 +14716,7 @@ _7ee6:
 	ld      (ix+$0a),$c0
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
-+	ld      a,($d408)
++	ld      a,($D408)
 	and     a
 	jp      m,_8003
 	ld      hl,$0806
@@ -14675,7 +14727,7 @@ _7ee6:
 	ld      e,(ix+$0a)
 	ld      d,(ix+$0b)
 	call    _LABEL_7CC1_12
-	ld      hl,($d403)
+	ld      hl,($D403)
 	ld      a,l
 	or      h
 	jr      z,++
@@ -14687,7 +14739,7 @@ _7ee6:
 	call    _36f9
 	ld      e,(hl)
 	ld      d,$00
-	ld      a,($d2d4)
+	ld      a,(RAM_LEVEL_SOLIDITY)
 	add     a,a
 	ld      c,a
 	ld      b,d
@@ -14703,8 +14755,8 @@ _7ee6:
 	ld      a,d
 	ld      e,d
 	jr      nz,+
-++	ld      a,($d403)
-	ld      de,($d404)
+++	ld      a,($D403)
+	ld      de,($D404)
 	sra     d
 	rr      e
 	rra     
@@ -14715,11 +14767,11 @@ _7ee6:
 	ld      (ix+$01),a
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      ($d3fd),a
+	ld      ($D3FD),a
 	ld      de,$fffc
 	add     hl,de
-	ld      ($d3fe),hl
-	ld      de,($d403)
+	ld      ($D3FE),hl
+	ld      de,($D403)
 	bit     7,d
 	jr      z,+
 	ld      a,e
@@ -14809,12 +14861,12 @@ _8053:
 	ld      (ix+$0e),$1c
 	bit     0,(ix+$18)
 	jr      nz,+
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$00e0
 	and     a
 	sbc     hl,de
 	ret     nc
-	ld      a,($d414)
+	ld      a,($D414)
 	rlca    
 	ret     nc
 	;boss sprite set
@@ -14824,14 +14876,14 @@ _8053:
 	call    decompressArt
 	
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	
 	ld      a,index_music_boss1
 	rst     $18			;`playMusic`
 	
 	xor     a
-	ld      ($d2ec),a
+	ld      ($D2EC),a
 	
 	;there's a routine at `_7c8c` for setting the scroll positions that should
 	 ;have been used here?
@@ -14843,9 +14895,9 @@ _8053:
 	ld      (RAM_LEVEL_TOP),hl
 	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$01f0
-	ld      ($d27b),hl
+	ld      ($D27B),hl
 	ld      hl,$0048
-	ld      ($d27d),hl
+	ld      ($D27D),hl
 	
 	set     0,(ix+$18)
 	
@@ -14924,7 +14976,7 @@ _8053:
 +++	ld      a,(ix+$11)
 	xor     $02
 	ld      (ix+$11),a
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $08
 	jr      nc,++++
 	call    _7c7b
@@ -14963,7 +15015,7 @@ _8053:
 	ld      (ix+$12),a
 	pop     ix
 ++++	ld      hl,$005a
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _77be
 	call    _79fa
 	ret
@@ -15018,7 +15070,7 @@ _8218:
 +	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	add     a,(ix+$11)
 	ld      (ix+$11),a
@@ -15031,7 +15083,7 @@ _8218:
 	ret
 	
 +	jr      nz,+
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	ret     z
 	ld      (ix+$16),$00
@@ -15109,7 +15161,7 @@ _82e6:
 	ld      de,_837e
 	ld      bc,_8374
 	call    _7c41
-++	ld      a,($d223)
+++	ld      a,($D223)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -15143,7 +15195,7 @@ _837e:
 .db $FF
 
 ;____________________________________________________________________________[$83C1]___
-;OBJECT: UNKNOWN
+;OBJECT: falling bridge (Bridge)
 
 _83c1:
 	set     5,(ix+$18)
@@ -15167,19 +15219,19 @@ _83c1:
 +	dec     (ix+$11)
 	jp      nz,++++
 	ld      (ix+$11),$01
-	ld      a,($d2ac)
+	ld      a,($D2AC)
 	and     $80
 	jp      z,++++
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      ($d2ab),hl
+	ld      ($D2AB),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$000e
 	add     hl,de
-	ld      ($d2ad),hl
+	ld      ($D2AD),hl
 	ld      hl,$848e
-	ld      ($d2af),hl
+	ld      ($D2AF),hl
 	set     0,(ix+$18)
 	ld      a,$20
 	rst     $28			;`playSFX`
@@ -15214,7 +15266,7 @@ _83c1:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	ret     m
 	ld      de,(RAM_TEMP1)
@@ -15254,10 +15306,10 @@ _8496:
 	call    decompressArt
 	
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	xor     a
-	ld      ($d2ec),a
+	ld      ($D2EC),a
 	
 	ld      a,index_music_boss1
 	rst     $18			;`playMusic`
@@ -15315,10 +15367,10 @@ _8496:
 	cp      $64
 	jp      nz,+++
 	inc     (ix+$11)
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $08
 	jr      nc,+++
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	and     a
@@ -15381,7 +15433,7 @@ _8496:
 	jr      nc,+++
 	ld      (ix+$11),a
 +++	ld      hl,$00a2
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _77be
 	ret
 
@@ -15490,10 +15542,10 @@ _866c:
 	ld      a,l
 	or      h
 	jr      nz,+
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 	jr      ++
 	
 +	ld      a,l
@@ -15503,11 +15555,11 @@ _866c:
 	cpl     
 	ld      h,a
 	inc     hl
-	ld      de,($d2e6)
+	ld      de,($D2E6)
 	add     hl,de
-	ld      ($d406),hl
+	ld      ($D406),hl
 	ld      a,$ff
-	ld      ($d408),a
+	ld      ($D408),a
 ++	ld      a,$1c
 	sub     c
 	ld      (ix+$11),a
@@ -15569,7 +15621,7 @@ _866c:
 	ld      (RAM_TEMP7),a
 	call    _LABEL_3956_11
 	jr      nc,+
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	ret     m
 	ld      (ix+$0d),$3c
@@ -15588,13 +15640,13 @@ _866c:
 	ret
 	
 +	set     1,(ix+$18)
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	ret     m
 	ld      a,(ix+$11)
 	cp      $1c
 	jr      z,++
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
@@ -15604,16 +15656,16 @@ _866c:
 	inc     hl
 	ld      (ix+$12),l
 	ld      (ix+$13),h
-	ld      a,($d407)
+	ld      a,($D407)
 	add     a,(ix+$11)
 	ld      (ix+$11),a
 	cp      $1c
 	jr      c,+
 	ld      (ix+$11),$1c
-++	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+++	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      bc,$0010
@@ -15622,12 +15674,12 @@ _866c:
 	sub     $04
 	ld      c,a
 	add     hl,bc
-	ld      a,($d40a)
+	ld      a,($D40A)
 	ld      c,a
 	xor     a
 	sbc     hl,bc
-	ld      ($d401),hl
-	ld      hl,$d414
+	ld      ($D401),hl
+	ld      hl,$D414
 	set     7,(hl)
 	ret
 
@@ -15690,7 +15742,7 @@ _8837:
 	ld      de,_88be
 	ld      bc,_88b9
 	call    _7c41
-++	ld      a,($d223)
+++	ld      a,($D223)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -15993,13 +16045,13 @@ _8af6:
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
-	ld      a,($d223)
+	ld      a,($D223)
 	rlca    
 	rlca    
 	and     $03
 	jr      nz,+
 	ld      hl,_8bbc
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $3f
 	ld      e,a
 	cp      $08
@@ -16017,7 +16069,7 @@ _8af6:
 +	cp      $02
 	jr      nz,+
 	ld      hl,_8bc4
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $3f
 	ld      e,a
 	cp      $08
@@ -16064,7 +16116,7 @@ _8af6:
 	ld      (ix+$0e),a
 	call    _LABEL_3956_11
 	call    nc,_35fd
-	ld      a,($d223)
+	ld      a,($D223)
 	cp      $80
 	ret     nz
 	ld      a,$1d
@@ -16235,7 +16287,7 @@ _8d48:
 	ld      (ix+$06),a
 	ld      l,h
 	ld      h,(ix+$06)
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $0f
 	jr      nz,+
 	inc     (ix+$11)
@@ -16243,7 +16295,7 @@ _8d48:
 	cp      $20
 	jr      c,+
 	ld      (ix+$11),$00
-+	ld      ($d2dc),hl
++	ld      ($D2DC),hl
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	ld      a,$ff
@@ -16276,9 +16328,9 @@ _8d48:
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $03
 	add     a,a
 	add     a,a
@@ -16292,7 +16344,7 @@ _8d48:
 	ld      c,(hl)
 	inc     hl
 	push    hl
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $0f
 	add     a,c
 	ld      l,a
@@ -16359,7 +16411,7 @@ _8e56:
 	ld      a,$0c
 	call    _3581
 	inc     (ix+$12)
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -16425,7 +16477,7 @@ _8eca:
 	ld      h,(ix+$06)
 	ld      (RAM_TEMP3),hl
 	ex      de,hl
-	ld      hl,($d2dc)
+	ld      hl,($D2DC)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -16490,7 +16542,7 @@ _8f6d:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -16507,7 +16559,7 @@ _8f6d:
 	ld      (ix+$0c),$ff
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -16689,7 +16741,7 @@ _90c0:
 	call    _LABEL_3956_11
 	ret     c
 	set     0,(ix+$18)
-	ld      a,($d407)
+	ld      a,($D407)
 	and     a
 	jp      p,+
 	neg     
@@ -16791,10 +16843,10 @@ _9267:
 	call    decompressArt
 	
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	xor     a
-	ld      ($d2ec),a
+	ld      ($D2EC),a
 	
 	ld      a,index_music_boss1
 	rst     $18			;`playMusic`
@@ -16881,7 +16933,7 @@ _9267:
 	ld      a,(ix+$13)
 	and     a
 	jp      z,_9432
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $08
 	jp      nc,_f
 	call    _7c7b
@@ -16942,9 +16994,9 @@ _9267:
 	jr      c,_f
 	ld      (ix+$13),$00
 __	ld      hl,$00a2
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _77be
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $08
 	ret     nc
 	bit     7,(ix+$0c)
@@ -16959,7 +17011,7 @@ __	ld      hl,$00a2
 	ld      (RAM_TEMP4),hl
 	ld      hl,$0030
 	ld      (RAM_TEMP6),hl
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $02
 	call    _3581
 	ret
@@ -17020,7 +17072,7 @@ _94a5:
 	bit     1,(ix+$18)
 	jr      nz,+
 	set     1,(ix+$18)
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      de,$000c
 	add     hl,de
 	ex      de,hl
@@ -17043,7 +17095,7 @@ _94a5:
 	ld      hl,_9688
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	and     a
@@ -17110,7 +17162,7 @@ _94a5:
 +	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),c
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$0010
 	add     hl,de
 	ex      de,hl
@@ -17195,7 +17247,7 @@ _94a5:
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      (RAM_TEMP3),hl
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $0f
 	ret     nz
 	call    _7c7b
@@ -17285,12 +17337,12 @@ _96f8:
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
-	ld      a,($d2de)
+	ld      a,($D2DE)
 	cp      $24
 	jr      nc,+++
 	ld      e,a
 	ld      d,$00
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	add     hl,de
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      l,(ix+$02)
@@ -17320,9 +17372,9 @@ _96f8:
 	ld      (RAM_TEMP4),hl
 	ld      a,$42
 ++	call    _3581
-	ld      a,($d2de)
+	ld      a,($D2DE)
 	add     a,$06
-	ld      ($d2de),a
+	ld      ($D2DE),a
 +++	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
@@ -17347,7 +17399,7 @@ _96f8:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,+
-	ld      bc,($d401)
+	ld      bc,($D401)
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
 	ld      hl,$fff8
@@ -17366,13 +17418,13 @@ _96f8:
 	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d406),hl
-	ld      ($d408),a
-	ld      ($d28e),a
-	ld      ($d29b),hl
+	ld      ($D406),hl
+	ld      ($D408),a
+	ld      ($D28E),a
+	ld      ($D29B),hl
 	set     2,(iy+vars.unknown0)
 	ld      a,$20
-	ld      ($d2fb),a
+	ld      ($D2FB),a
 	ld      (ix+$12),$10
 	ld      a,$22
 	rst     $28			;`playSFX`
@@ -17415,7 +17467,7 @@ _96f8:
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ex      de,hl
-	ld      hl,($d2dc)
+	ld      hl,($D2DC)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -17468,17 +17520,17 @@ _9866:
 	ld      bc,_999e
 	call    _9aaf
 	ret     nc
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 	ld      de,$fffc
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	add     hl,de
 	adc     a,$ff
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ret
 	
 +	cp      $04
@@ -17497,7 +17549,7 @@ _9866:
 	ld      a,(ix+$12)
 	cp      (ix+$11)
 	ret     nc
-	ld      a,($d3fe)
+	ld      a,($D3FE)
 	add     a,$0c
 	and     $1f
 	add     a,a
@@ -17508,44 +17560,44 @@ _9866:
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	add     hl,de
 	adc     a,$ff
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ld      hl,_9a3e
 	add     hl,bc
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$ff
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	ret
 
 	;unused section of code?
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 	ld      de,$0008
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	add     hl,de
 	adc     a,$00
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ret
 	
 +	ld      (ix+$0f),<_9aa2
@@ -17559,17 +17611,17 @@ _9866:
 	ld      bc,_99de
 	call    _9aaf
 	ret     nc
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 	ld      de,$001a
-	ld      hl,($d403)
-	ld      a,($d405)
+	ld      hl,($D403)
+	ld      a,($D405)
 	add     hl,de
 	adc     a,$00
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	ret
 
 _999e:
@@ -17609,10 +17661,10 @@ _9aa2:
 ;____________________________________________________________________________[$9AAF]___
 
 _9aaf:
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	ret     m
-	ld      a,($d3fe)
+	ld      a,($D3FE)
 	add     a,$0c
 	and     $1f
 	ld      l,a
@@ -17626,30 +17678,30 @@ _9aaf:
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	add     hl,bc
-	ld      ($d401),hl
-	ld      a,($d407)
+	ld      ($D401),hl
+	ld      a,($D407)
 	cp      $03
 	jr      nc,+
 	scf     
 	ret
 	
 +	ld      de,$0001
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$00
 	sra     a
 	rr      h
 	rr      l
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	and     a
 	ret
 
@@ -17682,25 +17734,25 @@ _9afb:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	ret     c
-	ld      a,($d2e8)
-	ld      de,($d2e6)
+	ld      a,($D2E8)
+	ld      de,($D2E6)
 	ld      c,a
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,c
 	ld      de,$0001
 	add     hl,de
 	adc     a,$00
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	ld      (ix+$11),$08
 	ld      a,$07
 	rst     $28			;`playSFX`
@@ -17757,9 +17809,9 @@ _9b75:
 	jr      nz,+
 	inc     hl
 	ld      a,(hl)
-	ld      ($d2d3),a
+	ld      ($D2D3),a
 	ld      a,$01
-	ld      ($d289),a
+	ld      ($D289),a
 	set     4,(iy+vars.flags6)
 	jp      ++
 	
@@ -17974,24 +18026,24 @@ _9dfa:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
-	ld      a,($d405)
+	ld      a,($D405)
 	and     a
 	jp      m,+
 	ld      de,$ffec
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	xor     a
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 ++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ffc8
 	add     hl,de
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18004,7 +18056,7 @@ _9dfa:
 	ld      h,(ix+$06)
 	ld      de,$ffe0
 	add     hl,de
-	ld      de,($d401)
+	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18150,23 +18202,23 @@ _9f62:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
-	ld      a,($d405)
+	ld      a,($D405)
 	and     a
 	jp      m,+
 	ld      de,$ffec
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
 ++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$fff0
 	add     hl,de
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18181,7 +18233,7 @@ _9f62:
 	ld      h,(ix+$06)
 	ld      de,$ffe0
 	add     hl,de
-	ld      de,($d401)
+	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18227,23 +18279,23 @@ _a025:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
-	ld      a,($d405)
+	ld      a,($D405)
 	and     a
 	jp      m,+
 	ld      de,$ffec
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
 ++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      de,$ffc8
 	add     hl,de
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18258,7 +18310,7 @@ _a025:
 	ld      h,(ix+$06)
 	ld      de,$ffe0
 	add     hl,de
-	ld      de,($d401)
+	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
@@ -18385,7 +18437,7 @@ _a1aa:
 	ld      de,$000a
 	add     hl,de
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	ld      bc,$000c
 	add     hl,bc
 	and     a
@@ -18598,7 +18650,7 @@ _a3f8:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	jr      c,++
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,++
 	ld      (ix+$0f),<_a48b
@@ -18614,7 +18666,7 @@ _a3f8:
 	bit     1,(ix+$18)
 	jr      nz,+
 	set     1,(ix+$18)
-	ld      hl,$d317
+	ld      hl,$D317
 	call    getLevelBitFlag
 	ld      a,(hl)
 	xor     c
@@ -18663,20 +18715,20 @@ _a4ab:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0005
-	ld      a,($d405)
+	ld      a,($D405)
 	and     a
 	jp      m,+
 	ld      de,$ffec
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	xor     a
-	ld      ($d403),a
-	ld      ($d404),a
-	ld      ($d405),a
+	ld      ($D403),a
+	ld      ($D404),a
+	ld      ($D405),a
 	
-++	ld      hl,$d317
+++	ld      hl,$D317
 	call    getLevelBitFlag
 	bit     1,(ix+$18)
 	jr      z,+
@@ -18726,7 +18778,7 @@ _a51a:
 _a551:
 	ld      (ix+$0d),$06
 	ld      (ix+$0e),$10
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	jr      nz,+++
 	ld      hl,_a6b9
@@ -18833,7 +18885,7 @@ _a551:
 	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 +++	ld      (ix+$0b),$01
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $01
 	ret     nz
 	inc     (ix+$11)
@@ -18929,7 +18981,7 @@ _a7ed:
 	ld      (RAM_LEVEL_TOP),hl
 	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$0220
-	ld      ($d27d),hl
+	ld      ($D27D),hl
 
 	;UNKNOWN
 	ld      hl,$ef3f
@@ -18938,7 +18990,7 @@ _a7ed:
 	call    decompressArt
 
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	
 	ld      a,index_music_boss1
@@ -18954,12 +19006,12 @@ _a7ed:
 	call    _7c41
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	xor     a
 	sbc     hl,de
 	ld      de,$0040
 	xor     a
-	ld      bc,($d403)
+	ld      bc,($D403)
 	bit     7,b
 	jr      nz,+
 	sbc     hl,de
@@ -18979,8 +19031,8 @@ _a7ed:
 	ld      h,a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 	set     1,(ix+$18)
 	jp      ++++
 	
@@ -19018,7 +19070,7 @@ _a7ed:
 	
 +	bit     4,(ix+$18)
 	jr      nz,++
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	ld      hl,$0596
 	and     a
 	sbc     hl,de
@@ -19029,45 +19081,45 @@ _a7ed:
 	jr      c,++++
 	or      (ix+$11)
 	jr      nz,+
-	ld      hl,($d401)
+	ld      hl,($D401)
 	ld      de,$028d
 	xor     a
 	sbc     hl,de
 	jr      c,++++
 	ld      l,a
 	ld      h,a
-	ld      ($d403),hl
-	ld      ($d405),a
+	ld      ($D403),hl
+	ld      ($D405),a
 +	ld      a,$80
-	ld      ($d414),a
+	ld      ($D414),a
 	ld      hl,$05a0
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	ld      (iy+vars.joypad),$ff
 	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,$028e
 	xor     a
 	sbc     hl,de
-	ld      ($d400),a
-	ld      ($d401),hl
-	ld      a,($d2e8)
-	ld      hl,($d2e6)
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D400),a
+	ld      ($D401),hl
+	ld      a,($D2E8)
+	ld      hl,($D2E6)
+	ld      ($D406),hl
+	ld      ($D408),a
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $c0
 	jr      nz,++++
 	ld      hl,(RAM_CAMERA_X)
 	inc     h
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	set     4,(ix+$18)
 	
 	ld      a,index_music_actComplete
 	rst     $18			;`playMusic`
 	
 	ld      a,$a0
-	ld      ($d289),a
+	ld      ($D289),a
 	set     1,(iy+vars.flags6)
 	ret
 	
@@ -19123,17 +19175,17 @@ _a9c7:
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
-	ld      a,($d2de)
+	ld      a,($D2DE)
 	cp      $24
 	jr      nc,+
 	ld      e,a
 	ld      d,$00
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	add     hl,de
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      a,($d2a3)
+	ld      a,($D2A3)
 	ld      c,a
-	ld      de,($d2a1)
+	ld      de,($D2A1)
 	ld      l,(ix+$04)
 	ld      h,(ix+$05)
 	ld      a,(ix+$06)
@@ -19152,9 +19204,9 @@ _a9c7:
 	sbc     hl,bc
 	ld      bc,_aa63		;address of sprite layout
 	call    processSpriteLayout
-	ld      a,($d2de)
+	ld      a,($D2DE)
 	add     a,$0c
-	ld      ($d2de),a
+	ld      ($D2DE),a
 +	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
@@ -19281,7 +19333,7 @@ _ab21:
 	ld      de,$ffc8
 	add     hl,de
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -19290,7 +19342,7 @@ _ab21:
 	ld      de,$002c
 	add     hl,de
 	ex      de,hl
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      nc,+
@@ -19400,7 +19452,7 @@ _ab21:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $3f
 	ret     nz
 	inc     (ix+$11)
@@ -19614,7 +19666,7 @@ _ae88:
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -19624,7 +19676,7 @@ _ae88:
 	ld      (ix+$0f),<_b0d5
 	ld      (ix+$10),>_b0d5
 	ld      hl,$ff80
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _af98
 	ld      (ix+$16),$01
 	jr      ++
@@ -19635,7 +19687,7 @@ _ae88:
 	ld      (ix+$0f),<_b0e7
 	ld      (ix+$10),>_b0e7
 	ld      hl,$0080
-	ld      ($d216),hl
+	ld      ($D216),hl
 	call    _af98
 	ld      (ix+$16),$ff
 ++	ld      (ix+$0d),$1c
@@ -19710,7 +19762,7 @@ _ae88:
 	inc     hl
 	djnz    -
 	
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	ret     z
 	ld      a,(ix+$15)
@@ -19732,7 +19784,7 @@ _af98:
 	ld      h,(ix+$06)
 	ld      de,$ffd0
 	add     hl,de
-	ld      de,($d401)
+	ld      de,($D401)
 	and     a
 	sbc     hl,de
 	ret     nc
@@ -19786,7 +19838,7 @@ _afdb:
 	add     hl,bc
 	ld      (ix+$05),l
 	ld      (ix+$06),h
-	ld      hl,($d216)
+	ld      hl,($D216)
 	ld      (ix+$07),l
 	ld      (ix+$08),h
 	xor     a
@@ -19935,7 +19987,7 @@ _b16c:
 +	pop     bc
 	djnz    -
 	
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $3f
 	jr      nz,+
 	ld      a,(ix+$11)
@@ -20004,9 +20056,9 @@ _b297:
 	ld      a,(ix+$06)
 	ld      (ix+$14),a
 	set     0,(ix+$18)
-+	ld      a,($d2a3)
++	ld      a,($D2A3)
 	ld      c,a
-	ld      de,($d2a1)
+	ld      de,($D2A1)
 	ld      l,(ix+$12)
 	ld      h,(ix+$13)
 	ld      a,(ix+$14)
@@ -20015,7 +20067,7 @@ _b297:
 	ld      (ix+$04),l
 	ld      (ix+$05),h
 	ld      (ix+$06),a
-	ld      a,($d408)
+	ld      a,($D408)
 	and     a
 	jp      m,+
 	ld      (ix+$0d),$1e
@@ -20025,9 +20077,9 @@ _b297:
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      hl,$0030
-	ld      ($d26b),hl
+	ld      ($D26B),hl
 	ld      hl,$0030
-	ld      ($d26d),hl
+	ld      ($D26D),hl
 	ld      bc,$0010
 	ld      de,$0000
 	call    _LABEL_7CC1_12
@@ -20040,12 +20092,12 @@ _b297:
 	ld      (ix+$01),l
 	ld      (ix+$02),h
 	ld      (ix+$03),a
-	ld      hl,($d3fd)
-	ld      a,($d3ff)
+	ld      hl,($D3FD)
+	ld      a,($D3FF)
 	add     hl,de
 	adc     a,$00
-	ld      ($d3fd),hl
-	ld      ($d3ff),a
+	ld      ($D3FD),hl
+	ld      ($D3FF),a
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
@@ -20158,7 +20210,7 @@ _b398:
 	ld      (ix+$02),a
 	ld      a,(ix+$12)
 	ld      (ix+$03),a
-+	ld      de,($d401)
++	ld      de,($D401)
 	ld      hl,$ffe0
 	add     hl,bc
 	xor     a
@@ -20234,7 +20286,7 @@ _b46d:
 	exx     
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	ld      a,h
@@ -20245,7 +20297,7 @@ _b46d:
 	exx     
 	ld      e,(ix+$05)
 	ld      d,(ix+$06)
-	ld      hl,($d401)
+	ld      hl,($D401)
 	and     a
 	sbc     hl,de
 	ld      a,h
@@ -20273,7 +20325,7 @@ _b50e:
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      a,$50
-	ld      ($d216),a
+	ld      ($D216),a
 	call    _b53b
 	inc     (ix+$11)
 	ld      a,(ix+$11)
@@ -20285,7 +20337,7 @@ _b50e:
 ;----------------------------------------------------------------------------[$B53B]---
 
 _b53b:
-	ld      a,($d216)
+	ld      a,($D216)
 	ld      l,a
 	ld      de,$0010
 	ld      c,$00
@@ -20325,7 +20377,7 @@ _b53b:
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$02
 	ld      (ix+$0c),$00
-++	ld      a,($d408)
+++	ld      a,($D408)
 	and     a
 	ret     m
 	ld      (ix+$0d),$1e
@@ -20436,7 +20488,7 @@ _b634:
 	ld      (ix+$13),l
 	ld      (ix+$14),h
 	xor     a
-	ld      ($d2ec),a
+	ld      ($D2EC),a
 	
 	ld      a,index_music_boss3
 	rst     $18			;`playMusic`
@@ -20447,7 +20499,7 @@ _b634:
 	and     a
 	jp      nz,+++
 	call    _b99f
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	jp      nz,++++
 	ld      a,(ix+$16)
@@ -20563,7 +20615,7 @@ _b634:
 	pop     hl
 	ld      a,(hl)
 	call    _3581
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $0c
 	ret     c
 	xor     a
@@ -20583,26 +20635,26 @@ _b634:
 ;____________________________________________________________________________[$B7E6]___	
 
 _b7e6:
-	ld      a,($d2b1)
+	ld      a,($D2B1)
 	and     a
 	ret     nz
 	bit     0,(iy+vars.scrollRingFlags)
 	ret     nz
-	ld      a,($d414)
+	ld      a,($D414)
 	rrca    
 	jr      c,+
 	and     $02
 	ret     z
-+	ld      hl,($d3fe)
++	ld      hl,($D3FE)
 	ld      de,$0410
 	and     a
 	sbc     hl,de
 	ret     c
 	ld      hl,$fd00
 	ld      a,$ff
-	ld      ($d403),hl
-	ld      ($d405),a
-	ld      hl,$d2b1
+	ld      ($D403),hl
+	ld      ($D405),a
+	ld      hl,$D2B1
 	ld      (hl),$18
 	inc     hl
 	ld      (hl),$0c
@@ -20610,7 +20662,7 @@ _b7e6:
 	ld      (hl),$3f
 	ld      a,$01
 	rst     $28			;`playSFX`
-	ld      hl,$d2ec
+	ld      hl,$D2EC
 	inc     (hl)
 	ret
 _b821:
@@ -20633,13 +20685,13 @@ _b821:
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($d2ab),de
+	ld      ($D2AB),de
 	ld      e,(hl)
 	inc     hl
 	ld      d,(hl)
 	inc     hl
-	ld      ($d2ad),de
-	ld      ($d2af),hl
+	ld      ($D2AD),de
+	ld      ($D2AF),hl
 	inc     (ix+$11)
 	ld      a,(ix+$11)
 	cp      $0f
@@ -20662,12 +20714,12 @@ _b821:
 	jp      +++
 	
 +	ex      de,hl
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	xor     a
 	sbc     hl,de
 	ld      de,$0040
 	xor     a
-	ld      bc,($d403)
+	ld      bc,($D403)
 	bit     7,b
 	jr      nz,+
 	sbc     hl,de
@@ -20756,7 +20808,7 @@ _b821:
 	cp      $30
 	jr      nc,++
 	ld      c,a
-	ld      a,($d223)
+	ld      a,($D223)
 	and     $07
 	jr      nz,+
 	ld      a,(ix+$17)
@@ -20908,7 +20960,7 @@ _bb77:
 _bb84:
 	set     5,(ix+$18)
 	ld      hl,$0008
-	ld      ($d26b),hl
+	ld      ($D26B),hl
 	bit     0,(ix+$18)
 	jr      nz,+
 
@@ -20940,7 +20992,7 @@ _bb84:
 	ret     z
 	bit     1,(ix+$18)
 	jr      z,+
-	ld      a,($d223)
+	ld      a,($D223)
 	bit     0,a
 	ret     nz
 	and     $02
@@ -20971,7 +21023,7 @@ _bb84:
 	ld      b,h
 	ld      hl,$000c
 	add     hl,bc
-	ld      de,($d3fe)
+	ld      de,($D3FE)
 	and     a
 	sbc     hl,de
 	jr      c,+
@@ -20982,7 +21034,7 @@ _bb84:
 	jr      c,+
 	bit     0,(iy+vars.scrollRingFlags)
 	call    z,_35fd
-+	ld      a,($d2ec)
++	ld      a,($D2EC)
 	cp      $06
 	jr      nc,++
 	bit     1,(ix+$18)
@@ -20992,14 +21044,14 @@ _bb84:
 	ld      (ix+$11),a
 	cp      $80
 	ret     c
-	ld      a,($d223)
+	ld      a,($D223)
 	ld      c,a
 	and     $01
 	ret     nz
 	set     1,(ix+$18)
 	ret
 	
-+	ld      a,($d223)
++	ld      a,($D223)
 	and     $0f
 	jr      nz,+
 	ld      a,$13
@@ -21010,7 +21062,7 @@ _bb84:
 	res     1,(ix+$18)
 	ret
 	
-++	ld      hl,($d3fe)
+++	ld      hl,($D3FE)
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
 	and     a
@@ -21027,11 +21079,11 @@ _bb84:
 	jr      nc,++
 	inc     (ix+$11)
 ++	res     1,(ix+$18)
-	ld      a,($d223)
+	ld      a,($D223)
 	ld      c,a
 	and     $40
 	ret     nz
-	ld      a,($d2ec)
+	ld      a,($D2EC)
 	cp      $06
 	ret     z
 	set     1,(ix+$18)
@@ -21101,7 +21153,7 @@ _bcdf:
 	and     a
 	sbc     hl,de
 	jp      c,++++
-	ld      hl,($d3fe)
+	ld      hl,($D3FE)
 	and     a
 	sbc     hl,de
 	ld      l,(ix+$07)
@@ -21139,7 +21191,7 @@ _bcdf:
 	and     a
 	sbc     hl,de
 	jr      c,++++
-	ld      hl,($d401)
+	ld      hl,($D401)
 	and     a
 	sbc     hl,de
 	ld      l,(ix+$0a)
@@ -21199,16 +21251,16 @@ _bdf9:
 	bit     1,(ix+$18)
 	jr      nz,+
 	ld      hl,S1_BossPalette
-	ld      a,$02
+	ld      a,%00000010
 	call    loadPaletteOnInterrupt
 	ld      a,$ff
-	ld      ($d3fc),a
+	ld      ($D3FC),a
 	ld      hl,$0000
-	ld      ($d401),hl
+	ld      ($D401),hl
 	ld      (ix+$12),$ff
 	set     6,(iy+vars.timeLightningFlags)
 	set     1,(ix+$18)
-+	ld      a,($d223)
++	ld      a,($D223)
 	rrca    
 	jr      c,+
 	ld      a,(ix+$12)
@@ -21220,14 +21272,14 @@ _bdf9:
 	ld      h,(ix+$03)
 	ld      de,$003c
 	add     hl,de
-	ld      ($d3fe),hl
+	ld      ($D3FE),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$ffc0
 	add     hl,de
-	ld      ($d401),hl
+	ld      ($D401),hl
 	xor     a
-	ld      ($d3fc),a
+	ld      ($D3FC),a
 	set     6,(iy+vars.unknown0)
 	ld      a,$06
 	rst     $28			;`playSFX`
@@ -21261,19 +21313,19 @@ _bdf9:
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      de,$0001
-	ld      hl,($d406)
+	ld      hl,($D406)
 	ld      a,l
 	cpl     
 	ld      l,a
 	ld      a,h
 	cpl     
 	ld      h,a
-	ld      a,($d408)
+	ld      a,($D408)
 	cpl     
 	add     hl,de
 	adc     a,$00
-	ld      ($d406),hl
-	ld      ($d408),a
+	ld      ($D406),hl
+	ld      ($D408),a
 	res     6,(iy+vars.timeLightningFlags)
 	set     0,(ix+$18)
 	ld      (ix+$11),$01
@@ -21296,17 +21348,17 @@ _bdf9:
 	ld      a,(ix+$13)
 	cp      $0a
 	ret     c
-	ld      a,($d27f)
+	ld      a,($D27F)
 	cp      $06
 	jr      c,+
 	set     7,(iy+vars.unknown0)
 	ret
 	
-+	ld      a,($d289)
++	ld      a,($D289)
 	and     a
 	ret     nz
 	ld      a,$20
-	ld      ($d289),a
+	ld      ($D289),a
 	set     2,(iy+$0d)
 	ret
 
@@ -21357,14 +21409,14 @@ _bf4c:
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
 ++	ld      hl,_bff1
-	ld      a,($d223)
+	ld      a,($D223)
 	rrca    
 	jr      nc,+
 	ld      a,(iy+vars.spriteCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
-	ld      hl,$d000
+	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      l,(ix+$05)
 	ld      h,(ix+$06)
@@ -21392,7 +21444,7 @@ _bf4c:
 	sbc     hl,de
 	ret     nc
 	ld      a,$01
-	ld      ($d289),a
+	ld      ($D289),a
 	set     2,(iy+$0d)
 	ret
 

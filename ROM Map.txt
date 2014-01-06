@@ -331,7 +331,7 @@ $2C3B6 - $2CF74		Labyrinth Sprites (128 Tiles)
 $2CF75 - $2D9DF		Scrap Brain Sprites (128 Tiles)
 $2D9E0 - $2E510		Sky Base Sprites (128 Tiles)
 $2E511 - $2EEB0		Special Stage Sprites (128 Tiles)
-$2EEB1 - $2F92D		Boss Sprites (128 Tiles)
+$2EEB1 - $2F92D		Boss Sprites 1 (128 Tiles)
 $2F92E - $2FD6F		HUD Sprite Set (128 Tiles)
 $2FD70 - $2FFEF		Ring Animation (20 Tiles), UNCOMPRESSED
 $2FFF0 - $2FFFF		*** EMPTY SPACE ***
@@ -379,7 +379,7 @@ $3C806 - $3C905         Unique row list For Special Stages
 $3C906 - $3CF53         Duplicate row list For Special Stages
 $3CF54 - $3DA27         Art Data For Special Stages
 -----------------------------------------------------------------------------
-$3DA28 – $3FF20		!!! UNKNOWN ART !!!
-$3E508?- $3EF3E?	!!! UNKNOWN ART !!!
-$3EF3F?- $3FF20		!!! UNKNOWN ART !!!
+$3DA28 – $3FF20		Capsule Art
+$3E508 - $3EF3E		Boss Sprite Art 2
+$3EF3F - $3FF20		Boss Sprite Art 3
 $3FF21 - $40000		*** EMPTY SPACE ***
