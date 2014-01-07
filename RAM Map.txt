@@ -69,15 +69,14 @@ d273/4		RAM_LEVEL_LEFT
 d275/6		RAM_LEVEL_RIGHT
 d277/8		RAM_LEVEL_TOP
 d279/a		RAM_LEVEL_BOTTOM
-d27b/c							set to 0 during level load
-d27d/e							set to 0 during level load
-d27f-d287						set to 0 during initialisation
-	d27f
-	d280/1
-	d281/2
-	d282/3
-	d284/5
-	d285/6
+d27b/c		RAM_CAMERA_X_GOTO
+d27d/e		RAM_CAMERA_Y_GOTO
+d27f
+d280/1
+d281/2
+d282/3
+d284/5
+d285/6
 d287							$D287-$D2A4 set to 0 during level load
 d288
 d289

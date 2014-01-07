@@ -153,7 +153,7 @@
 	;bit 0 - unknown
 	;bit 1 - enables interrupts during `decompressArt`
 	
-	spriteCount		DB	;IY+$0A, number of hardware sprites in use?
+	spriteUpdateCount	DB	;IY+$0A, number of sprites requiring updates
 	origScrollRingFlags	DB	;IY+$0B, copy made during level loading UNUSED
 	origFlags6		DB	;IY+$0C, copy made during level loading
 .ENDST
@@ -246,11 +246,17 @@
 .DEF RAM_CAMERA_X_LEFT		$D26F	;used to check when the camera goes left
 .DEF RAM_CAMERA_Y_UP		$D271	;used to check when the camera goes up
 
+.DEF RAM_CAMERA_X_GOTO		$D27B	;a point to move the camera to - i.e. boss
+.DEF RAM_CAMERA_Y_GOTO		$D27D
+
 .DEF RAM_BLOCK_X		$D257	;number of blocks across the camera is
 .DEF RAM_BLOCK_Y		$D258	;number of blocks down the camera is
 
 ;absolute address of the block mappings when in page 1 (i.e. $4000)
 .DEF RAM_BLOCKMAPPINGS		$D24F
+
+;the number of the hardware sprites "in use"
+.DEF RAM_ACTIVESPRITECOUNT	$D2B4
 
 ;======================================================================================
 
@@ -847,32 +853,37 @@ updateVDPSprites:
 	or   %01000000			;add bit 6 to mark an address being given
 	out  (SMS_VDP_CONTROL), a
 	
-	ld   b, (iy+vars.spriteCount)
+	ld   b, (iy+vars.spriteUpdateCount)
 	ld   hl, RAM_SPRITETABLE+1	;Y-position of the first sprite
 	ld   de, 3			;sprite table is 3 bytes per sprite
 	
 	ld   a, b
-	and  a				;is A zero?
-	jr   z, +		
+	and  a				;is sprite update count zero?
+	jr   z, +			;if so skip over setting the Y-positions
 
-	;set sprite Y-positions
--	ld   a, (hl)
-	out  (SMS_VDP_DATA), a
-	add  hl, de
+	;set sprite Y-positions:
+-	ld   a, (hl)			;get the sprite's Y-position from RAM
+	out  (SMS_VDP_DATA), a		;set the sprite's Y-position in the hardware
+	add  hl, de			;move to the next sprite
 	djnz -
 	
-+	ld   a, ($D2B4)
+	;if the number of sprites to update is equal or greater than the existing
+	 ;number of active sprites, skip ahead to setting the X-positions and indexes
++	ld   a, (RAM_ACTIVESPRITECOUNT)
 	ld   b, a
-	ld   a, (iy+vars.spriteCount)
+	ld   a, (iy+vars.spriteUpdateCount)
 	ld   c, a
-	cp   b
-	jr   nc, +			;"A >= B" (iy+$0a) >= ($D2B4)
+	cp   b				;test spriteUpdateCount - RAM_ACTIVESPRITECOUNT	
+	jr   nc, +			;
 	
+	;if the number of active sprites is greater than the sprite update count, 
+	 ;that is - there will be active sprites remaining, calculate the amount
+	 ;remaining and make them inactive
 	ld   a, b
 	sub  c
 	ld   b, a
 
-	;move remaining sprites off screen?
+	;move remaining sprites off screen
 -	ld   a, 224
 	out  (SMS_VDP_DATA), a
 	djnz -
@@ -883,7 +894,7 @@ updateVDPSprites:
 	ret  z
 	
 	ld   hl, RAM_SPRITETABLE	;first X-position in the sprite table
-	ld   b, (iy+vars.spriteCount)
+	ld   b, (iy+vars.spriteUpdateCount)
 	
 	;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
 	ld   a, $80
@@ -901,9 +912,11 @@ updateVDPSprites:
 	inc  l
 	djnz -
 	
-	ld   a, (iy+vars.spriteCount)
-	ld   ($D2B4), a
-	ld   (iy+vars.spriteCount), b
+	;set the new number of active sprites
+	ld   a, (iy+vars.spriteUpdateCount)
+	ld   (RAM_ACTIVESPRITECOUNT), a
+	;set the update count to 0
+	ld   (iy+vars.spriteUpdateCount), b
 	ret
 
 ;___ UNUSED! (20 bytes) _____________________________________________________[$0397]___	
@@ -1245,7 +1258,7 @@ _duplicateRow:
 	ld   de, (RAM_TEMP1)		;get the absolute address to the art data
 	add  hl, de			;add the index from the duplicate row list
 	
-	;write 1 row of pixles (4 bytes) to the VDP
+	;write 1 row of pixels (4 bytes) to the VDP
 	ld   a, (hl)			
 	out  (SMS_VDP_DATA), a
 	inc  hl
@@ -1551,9 +1564,9 @@ hideSprites:
 	ld   hl, RAM_SPRITETABLE
 	ld   e, l
 	ld   d, h
-	ld   bc, $00BD
-	;set the first two bytes as #$E0 (X&Y position)
-	ld   a, $E0
+	ld   bc, 3 * 63			;three bytes (X/Y/I) for each sprite
+	;set the first two bytes as 224 (X&Y position)
+	ld   a, 224
 	ld   (de), a
 	inc  de
 	ld   (de), a
@@ -1565,29 +1578,35 @@ hideSprites:
 	
 	;set parameters so that at the next interrupt,
 	 ;all sprites will be hidden (see `updateVDPSprites`)
-	ld   (iy+vars.spriteCount), 64
+	 
+	;mark all 64 sprites as requiring update 
+	ld   (iy+vars.spriteUpdateCount), 64	
 	xor  a				;(set A to 0)
-	ld   ($D2B4), a			;with 0 remaining
+	ld   (RAM_ACTIVESPRITECOUNT), a	;and set zero active sprites
 	ret
 
 ;____________________________________________________________________________[$05FC]___
+;does a decimal multiplication by 10. e.g. 3 > 30
 
 _LABEL_5FC_114:
+;HL : input number, e.g. RAM_LIVES
+; C : base? i.e. 10
 	xor  a				;set A to 0
-	ld   b, $07
-	ex   de, hl
-	ld   l, a
+	ld   b, 7			;we will be looping 7 times
+	ex   de, hl			;transfer the HL parameter to DE
+	ld   l, a			;set HL as $0000
 	ld   h, a
 	
--	rl   c
-	jp   nc, +
-	add  hl, de
-+	add  hl, hl
+-	rl   c				;shift the bits in C up one
+	jp   nc, +			;skip if it hasn't overflowed yet
+	add  hl, de			;add the parameter value
++	add  hl, hl			;double the current value
 	djnz -
 	
-	or   c
-	ret  z
-	add  hl, de
+	;is there any carry remaining?
+	or   c				;check if C is 0
+	ret  z				;if so, no carry the number is final
+	add  hl, de			;otherwise add one more
 	ret
 
 ;____________________________________________________________________________[$060F]___
@@ -1760,11 +1779,10 @@ _06bd:
 	
 	di      
 	;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
-	 ;Block Mappings?
-	ld      a,4
+	ld      a,:S1_BlockMappings
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
-	ld      a,5
+	ld      a,:S1_BlockMappings+1
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
 	ei      
@@ -1803,7 +1821,7 @@ _06bd:
 	ld      c,$08
 	jp      ++
 
-	;------------------------------------------------------------------------------
+	;get the position in the floor layout (in RAM) of the camera	
 +	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	and     %00011111		;MOD 32 (i.e. 0-31 looping)
 	add     a,8			;add 8 (ergo, 8-39)
@@ -1819,65 +1837,81 @@ _06bd:
 ++	call    getFloorLayoutRAMPosition
 	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	
+	;------------------------------------------------------------------------------
+	
 	;has the camera moved left?
 	bit     6,(iy+vars.flags0)
 	jr      z,+
 	add     a,8
-+	and     %00011111
-	srl     a
-	srl     a
-	srl     a
-	ld      c,a
+	
+	;determine the column number (8px) of the VDP scroll position
++	and     %00011111		;MOD 32
+	srl     a			;divide by 2 ...
+	srl     a			;divide by 4 ...
+	srl     a			;divide by 8
+	ld      c,a			;copy it into BC
 	ld      b,$00
 	ld      (RAM_TEMP1),bc
+	
 	exx     
 	ld      de,$D180
 	exx     
 	ld      de,(RAM_LEVEL_FLOORWIDTH)
-	ld      b,$07
--	ld      a,(hl)
+	
+	ld      b,7
+-	ld      a,(hl)			;read a block index from the Floor Layout
 	exx     
 	ld      c,a
 	ld      b,$00
-	ld      hl,(RAM_TEMP3)
-	add     hl,bc
-	rlca    
-	rlca    
-	rlca    
-	rlca    
+	ld      hl,(RAM_TEMP3)		;retrieve the solidity data address
+	add     hl,bc			;offset the block index into the solidity data
+	
+	;multiply the block index by 16
+	 ;(blocks are each 16 bytes long)
+	rlca    			;x2 ...
+	rlca    			;x4 ...
+	rlca    			;x8 ...
+	rlca    			;x16
 	ld      c,a
-	and     $0f
+	and     %00001111		;MOD 16
 	ld      b,a
 	ld      a,c
 	xor     b
 	ld      c,a
-	ld      a,(hl)
+	
+	ld      a,(hl)			;read the solidity data for the block index
 	rrca    
 	rrca    
 	rrca    
-	and     $10
-	ld      hl,(RAM_TEMP1)
+	and     %00010000
+	
+	ld      hl,(RAM_TEMP1)		;retrieve the column number of the VSP scroll
 	add     hl,bc
-	ld      bc,(RAM_BLOCKMAPPINGS)
+	ld      bc,(RAM_BLOCKMAPPINGS)	;get the address of the level's block mappings
 	add     hl,bc
 	ld      bc,$0004
 	ldi     
+	
 	ld      (de),a
 	inc     e
 	add     hl,bc
 	ldi     
+	
 	ld      (de),a
 	inc     e
 	inc     c
 	add     hl,bc
 	ldi     
+	
 	ld      (de),a
 	inc     e
 	inc     c
 	add     hl,bc
 	ldi     
+	
 	ld      (de),a
 	inc     e
+	
 	exx     
 	add     hl,de
 	djnz    -
@@ -1897,9 +1931,9 @@ _06bd:
 	;------------------------------------------------------------------------------
 ++	call    getFloorLayoutRAMPosition
 	ld      a,(RAM_VDPSCROLL_VERTICAL)
-	and     $1f
+	and     %00011111
 	srl     a
-	and     $fc
+	and     %11111100
 	ld      c,a
 	ld      b,$00
 	ld      (RAM_TEMP1),bc
@@ -1919,7 +1953,7 @@ _06bd:
 	rlca    
 	rlca    
 	ld      c,a
-	and     $0f
+	and     %00001111
 	ld      b,a
 	ld      a,c
 	xor     b
@@ -1928,7 +1962,7 @@ _06bd:
 	rrca    
 	rrca    
 	rrca    
-	and     $10
+	and     %00010000
 	ld      hl,(RAM_TEMP1)
 	add     hl,bc
 	ld      bc,(RAM_BLOCKMAPPINGS)
@@ -2074,7 +2108,7 @@ fillScrollTiles:
 	ld   c, a
 	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	add  a, $08
-	and  $F8
+	and  %11111000
 	srl  a
 	srl  a
 	add  a, c
@@ -2085,7 +2119,7 @@ fillScrollTiles:
 	ex   de, hl
 	ld   hl, $D100
 	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
-	and  $1F
+	and  %00011111
 	add  a, $08
 	srl  a
 	srl  a
@@ -2095,7 +2129,7 @@ fillScrollTiles:
 	add  hl, bc
 	add  hl, bc
 	ld   a, e
-	and  $C0
+	and  %11000000
 	ld   (RAM_TEMP1), a
 	ld   a, e
 	out  (SMS_VDP_CONTROL), a
@@ -2458,11 +2492,11 @@ _LABEL_A40_121:
 	ld   (SMS_PAGE_2), a
 	ld   (RAM_PAGE_2), a
 	
-	ld   a, (iy+vars.spriteCount)
+	ld   a, (iy+vars.spriteUpdateCount)
 	res  0, (iy+vars.flags0)
 	call wait
 	
-	ld   (iy+vars.spriteCount), a
+	ld   (iy+vars.spriteUpdateCount), a
 	ld   b, $04
 	
 --	push bc
@@ -2478,10 +2512,10 @@ _LABEL_A40_121:
 	call loadPaletteOnInterrupt
 	ld   b, $0A
 
--	ld   a, (iy+vars.spriteCount)
+-	ld   a, (iy+vars.spriteUpdateCount)
 	res  0, (iy+vars.flags0)
 	call wait
-	ld   (iy+vars.spriteCount), a
+	ld   (iy+vars.spriteUpdateCount), a
 	djnz -
 	
 	pop  bc
@@ -2493,7 +2527,7 @@ _LABEL_A40_121:
 
 _a90:
 	ld   a, (hl)
-	and  $03
+	and  %00000011
 	jr   z, +
 	dec  a
 +	ld   c, a
@@ -2532,19 +2566,19 @@ _aae:
 	ld      hl,$D3BC
 	ld      a,%00000011
 	call    loadPaletteOnInterrupt
-	ld      c,(iy+vars.spriteCount)
+	ld      c,(iy+vars.spriteUpdateCount)
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),c
+	ld      (iy+vars.spriteUpdateCount),c
 	ld      b,$09
 	
--	ld      a,(iy+vars.spriteCount)
+-	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
 	ld      b,$04
 
@@ -2592,10 +2626,10 @@ _aae:
 	call loadPaletteOnInterrupt
 	ld      b,$0a
 
--	ld      a,(iy+vars.spriteCount)
+-	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
 	
 	pop     bc
@@ -2632,19 +2666,19 @@ _b60:
 	ld      hl,$D3BC
 	ld      a,%00000011
 	call loadPaletteOnInterrupt
-	ld      c,(iy+vars.spriteCount)
+	ld      c,(iy+vars.spriteUpdateCount)
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
 	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+vars.spriteCount),c
+	ld      (iy+vars.spriteUpdateCount),c
 	ld      b,$09
 	
--	ld      a,(iy+vars.spriteCount)
+-	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	djnz -
 	
 	ld      b,$04
@@ -2697,10 +2731,10 @@ _b60:
 	call loadPaletteOnInterrupt
 	
 	ld      b,10
--	ld      a,(iy+vars.spriteCount)
+-	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
 	
 	pop     bc
@@ -2745,7 +2779,7 @@ getLevelBitFlag:
 	ret
 
 ;____________________________________________________________________________[$0C1D]___
-;copy power-up icon into sprite RAM
+;copy power-up icon into sprite VRAM
 
 _c1d:
 ;HL : absolute address to uncompressed art data for the icons, assuming that slot 1
@@ -3123,7 +3157,7 @@ _LABEL_E86_110:
 	res  0, (iy+vars.flags0)
 	call wait
 	
-	ld   (iy+vars.spriteCount), $00
+	ld   (iy+vars.spriteUpdateCount), $00
 	ld   a, (RAM_LIVES)
 	ld   l, a
 	ld   h, $00
@@ -3715,7 +3749,7 @@ _1401:
 -	push    bc
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),$00
+	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,$D216
 	ld      de,$D2BE
 	ld      b,$01
@@ -4025,12 +4059,13 @@ _16d9:
 	ret
 
 _1711:
-.db $14, $ad, $ae, $ff, $15, $bd, $be, $ff
+.db $14, $ad, $ae, $ff
+.db $15, $bd, $be, $ff
 
 ;____________________________________________________________________________[$1719]___
 
 _1719:
-	xor     a
+	xor     a			;set A to 0
 	ld      (RAM_RINGS),a
 	res     3,(iy+vars.flags9)
 	res     2,(iy+vars.flags9)
@@ -4201,7 +4236,7 @@ _1860:
 	
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),$00
+	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$D2BA
@@ -4378,7 +4413,7 @@ _1a14:
 ;____________________________________________________________________________[$1A18]___
 
 _1a18:
-	ld      (iy+vars.spriteCount),$00
+	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$D2BA
@@ -4793,7 +4828,7 @@ _LABEL_1CED_131:
 	
 	ld      hl,$0000
 	ld      ($D2B5),hl
-	ld      (iy+vars.spriteCount),h
+	ld      (iy+vars.spriteUpdateCount),h
 _1dae:
 	res     0,(iy+vars.flags0)
 	call    wait
@@ -4869,7 +4904,7 @@ _1de2:					;jump to here from _2067
 	xor     a			;set A to 0
 	ld      ($D302),a
 	ld      ($D2DE),a
-	ld      (iy+vars.spriteCount),$15
+	ld      (iy+vars.spriteUpdateCount),$15
 	ld      hl,$D03F		;lives icon sprite table entry
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,RAM_SPRITETABLE+1	;sprite Y-value
@@ -4931,10 +4966,10 @@ _1e9e:	;demo mode?
 	ret     nz
 	rst     $20			;`muteSound`
 	
--	ld      a,(iy+vars.spriteCount)
+-	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ld      a,11
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
@@ -5294,8 +5329,8 @@ loadLevel:
 	;clear some variables
 	ld   (RAM_VDPSCROLL_HORIZONTAL), a
 	ld   (RAM_VDPSCROLL_VERTICAL), a
-	ld   ($D27B), hl
-	ld   ($D27D), hl
+	ld   (RAM_CAMERA_X_GOTO), hl
+	ld   (RAM_CAMERA_Y_GOTO), hl
 	ld   ($D2B7), hl
 	ld   (RAM_RASTERSPLIT_STEP), a
 	ld   (RAM_RASTERSPLIT_LINE), a
@@ -6088,10 +6123,10 @@ _LABEL_258B_133:
 	ld      b,$3d
 	
 --	push    bc
-	ld      c,(iy+vars.spriteCount)
+	ld      c,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),c
+	ld      (iy+vars.spriteUpdateCount),c
 	res     0,(iy+vars.flags0)
 	call    wait
 	ld      de,RAM_SPRITETABLE
@@ -6138,7 +6173,7 @@ _LABEL_258B_133:
 	djnz    --
 	ld      hl,_2047
 	call    _b60
-	ld      (iy+vars.spriteCount),$00
+	ld      (iy+vars.spriteUpdateCount),$00
 	
 	ld      a,5
 	ld      (SMS_PAGE_1),a
@@ -6242,7 +6277,7 @@ _2718:
 	res     0,(iy+vars.flags0)
 	call    wait
 	
-	ld      (iy+vars.spriteCount),$00
+	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      hl,$D322
@@ -6269,12 +6304,12 @@ _2718:
 
 _2745:
 	push    bc
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	
 	res     0,(iy+vars.flags0)
 	call    wait
 	
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	
 	pop     bc
 	dec     bc
@@ -6892,12 +6927,12 @@ _2f66:
 	bit     6,(iy+vars.timeLightningFlags)
 	ret     nz
 	
-	ld      hl,($D27B)
+	ld      hl,(RAM_CAMERA_X_GOTO)
 	ld      a,l
 	or      h
 	call    nz,_3140
 	
-	ld      hl,($D27D)
+	ld      hl,(RAM_CAMERA_Y_GOTO)
 	ld      a,l
 	or      h
 	call    nz,_3122
@@ -7108,7 +7143,7 @@ _311f:
 	ret
 
 ;____________________________________________________________________________[$3122]___
-;set scroll Y?
+;scroll vertically towards the locked camera position
 
 _3122:
 ;HL : ?
@@ -7128,10 +7163,10 @@ _3122:
 	ret
 
 ;____________________________________________________________________________[$3140]___
-;set the left the hand side of the level and scroll towards it accordingly:
+;scroll horizontaly towards the locked camera position
 
 _3140:
-;HL : ($D27B)
+;HL : (RAM_CAMERA_X_GOTO)
 	ld      de,(RAM_LEVEL_LEFT)
 	and     a			;reset the carry so it doesn't affect `sbc`
 	sbc     hl,de
@@ -7370,7 +7405,7 @@ doObjects:
 	;keep reading memory until either something non-zero is found or we hit $D3BC
 	djnz    -
 	
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	
 	push    af
@@ -7386,7 +7421,7 @@ doObjects:
 	pop     af
 	
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ret
 
 ;----------------------------------------------------------------------------[$32C8]---
@@ -7796,7 +7831,7 @@ processSpriteLayout:
 	;move to the next sprite table entry
 	inc  e
 	ld   (RAM_SPRITETABLE_CURRENT), de	
-	inc  (iy+vars.spriteCount)	;increase the number of sprites to draw
+	inc  (iy+vars.spriteUpdateCount)
 	
 	;move across 8 pixels
 +	inc  bc
@@ -7886,7 +7921,7 @@ _3581:
 	ld      (bc),a
 	inc     c
 	ld      (RAM_SPRITETABLE_CURRENT),bc
-	inc     (iy+vars.spriteCount)
+	inc     (iy+vars.spriteUpdateCount)
 	ret
 
 ;____________________________________________________________________________[$35CC]___
@@ -7910,7 +7945,7 @@ _LABEL_35CC_117:
 	inc  l
 	ld   (hl), a
 	inc  l
-	inc  (iy+vars.spriteCount)
+	inc  (iy+vars.spriteUpdateCount)
 	
 +	inc  de
 	ld   a, c
@@ -10215,7 +10250,7 @@ _5231:
 	jr      c,+
 	cp      $0a
 	ret     c
-+	ld      a,(iy+vars.spriteCount)
++	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
@@ -10237,7 +10272,7 @@ _5231:
 	pop     af
 	
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ret
 
 _526e:
@@ -10261,10 +10296,10 @@ _5285:
 	ld      a,(RAM_LEVEL_MUSIC)
 	rst     $18			;`playMusic`
 	
-	ld      c,(iy+vars.spriteCount)
+	ld      c,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),c
+	ld      (iy+vars.spriteUpdateCount),c
 	ret
 
 ;____________________________________________________________________________[$529C]___
@@ -14029,10 +14064,10 @@ _77be:
 	ld      a,(RAM_LEVEL_MUSIC)
 	rst     $18			;`playMusic`
 	
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
 	call    wait
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 +	ld      (ix+$07),$00
 	ld      (ix+$08),$03
 	ld      (ix+$09),$00
@@ -14049,11 +14084,12 @@ _77be:
 	sbc     hl,de
 	ret     c
 	
+	;unlocks the screen?
 	ld      (ix+$00),$ff
 	ld      hl,$2000		;8192 -- max width of a level in pixels
 	ld      (RAM_LEVEL_RIGHT),hl
 	ld      hl,$0000
-	ld      ($D27B),hl
+	ld      (RAM_CAMERA_X_GOTO),hl
 	
 	set     5,(iy+vars.flags0)
 	set     0,(iy+vars.flags2)
@@ -14440,8 +14476,8 @@ _7c7b:
 _7c8c:
 ;HL : ?
 ;DE : ?
-	ld      ($D27B),hl
-	ld      ($D27D),de
+	ld      (RAM_CAMERA_X_GOTO),hl
+	ld      (RAM_CAMERA_Y_GOTO),de
 	
 	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_LEFT),hl
@@ -14455,12 +14491,12 @@ _7c8c:
 ;____________________________________________________________________________[$7CA6]___
 
 _7ca6:
-	ld      hl,($D27B)
+	ld      hl,(RAM_CAMERA_X_GOTO)
 	ld      de,(RAM_CAMERA_X)
 	and     a
 	sbc     hl,de
 	ret     nz
-	ld      hl,($D27D)
+	ld      hl,(RAM_CAMERA_Y_GOTO)
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
@@ -14895,9 +14931,9 @@ _8053:
 	ld      (RAM_LEVEL_TOP),hl
 	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$01f0
-	ld      ($D27B),hl
+	ld      (RAM_CAMERA_X_GOTO),hl
 	ld      hl,$0048
-	ld      ($D27D),hl
+	ld      (RAM_CAMERA_Y_GOTO),hl
 	
 	set     0,(ix+$18)
 	
@@ -16324,7 +16360,7 @@ _8d48:
 	ld      (RAM_TEMP1),hl
 	ld      hl,(RAM_CAMERA_Y)
 	ld      (RAM_TEMP3),hl
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
@@ -16365,7 +16401,7 @@ _8d48:
 	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ret
 	
 _8e16:
@@ -17333,7 +17369,7 @@ _96f8:
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
@@ -17378,7 +17414,7 @@ _96f8:
 +++	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ld      (ix+$0d),$0a
 	ld      (ix+$0e),$0c
 	ld      a,(ix+$12)
@@ -18981,7 +19017,7 @@ _a7ed:
 	ld      (RAM_LEVEL_TOP),hl
 	ld      (RAM_LEVEL_BOTTOM),hl
 	ld      hl,$0220
-	ld      ($D27D),hl
+	ld      (RAM_CAMERA_Y_GOTO),hl
 
 	;UNKNOWN
 	ld      hl,$ef3f
@@ -19171,7 +19207,7 @@ _a9c0:
 
 _a9c7:
 	set     5,(ix+$18)
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
@@ -19210,7 +19246,7 @@ _a9c7:
 +	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 	ld      hl,(RAM_CAMERA_X)
 	ld      de,$ffe0
 	add     hl,de
@@ -21412,7 +21448,7 @@ _bf4c:
 	ld      a,($D223)
 	rrca    
 	jr      nc,+
-	ld      a,(iy+vars.spriteCount)
+	ld      a,(iy+vars.spriteUpdateCount)
 	ld      hl,(RAM_SPRITETABLE_CURRENT)
 	push    af
 	push    hl
@@ -21434,7 +21470,7 @@ _bf4c:
 	pop     hl
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      (iy+vars.spriteCount),a
+	ld      (iy+vars.spriteUpdateCount),a
 +	ld      l,(ix+$05)
 	ld      h,(ix+$06)
 	ld      de,$0020
