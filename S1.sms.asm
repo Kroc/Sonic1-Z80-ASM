@@ -269,6 +269,8 @@
 
 .DEF RAM_FRAMECOUNT		$D223
 
+.DEF RAM_SONIC_ISJUMPING	$D408	;$FF when jumping (but not falling), else $00
+
 ;--------------------------------------------------------------------------------------
 
 .STRUCT object
@@ -283,8 +285,8 @@
 	unknownA		DB
 	unknownB		DB
 	unknownC		DB
-	unknownD		DB
-	unknownE		DB
+	width			DB	;IX+$0D
+	height			DB	;IX+$0E
 	spriteLayout		DW	;IX+$0F/10
 .ENDST
 
@@ -5029,6 +5031,7 @@ _1de2:					;jump to here from _2067
 	add	hl,de
 	ex	de,hl
 	ld	hl,($D3FE)
+	
 	xor	a			;set A to 0
 	sbc	hl,de
 	ret	c
@@ -5038,7 +5041,7 @@ _1de2:					;jump to here from _2067
 	ld	($D403),hl
 	ld	($D405),a
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a	;"not jumping"
 	ret
 
 ;____________________________________________________________________________[$1E9E]___
@@ -5969,8 +5972,8 @@ _235e:
 	add	hl,hl
 	add	hl,hl
 	add	hl,hl
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	exx	
 	
 	;X or Y positiond
@@ -7420,8 +7423,8 @@ _31e6:
 	ld	l,a
 	ld	h,a
 	xor	a
-+	ld	e,(ix+$02)
-	ld	d,(ix+$03)
++	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	sbc	hl,de
 	jp	nc,++
 	ld	hl,(RAM_TEMP1)
@@ -7560,13 +7563,13 @@ _32e2:
 	ld	d, (ix+$08)
 	ld	c, (ix+$09)
 	ld	l, (ix+$01)
-	ld	h, (ix+$02)
-	ld	a, (ix+$03)
+	ld	h, (object.X+0)
+	ld	a, (object.X+1)
 	add	hl, de
 	adc	a, c
 	ld	(ix+$01), l
-	ld	(ix+$02), h
-	ld	(ix+$03), a
+	ld	(object.X+0), h
+	ld	(object.X+1), a
 	ld	e, (ix+$0A)
 	ld	d, (ix+$0B)
 	ld	c, (ix+$0C)
@@ -7582,11 +7585,11 @@ _32e2:
 	jp	nz, _34e6
 	ld	b, $00
 	ld	d, b
-	ld	e, (ix+$0E)
+	ld	e, (ix+object.height)
 	srl	e
 	bit	7, (ix+$08)
 	jr	nz, +
-	ld	c, (ix+$0D)
+	ld	c, (ix+object.width)
 	ld	hl, $411E
 	jp	++
 
@@ -7639,8 +7642,8 @@ _32e2:
 	and	a
 	jp	p,+
 	ld	d,$ff
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,(RAM_TEMP3)
 	add	hl,bc
 	bit	7,(ix+$09)
@@ -7666,8 +7669,8 @@ _32e2:
 	add	hl,de
 	and	a
 	sbc	hl,bc
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	a,(RAM_TEMP6)
 	ld	e,a
 	ld	d,$00
@@ -7694,13 +7697,13 @@ _32e2:
 	ld	d,b
 	bit	7,(ix+$0b)
 	jr	nz,+
-	ld	c,(ix+$0d)
+	ld	c,(ix+object.width)
 	srl	c
-	ld	e,(ix+$0e)
+	ld	e,(ix+object.height)
 	ld	hl,$448a		;data?
 	jp	++
 	
-+	ld	c,(ix+$0d)
++	ld	c,(ix+object.width)
 	srl	c
 	ld	e,$00
 	ld	hl,$41ec		;data?
@@ -7739,7 +7742,7 @@ _32e2:
 	inc	hl
 	ld	h,(hl)
 	ld	l,a
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,c
 	and	$1f
 	ld	c,a
@@ -7823,8 +7826,8 @@ _34e6:
 	and	a
 	sbc	hl,bc
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,(RAM_CAMERA_X)
 	and	a
 	sbc	hl,bc
@@ -8106,8 +8109,8 @@ _3644:
 	ld	(ix+$11),$06
 	ld	(ix+$12),$00
 	ld	hl,($D3FE)
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	hl,($D401)
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
@@ -8151,11 +8154,11 @@ _36be:
 	ld	a,(RAM_TEMP1)
 	ld	e,a
 	ld	d,$00
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	a,(RAM_TEMP2)
 	ld	e,a
 	ld	l,(ix+object.Y+0)
@@ -8206,8 +8209,8 @@ getFloorLayoutRAMPositionForObject:
 	and	%10000000
 	ld	l,a
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	a,l
 	add	a,a
@@ -8235,8 +8238,8 @@ getFloorLayoutRAMPositionForObject:
 	and	%11000000
 	ld	l,a
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	a,l
 	add	a,a
@@ -8262,8 +8265,8 @@ getFloorLayoutRAMPositionForObject:
 	and	%11100000
 	ld	l,a
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	a,l
 	add	a,a
@@ -8291,8 +8294,8 @@ getFloorLayoutRAMPositionForObject:
 	and	%11110000
 	ld	l,a
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	a,l
 	add	a,a
@@ -8323,8 +8326,8 @@ getFloorLayoutRAMPositionForObject:
 	rl	h
 	ex	de,hl			;put HL aside into DE
 	
-	ld	l,(ix+$02)		;Object X position?
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)		;Object X position?
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	a,l
 	rlca				;x2 ...
@@ -8613,46 +8616,56 @@ _LABEL_38B0_51:
 	ret
 
 ;____________________________________________________________________________[$3956]___
+;called by objects, very common
 
 _LABEL_3956_11:
+;RAM_TEMP6/7 : e.g. $0806
 	bit	0, (iy+$05)
 	scf
 	ret	nz
-	ld	l, (ix+$02)
-	ld	h, (ix+$03)
-	ld	c, (ix+$0D)
+	
+	ld	l, (object.X+0)
+	ld	h, (object.X+1)
+	ld	c, (ix+object.width)
 	ld	b, $00
 	add	hl, bc
+	
 	ld	de, ($D3FE)
-	xor	a
+	
+	xor	a			;set A to 0
 	sbc	hl, de
 	ret	c
-	ld	l, (ix+$02)
-	ld	h, (ix+$03)
+	
+	ld	l, (object.X+0)
+	ld	h, (object.X+1)
 	ld	a, (RAM_TEMP6)
 	ld	c, a
 	add	hl, bc
 	ex	de, hl
+	
 	ld	a, ($D409)
 	ld	c, a
 	add	hl, bc
-	xor	a
+	xor	a			;set A to 0
 	sbc	hl, de
 	ret	c
+	
 	ld	l, (ix+object.Y+0)
 	ld	h, (ix+object.Y+1)
-	ld	c, (ix+$0E)
+	ld	c, (ix+object.height)
 	add	hl, bc
 	ld	de, ($D401)
-	xor	a
+	xor	a			;set A to 0
 	sbc	hl, de
 	ret	c
+	
 	ld	l, (ix+object.Y+0)
 	ld	h, (ix+object.Y+1)
 	ld	a, (RAM_TEMP7)
 	ld	c, a
 	add	hl, bc
 	ex	de, hl
+	
 	ld	a, ($D40A)
 	ld	c, a
 	add	hl, bc
@@ -9262,15 +9275,15 @@ _48c8:
 	call	nz,_4fd3
 	bit	0,(ix+$18)
 	jp	nz,_532e
-	ld	a,(ix+$0e)
+	ld	a,(ix+object.height)
 	cp	$20
 	jr	z,+
 	ld	hl,($D401)
 	ld	de,$fff8
 	add	hl,de
 	ld	($D401),hl
-+	ld	(ix+$0d),$18
-	ld	(ix+$0e),$20
++	ld	(ix+object.width),$18
+	ld	(ix+object.height),$20
 	ld	hl,($D403)
 	ld	b,(ix+$09)
 	ld	c,$00
@@ -9438,7 +9451,7 @@ _4bac:
 	ld	a,b
 	adc	a,c
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	push	hl
 	ld	a,e
 	cpl	
@@ -10257,11 +10270,11 @@ _5117:
 ;jumped to from _48c8 (OBJECT: Sonic)
 
 _5193:
-	xor	a
+	xor	a			;set A to 0
 	ld	l,a
 	ld	h,a
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a	;set "not jumping"
 	ld	(ix+$14),$16
 	ld	a,($D40F)
 	cp	$12
@@ -10281,7 +10294,7 @@ _51b3:
 ;____________________________________________________________________________[$51BC]___
 
 _51bc:
-	ld	(ix+$0d),$1c
+	ld	(ix+object.width),$1c
 	ld	(ix+$14),$10
 	bit	7,(ix+$0c)
 	ret	nz
@@ -10457,8 +10470,8 @@ _529c:
 	ld	hl,($D3FE)
 	ld	de,$0002
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,($D401)
 	ld	de,$000e
@@ -10489,15 +10502,15 @@ _529c:
 ;jumped to from _48c8 (OBJECT: Sonic)
 
 _532e:
-	ld	a,(ix+$0e)
+	ld	a,(ix+object.height)
 	cp	$18
 	jr	z,+
 	ld	hl,($D401)
 	ld	de,$0008
 	add	hl,de
 	ld	($D401),hl
-+	ld	(ix+$0d),$18
-	ld	(ix+$0e),$18
++	ld	(ix+object.width),$18
+	ld	(ix+object.height),$18
 	ld	hl,($D403)
 	ld	b,(ix+$09)
 	ld	c,$00
@@ -10656,7 +10669,7 @@ _543c:
 	ld	a,b
 	adc	a,c
 +++	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 ++++	xor	a
 	ld	l,a
 	ld	h,a
@@ -10693,7 +10706,7 @@ _54c6:
 ;referenced by table at _58e5	
 
 _54ce:
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,$0c
 	and	$1f
 	cp	$1a
@@ -10732,7 +10745,7 @@ _54ce:
 ;referenced by table at _58e5
 
 _550f:
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,$0c
 	and	$1f
 	cp	$10
@@ -10749,7 +10762,7 @@ _550f:
 ;referenced by table at _58e5
 
 _552d:
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,$0c
 	and	$1f
 	cp	$10
@@ -10771,7 +10784,7 @@ _552d:
 ;referenced by table at _58e5
 
 _5556:
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,$0c
 	and	$1f
 	cp	$10
@@ -10830,7 +10843,7 @@ _55a8:
 ;referenced by table at _58e5
 
 _55b6:
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	add	a,$0c
 	and	$1f
 	cp	$08
@@ -11018,7 +11031,7 @@ _56d6:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$00
@@ -11028,7 +11041,7 @@ _56d6:
 	add	hl,de
 	adc	a,$ff
 +	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	bc,$000c
 	ld	hl,($D3FE)
 	add	hl,bc
@@ -11174,7 +11187,7 @@ _57cd:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$00
@@ -11184,7 +11197,7 @@ _57cd:
 	add	hl,de
 	adc	a,$ff
 +	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	jp	_57be
 
 ;____________________________________________________________________________[$57F6]___
@@ -11308,8 +11321,8 @@ _5893:
 	xor	a
 	ld	(ix+$00),$2e
 	ld	(ix+$01),a
-	ld	(ix+$02),c
-	ld	(ix+$03),b
+	ld	(object.X+0),c
+	ld	(object.X+1),b
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),e
 	ld	(ix+object.Y+1),d
@@ -11374,8 +11387,8 @@ _5965:
 
 ;OBJECT: monitor - rings
 _5b09:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11404,8 +11417,8 @@ _5b34:
 	ld	(object.spriteLayout+0),<_5bcc
 	ld	(object.spriteLayout+1),>_5bcc
 	ld	l,(ix+$01)
-	ld	h,(ix+$02)
-	ld	a,(ix+$03)
+	ld	h,(object.X+0)
+	ld	a,(object.X+1)
 	ld	e,(ix+$07)
 	ld	d,(ix+$08)
 	add	hl,de
@@ -11461,8 +11474,8 @@ _5bcc:
 
 ;OBJECT: monitor - speed shoes
 _5bd9:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11483,8 +11496,8 @@ _5bd9:
 
 ;OBJECT: monitor - life
 _5c05:
-	ld	(ix+$0D),$14
-	ld	(ix+$0E),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	
 	;check if the level has its bit flag set at $D305+
@@ -11588,8 +11601,8 @@ _5c05:
 
 ;OBJECT: monitor - shield
 _5cd7:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11607,8 +11620,8 @@ _5cd7:
 
 ;OBJECT: monitor - invincibility
 _5cff:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11632,8 +11645,8 @@ _5cff:
 ;OBJECT: monitor - checkpoint
 
 _5d2f:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11655,8 +11668,8 @@ _5d2f:
 	ld	hl,$D32E
 	add	hl,de
 	ex	de,hl			;DE is $D32E + level number * 2
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,hl
 	add	hl,hl
 	add	hl,hl
@@ -11680,8 +11693,8 @@ _5d2f:
 ;OBJECT: monitor - continue
 
 _5d80:
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$18
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$18
 	call	_5da8
 	ld	hl,$0003
 	ld	(RAM_TEMP6),hl
@@ -11714,11 +11727,11 @@ _5da8:
 	jr	z,++
 +	ld	de,$0004
 	ld	bc,$0000
-++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	add	hl,bc
@@ -11736,8 +11749,8 @@ _5deb:
 	and	$01
 	jr	nz,++
 	ld	de,($D3FE)
-	ld	c,(ix+$02)
-	ld	b,(ix+$03)
+	ld	c,(object.X+0)
+	ld	b,(object.X+1)
 	ld	hl,$ffee
 	add	hl,bc
 	and	a
@@ -11763,15 +11776,16 @@ _5deb:
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	hl,$D414
 	set	7,(hl)
 	scf	
 	ret
 
-+	ld	a,($D408)
++	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
+	
 ++	call	_36be
 	and	a
 	ret
@@ -11782,7 +11796,7 @@ _5deb:
 	ld	hl,$0400
 	xor	a
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	($D28e),a
 	set	1,(ix+$18)
 	scf	
@@ -11792,8 +11806,8 @@ _5deb:
 	ld	de,$000c
 	add	hl,de
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,$000a
 	add	hl,bc
 	ld	bc,$ffeb
@@ -11801,8 +11815,8 @@ _5deb:
 	sbc	hl,de
 	jr	nc,+
 	ld	bc,$0015
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	($D3fe),hl
 	xor	a
@@ -11823,8 +11837,8 @@ _5ea2:
 	ld	a,(hl)
 	and	c
 	jr	nz,+
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$11
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$11
 	call	_5da8
 	xor	a
 	ld	(object.spriteLayout+0),a
@@ -11875,8 +11889,8 @@ _5f10:
 
 ;OBJECT: end sign
 _5f17:
-	ld	(ix+$0d),$18
-	ld	(ix+$0e),$30
+	ld	(ix+object.width),$18
+	ld	(ix+object.height),$30
 	bit	0,(ix+$11)
 	jr	nz,+
 	
@@ -11899,8 +11913,8 @@ _5f17:
 +	ld	hl,(RAM_CAMERA_X)
 	ld	(RAM_LEVEL_LEFT),hl
 	
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$FF90
 	add	hl,de
 	ld	(RAM_LEVEL_RIGHT),hl
@@ -11919,8 +11933,8 @@ _5f17:
 	jr	z,++
 	bit	7,(ix+$18)
 	jr	z,++
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,($D3FE)
 	and	a
 	sbc	hl,de
@@ -12288,8 +12302,8 @@ S1_PaletteCycles_6:			;[$65AE] Sky Base 2/3 Interior Cycles
 
 ;OBJECT: badnick - crabmeat
 _65ee:
-	ld	(ix+$0d),$10
-	ld	(ix+$0e),$1f
+	ld	(ix+object.width),$10
+	ld	(ix+object.height),$1f
 	ld	e,(ix+$12)
 	ld	d,$00
 -	ld	hl,_66c5
@@ -12428,8 +12442,8 @@ _673c:
 	ld	($D26D),hl
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(ix+$12),l
 	ld	(ix+$13),h
 	ld	l,(ix+object.Y+0)
@@ -12439,10 +12453,10 @@ _673c:
 	ld	(ix+$11),$e0
 	set	0,(ix+$18)
 	set	1,(ix+$18)
-+	ld	(ix+$0d),$1a
-	ld	(ix+$0e),$10
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	(ix+object.width),$1a
+	ld	(ix+object.height),$10
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	hl,_682f
 	ld	e,(ix+$11)
@@ -12458,8 +12472,8 @@ _673c:
 	ld	l,(ix+$12)
 	ld	h,(ix+$13)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	de,(RAM_TEMP1)
 	and	a
 	sbc	hl,de
@@ -12476,9 +12490,11 @@ _673c:
 	add	hl,de
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
+	
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -12681,15 +12697,18 @@ _693f:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
+	
 	cpl	
 	add	hl,de
 	adc	a,c
 	ld	($D406),hl
-	ld	($D408),a
-+	xor	a
+	ld	(RAM_SONIC_ISJUMPING),a
+	
++	xor	a			;set A to 0
 	ld	(ix+$07),a
 	ld	(ix+$08),a
 	ld	(ix+$09),a
@@ -12725,22 +12744,27 @@ _69be:
 ;OBJECT: wooden platform (Green Hill)
 _69e9:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$1a
-	ld	(ix+$0e),$10
+	
+	ld	(ix+object.width),$1a
+	ld	(ix+object.height),$10
 	ld	(object.spriteLayout+0),<_6911
 	ld	(object.spriteLayout+1),>_6911
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,++
+	
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jr	c,++
+	
 	ld	de,$0000
 	ld	a,(ix+object.Y+0)
 	and	$1f
 	cp	$10
 	jr	nc,+
+	
 	ld	e,$80
 +	ld	(ix+$0a),e
 	ld	(ix+$0b),d
@@ -12781,11 +12805,13 @@ _6a47:
 	ld	(ix+$0a),l
 	ld	(ix+$0b),h
 	ld	(ix+$0c),a
-+	ld	(ix+$0d),$1a		;this can't mean `_101a`?
-	ld	(ix+$0e),$10
-	ld	a,($D408)
++	ld	(ix+object.width),$1a		;this can't mean `_101a`?
+	ld	(ix+object.height),$10
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
+	
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -12818,8 +12844,8 @@ _6a47:
 ;OBJECT: UNKNOWN
 _6ac1:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$02
-	ld	(ix+$0e),$02
+	ld	(ix+object.width),$02
+	ld	(ix+object.height),$02
 	ld	hl,$0303
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -12834,8 +12860,8 @@ _6ac1:
 	ld	(ix+$0a),l
 	ld	(ix+$0b),h
 	ld	(ix+$0c),a
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -12859,8 +12885,8 @@ _6ac1:
 	add	hl,de
 	ld	a,(hl)
 	call	_3581
-	ld	c,(ix+$02)
-	ld	b,(ix+$03)
+	ld	c,(object.X+0)
+	ld	b,(object.X+1)
 	ld	l,c
 	ld	h,b
 	ld	de,$fff8
@@ -12903,8 +12929,8 @@ _6b74:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	(ix+$14),e
 	ld	(ix+$15),d
 	xor	a
@@ -12920,10 +12946,10 @@ _6b74:
 	sbc	hl,de
 	ret	nc
 	set	0,(ix+$18)
-+	ld	(ix+$0d),$14
-	ld	(ix+$0e),$20
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	(ix+object.width),$14
+	ld	(ix+object.height),$20
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,($D3FE)
 	and	a
 	sbc	hl,de
@@ -12949,8 +12975,8 @@ _6b74:
 	
 +	dec	a
 	jr	nz,++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0030
 	add	hl,de
 	ld	de,(RAM_CAMERA_X)
@@ -12960,9 +12986,9 @@ _6b74:
 	ld	(object.spriteLayout+0),a
 	ld	(object.spriteLayout+1),a
 	ld	a,(ix+$14)
-	ld	(ix+$02),a
+	ld	(object.X+0),a
 	ld	a,(ix+$15)
-	ld	(ix+$03),a
+	ld	(object.X+1),a
 	res	0,(ix+$18)
 	ret
 	
@@ -12983,8 +13009,8 @@ _6b74:
 	call	_7c7b
 	jp	c,+
 	push	bc
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -12993,8 +13019,8 @@ _6b74:
 	xor	a
 	ld	(ix+$00),$0d
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	(ix+$04),a
 	ld	hl,$0020
 	add	hl,bc
@@ -13089,66 +13115,87 @@ _6cf9:
 ;OBJECT: wooden platform - moving (Green Hill)
 _6d65:
 	set	5,(ix+$18)
+	
 	ld	a,(RAM_CURRENT_LEVEL)
-	cp	$07
+	cp	$07			;Jungle act 2?
 	jr	z,+
+	
 	ld	hl,$0020
 	ld	($D267),hl
+	
 	ld	hl,$0048
 	ld	($D269),hl
+	
 	ld	hl,$0030
 	ld	($D26B),hl
+	
 	ld	hl,$0030
 	ld	($D26D),hl
-+	ld	(ix+$0d),$1a
-	ld	(ix+$0e),$10
+	
++	ld	(ix+object.width),$1a
+	ld	(ix+object.height),$10
 	ld	c,$00
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
+	
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
+	
 	ld	c,$00
 	jr	c,+
+	
 	ld	bc,$0010
 	ld	de,$0000
 	call	_LABEL_7CC1_12
 	ld	c,$01
+	
+	;move right 1px
 +	ld	l,(ix+$12)
 	ld	h,(ix+$13)
 	inc	hl
 	ld	(ix+$12),l
 	ld	(ix+$13),h
-	ld	de,$00a0
-	xor	a
+	
+	ld	de,$00A0
+	xor	a			;set A to 0
 	sbc	hl,de
 	jr	c,+
+	
 	ld	(ix+$12),a
 	ld	(ix+$13),a
 	inc	(ix+$14)
+	
 +	ld	de,$0001
 	bit	0,(ix+$14)
 	jr	z,+
-	ld	de,$ffff
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	
+	;move left 1px?
+	ld	de,$FFFF
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	a,c
 	and	a
 	jr	z,+
+	
 	ld	hl,($D3FE)
 	add	hl,de
 	ld	($D3FE),hl
+	
 +	ld	hl,_6911
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	and	a
 	jr	z,+
+	
 	ld	hl,_6931
 	dec	a
 	jr	z,+
+	
 	ld	hl,_6923
 +	ld	(object.spriteLayout+0),l
 	ld	(object.spriteLayout+1),h
@@ -13159,8 +13206,8 @@ _6d65:
 ;OBJECT: badnick - motobug
 _6e0c:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$10
 	ld	e,(ix+$12)
 	ld	d,$00
 -	ld	hl,_6e96
@@ -13257,8 +13304,8 @@ _6ecb:
 ;OBJECT: badnick - newtron
 _6f08:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$14
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$14
 	ld	a,(ix+$11)
 	cp	$02
 	jr	z,+
@@ -13287,8 +13334,8 @@ _6f08:
 	call	_7c7b
 	jp	c,+
 	push	bc
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -13297,8 +13344,8 @@ _6f08:
 	xor	a
 	ld	(ix+$00),$0d
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	(ix+$04),a
 	ld	hl,$0006
 	add	hl,bc
@@ -13360,8 +13407,8 @@ _7000:
 ;OBJECT: boss (Green Hill)
 _700c:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$20
-	ld	(ix+$0e),$1c
+	ld	(ix+object.width),$20
+	ld	(ix+object.height),$1c
 	call	_7ca6
 	bit	0,(ix+$11)
 	jr	nz,+
@@ -13439,8 +13486,8 @@ _700c:
 	ld	hl,(RAM_LEVEL_LEFT)
 	ld	de,$0006
 	add	hl,de
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	ld	c,$ff
@@ -13461,8 +13508,8 @@ _700c:
 	ld	hl,(RAM_LEVEL_LEFT)
 	ld	de,$00e0
 	add	hl,de
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	ld	c,$00
@@ -13548,8 +13595,8 @@ _700c:
 	ld	l,c
 	ld	h,c
 	jp	c,++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,(RAM_LEVEL_LEFT)
 	xor	a
 	sbc	hl,de
@@ -13629,8 +13676,8 @@ _732c:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	set	0,(ix+$18)
-+	ld	(ix+$0d),$1c
-	ld	(ix+$0e),$40
++	ld	(ix+object.width),$1c
+	ld	(ix+object.height),$40
 	ld	hl,_7564
 	bit	1,(ix+$18)
 	jr	z,+
@@ -13645,8 +13692,8 @@ _732c:
 	ld	b,(hl)
 	inc	hl
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	ld	($D2AB),hl
 	ex	de,hl
@@ -13670,8 +13717,8 @@ _732c:
 	ld	(RAM_LEVEL_LEFT),hl
 	
 	;something to do with scrolling
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$FF90
 	add	hl,de
 	ld	(RAM_LEVEL_RIGHT),hl
@@ -13680,17 +13727,19 @@ _732c:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jp	c,+++
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+++
+	
 	ld	e,(ix+object.Y+0)
 	ld	d,(ix+object.Y+1)
 	ld	hl,($D401)
 	and	a
 	sbc	hl,de
 	jr	c,++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0010
 	add	hl,de
 	ld	de,$ffea
@@ -13699,8 +13748,8 @@ _732c:
 	sbc	hl,bc
 	jr	nc,+
 	ld	de,$001d
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	($D3FE),hl
 	jp	+
@@ -13710,8 +13759,8 @@ _732c:
 	add	hl,bc
 	ld	c,l
 	ld	b,h
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	ret	c
@@ -13737,7 +13786,7 @@ _732c:
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	hl,$D414
 	set	7,(hl)
 	ld	a,c
@@ -13800,8 +13849,8 @@ _74b6:
 	ld	($D216),a
 	call	_7c7b
 	ret	c
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -13815,8 +13864,8 @@ _74b6:
 	ld	(ix+$01),a
 	ld	hl,$0008
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,$001a
 	add	hl,bc
@@ -13864,8 +13913,8 @@ _757c:
 ;OBJECT: free animal - bird
 _7594:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$10
 	bit	7,(ix+$18)
 	jr	z,+
 	ld	(ix+$0a),$00
@@ -13910,8 +13959,8 @@ _7594:
 +	ld	de,_7638
 	call	_7c41
 _7612:
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0010
 	add	hl,de
 	ld	de,(RAM_CAMERA_X)
@@ -13958,8 +14007,8 @@ _7638:
 ;OBJECT: free animal - rabbit
 _7699:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$20
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$20
 	ld	hl,_7760
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	and	a
@@ -14092,13 +14141,14 @@ _77be:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$00
 	ld	($D406),hl
-	ld	($D408),a
-	xor	a
+	ld	(RAM_SONIC_ISJUMPING),a
+	
+	xor	a			;set A to 0
 	ld	l,a
 	ld	h,a
 	ld	($D403),hl
@@ -14196,8 +14246,8 @@ _77be:
 	ld	(ix+$0c),$ff
 	ld	(object.spriteLayout+0),<_7922
 	ld	(object.spriteLayout+1),>_7922
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,(RAM_CAMERA_X)
 	inc	d
 	and	a
@@ -14288,8 +14338,8 @@ _79fa:
 	bit	0,a
 	ret	nz
 	and	$02
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -14324,8 +14374,8 @@ _7a3a:
 	ld	h,$00
 	ld	(RAM_TEMP3),hl
 	pop	hl
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -14336,8 +14386,8 @@ _7a3a:
 	ld	(ix+$01),a
 	ld	hl,(RAM_TEMP1)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,(RAM_TEMP3)
 	add	hl,bc
@@ -14362,8 +14412,8 @@ _7a3a:
 
 _7aa7:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$40
-	ld	(ix+$0e),$40
+	ld	(ix+object.width),$40
+	ld	(ix+object.height),$40
 	ld	hl,$0000
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -14400,8 +14450,8 @@ _7aed:
 	ld	(ix+$12),$00
 	set	0,(ix+$18)
 +	ld	bc,$0000
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	($D2AB),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -14649,7 +14699,7 @@ _LABEL_7CC1_12:
 	ld	a, ($D2E8)
 	ld	hl, ($D2E6)
 	ld	($D406), hl
-	ld	($D408), a
+	ld	(RAM_SONIC_ISJUMPING), a
 	ld	hl, $D414
 	set	7, (hl)
 	ret
@@ -14659,8 +14709,8 @@ _LABEL_7CC1_12:
 ;OBJECT: badnick - chopper
 _7cf6:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$08
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$08
+	ld	(ix+object.height),$0c
 	ld	a,(ix+$14)
 	and	a
 	jr	z,+
@@ -14680,12 +14730,12 @@ _7cf6:
 	add	hl,de
 	ld	(ix+$12),l
 	ld	(ix+$13),h
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0008
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	set	1,(ix+$18)
 +	ld	(ix+$0a),$00
 	ld	(ix+$0b),$fc
@@ -14767,8 +14817,8 @@ _7e02:
 	ld	($D267),hl
 	ld	hl,$0058
 	ld	($D269),hl
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$10
 	ld	(object.spriteLayout+0),<_7e89
 	ld	(object.spriteLayout+1),>_7e89
 	bit	0,(ix+$18)
@@ -14784,9 +14834,11 @@ _7e3c:
 	xor	a
 	ld	(ix+$0B), a
 	ld	(ix+$0C), a
-	ld	a, ($D408)
+	
+	ld	a, (RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m, +
+	
 	ld	hl, $0806
 	ld	(RAM_TEMP6), hl
 	call	_LABEL_3956_11
@@ -14826,8 +14878,8 @@ _7e9b:
 	ld	($D267),hl
 	ld	hl,$0058
 	ld	($D269),hl
-	ld	(ix+$0d),$1a
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$1a
+	ld	(ix+object.height),$10
 	ld	(object.spriteLayout+0),<_7ed9
 	ld	(object.spriteLayout+1),>_7ed9
 	bit	0,(ix+$18)
@@ -14851,8 +14903,8 @@ _7ed9:
 
 _7ee6:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$10
 	bit	0,(ix+$18)
 	jr	nz,+
 	ld	l,(ix+object.Y+0)
@@ -14872,9 +14924,11 @@ _7ee6:
 	ld	(ix+$0a),$c0
 	ld	(ix+$0b),$ff
 	ld	(ix+$0c),$ff
-+	ld	a,($D408)
+	
++	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,_8003
+	
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -14916,13 +14970,13 @@ _7ee6:
 	sra	d
 	rr	e
 	rra	
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	a,(ix+$01)
 	adc	hl,de
 	ld	(ix+$01),a
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	($D3FD),a
 	ld	de,$fffc
 	add	hl,de
@@ -15013,8 +15067,8 @@ _8022:
 
 _8053:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$20
-	ld	(ix+$0e),$1c
+	ld	(ix+object.width),$20
+	ld	(ix+object.height),$1c
 	bit	0,(ix+$18)
 	jr	nz,+
 	ld	hl,($D401)
@@ -15078,8 +15132,8 @@ _8053:
 +	ld	a,(ix+$12)
 	and	a
 	jp	nz,++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	bit	1,(ix+$11)
 	jr	nz,+
 	ld	(object.spriteLayout+0),<_81f4
@@ -15137,8 +15191,8 @@ _8053:
 	jr	nc,++++
 	call	_7c7b
 	ret	c
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -15149,8 +15203,8 @@ _8053:
 	ld	(ix+$01),a
 	ld	hl,$000b
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,$0030
 	add	hl,bc
@@ -15191,8 +15245,8 @@ _8206:
 
 _8218:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$10
 	ld	hl,$0202
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -15277,14 +15331,14 @@ _82cd:
 ;OBJECT: badnick - Yadrin (Bridge)
 
 _82e6:
-	ld	(ix+$0d),$10
-	ld	(ix+$0e),$0f
+	ld	(ix+object.width),$10
+	ld	(ix+object.height),$0f
 	ld	hl,$0408
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	call	nc,_35fd
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$20
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$20
 	ld	hl,$1006
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -15355,8 +15409,8 @@ _837e:
 
 _83c1:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$0e
-	ld	(ix+$0e),$08
+	ld	(ix+object.width),$0e
+	ld	(ix+object.height),$08
 	bit	0,(ix+$18)
 	jr	nz,++
 	xor	a
@@ -15378,8 +15432,8 @@ _83c1:
 	ld	a,($D2AC)
 	and	$80
 	jp	z,++++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	($D2AB),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -15421,10 +15475,12 @@ _83c1:
 ++++	ld	hl,$0402
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
+	
 	ret	c
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	ret	m
+	
 	ld	de,(RAM_TEMP1)
 	ld	bc,$0010
 	call	_LABEL_7CC1_12
@@ -15443,8 +15499,8 @@ _8481:
 
 _8496:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$1c
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$1c
 	call	_7ca6
 	ld	(object.spriteLayout+0),<_865a
 	ld	(object.spriteLayout+1),>_865a
@@ -15483,11 +15539,11 @@ _8496:
 	ld	hl,_8632
 	add	hl,de
 	ld	a,(hl)
-	ld	(ix+$02),a
+	ld	(object.X+0),a
 	inc	hl
 	ld	a,(hl)
 	inc	hl
-	ld	(ix+$03),a
+	ld	(object.X+1),a
 	ld	a,(hl)
 	inc	hl
 	ld	(ix+object.Y+0),a
@@ -15527,8 +15583,8 @@ _8496:
 	cp	$08
 	jr	nc,+++
 	ld	hl,($D3FE)
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	ld	hl,_863a
@@ -15543,8 +15599,8 @@ _8496:
 	ld	b,(hl)
 	inc	hl
 	push	hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
@@ -15607,8 +15663,8 @@ _85d1:
 	ld	(ix+$00),$0d
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	hl,(RAM_TEMP3)
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),l
@@ -15659,12 +15715,12 @@ _866c:
 	bit	0,(ix+$18)
 	jr	nz,+
 	ld	(ix+$11),$1c
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$fff0
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	set	0,(ix+$18)
 +	ld	l,(ix+$14)
 	ld	h,(ix+$15)
@@ -15701,7 +15757,7 @@ _866c:
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	jr	++
 	
 +	ld	a,l
@@ -15714,8 +15770,10 @@ _866c:
 	ld	de,($D2E6)
 	add	hl,de
 	ld	($D406),hl
-	ld	a,$ff
-	ld	($D408),a
+	
+	ld	a,$FF
+	ld	(RAM_SONIC_ISJUMPING),a	;set Sonic as currently jumping
+	
 ++	ld	a,$1c
 	sub	c
 	ld	(ix+$11),a
@@ -15732,8 +15790,8 @@ _866c:
 	ld	(ix+$14),a
 	ld	(ix+$15),$1c
 	ld	(ix+$16),a
-++++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+++++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -15765,28 +15823,30 @@ _866c:
 	ld	hl,_8834
 	call	_881a
 	res	1,(ix+$18)
-	ld	(ix+$0d),$14
+	ld	(ix+object.width),$14
 	ld	a,$02
 	ld	(RAM_TEMP6),a
 	ld	a,(ix+$11)
 	ld	c,a
 	add	a,$08
-	ld	(ix+$0e),a
+	ld	(ix+object.height),a
 	ld	a,c
 	add	a,$04
 	ld	(RAM_TEMP7),a
 	call	_LABEL_3956_11
 	jr	nc,+
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	ret	m
-	ld	(ix+$0d),$3c
+	
+	ld	(ix+object.width),$3c
 	ld	a,$2a
 	ld	(RAM_TEMP6),a
 	ld	a,$1c
 	sub	(ix+$11)
 	add	a,$08
-	ld	(ix+$0e),a
+	ld	(ix+object.height),a
 	ld	a,$1c
 	sub	(ix+$11)
 	add	a,$04
@@ -15796,9 +15856,11 @@ _866c:
 	ret
 	
 +	set	1,(ix+$18)
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	ret	m
+	
 	ld	a,(ix+$11)
 	cp	$1c
 	jr	z,++
@@ -15821,7 +15883,7 @@ _866c:
 ++	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 +	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	ld	bc,$0010
@@ -15871,8 +15933,8 @@ _8837:
 	ld	(ix+$07),$20
 	ld	(ix+$08),$00
 	ld	(ix+$09),$00
-	ld	(ix+$0d),$14
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$14
+	ld	(ix+object.height),$0c
 	ld	hl,$0a02
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -15887,8 +15949,8 @@ _8837:
 +	ld	(ix+$07),$e0
 	ld	(ix+$08),$ff
 	ld	(ix+$09),$ff
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$0c
 	ld	hl,$0202
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -15934,12 +15996,12 @@ _88be:
 
 _88fb:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$08
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$08
+	ld	(ix+object.height),$0c
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0008
 	add	hl,de
 	ld	(ix+$12),l
@@ -15970,8 +16032,8 @@ _88fb:
 +	ld	l,(ix+$12)
 	ld	h,(ix+$13)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+$14)
 	ld	h,(ix+$15)
 	add	hl,bc
@@ -16186,15 +16248,15 @@ _8af6:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000c
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	set	0,(ix+$18)
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -16268,8 +16330,8 @@ _8af6:
 	ld	(RAM_TEMP6),de
 	inc	hl
 	ld	a,(hl)
-	ld	(ix+$0d),$01
-	ld	(ix+$0e),a
+	ld	(ix+object.width),$01
+	ld	(ix+object.height),a
 	call	_LABEL_3956_11
 	call	nc,_35fd
 	ld	a,(RAM_FRAMECOUNT)
@@ -16299,16 +16361,16 @@ _8bce:
 
 _8c16:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$04
-	ld	(ix+$0e),$0a
+	ld	(ix+object.width),$04
+	ld	(ix+object.height),$0a
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000a
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$12),l
 	ld	(ix+$13),h
 	ld	l,(ix+object.Y+0)
@@ -16369,8 +16431,8 @@ _8c16:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	call	nc,_35fd
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,(RAM_CAMERA_X)
 	ld	bc,$fff0
 	add	hl,bc
@@ -16401,8 +16463,8 @@ _8c16:
 	
 +	ld	l,(ix+$12)
 	ld	h,(ix+$13)
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+$14)
 	ld	h,(ix+$15)
 	ld	(ix+object.Y+0),l
@@ -16547,8 +16609,8 @@ _8e56:
 	add	hl,de
 	bit	0,(hl)
 	call	nz,_91eb
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -16609,8 +16671,8 @@ _8eca:
 ++	ld	(ix+$0a),$a0
 	ld	(ix+$0b),$ff
 	ld	(ix+$0c),$ff
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ex	de,hl
 	ld	hl,(RAM_CAMERA_X)
@@ -16668,8 +16730,8 @@ _8f6c:
 ;OBJECT: badnick - Burrobot (Labyrinth)
 
 _8f6d:
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$20
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$20
 	ld	hl,$0202
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -16695,16 +16757,16 @@ _8f6d:
 	bit	0,(ix+$18)
 	jp	nz,++
 	ld	de,$ffd0
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	de,($D3FE)
 	and	a
 	sbc	hl,de
 	jr	nc,+
 	ld	bc,$0030
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,bc
 	and	a
 	sbc	hl,de
@@ -16713,8 +16775,8 @@ _8f6d:
 	ld	(ix+$0a),$80
 	ld	(ix+$0b),$fd
 	ld	(ix+$0c),$ff
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,($D3FE)
 	and	a
 	sbc	hl,de
@@ -16788,14 +16850,14 @@ _9059:
 
 _90c0:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$1c
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$1c
 	ld	(object.spriteLayout+0),<_91de
 	ld	(object.spriteLayout+1),>_91de
 	bit	1,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(ix+$11),l
 	ld	(ix+$12),h
 	ld	l,(ix+object.Y+0)
@@ -16848,8 +16910,8 @@ _90c0:
 +	ld	(ix+$0a),l
 	ld	(ix+$0b),h
 	ld	(ix+$0c),c
-++	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+++	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,(RAM_CAMERA_X)
 	ld	bc,$ffe0
 	add	hl,bc
@@ -16877,8 +16939,8 @@ _90c0:
 	jr	nc,++
 +	ld	l,(ix+$11)
 	ld	h,(ix+$12)
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+$13)
 	ld	h,(ix+$14)
 	ld	(ix+object.Y+0),l
@@ -16935,8 +16997,8 @@ _91eb:
 	ld	c,(hl)
 	pop	hl
 +	ld	a,c
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -16950,8 +17012,8 @@ _91eb:
 	ld	l,a
 	ld	h,$00
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),$00
 	call	_LABEL_625_57
 	and	$0f
@@ -16978,8 +17040,8 @@ _9257:
 
 _9267:
 	set	5, (ix+$18)
-	ld	(ix+$0D), $20
-	ld	(ix+$0E), $1C
+	ld	(ix+object.width), $20
+	ld	(ix+object.height), $1C
 	call	_7ca6
 	ld	(object.spriteLayout+0),<_9493
 	ld	(object.spriteLayout+1),>_9493
@@ -17019,11 +17081,11 @@ _9267:
 	ld	hl,_947b
 	add	hl,de
 	ld	a,(hl)
-	ld	(ix+$02),a
+	ld	(object.X+0),a
 	inc	hl
 	ld	a,(hl)
 	inc	hl
-	ld	(ix+$03),a
+	ld	(object.X+1),a
 	ld	a,(hl)
 	inc	hl
 	ld	(ix+object.Y+0),a
@@ -17076,8 +17138,8 @@ _9267:
 	cp	$64
 	jp	nz,_f
 	inc	(ix+$11)
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000f
 	add	hl,de
 	ld	(RAM_TEMP1),hl
@@ -17101,8 +17163,8 @@ _9267:
 	ld	(ix+$00),$2f
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	hl,(RAM_TEMP3)
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),l
@@ -17157,8 +17219,8 @@ __	ld      hl,$00a2
 	ret	nc
 	bit	7,(ix+$0c)
 	ret	z
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -17172,8 +17234,8 @@ __	ld      hl,$00a2
 	call	_3581
 	ret
 _9432:
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0004
 	add	hl,de
 	ld	(RAM_TEMP1),hl
@@ -17188,8 +17250,8 @@ _9432:
 	ld	(RAM_TEMP6),hl
 	ld	c,$04
 	call	_85d1
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0020
 	add	hl,de
 	ld	(RAM_TEMP1),hl
@@ -17219,8 +17281,8 @@ _9493:
 
 _94a5:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$08
-	ld	(ix+$0e),$0a
+	ld	(ix+object.width),$08
+	ld	(ix+object.height),$0a
 	ld	hl,$0404
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -17232,8 +17294,8 @@ _94a5:
 	ld	de,$000c
 	add	hl,de
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,$0008
 	add	hl,bc
 	and	a
@@ -17260,8 +17322,8 @@ _94a5:
 	set	0,(ix+$18)
 	ret
 	
-++	ld	c,(ix+$02)
-	ld	b,(ix+$03)
+++	ld	c,(object.X+0)
+	ld	b,(object.X+1)
 	ld	hl,$fff0
 	add	hl,bc
 	ld	de,(RAM_CAMERA_X)
@@ -17392,8 +17454,8 @@ _94a5:
 	add	hl,de
 	ld	(object.spriteLayout+0),l
 	ld	(object.spriteLayout+1),h
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$fff9
 	bit	7,(ix+$09)
 	jr	z,+
@@ -17415,8 +17477,8 @@ _94a5:
 	ld	(ix+$00),$2a
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	hl,(RAM_TEMP3)
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),l
@@ -17450,8 +17512,8 @@ _96a8:
 	xor	a
 	ld	(object.spriteLayout+0),a
 	ld	(object.spriteLayout+1),a
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -17501,8 +17563,8 @@ _96f8:
 	ld	hl,RAM_SPRITETABLE
 	add	hl,de
 	ld	(RAM_SPRITETABLE_CURRENT),hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -17535,8 +17597,8 @@ _96f8:
 	pop	af
 	ld	(RAM_SPRITETABLE_CURRENT),hl
 	ld	(iy+vars.spriteUpdateCount),a
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$0c
 	ld	a,(ix+$12)
 	and	a
 	jr	z,+
@@ -17575,7 +17637,7 @@ _96f8:
 	ld	l,a
 	ld	h,a
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	($D28E),a
 	ld	($D29B),hl
 	set	2,(iy+vars.unknown0)
@@ -17601,8 +17663,8 @@ _96f8:
 ++	ld	(ix+$07),c
 	ld	(ix+$08),b
 	ld	(ix+$09),d
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ex	de,hl
 	ld	hl,(RAM_CAMERA_X)
 	ld	bc,$0008
@@ -17669,8 +17731,8 @@ _9866:
 	jr	nc,+
 	ld	hl,$140c
 	ld	(RAM_TEMP6),hl
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$16
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$16
 	call	_LABEL_3956_11
 	ret	c
 	ld	bc,_999e
@@ -17679,7 +17741,7 @@ _9866:
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	de,$fffc
 	ld	hl,($D403)
 	ld	a,($D405)
@@ -17695,8 +17757,8 @@ _9866:
 	ld	(object.spriteLayout+1),>_9a90
 	ld	hl,$080f
 	ld	(RAM_TEMP6),hl
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$16
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$16
 	call	_LABEL_3956_11
 	ret	c
 	ld	bc,_99be
@@ -17734,19 +17796,19 @@ _9866:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$ff
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ret
 
 	;unused section of code?
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	de,$0008
 	ld	hl,($D403)
 	ld	a,($D405)
@@ -17760,8 +17822,8 @@ _9866:
 	ld	(object.spriteLayout+1),>_9aa2
 	ld	hl,$021a
 	ld	(RAM_TEMP6),hl
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$16
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$16
 	call	_LABEL_3956_11
 	ret	c
 	ld	bc,_99de
@@ -17770,7 +17832,7 @@ _9866:
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	de,$001a
 	ld	hl,($D403)
 	ld	a,($D405)
@@ -17817,9 +17879,10 @@ _9aa2:
 ;____________________________________________________________________________[$9AAF]___
 
 _9aaf:
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	ret	m
+	
 	ld	a,($D3FE)
 	add	a,$0c
 	and	$1f
@@ -17849,7 +17912,7 @@ _9aaf:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$00
@@ -17857,7 +17920,7 @@ _9aaf:
 	rr	h
 	rr	l
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	and	a
 	ret
 
@@ -17866,8 +17929,8 @@ _9aaf:
 
 _9afb:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$1c
-	ld	(ix+$0e),$06
+	ld	(ix+object.width),$1c
+	ld	(ix+object.height),$06
 	ld	(object.spriteLayout+0),<_9b6e
 	ld	(object.spriteLayout+1),>_9b6e
 	ld	hl,$0001
@@ -17900,7 +17963,7 @@ _9afb:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,c
@@ -17908,7 +17971,7 @@ _9afb:
 	add	hl,de
 	adc	a,$00
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	ld	(ix+$11),$08
 	ld	a,$07
 	rst	$28			;`playSFX`
@@ -17927,14 +17990,14 @@ _9b6e:
 
 _9b75:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$60
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$60
 	ld	hl,$0000
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jr	c,++
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	a,l
 	add	a,a
 	rl	h
@@ -17998,15 +18061,15 @@ _9bfc:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	a,(ix+$02)
+	ld	a,(object.X+0)
 	ld	(ix+$11),a
-	ld	a,(ix+$03)
+	ld	a,(object.X+1)
 	ld	(ix+$12),a
 	ld	a,$18
 	rst	$28			;`playSFX`
 	set	0,(ix+$18)
-+	ld	(ix+$0d),$06
-	ld	(ix+$0e),$08
++	ld	(ix+object.width),$06
+	ld	(ix+object.height),$08
 	ld	a,(ix+$13)
 	cp	$64
 	jr	nc,+
@@ -18024,9 +18087,9 @@ _9bfc:
 	ld	(ix+$01),a
 	ld	(ix+$13),a
 	ld	a,(ix+$11)
-	ld	(ix+$02),a
+	ld	(object.X+0),a
 	ld	a,(ix+$12)
-	ld	(ix+$03),a
+	ld	(object.X+1),a
 	ld	a,$18
 	rst	$28			;`playSFX`
 	ret
@@ -18067,12 +18130,12 @@ _9c8e:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000c
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	ld	de,$0012
@@ -18082,8 +18145,8 @@ _9c8e:
 	call	_LABEL_625_57
 	ld	(ix+$11),a
 	set	0,(ix+$18)
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -18103,8 +18166,8 @@ _9c8e:
 	ld	hl,_9d6a
 	add	hl,bc
 	ld	a,(hl)
-	ld	(ix+$0e),a
-	ld	(ix+$0d),$06
+	ld	(ix+object.height),a
+	ld	(ix+object.width),$06
 	ld	hl,_9d4a
 	add	hl,de
 	ld	a,(hl)
@@ -18136,7 +18199,7 @@ _9c8e:
 	pop	bc
 	djnz	-
 	
-	ld	a,(ix+$0e)
+	ld	a,(ix+object.height)
 	and	a
 	jr	z,+
 	ld	hl,$0202
@@ -18186,8 +18249,8 @@ _9dfa:
 	and	a
 	jp	m,+
 	ld	de,$ffec
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	($D3FE),hl
 	xor	a
@@ -18195,16 +18258,16 @@ _9dfa:
 	ld	h,a
 	ld	($D403),hl
 	ld	($D405),a
-++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$ffc8
 	add	hl,de
 	ld	de,($D3FE)
 	xor	a
 	sbc	hl,de
 	jr	nc,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	and	a
 	sbc	hl,de
 	jr	c,+
@@ -18291,7 +18354,7 @@ _9ec4:
 ;____________________________________________________________________________[$9ED4]___
 
 _9ed4:
-	ld	(ix+$0d),$04
+	ld	(ix+object.width),$04
 	ld	a,(ix+$11)
 	srl	a
 	srl	a
@@ -18305,7 +18368,7 @@ _9ed4:
 	add	a,a
 	add	a,a
 	add	a,a
-	ld	(ix+$0e),a
+	ld	(ix+object.height),a
 	bit	0,(ix+$18)
 	ret	nz
 	ld	bc,$0000
@@ -18317,11 +18380,11 @@ _9ed4:
 	jr	z,+
 	ld	de,$0004
 	set	1,(ix+$18)
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	a,(ix+object.Y+0)
 	ld	(ix+$12),a
 	ld	a,(ix+object.Y+1)
@@ -18362,24 +18425,24 @@ _9f62:
 	and	a
 	jp	m,+
 	ld	de,$ffec
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	($D3FE),hl
 	xor	a
 	ld	($D403),a
 	ld	($D404),a
 	ld	($D405),a
-++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$fff0
 	add	hl,de
 	ld	de,($D3FE)
 	xor	a
 	sbc	hl,de
 	jr	nc,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,$0024
 	add	hl,bc
 	and	a
@@ -18439,24 +18502,24 @@ _a025:
 	and	a
 	jp	m,+
 	ld	de,$ffec
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	($D3FE),hl
 	xor	a
 	ld	($D403),a
 	ld	($D404),a
 	ld	($D405),a
-++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$ffc8
 	add	hl,de
 	ld	de,($D3FE)
 	xor	a
 	sbc	hl,de
 	jr	nc,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,$0024
 	add	hl,bc
 	and	a
@@ -18504,16 +18567,16 @@ _a0b1:
 
 _a0e8:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$30
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$30
+	ld	(ix+object.height),$10
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0018
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	ld	de,$0010
@@ -18577,8 +18640,8 @@ _a173:
 ;OBJECT: badnick - Ball Hog (Scrap Brain)
 
 _a1aa:
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$20
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$20
 	ld	hl,$0803
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -18588,8 +18651,8 @@ _a1aa:
 	ld	(ix+$0a),$00
 	ld	(ix+$0b),$01
 	ld	(ix+$0c),$00
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000a
 	add	hl,de
 	ex	de,hl
@@ -18613,8 +18676,8 @@ _a1aa:
 	jp	nz,++++
 	call	_7c7b
 	jp	c,++++
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -18623,8 +18686,8 @@ _a1aa:
 	xor	a
 	ld	(ix+$00),$1c
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	hl,$0006
 	add	hl,bc
 	ld	(ix+$04),a
@@ -18656,8 +18719,8 @@ _a1aa:
 	jr	nz,++++
 	call	_7c7b
 	jp	c,++++
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	ix
@@ -18666,8 +18729,8 @@ _a1aa:
 	xor	a
 	ld	(ix+$00),$1c
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	hl,$0006
 	add	hl,bc
 	ld	(ix+$04),a
@@ -18723,8 +18786,8 @@ _a30b:
 
 _a33c:
 	res	5,(ix+$18)
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$0f
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$0f
 	ld	hl,$0101
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -18791,24 +18854,26 @@ _a3bb:
 ;OBJECT: switch
 
 _a3f8:
-	ld	(ix+$0d),$0a
-	ld	(ix+$0e),$11
+	ld	(ix+object.width),$0a
+	ld	(ix+object.height),$11
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0008
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	set	0,(ix+$18)
 +	ld	hl,$0001
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jr	c,++
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,++
+	
 	ld	(object.spriteLayout+0),<_a48b
 	ld	(object.spriteLayout+1),>_a48b
 	ld	a,(RAM_LEVEL_SOLIDITY)
@@ -18875,8 +18940,8 @@ _a4ab:
 	and	a
 	jp	m,+
 	ld	de,$ffec
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ld	($D3FE),hl
 	xor	a
@@ -18932,8 +18997,8 @@ _a51a:
 ;OBJECT: badnick - Caterkiller
 
 _a551:
-	ld	(ix+$0d),$06
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$06
+	ld	(ix+object.height),$10
 	ld	a,(RAM_FRAMECOUNT)
 	and	$01
 	jr	nz,+++
@@ -18949,8 +19014,8 @@ _a551:
 	inc	hl
 	ld	b,(hl)
 	ld	l,(ix+$01)
-	ld	h,(ix+$02)
-	ld	a,(ix+$03)
+	ld	h,(object.X+0)
+	ld	a,(object.X+1)
 	add	hl,bc
 	bit	7,b
 	jr	z,+
@@ -18959,8 +19024,8 @@ _a551:
 	
 +	adc	a,$00
 ++	ld	(ix+$01),l
-	ld	(ix+$02),h
-	ld	(ix+$03),a
+	ld	(object.X+0),h
+	ld	(object.X+1),a
 	ld	hl,_a6e5
 	add	hl,de
 	ld	e,(hl)
@@ -18976,8 +19041,8 @@ _a551:
 	jr	z,+
 	ld	c,$ff
 +	ld	(ix+$14),c
-+++	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -18996,7 +19061,7 @@ _a551:
 	call	_a688
 	ld	a,$26
 	call	_a6a2
-	ld	(ix+$0d),$06
+	ld	(ix+object.width),$06
 	ld	hl,$0802
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -19006,7 +19071,7 @@ _a551:
 	call	_35e5
 	jr	+++
 	
-+	ld	(ix+$0d),$16
++	ld	(ix+object.width),$16
 	ld	hl,$0806
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -19025,7 +19090,7 @@ _a551:
 	call	_a688
 	ld	a,$28
 	call	_a6a2
-	ld	(ix+$0d),$10
+	ld	(ix+object.width),$10
 	ld	hl,$0401
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -19033,7 +19098,7 @@ _a551:
 	call	_35fd
 	jr	+++
 	
-+	ld	(ix+$0d),$16
++	ld	(ix+object.width),$16
 	ld	hl,$0410
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -19121,8 +19186,8 @@ _a795:
 ;OBJECT: boss (Scrap Brain)
 
 _a7ed:
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$2f
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$2f
 	bit	0,(ix+$18)
 	jr	nz,+
 	ld	hl,$0340
@@ -19160,8 +19225,8 @@ _a7ed:
 	ld	de,_baf9
 	ld	bc,_a9b7
 	call	_7c41
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,($D3FE)
 	xor	a
 	sbc	hl,de
@@ -19177,8 +19242,8 @@ _a7ed:
 	ld	(ix+$07),c
 	ld	(ix+$08),b
 	ld	(ix+$09),a
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$05a0
 	xor	a
 	sbc	hl,de
@@ -19202,8 +19267,8 @@ _a7ed:
 	ld	(iy+vars.joypad),$ff
 	ld	hl,$05a0
 	ld	(ix+$01),$00
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(object.spriteLayout+0),<_baf9
 	ld	(object.spriteLayout+1),>_baf9
 	inc	(ix+$11)
@@ -19254,14 +19319,14 @@ _a7ed:
 	ld	e,(ix+$11)
 	ld	d,$00
 	ld	hl,$028e
-	xor	a
+	xor	a			;set A to 0
 	sbc	hl,de
 	ld	($D400),a
 	ld	($D401),hl
 	ld	a,($D2E8)
 	ld	hl,($D2E6)
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	inc	(ix+$11)
 	ld	a,(ix+$11)
 	cp	$c0
@@ -19353,8 +19418,8 @@ _a9c7:
 	and	a
 	sbc	hl,bc
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,(RAM_CAMERA_X)
 	and	a
 	sbc	hl,bc
@@ -19371,8 +19436,8 @@ _a9c7:
 	ld	de,$ffe0
 	add	hl,de
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	and	a
 	sbc	hl,de
 	jr	nc,+
@@ -19385,8 +19450,8 @@ _a9c7:
 	ld	de,$01b4
 	add	hl,de
 	add	hl,bc
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 +	ld	(ix+$07),$00
 	ld	(ix+$08),$fd
 	ld	(ix+$09),$ff
@@ -19404,16 +19469,16 @@ _aa63:
 
 _aa6a:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$05
-	ld	(ix+$0e),$14
+	ld	(ix+object.width),$05
+	ld	(ix+object.height),$14
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$000f
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	ld	de,$fffa
@@ -19421,8 +19486,8 @@ _aa6a:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	set	0,(ix+$18)
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -19479,13 +19544,13 @@ _ab01:
 ;OBJECT: badnick - bomb (Sky Base)
 
 _ab21:
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$10
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$10
 	ld	a,(ix+$11)
 	cp	$64
 	jr	nc,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$ffc8
 	add	hl,de
 	ex	de,hl
@@ -19493,8 +19558,8 @@ _ab21:
 	and	a
 	sbc	hl,de
 	jr	c,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$002c
 	add	hl,de
 	ex	de,hl
@@ -19623,8 +19688,8 @@ _ab21:
 _ac96:
 	push	ix
 	push	hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ex	de,hl
 	ld	l,(ix+object.Y+0)
@@ -19636,8 +19701,8 @@ _ac96:
 	xor	a
 	ld	(ix+$00),$0d
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),c
 	ld	(ix+object.Y+1),b
@@ -19701,12 +19766,12 @@ _ad6c:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$fffc
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	call	_LABEL_625_57
 	ld	(ix+$11),a
 	set	0,(ix+$18)
@@ -19716,8 +19781,8 @@ _ad6c:
 	call	_7c7b
 	jr	c,+
 	push	ix
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	hl
@@ -19727,8 +19792,8 @@ _ad6c:
 	ld	(ix+$01),a
 	ld	hl,$0004
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,$0010
 	add	hl,bc
@@ -19777,13 +19842,13 @@ _ae04:
 
 _ae35:
 	set	5,(ix+$18)
-	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$0c
+	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$0c
 	ld	hl,(RAM_CAMERA_X)
 	ld	de,$0110
 	add	hl,de
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	jr	nc,+
@@ -19820,8 +19885,8 @@ _ae88:
 	ld	(ix+$13),$52
 	ld	(ix+$14),$7c
 	set	0,(ix+$18)
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,($D3FE)
 	and	a
 	sbc	hl,de
@@ -19846,16 +19911,16 @@ _ae88:
 	ld	($D216),hl
 	call	_af98
 	ld	(ix+$16),$ff
-++	ld	(ix+$0d),$1c
-	ld	(ix+$0e),$1c
+++	ld	(ix+object.width),$1c
+	ld	(ix+object.height),$1c
 	ld	hl,$1212
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	ld	hl,$1010
 	ld	(RAM_TEMP1),hl
 	call	nc,_35e5
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -19890,14 +19955,14 @@ _ae88:
 	inc	a
 	ld	(RAM_TEMP6),a
 	add	a,$04
-	ld	(ix+$0d),a
+	ld	(ix+object.width),a
 	inc	hl
 	ld	a,(hl)
 	inc	a
 	inc	a
 	ld	(RAM_TEMP7),a
 	add	a,$04
-	ld	(ix+$0e),a
+	ld	(ix+object.height),a
 	call	_LABEL_3956_11
 	call	nc,_35fd
 +	pop	hl
@@ -19976,8 +20041,8 @@ _afdb:
 	call	_7c7b
 	ret	c
 	push	ix
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	c,(ix+object.Y+0)
 	ld	b,(ix+object.Y+1)
 	push	hl
@@ -19987,8 +20052,8 @@ _afdb:
 	ld	(ix+$01),a
 	ld	hl,$0012
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,$001e
 	add	hl,bc
@@ -20040,14 +20105,14 @@ _b0f4:
 	set	5,(ix+$18)
 	ld	(object.spriteLayout+0),$00
 	ld	(object.spriteLayout+1),$00
-	ld	(ix+$0d),$04
-	ld	(ix+$0e),$0a
+	ld	(ix+object.width),$04
+	ld	(ix+object.height),$0a
 	ld	hl,$0602
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	call	nc,_35fd
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ex	de,hl
 	ld	hl,(RAM_CAMERA_X)
@@ -20101,8 +20166,8 @@ _b16c:
 	set	0,(ix+$18)
 +	ld	(object.spriteLayout+0),$00
 	ld	(object.spriteLayout+1),$00
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -20228,15 +20293,18 @@ _b297:
 	ld	(ix+$04),l
 	ld	(ix+object.Y+0),h
 	ld	(ix+object.Y+1),a
-	ld	a,($D408)
+	
+	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	jp	m,+
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$10
+	
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$10
 	ld	hl,$0a02
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jr	c,+
+	
 	ld	hl,$0030
 	ld	($D26B),hl
 	ld	hl,$0030
@@ -20245,22 +20313,22 @@ _b297:
 	ld	de,$0000
 	call	_LABEL_7CC1_12
 	ld	l,(ix+$01)
-	ld	h,(ix+$02)
-	ld	a,(ix+$03)
+	ld	h,(object.X+0)
+	ld	a,(object.X+1)
 	ld	de,$0080
 	add	hl,de
 	adc	a,$00
 	ld	(ix+$01),l
-	ld	(ix+$02),h
-	ld	(ix+$03),a
+	ld	(object.X+0),h
+	ld	(object.X+1),a
 	ld	hl,($D3FD)
 	ld	a,($D3FF)
 	add	hl,de
 	adc	a,$00
 	ld	($D3FD),hl
 	ld	($D3FF),a
-+	ld	l,(ix+$02)
-	ld	h,(ix+$03)
++	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(RAM_TEMP1),hl
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -20314,13 +20382,13 @@ _b398:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	(ix+$11),l
 	ld	(ix+$12),h
 	set	0,(ix+$18)
-+	ld	(ix+$0d),$0c
-	ld	(ix+$0e),$2e
++	ld	(ix+object.width),$0c
+	ld	(ix+object.height),$2e
 	ld	(object.spriteLayout+0),<_b45b
 	ld	(object.spriteLayout+1),>_b45b
 	ld	hl,$0202
@@ -20329,8 +20397,8 @@ _b398:
 	call	_LABEL_3956_11
 	call	nc,_35fd
 	ld	l,(ix+$01)
-	ld	h,(ix+$02)
-	ld	a,(ix+$03)
+	ld	h,(object.X+0)
+	ld	a,(object.X+1)
 	ld	de,$0080
 	add	hl,de
 	adc	a,$00
@@ -20350,8 +20418,8 @@ _b398:
 	ld	(RAM_TEMP4),hl
 	ld	a,$18
 	call	_3581
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0580
 	xor	a
 	ld	(ix+$07),a
@@ -20368,9 +20436,9 @@ _b398:
 	sbc	hl,de
 	jr	nc,+
 	ld	a,(ix+$11)
-	ld	(ix+$02),a
+	ld	(object.X+0),a
 	ld	a,(ix+$12)
-	ld	(ix+$03),a
+	ld	(object.X+1),a
 +	ld	de,($D401)
 	ld	hl,$ffe0
 	add	hl,bc
@@ -20445,8 +20513,8 @@ _b46d:
 	ld	b,(hl)
 	inc	hl
 	exx	
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,($D3FE)
 	and	a
 	sbc	hl,de
@@ -20538,11 +20606,13 @@ _b53b:
 	ld	(ix+$0a),$00
 	ld	(ix+$0b),$02
 	ld	(ix+$0c),$00
-++	ld	a,($D408)
+	
+++	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
 	ret	m
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$1c
+	
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$1c
 	ld	hl,$0802
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -20570,8 +20640,8 @@ _b5c2:
 	ret	c
 	push	ix
 	push	hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	add	hl,de
 	ex	de,hl
 	ld	l,(ix+object.Y+0)
@@ -20583,8 +20653,8 @@ _b5c2:
 	xor	a
 	ld	(ix+$00),$0d
 	ld	(ix+$01),a
-	ld	(ix+$02),e
-	ld	(ix+$03),d
+	ld	(object.X+0),e
+	ld	(object.X+1),d
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),c
 	ld	(ix+object.Y+1),b
@@ -20618,8 +20688,8 @@ _b5c2:
 ;OBJECT: boss (Sky Base)
 
 _b634:
-	ld	(ix+$0d),$1e
-	ld	(ix+$0e),$2f
+	ld	(ix+object.width),$1e
+	ld	(ix+object.height),$2f
 	set	5,(ix+$18)
 	bit	2,(ix+$18)
 	jp	nz,_b821
@@ -20632,12 +20702,12 @@ _b634:
 	ld	de,$0120
 	call	_7c8c
 	
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$0008
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$11),l
 	ld	(ix+$12),h
 	ld	l,(ix+object.Y+0)
@@ -20689,8 +20759,8 @@ _b634:
 	ld	h,(ix+$12)
 	ld	de,$0004
 	add	hl,de
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(object.spriteLayout+0),<_bb1d
 	ld	(object.spriteLayout+1),>_bb1d
 	jp	++++
@@ -20736,8 +20806,8 @@ _b634:
 	jp	nz,++++
 	ld	l,(ix+$11)
 	ld	h,(ix+$12)
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	a,(ix+$16)
 	and	a
 	call	z,_b9d5
@@ -20864,8 +20934,8 @@ _b821:
 	ld	hl,$0550
 	ld	(RAM_LEVEL_RIGHT),hl
 	
-+	ld	e,(ix+$02)
-	ld	d,(ix+$03)
++	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,$05e0
 	xor	a
 	sbc	hl,de
@@ -21018,8 +21088,8 @@ _b99f:
 	ld	l,(ix+$11)
 	ld	h,(ix+$12)
 	add	hl,bc
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	l,(ix+$13)
 	ld	h,(ix+$14)
 	add	hl,de
@@ -21041,8 +21111,8 @@ _b9d5:
 	ld	(ix+$00),$47
 	ld	(ix+$01),a
 	ld	hl,$0420
-	ld	(ix+$02),l
-	ld	(ix+$03),h
+	ld	(object.X+0),l
+	ld	(object.X+1),h
 	ld	(ix+$04),a
 	ld	hl,$012f
 	ld	(ix+object.Y+0),l
@@ -21224,8 +21294,8 @@ _bb84:
 	ret
 	
 ++	ld	hl,($D3FE)
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	and	a
 	sbc	hl,de
 	jr	nc,+
@@ -21301,8 +21371,8 @@ _bcdf:
 +	ld	a,(ix+$11)
 	cp	$c8
 	jp	c,+++
-	ld	e,(ix+$02)
-	ld	d,(ix+$03)
+	ld	e,(object.X+0)
+	ld	d,(object.X+1)
 	ld	hl,(RAM_CAMERA_X)
 	ld	bc,$fff4
 	add	hl,bc
@@ -21429,8 +21499,8 @@ _bdf9:
 	jr	z,+
 	dec	(ix+$12)
 	jr	nz,+
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	de,$003c
 	add	hl,de
 	ld	($D3FE),hl
@@ -21444,8 +21514,8 @@ _bdf9:
 	set	6,(iy+vars.unknown0)
 	ld	a,$06
 	rst	$28			;`playSFX`
-+	ld	(ix+$0d),$20
-	ld	(ix+$0e),$1c
++	ld	(ix+object.width),$20
+	ld	(ix+object.height),$1c
 	xor	a
 	ld	(ix+$07),a
 	ld	(ix+$08),$01
@@ -21458,8 +21528,8 @@ _bdf9:
 	ld	de,(RAM_CAMERA_X)
 	ld	hl,$0040
 	add	hl,de
-	ld	c,(ix+$02)
-	ld	b,(ix+$03)
+	ld	c,(object.X+0)
+	ld	b,(object.X+1)
 	and	a
 	sbc	hl,bc
 	jr	nc,+
@@ -21481,12 +21551,12 @@ _bdf9:
 	ld	a,h
 	cpl	
 	ld	h,a
-	ld	a,($D408)
+	ld	a,(RAM_SONIC_ISJUMPING)
 	cpl	
 	add	hl,de
 	adc	a,$00
 	ld	($D406),hl
-	ld	($D408),a
+	ld	(RAM_SONIC_ISJUMPING),a
 	res	6,(iy+vars.timeLightningFlags)
 	set	0,(ix+$18)
 	ld	(ix+$11),$01
@@ -21585,8 +21655,8 @@ _bf4c:
 	and	a
 	sbc	hl,de
 	ex	de,hl
-	ld	l,(ix+$02)
-	ld	h,(ix+$03)
+	ld	l,(object.X+0)
+	ld	h,(object.X+1)
 	ld	bc,(RAM_CAMERA_X)
 	and	a
 	sbc	hl,bc
