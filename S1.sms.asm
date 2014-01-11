@@ -89,7 +89,7 @@
 	
 	;program flow control / loading flags?
 	flags0			DB	;IY+$00
-	;bit 0 - when `wait` is called, execution will loop until the bit is set
+	;bit 0 - `waitForInterrupt` will loop until the bit is set
 	;bit 1 - unknown (set at level load)
 	;bit 3 - flag to load palette on IRQ
 	;bit 5 - unknown
@@ -189,6 +189,8 @@
 
 .DEF RAM_CURRENT_LEVEL		$D23E
 
+.DEF RAM_FLOORLAYOUT		$C000
+
 ;level dimensions / crop
 .DEF RAM_LEVEL_FLOORWIDTH	$D238	;width of the floor layout in blocks
 .DEF RAM_LEVEL_FLOORHEIGHT	$D23A	;height of the floor layout in blocks
@@ -257,6 +259,25 @@
 
 ;the number of the hardware sprites "in use"
 .DEF RAM_ACTIVESPRITECOUNT	$D2B4
+
+;when the screen scrolls and new tiles need to be filled in, they are pulled from these
+ ;caches which have the necessary tiles already in horizontal/vertical order for speed
+.DEF RAM_OVERSCROLLCACHE_HORZ	$D180
+.DEF RAM_OVERSCROLLCACHE_VERT	$D100
+
+.DEF RAM_PALETTE		$D3BC
+
+.DEF RAM_FRAMECOUNT		$D223
+
+;--------------------------------------------------------------------------------------
+
+.STRUCT object
+	unknown0		DB
+	unknown1		DB	
+	X			DW	;IX+$02/03
+	unknown4		DB	
+	Y			DW	;IX+$05/06
+.ENDST
 
 ;======================================================================================
 
@@ -376,7 +397,7 @@ IRQHandler:
 	ld   hl, (RAM_PAGE_1)
 	push hl
 	
-	;if the main thread is not held up at the `wait` routine
+	;if the main thread is not held up at the `waitForInterrupt` routine
 	bit  0, (iy+vars.flags0)
 	call nz, _LABEL_1A0_18
 	;and if it is...
@@ -698,8 +719,8 @@ _init:
 	ld   (SMS_PAGE_2), a
 	
 	;empty the RAM!
-	ld   hl, $C000			;starting from $C000,
-	ld   de, $C001			;and copying one byte to the next byte,
+	ld   hl, RAM_FLOORLAYOUT	;starting from $C000,
+	ld   de, RAM_FLOORLAYOUT+1	;and copying one byte to the next byte,
 	ld   bc, $1FEF			;copy 8'175 bytes ($C000-$DFEF),
 	ld   (hl), l			;using a value of 0 (the #$00 from the $C000)
 	ldir				 ;--it's faster to read a register than RAM
@@ -725,10 +746,10 @@ _init:
 	djnz -				;loop until B has reached 0
 	
 	;move all sprites off the bottom of the screen!
-	 ;(set 64 bytes of VRAM from $3F00 to #$E0)
+	 ;(set 64 bytes of VRAM from $3F00 to 224)
 	ld   hl, $3F00
 	ld   bc, 64
-	ld   a, $E0
+	ld   a, 224
 	call _clearVRAM
 	
 	call muteSound
@@ -816,11 +837,11 @@ _InitVDPRegisterValues:							;	cache:
 
 ;____________________________________________________________________________[$031C]___
 
-wait:
+waitForInterrupt:
 	;test bit 0 of the IY parameter (IY=$D200)
 	bit  0, (iy+vars.flags0)
 	;if bit 0 is off, then wait!
-	jr   z, wait
+	jr   z, waitForInterrupt
 	ret
 
 ;___ UNUSED! (15 bytes) _____________________________________________________[$0323]___
@@ -897,9 +918,9 @@ updateVDPSprites:
 	ld   b, (iy+vars.spriteUpdateCount)
 	
 	;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
-	ld   a, $80
+	ld   a, <$3F80
 	out  (SMS_VDP_CONTROL), a
-	ld   a, $3F
+	ld   a, >$3F80
 	or   %01000000			;add bit 6 to mark an address being given
 	out  (SMS_VDP_CONTROL), a
 	
@@ -1673,7 +1694,7 @@ _LABEL_625_57:
 ;____________________________________________________________________________[$063E]___
 ;calculate the VDP scroll offset according to the camera position?
 
-_063e:
+updateCamera:
 	;fill B with vertical and C with horizontal VDP scroll values
 	ld      bc,(RAM_VDPSCROLL_HORIZONTAL)
 	
@@ -1769,10 +1790,10 @@ _063e:
 	ret
 
 ;____________________________________________________________________________[$06BD]___
-;I believe this checks if the scroll offsets are such that new tiles need to be filled
- ;in in the overscroll area
+;this fills in the cache of the overscroll area so that when the screen scrolls onto
+ ;new tiles, they can be copied across in a fast and straight-forward fashion
 
-_06bd:
+fillOverscrollCache:
 	;scrolling enabled??
 	bit     5,(iy+vars.flags0)
 	ret     z
@@ -1795,7 +1816,7 @@ _06bd:
 	ld      c,a			;and put it into a 16-bit number (BC)
 	ld      b,$00
 	
-	;lookup the index in the solidity pointer table
+	;look up the index in the solidity pointer table
 	ld      hl,S1_SolidityPointers
 	add     hl,bc
 	
@@ -1809,7 +1830,7 @@ _06bd:
 	ld      (RAM_TEMP3),hl
 	
 	;------------------------------------------------------------------------------
-	;horizontal scrolling allowed?
+	;horizontal scrolling allowed??
 	bit     0,(iy+vars.flags2)
 	jp      z,+++			;skip forward to vertical scroll handling
 	
@@ -1821,7 +1842,8 @@ _06bd:
 	ld      c,$08
 	jp      ++
 
-	;get the position in the floor layout (in RAM) of the camera	
+	;get the position in the floor layout (in RAM) of the camera:
+	
 +	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	and     %00011111		;MOD 32 (i.e. 0-31 looping)
 	add     a,8			;add 8 (ergo, 8-39)
@@ -1835,26 +1857,27 @@ _06bd:
 	ld      c,a
 
 ++	call    getFloorLayoutRAMPosition
-	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	
 	;------------------------------------------------------------------------------
+	ld      a,(RAM_VDPSCROLL_HORIZONTAL)
 	
 	;has the camera moved left?
 	bit     6,(iy+vars.flags0)
 	jr      z,+
 	add     a,8
 	
-	;determine the column number (8px) of the VDP scroll position
-+	and     %00011111		;MOD 32
+	;which of the four tiles width in a block is on the left-hand side of the
+	 ;screen - that is, determine which column within a block the camera is on
++	and     %00011111		;MOD 32 (limit to how many pixels within block)
 	srl     a			;divide by 2 ...
 	srl     a			;divide by 4 ...
-	srl     a			;divide by 8
-	ld      c,a			;copy it into BC
+	srl     a			;divide by 8 (determine which tile, 0-3)
+	ld      c,a			;copy the tile number (0-3) into BC
 	ld      b,$00
-	ld      (RAM_TEMP1),bc
+	ld      (RAM_TEMP1),bc		;stash it away for later
 	
 	exx     
-	ld      de,$D180
+	ld      de,RAM_OVERSCROLLCACHE_HORZ
 	exx     
 	ld      de,(RAM_LEVEL_FLOORWIDTH)
 	
@@ -1875,12 +1898,12 @@ _06bd:
 	ld      c,a
 	and     %00001111		;MOD 16
 	ld      b,a
-	ld      a,c
+	ld      a,c			;return to the block index * 16 value
 	xor     b
 	ld      c,a
 	
 	ld      a,(hl)			;read the solidity data for the block index
-	rrca    
+	rrca
 	rrca    
 	rrca    
 	and     %00010000
@@ -1889,8 +1912,8 @@ _06bd:
 	add     hl,bc
 	ld      bc,(RAM_BLOCKMAPPINGS)	;get the address of the level's block mappings
 	add     hl,bc
-	ld      bc,$0004
-	ldi     
+	ld      bc,4
+	ldi     			;copy the first byte
 	
 	ld      (de),a
 	inc     e
@@ -1938,7 +1961,7 @@ _06bd:
 	ld      b,$00
 	ld      (RAM_TEMP1),bc
 	exx     
-	ld      de,$D100
+	ld      de,RAM_OVERSCROLLCACHE_VERT
 	exx     
 	ld      b,$09
 
@@ -2042,7 +2065,7 @@ fillScrollTiles:
 	
 	;------------------------------------------------------------------------------
 	exx
-	ld   hl, $D180
+	ld   hl, RAM_OVERSCROLLCACHE_HORZ
 	
 	;find where in a block the scroll offset sits (this is needed to find which
 	 ;of the 4 tiles width in a block have to be referenced)
@@ -2056,7 +2079,7 @@ fillScrollTiles:
 	add  hl, bc			;add twice to HL
 	add  hl, bc
 	ld   b, $32			;set BC to $BE32
-	ld   c, $BE
+	ld   c, $BE			 ;(purpose unknown)
 	
 	;set the VDP address calculated earlier
 -	exx
@@ -2117,7 +2140,7 @@ fillScrollTiles:
 	add  hl, bc
 	set  6, h
 	ex   de, hl
-	ld   hl, $D100
+	ld   hl, RAM_OVERSCROLLCACHE_VERT
 	ld   a, (RAM_VDPSCROLL_HORIZONTAL)
 	and  %00011111
 	add  a, $08
@@ -2198,7 +2221,7 @@ getFloorLayoutRAMPosition:
 	add     a,e
 	ld      e,a
 	
-	ld      hl,$C000
+	ld      hl,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
@@ -2217,7 +2240,7 @@ getFloorLayoutRAMPosition:
 	add     a,e
 	ld      e,a
 	
-	ld      hl,$C000
+	ld      hl,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
@@ -2237,7 +2260,7 @@ getFloorLayoutRAMPosition:
 	add     a,e
 	ld      e,a
 	
-	ld      hl,$C000
+	ld      hl,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
@@ -2259,7 +2282,7 @@ getFloorLayoutRAMPosition:
 	add     a,e
 	ld      e,a
 	
-	ld      hl,$C000
+	ld      hl,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
@@ -2271,7 +2294,7 @@ getFloorLayoutRAMPosition:
 	add     a,c
 	ld      e,a
 	
-	ld      hl,$C000
+	ld      hl,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 
@@ -2434,7 +2457,7 @@ fillScreenWithFloorLayout:
 loadFloorLayout:
 ;HL : address of Floor Layout data
 ;BC : length of compressed data
-	ld      de,$C000		;where in RAM the floor layout will go
+	ld      de,RAM_FLOORLAYOUT	;where in RAM the floor layout will go
 
 --	;RLE decompress floor layout:
 	;------------------------------------------------------------------------------
@@ -2483,8 +2506,8 @@ loadFloorLayout:
 	ret
 
 ;____________________________________________________________________________[$0A40]___
-	
-_LABEL_A40_121:
+
+fadeOut:
 	ld   a, 1
 	ld   (SMS_PAGE_1), a
 	ld   (RAM_PAGE_1), a
@@ -2493,142 +2516,183 @@ _LABEL_A40_121:
 	ld   (RAM_PAGE_2), a
 	
 	ld   a, (iy+vars.spriteUpdateCount)
-	res  0, (iy+vars.flags0)
-	call wait
+	res  0, (iy+vars.flags0)	;wait for interrupt to occur
+	call waitForInterrupt		 ;(refresh sprites?)
 	
+	;after the interrupt, the sprite update count would be cleared,
+	 ;put it back to its old value
 	ld   (iy+vars.spriteUpdateCount), a
 	ld   b, $04
 	
---	push bc
+--	push bc				;put aside the loop counter
+	
+	;fade out the tile palette one step
 	ld   hl, (RAM_LOADPALETTE_TILE)
-	ld   de, $D3BC
-	ld   b, $10
-	call _a90
+	ld   de, RAM_PALETTE
+	ld   b, 16
+	call darkenPalette
+	
+	;fade out the sprite palette one step
 	ld   hl, (RAM_LOADPALETTE_SPRITE)
-	ld   b, $10
-	call _a90
-	ld   hl, $D3BC
-	ld   a, $03
+	ld   b, 16
+	call darkenPalette
+	
+	;load the darkened palette on the next interrupt
+	ld   hl, RAM_PALETTE
+	ld   a, %00000011
 	call loadPaletteOnInterrupt
+	
+	;wait 10 frames
 	ld   b, $0A
-
 -	ld   a, (iy+vars.spriteUpdateCount)
+	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
+	
 	ld   (iy+vars.spriteUpdateCount), a
 	djnz -
 	
-	pop  bc
-	djnz --
+	pop  bc				;retrieve the loop counter
+	djnz --				 ;before looping back
 	
 	ret
 
 ;----------------------------------------------------------------------------[$0A90]---
+;fades a palette one step darker
 
-_a90:
-	ld   a, (hl)
-	and  %00000011
-	jr   z, +
-	dec  a
+darkenPalette:
+;HL : source palette address
+;DE : destination palette address (RAM)
+;B  : length of palette (16)
+	;NOTE: SMS colours are in the format: 00BBGGRR
+	
+	ld   a, (hl)			;read the colour
+	and  %00000011			;does it have any red component?
+	jr   z, +			;if not, skip ahead			
+	dec  a				;reduce the red brightness by 1
+	
 +	ld   c, a
 	ld   a, (hl)
-	and  $0C
-	jr   z, +
-	sub  $04
-+	or   c
-	ld   c, a
-	ld   a, (hl)
-	and  $30
-	jr   z, +
-	sub  $10
-+	or   c
-	ld   (de), a
+	and  %00001100			;does it have any green component?
+	jr   z, +			;if not, skip ahead
+	sub  %00000100			;reduce the green brightness by 1
+	
++	or   c				;merge the green component back in
+	ld   c, a			;put aside the current colour code
+	ld   a, (hl)			;fetch the original colour code again
+	and  %00110000			;does it have any blue component?
+	jr   z, +			;if not, skip ahead
+	sub  %00010000			;reduce the blue brightness by 1
+	
++	or   c				;merge the blue component back in
+	ld   (de), a			;update the palette colour
+	
+	;move to the next palette colour and repeat
 	inc  hl
 	inc  de
-	djnz _a90
+	djnz darkenPalette
 	
 	ret
 
 ;____________________________________________________________________________[$0AAE]___
 
 _aae:
+;HL : ?
 	ld      (RAM_TEMP6),hl
+	
+	;------------------------------------------------------------------------------
+	;copy parameter palette into the temporary RAM palette used for fading out
+	
 	ld      hl,(RAM_LOADPALETTE_TILE)
-	ld      de,$D3BC
-	ld      bc,$0020
+	ld      de,RAM_PALETTE
+	ld      bc,32
 	ldir    
+	
 	ld      a,1
 	ld      (SMS_PAGE_1),a
 	ld      (RAM_PAGE_1),a
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
-	ld      hl,$D3BC
+	
+	;switch to using the temporary palette on screen
+	ld      hl,RAM_PALETTE
 	ld      a,%00000011
 	call    loadPaletteOnInterrupt
+	
+	;------------------------------------------------------------------------------
 	ld      c,(iy+vars.spriteUpdateCount)
 	ld      a,(RAM_VDPREGISTER_1)
-	or      $40
+	or      %01000000		;enable screen (bit 6 of VDP register 1)
 	ld      (RAM_VDPREGISTER_1),a
-	res     0,(iy+vars.flags0)
-	call    wait
-	ld      (iy+vars.spriteUpdateCount),c
-	ld      b,$09
 	
+	;wait for interrupt (refresh screen)
+	res     0,(iy+vars.flags0)
+	call    waitForInterrupt
+	
+	ld      (iy+vars.spriteUpdateCount),c
+	
+	;wait for 9 more frames
+	ld      b,$09
 -	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
-	ld      b,$04
-
+	
+	;fade palette
+	 ;(why is this not just calling `darkenPalette`?)
+	
+	ld      b,4
 --	push    bc
-	ld      hl,(RAM_TEMP6)
-	ld      de,$D3BC
-	ld      b,$20
+	ld      hl,(RAM_TEMP6)		;restore the HL parameter
+	ld      de,RAM_PALETTE
+	ld      b,32
 
 -	push    bc
 	ld      a,(hl)
-	and     $03
+	and     %00000011
 	ld      b,a
 	ld      a,(de)
-	and     $03
+	and     %00000011
 	cp      b
 	jr      z,+
 	dec     a
 +	ld      c,a
 	ld      a,(hl)
-	and     $0c
+	and     %00001100
 	ld      b,a
 	ld      a,(de)
-	and     $0c
+	and     %00001100
 	cp      b
 	jr      z,+
-	sub     $04
+	sub     %00000100
 +	or      c
 	ld      c,a
 	ld      a,(hl)
-	and     $30
+	and     %00110000
 	ld      b,a
 	ld      a,(de)
-	and     $30
+	and     %00110000
 	cp      b
 	jr      z,+
-	sub     $10
+	sub     %00010000
 +	or      c
 	ld      (de),a
 	inc     hl
 	inc     de
 	pop     bc
 	djnz    -
-	ld      hl,$D3BC
+	
+	ld      hl,RAM_PALETTE
 	ld      a,%00000011
 	call loadPaletteOnInterrupt
+	
+	;wait for 10 frames
 	ld      b,$0a
-
 -	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
 	
@@ -2637,24 +2701,27 @@ _aae:
 	ret
 
 ;____________________________________________________________________________[$0B50]___
+;erase RAM_PALETTE?
 
 _b50:
 	ld      (RAM_TEMP6),hl
-	ld      hl,$D3BC
-	ld      b,$20
+	ld      hl,RAM_PALETTE
+	ld      b,32
 	
 -	ld      (hl),$00
 	inc     hl
 	djnz    -
+	
 	jp      +
 
 ;----------------------------------------------------------------------------[$0B60]---
 
 _b60:
 	ld      (RAM_TEMP6),hl
+	
 	ld      hl,(RAM_LOADPALETTE_TILE)
-	ld      de,$D3BC
-	ld      bc,$0020
+	ld      de,RAM_PALETTE
+	ld      bc,32
 	ldir    
 	
 +	ld      a,1
@@ -2663,21 +2730,23 @@ _b60:
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
-	ld      hl,$D3BC
+	
+	ld      hl,RAM_PALETTE
 	ld      a,%00000011
 	call loadPaletteOnInterrupt
+	
 	ld      c,(iy+vars.spriteUpdateCount)
 	ld      a,(RAM_VDPREGISTER_1)
 	or      $40
 	ld      (RAM_VDPREGISTER_1),a
 	res     0,(iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),c
 	ld      b,$09
 	
 -	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 	djnz -
 	
@@ -2685,8 +2754,8 @@ _b60:
 	
 --	push    bc
 	ld      hl,(RAM_TEMP6)
-	ld      de,$D3BC
-	ld      b,$20
+	ld      de,RAM_PALETTE
+	ld      b,32
 	
 -	push    bc
 	ld      a,(hl)
@@ -2726,14 +2795,14 @@ _b60:
 	pop     bc
 	djnz    -
 	
-	ld      hl,$D3BC
+	ld      hl,RAM_PALETTE
 	ld      a,%00000011
 	call loadPaletteOnInterrupt
 	
 	ld      b,10
 -	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 	djnz    -
 	
@@ -2781,7 +2850,7 @@ getLevelBitFlag:
 ;____________________________________________________________________________[$0C1D]___
 ;copy power-up icon into sprite VRAM
 
-_c1d:
+loadPowerUpIcon:
 ;HL : absolute address to uncompressed art data for the icons, assuming that slot 1
  ;    ($4000-$7FFF) is loaded with bank 5 ($14000-$17FFF)
 
@@ -2789,7 +2858,7 @@ _c1d:
 	ld      a,5			;temporarily switch to bank 5 for the function
 	ld      (SMS_PAGE_1),a
 	
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     %00001111
 	add     a,a			;x2
 	add     a,a			;x4
@@ -2854,7 +2923,7 @@ _LABEL_C52_106:
 	and  %10111111
 	ld   (RAM_VDPREGISTER_1), a
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	;map screen 1 tileset
 	ld   hl, $0000
@@ -2905,7 +2974,7 @@ _LABEL_C52_106:
 	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	;map screen 2 tileset
 	ld   hl, $1801			;$31801
@@ -3155,7 +3224,7 @@ _LABEL_E86_110:
 	push hl
 	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	ld   (iy+vars.spriteUpdateCount), $00
 	ld   a, (RAM_LIVES)
@@ -3200,6 +3269,7 @@ _LABEL_E86_110:
 	ret
 
 ;____________________________________________________________________________[$0EDD]___
+;something to do with constructing the sprites on the map screen?
 
 _0edd:
 ;BC : address
@@ -3494,7 +3564,7 @@ titleScreen:
 	
 	;wait for interrupt to complete?
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	;load the title screen tile set
 	 ;BANK 9 ($24000) + $2000 = $26000
@@ -3554,7 +3624,7 @@ titleScreen:
 	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	;count to 100:
 	ld   a, ($D216)			;get the screen counter
@@ -3671,7 +3741,7 @@ _1401:
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	di      
 	
 	;act complete sprite set
@@ -3708,7 +3778,7 @@ _1401:
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	djnz    -
 	
@@ -3720,7 +3790,7 @@ _1401:
 -	push    bc
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	pop     bc
 	dec     bc
@@ -3748,7 +3818,7 @@ _1401:
 	
 -	push    bc
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,$D216
 	ld      de,$D2BE
@@ -3827,7 +3897,7 @@ _155e:
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	;load HUD sprites
 	ld      hl,$b92e
@@ -3977,14 +4047,14 @@ _155e:
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	call    _1a18
 	pop     bc
 	djnz    -
 	
 -	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	call    _1a18
 	call    _19b4
@@ -4011,7 +4081,7 @@ _155e:
 	
 -	push    bc
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	call    _1a18
 	pop     bc
 	bit     5,(iy+vars.joypad)
@@ -4235,7 +4305,7 @@ _1860:
 	push    bc
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
@@ -4605,7 +4675,7 @@ _1bad:
 	add     hl,de
 	ld      a,(hl)
 	ld      (iy+vars.joypad),a
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $1f
 	ret     nz
 	ld      hl,($D2B5)
@@ -4627,8 +4697,8 @@ _1bc6:
 ;____________________________________________________________________________[$1C49]___
 
 _LABEL_1C49_62:
-	;set bit 0 of the parameter address (IY=$D200); when `wait` is called,
-	 ;execution will pause until an interrupt event switches bit 0 of $D200 on?
+	;set bit 0 of the parameter address (IY=$D200); `waitForInterrupt` will pause
+	 ;until an interrupt event switches bit 0 of $D200 on
 	set  0, (iy+vars.flags0)			
 	ei				;enable interrupts
 	
@@ -4644,7 +4714,7 @@ _LABEL_1C49_62:
 	
 	xor  a				;set A to 0
 	ld   (RAM_CURRENT_LEVEL), a	;set starting level!
-	ld   ($D223), a
+	ld   (RAM_FRAMECOUNT), a
 	ld   (iy+$0d), a
 	
 	ld   hl, $D27F
@@ -4688,7 +4758,7 @@ _LABEL_1C9F_104:
 	jp   c, --
 	
 _LABEL_1CBD_120:
-	call _LABEL_A40_121
+	call fadeOut
 	call hideSprites
 	bit  0, (iy+vars.scrollRingFlags)
 	jr   nz, +
@@ -4698,7 +4768,7 @@ _LABEL_1CBD_120:
 	;wait at title screen for button press?
 +	ld   b, $3C
 -	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	djnz -
 	
 	rst  $20			;`muteSound`
@@ -4768,19 +4838,19 @@ _LABEL_1CED_131:
 	
 	;auto scroll right?
 	bit     3,(iy+vars.scrollRingFlags)
-	call    nz,_1ed8		;if yes, skip way ahead
+	call    nz,lockCameraHorizontal
 	
 	ld      b,$10
 -	push    bc
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	ld      (iy+vars.joypad),$ff	;clear joypad input
 	
-	ld      hl,($D223)
+	ld      hl,(RAM_FRAMECOUNT)
 	inc     hl
-	ld      ($D223),hl
+	ld      (RAM_FRAMECOUNT),hl
 	
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
 	ld      a,11
@@ -4814,8 +4884,8 @@ _LABEL_1CED_131:
 	ld      (RAM_PAGE_2),a
 	
 	call    _2e5a
-	call    _063e
-	call    _06bd
+	call    updateCamera
+	call    fillOverscrollCache
 	
 	set     5,(iy+vars.flags0)		
 	
@@ -4831,7 +4901,7 @@ _LABEL_1CED_131:
 	ld      (iy+vars.spriteUpdateCount),h
 _1dae:
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
 	ld      a,11
@@ -4845,7 +4915,7 @@ _1dae:
 	bit     3,(iy+vars.flags6)		
 	call    nz,_3a03
 	
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     %00000001
 	jr      nz,+
 	
@@ -4879,9 +4949,10 @@ _1de2:					;jump to here from _2067
 	
 	call    _1bad			;process demo mode?
 	
-+	ld      hl,($D223)
+	;increase the frame counter
++	ld      hl,(RAM_FRAMECOUNT)
 	inc     hl
-	ld      ($D223),hl
+	ld      (RAM_FRAMECOUNT),hl
 	
 	;auto scrolling to the right? (ala Bridge 2)
 	bit     3,(iy+vars.scrollRingFlags)
@@ -4929,8 +5000,8 @@ _1de2:					;jump to here from _2067
 	ld      (RAM_PAGE_2),a
 	
 	call    _2e5a
-	call    _063e
-	call    _06bd
+	call    updateCamera
+	call    fillOverscrollCache
 	
 	ld      hl,RAM_VDPREGISTER_1
 	set     6,(hl)
@@ -4940,14 +5011,15 @@ _1de2:					;jump to here from _2067
 	call    nz,_1e9e
 	
 	jp      _1dae
-
+	
+	;------------------------------------------------------------------------------
 ++	ld      (iy+vars.joypad),$f7
 	ld      hl,(RAM_LEVEL_LEFT)
 	ld      de,$0112
 	add     hl,de
 	ex      de,hl
 	ld      hl,($D3FE)
-	xor     a
+	xor     a			;set A to 0
 	sbc     hl,de
 	ret     c
 	ld      (iy+vars.joypad),$ff
@@ -4968,7 +5040,7 @@ _1e9e:	;demo mode?
 	
 -	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 	ld      a,11
 	ld      (SMS_PAGE_1),a
@@ -4993,7 +5065,7 @@ _1e9e:	;demo mode?
 ;lock the screen -- prevents the screen scrolling left or right
  ;(i.e. during boss battles)
 
-_1ed8:
+lockCameraHorizontal:
 	ld      hl,(RAM_CAMERA_X)
 	ld      (RAM_LEVEL_LEFT),hl
 	ld      (RAM_LEVEL_RIGHT),hl
@@ -5003,7 +5075,7 @@ _1ed8:
 ;move the left-hand side of the level across -- i.e. Bridge Act 2
 
 _1ee2:
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	ret     nc
 	
@@ -5018,9 +5090,10 @@ _1ee2:
 ;____________________________________________________________________________[$1EF2]___
 
 _1ef2:
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	ret     nc
+	
 	ld      hl,(RAM_LEVEL_BOTTOM)
 	dec     hl
 	ld      (RAM_LEVEL_BOTTOM),hl
@@ -5041,6 +5114,7 @@ _1f06:
 	dec     a
 	ld      ($D2B1),a
 	ld      e,a
+	
 	di      
 	ld      a,1
 	ld      (SMS_PAGE_1),a
@@ -5048,6 +5122,7 @@ _1f06:
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
+	
 	ld      e,$00
 	ld      a,($D2B2)
 	ld      hl,(RAM_LOADPALETTE_TILE)
@@ -5159,7 +5234,7 @@ _1fa9:
 	ret     z
 	jp      (hl)
 	
-+	call    _LABEL_A40_121
++	call    fadeOut
 	pop     hl
 	res     5,(iy+vars.flags0)
 	bit     2,(iy+$0d)
@@ -5253,7 +5328,7 @@ _2067:
 	and     a
 	ld      a,$02
 	ret     nz
-	call    _LABEL_A40_121
+	call    fadeOut
 	call    hideSprites
 	res     5,(iy+vars.flags0)
 	call    _1401
@@ -5287,7 +5362,7 @@ _20b8:
 	
 	ld      hl,$0028
 	call    sound_fadeOut
-	call    _LABEL_A40_121
+	call    fadeOut
 	
 	xor     a
 	ret
@@ -5302,7 +5377,7 @@ loadLevel:
 	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	;copy the level header from ROM to RAM starting at $D354
 	 ;(this copies 40 bytes, even though level headers are 37 bytes long.
@@ -5688,7 +5763,7 @@ loadLevel:
 	call    loadPaletteOnInterrupt
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	call    fillScreenWithFloorLayout
 	
@@ -5901,8 +5976,8 @@ _235e:
 	add     hl,hl
 	add     hl,hl
 	add     hl,hl
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	
 	;transfer IX to HL
 	push    ix
@@ -6058,7 +6133,7 @@ _LABEL_258B_133:
 	ld   (RAM_VDPREGISTER_1), a
 	
 	res  0, (iy+vars.flags0)
-	call wait
+	call waitForInterrupt
 	
 	xor  a
 	ld   (RAM_VDPSCROLL_HORIZONTAL), a
@@ -6092,7 +6167,7 @@ _LABEL_258B_133:
 	ld      (RAM_VDPREGISTER_1),a
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	ld      a,1
 	ld      (SMS_PAGE_1),a
@@ -6105,7 +6180,7 @@ _LABEL_258B_133:
 -	push    bc
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	ld      hl,RAM_SPRITETABLE
 	ld      c,$70
@@ -6125,10 +6200,10 @@ _LABEL_258B_133:
 --	push    bc
 	ld      c,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),c
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      de,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),de
 	ld      b,$03
@@ -6171,6 +6246,7 @@ _LABEL_258B_133:
 	
 	pop     bc
 	djnz    --
+	
 	ld      hl,_2047
 	call    _b60
 	ld      (iy+vars.spriteUpdateCount),$00
@@ -6188,17 +6264,19 @@ _LABEL_258B_133:
 	call    decompressScreen
 	
 	ld      hl,_2828
-	call    _aae
+	call    _aae			;called only by this routine,
+					 ;appears to fade the screen out
 	
-+	ld      bc,$00f0
-	call    _2745
++	ld      bc,240
+	call    waitFrames
 	call    _155e			;Act Complete screen?
 	
-	ld      bc,$00f0
-	call    _2745
-	call    _LABEL_A40_121
-	ld      bc,$0078
-	call    _2745
+	ld      bc,240
+	call    waitFrames
+	call    fadeOut
+	
+	ld      bc,120
+	call    waitFrames
 	
 	;map screen 2 / credits screen tile set
 	ld      hl,$1801
@@ -6275,7 +6353,7 @@ _2718:
 --	push    bc
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	ld      (iy+vars.spriteUpdateCount),$00
 	ld      hl,RAM_SPRITETABLE
@@ -6301,21 +6379,26 @@ _2718:
 	ret
 
 ;____________________________________________________________________________[$2745]___
+;wait a given number of frames
 
-_2745:
+waitFrames:
+;BC : number of frames to wait
 	push    bc
+	
+	;refresh the screen
 	ld      a,(iy+vars.spriteUpdateCount)
 	
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	
 	ld      (iy+vars.spriteUpdateCount),a
 	
 	pop     bc
 	dec     bc
+	
 	ld      a,b
 	or      c
-	jr      nz,_2745
+	jr      nz,waitFrames
 	
 	ret
 
@@ -6471,7 +6554,7 @@ __	ld      a,(hl)
 
 _2825:
 .db $5c, $5e, $ff
-_2828:		;unknown palette!
+_2828:		;credits screen palette
 .db $35, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $25, $2B, $00, $3F
 .db $35, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $00, $3C, $00, $3F
 
@@ -6677,7 +6760,7 @@ S1_Object_Pointers:
 .dw _aa6a				;#31: propeller (Sky Base)
 .dw _ab21				;#32: badnick - bomb (Sky Base)
 .dw _ad6c				;#33: canon (Sky Base)
-.dw _ae35				;#34: UNKNOWN - flies right, no-clipping
+.dw _ae35				;#34: canon ball (Sky Base)
 .dw _ae88				;#35: badnick - unidos (Sky Base)
 .dw _b0f4				;#36: UNKNOWN - stationary, lethal
 .dw _b16c				;#37: rotating turret (Sky Base)
@@ -7163,7 +7246,7 @@ _3122:
 	ret
 
 ;____________________________________________________________________________[$3140]___
-;scroll horizontaly towards the locked camera position
+;scroll horizontally towards the locked camera position
 
 _3140:
 ;HL : (RAM_CAMERA_X_GOTO)
@@ -7277,7 +7360,7 @@ _31db:
 ;____________________________________________________________________________[$31E6]___
 
 _31e6:
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	ld      c,a
 	ld      hl,$0068
@@ -7285,7 +7368,7 @@ _31e6:
 	ld      de,$D3FC			;current level's object list
 	add     hl,de
 	ex      de,hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	add     a,a
 	add     a,a
@@ -7344,8 +7427,8 @@ _31e6:
 	ld      l,a
 	ld      h,a
 	xor     a
-+	ld      e,(ix+$05)
-	ld      d,(ix+$06)
++	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	sbc     hl,de
 	jp      nc,++
 	ld      hl,(RAM_TEMP4)
@@ -7478,13 +7561,13 @@ _32e2:
 	ld d, (ix+$0B)
 	ld c, (ix+$0C)
 	ld l, (ix+$04)
-	ld h, (ix+$05)
-	ld a, (ix+$06)
+	ld h, (ix+object.Y)
+	ld a, (ix+object.Y+1)
 	add hl, de
 	adc a, c
 	ld (ix+$04), l
-	ld (ix+$05), h
-	ld (ix+$06), a
+	ld (ix+object.Y), h
+	ld (ix+object.Y+1), a
 	bit 5, (ix+$18)
 	jp nz, _34e6
 	ld b, $00
@@ -7503,7 +7586,7 @@ _32e2:
 	res     6,(ix+$18)
 	push    de
 	push    hl
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      e,(hl)
 	ld      d,$00
 	ld      a,(RAM_LEVEL_SOLIDITY)
@@ -7534,7 +7617,7 @@ _32e2:
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	add     a,e
 	and     $1f
 	ld      e,a
@@ -7615,7 +7698,7 @@ _32e2:
 	res     7,(ix+$18)
 	push    bc
 	push    hl
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      e,(hl)
 	ld      d,$00
 	ld      a,(RAM_LEVEL_SOLIDITY)
@@ -7658,8 +7741,8 @@ _32e2:
 	and     a
 	jp      p,+
 	ld      b,$ff
-+	ld      l,(ix+$05)
-	ld      h,(ix+$06)
++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,(RAM_TEMP3)
 	add     hl,de
 	bit     7,(ix+$0c)
@@ -7699,8 +7782,8 @@ _32e2:
 	add     hl,bc
 	and     a
 	sbc     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      a,(RAM_TEMP6)
 	ld      e,a
 	ld      d,$00
@@ -7724,8 +7807,8 @@ _32e2:
 	ld      (ix+$08),h
 	ld      (ix+$09),a
 _34e6:
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,bc
@@ -8016,8 +8099,8 @@ _3644:
 	ld      (ix+$02),l
 	ld      (ix+$03),h
 	ld      hl,($D401)
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$0a),$00
 	ld      (ix+$0b),$fc
 	ld      (ix+$0c),$ff
@@ -8065,11 +8148,11 @@ _36be:
 	ld      (ix+$03),h
 	ld      a,(RAM_TEMP2)
 	ld      e,a
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	xor     a
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
@@ -8081,28 +8164,36 @@ _36be:
 	ret
 
 ;____________________________________________________________________________[$36F9]___
+;retrieves a location in the Floor Layout in RAM based on the current object
 
-_36f9:
+getFloorLayoutRAMPositionForObject:
+;BC : horizontal pixel offset to add to the object's X position before locating tile
+;DE : vertical pixel offset to add to the object's Y position before locating tile
+	
+	;how wide is the level?
 	ld      a,(RAM_LEVEL_FLOORWIDTH)
-	cp      $80
+	cp      128
 	jr      z,+
-	cp      $40
+	cp      64
 	jr      z,++
-	cp      $20
+	cp      32
 	jr      z,+++
-	cp      $10
+	cp      16
 	jr      z,++++
 	jp      +++++
 	
-+	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	;------------------------------------------------------------------------------
+	;128 block wide level:
+	
++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,de
 	ld      a,l
 	add     a,a
 	rl      h
 	add     a,a
 	rl      h
-	and     $80
+	and     %10000000
 	ld      l,a
 	ex      de,hl
 	ld      l,(ix+$02)
@@ -8118,17 +8209,20 @@ _36f9:
 	ld      l,h
 	ld      h,$00
 	add     hl,de
-	ld      de,$c000
+	ld      de,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
-++	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	;------------------------------------------------------------------------------
+	;64 block wide level:
+	
+++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,de
 	ld      a,l
 	add     a,a
 	rl      h
-	and     $c0
+	and     %11000000
 	ld      l,a
 	ex      de,hl
 	ld      l,(ix+$02)
@@ -8144,15 +8238,18 @@ _36f9:
 	ld      l,h
 	ld      h,$00
 	add     hl,de
-	ld      de,$c000
+	ld      de,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
-+++	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	;------------------------------------------------------------------------------
+	;32 block wide level:
+	
++++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,de
 	ld      a,l
-	and     $e0
+	and     %11100000
 	ld      l,a
 	ex      de,hl
 	ld      l,(ix+$02)
@@ -8168,17 +8265,20 @@ _36f9:
 	ld      l,h
 	ld      h,$00
 	add     hl,de
-	ld      de,$c000
+	ld      de,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
-++++	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	;------------------------------------------------------------------------------
+	;16 block wide level:
+	
+++++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,de
 	ld      a,l
 	srl     h
 	rra     
-	and     $f0
+	and     %11110000
 	ld      l,a
 	ex      de,hl
 	ld      l,(ix+$02)
@@ -8194,36 +8294,40 @@ _36f9:
 	ld      l,h
 	ld      h,$00
 	add     hl,de
-	ld      de,$c000
+	ld      de,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 	
-+++++	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	;------------------------------------------------------------------------------
+	;256 block wide level?
+	
++++++	ld      l,(ix+object.Y)		;Object Y position?
+	ld      h,(ix+object.Y+1)
 	add     hl,de
 	ld      a,l
-	rlca    
+	rlca    			;x2 ...
 	rl      h
-	rlca    
+	rlca    			;x4 ...
 	rl      h
-	rlca    
+	rlca    			;x8
 	rl      h
-	ex      de,hl
-	ld      l,(ix+$02)
+	ex      de,hl			;put HL aside into DE
+	
+	ld      l,(ix+$02)		;Object X position?
 	ld      h,(ix+$03)
 	add     hl,bc
 	ld      a,l
-	rlca    
+	rlca    			;x2 ...
 	rl      h
-	rlca    
+	rlca    			;x4 ...
 	rl      h
-	rlca    
+	rlca    			;x8
 	rl      h
 	ld      l,h
 	ld      h,$00
 	ld      e,h
 	add     hl,de
-	ld      de,$c000
+	ld      de,RAM_FLOORLAYOUT
 	add     hl,de
 	ret
 
@@ -8525,16 +8629,16 @@ _LABEL_3956_11:
 	xor  a
 	sbc  hl, de
 	ret  c
-	ld   l, (ix+$05)
-	ld   h, (ix+$06)
+	ld   l, (ix+object.Y)
+	ld   h, (ix+object.Y+1)
 	ld   c, (ix+$0E)
 	add  hl, bc
 	ld   de, ($D401)
 	xor  a
 	sbc  hl, de
 	ret  c
-	ld   l, (ix+$05)
-	ld   h, (ix+$06)
+	ld   l, (ix+object.Y)
+	ld   h, (ix+object.Y+1)
 	ld   a, (RAM_TEMP7)
 	ld   c, a
 	add  hl, bc
@@ -9057,19 +9161,23 @@ _48c8:
 	ld      hl,($DC0C)
 	inc     hl
 	ld      ($DC0A),hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $03
 	call    z,_4fec
-+++	bit     1,(iy+vars.joypad)
+	
++++	bit     1,(iy+vars.joypad)	;joypad up?
 	call    z,_50c1
-	bit     1,(iy+vars.joypad)
+	
+	bit     1,(iy+vars.joypad)	;joypad not up?
 	call    nz,_50e3
+	
 	ld      a,15
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
-	ld      bc,$000c
+	ld      bc,$000C
 	ld      de,$0010
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
+	
 	ld      e,(hl)
 	ld      d,$00
 	ld      a,(RAM_LEVEL_SOLIDITY)
@@ -9097,6 +9205,8 @@ _48c8:
 	ld      h,(hl)
 	ld      l,a
 	ld      de,$4a28		;data?
+	
+	;switch page 2 ($8000-$BFFF) to bank 2 ($8000-$BFFF)
 	ld      a,2
 	ld      (SMS_PAGE_2),a
 	ld      (RAM_PAGE_2),a
@@ -9361,7 +9471,7 @@ _4bac:
 +	ld      (ix+$14),$01
 ++	ld      bc,$000c
 	ld      de,$0008
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      a,(hl)
 	and     $7f
 	cp      $79
@@ -9681,7 +9791,7 @@ _4e8d:
 	ld      hl,($D401)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$D2F3
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	rrca    
 	jr      nc,+
@@ -9696,7 +9806,7 @@ _4e8d:
 	jr      nc,+
 	ld      a,$96
 +	call    _3581
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	ld      c,a
 	and     $07
 	ret     nz
@@ -9888,7 +9998,7 @@ _4ff0:
 ;____________________________________________________________________________[$4FF5]___
 
 _4ff5:
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $03
 	ret     nz
 	ld      hl,$D28D
@@ -9945,12 +10055,12 @@ _5009:
 	ld      d,$00
 	ld      hl,_5097
 	add     hl,de
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     (hl)
 	jr      nz,+
 	ld      a,$1a
 	rst     $28			;`playSFX`
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	ret     nc
 	ld      hl,($D3FE)
@@ -10204,7 +10314,7 @@ _51f3:
 ;____________________________________________________________________________[$5206]___
 
 _5206:
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	ret     nz
 	ld      d,$18
@@ -10236,7 +10346,7 @@ _521f:
 _5224:
 	bit     4,(ix+$18)
 	ret     z
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     a
 	call    z,_91eb
 	ret
@@ -10298,7 +10408,7 @@ _5285:
 	
 	ld      c,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),c
 	ret
 
@@ -10343,8 +10453,8 @@ _529c:
 	ld      hl,($D401)
 	ld      de,$000e
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	pop     ix
 	set     0,(iy+$0d)
 	jp      _4c39
@@ -11113,7 +11223,7 @@ _581b:
 	ret     c
 	ld      bc,$000c
 	ld      de,$0010
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      c,$00
 	ld      a,(hl)
 	cp      $8a
@@ -11151,7 +11261,7 @@ _5858:
 	ret     c
 	ld      bc,$000c
 	ld      de,$0010
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      c,$00
 	ld      a,(hl)
 	cp      $89
@@ -11191,8 +11301,8 @@ _5893:
 	ld      (ix+$02),c
 	ld      (ix+$03),b
 	ld      (ix+$04),a
-	ld      (ix+$05),e
-	ld      (ix+$06),d
+	ld      (ix+object.Y),e
+	ld      (ix+object.Y+1),d
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
@@ -11274,10 +11384,10 @@ _5b29:
 	
 +	ld      hl,$5180		;$15180 - blinking items art
 _5b34:
-	call    _c1d
+	call    loadPowerUpIcon
 	ld      (ix+$0f),<_5bbf
 	ld      (ix+$10),>_5bbf
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	cp      $05
 	ret     nc
@@ -11294,8 +11404,8 @@ _5b34:
 	ld      h,a
 	ld      (RAM_TEMP1),hl
 	ld      l,(ix+$04)
-	ld      h,(ix+$05)
-	ld      a,(ix+$06)
+	ld      h,(ix+object.Y)
+	ld      a,(ix+object.Y+1)
 	bit     7,(ix+$18)
 	jr      nz,+
 	ld      e,(ix+$0a)
@@ -11543,8 +11653,8 @@ _5d2f:
 	ld      a,h
 	ld      (de),a
 	inc     de
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,hl
 	add     hl,hl
 	add     hl,hl
@@ -11586,7 +11696,7 @@ _5da8:
 	ld      bc,$0000
 	ld      e,c
 	ld      d,b
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      de,$0016
 	ld      bc,$0012
 	ld      a,(hl)
@@ -11599,11 +11709,11 @@ _5da8:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	set     0,(ix+$18)
 	ret
 
@@ -11631,8 +11741,8 @@ _5deb:
 	ld      a,($D414)
 	and     $04
 	jr      nz,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      a,($D40A)
 	ld      c,a
 	xor     a
@@ -11729,7 +11839,7 @@ _5ea2:
 +	ld      (ix+$00),$ff
 	ret
 
-++	ld      a,($D223)
+++	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	jr      c,+
 	ld      (ix+$0f),<_5f10
@@ -11744,7 +11854,7 @@ _5ea2:
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
 	ld      hl,$5400		;$15400 - emerald in the blinking items art
-	call    _c1d
+	call    loadPowerUpIcon
 	ret
 
 _5f10:
@@ -11996,8 +12106,8 @@ __	ld      l,(ix+$12)
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	xor     a
 	ld      de,$0008
 	sbc     hl,de
@@ -12312,8 +12422,8 @@ _673c:
 	ld      h,(ix+$03)
 	ld      (ix+$12),l
 	ld      (ix+$13),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (ix+$14),l
 	ld      (ix+$15),h
 	ld      (ix+$11),$e0
@@ -12354,8 +12464,8 @@ _673c:
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      a,($D408)
 	and     a
 	jp      m,+
@@ -12617,7 +12727,7 @@ _69e9:
 	call    _LABEL_3956_11
 	jr      c,++
 	ld      de,$0000
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	and     $1f
 	cp      $10
 	jr      nc,+
@@ -12632,7 +12742,7 @@ _69e9:
 ++	ld      c,$00
 	ld      l,c
 	ld      h,c
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	and     $1f
 	jr      z,+
 	ld      hl,$ffc0
@@ -12685,8 +12795,8 @@ _6a47:
 	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$00c0
 	add     hl,de
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	and     a
 	sbc     hl,de
 	ret     nc
@@ -12717,8 +12827,8 @@ _6ac1:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -12732,7 +12842,7 @@ _6ac1:
 	cp      $0b
 	jr      z,+
 	ld      hl,_6b70
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	ld      e,a
 	ld      d,$00
@@ -12753,8 +12863,8 @@ _6ac1:
 	ex      de,hl
 	sbc     hl,bc
 	jr      c,+
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	ld      l,c
 	ld      h,b
 	ld      de,$0010
@@ -12865,8 +12975,8 @@ _6b74:
 	push    bc
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -12878,8 +12988,8 @@ _6b74:
 	ld      (ix+$04),a
 	ld      hl,$0020
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$13),a
 	ld      (ix+$14),a
@@ -13144,7 +13254,7 @@ _6f08:
 	jr      z,+
 	and     a
 	jr      nz,+++
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	jr      z,+
 	ld      bc,$0000
@@ -13169,8 +13279,8 @@ _6f08:
 	push    bc
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -13182,8 +13292,8 @@ _6f08:
 	ld      (ix+$04),a
 	ld      hl,$0006
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$13),a
 	ld      (ix+$14),a
@@ -13245,12 +13355,12 @@ _700c:
 	call    _7ca6
 	bit     0,(ix+$11)
 	jr      nz,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$fff8
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	
 	;boss sprite set
 	ld      hl,$aeb1
@@ -13366,8 +13476,8 @@ _700c:
 	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$0074
 	add     hl,de
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -13387,8 +13497,8 @@ _700c:
 	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$0074
 	add     hl,de
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -13420,8 +13530,8 @@ _700c:
 	ld      hl,(RAM_CAMERA_Y)
 	ld      de,$001a
 	add     hl,de
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	ld      c,a
@@ -13502,12 +13612,12 @@ _732c:
 	set     5,(ix+$18)
 	bit     0,(ix+$18)
 	jr      nz,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0010
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	set     0,(ix+$18)
 +	ld      (ix+$0d),$1c
 	ld      (ix+$0e),$40
@@ -13515,7 +13625,7 @@ _732c:
 	bit     1,(ix+$18)
 	jr      z,+
 	ld      hl,_757c
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	jr      nc,+
 	ld      de,$000c
@@ -13535,12 +13645,12 @@ _732c:
 	ld      b,(hl)
 	inc     hl
 	ld      ($D2AF),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
 	ld      ($D2AD),hl
 	ld      hl,_752e
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $10
 	jr      z,+
 	ld      hl,_7552
@@ -13563,8 +13673,8 @@ _732c:
 	ld      a,($D408)
 	and     a
 	jp      m,+++
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,($D401)
 	and     a
 	sbc     hl,de
@@ -13608,8 +13718,8 @@ _732c:
 	ld      hl,_750e
 	add     hl,bc
 	ld      c,(hl)
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffe0
 	add     hl,de
 	add     hl,bc
@@ -13660,7 +13770,7 @@ _732c:
 	ld      (ix+$0f),a
 	ld      (ix+$10),a
 	res     5,(iy+vars.flags0)
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $0f
 	ret     nz
 	call    _LABEL_625_57
@@ -13682,8 +13792,8 @@ _74b6:
 	ret     c
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -13700,8 +13810,8 @@ _74b6:
 	ld      (ix+$04),a
 	ld      hl,$001a
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	call    _LABEL_625_57
 	ld      (ix+$0a),a
 	call    _LABEL_625_57
@@ -14043,14 +14153,14 @@ _77be:
 	cp      $3a
 	jr      nc,+
 	ld      l,(ix+$04)
-	ld      h,(ix+$05)
-	ld      a,(ix+$06)
+	ld      h,(ix+object.Y)
+	ld      a,(ix+object.Y+1)
 	ld      de,$0020
 	add     hl,de
 	adc     a,$00
 	ld      (ix+$04),l
-	ld      (ix+$05),h
-	ld      (ix+$06),a
+	ld      (ix+object.Y),h
+	ld      (ix+object.Y+1),a
 +	ld      hl,$D2EE
 	ld      a,(hl)
 	cp      $5a
@@ -14066,7 +14176,7 @@ _77be:
 	
 	ld      a,(iy+vars.spriteUpdateCount)
 	res     0,(iy+vars.flags0)
-	call    wait
+	call    waitForInterrupt
 	ld      (iy+vars.spriteUpdateCount),a
 +	ld      (ix+$07),$00
 	ld      (ix+$08),$03
@@ -14164,15 +14274,15 @@ _79fa:
 	ld      a,(ix+$07)
 	or      (ix+$08)
 	ret     z
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	bit     0,a
 	ret     nz
 	and     $02
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$fff8
 	ld      de,$0010
@@ -14206,8 +14316,8 @@ _7a3a:
 	pop     hl
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -14221,8 +14331,8 @@ _7a3a:
 	ld      (ix+$04),a
 	ld      hl,(RAM_TEMP3)
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
@@ -14283,9 +14393,9 @@ _7aed:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($D2AB),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
-	ld      a,($D223)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	jr      nc,+
 	ld      de,$0010
@@ -14313,7 +14423,7 @@ _7aed:
 	pop     hl
 	inc     hl
 	inc     hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	ret     c
 	dec     (ix+$11)
@@ -14338,7 +14448,7 @@ _7b85:
 _7b95:
 	set     5,(ix+$18)
 	set     0,(iy+vars.flags9)
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	jp      z,+
 	ld      a,(ix+$12)
@@ -14370,8 +14480,8 @@ _7b95:
 	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),a
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,(RAM_CAMERA_Y)
 	inc     h
 	xor     a
@@ -14510,13 +14620,13 @@ _LABEL_7CC1_12:
 	bit  6, (iy+vars.flags6)
 	ret  nz
 	ld   l, (ix+$04)
-	ld   h, (ix+$05)
+	ld   h, (ix+object.Y)
 	xor  a
 	bit  7, d
 	jr   z, +
 	dec  a
 +	add  hl, de
-	adc  a, (ix+$06)
+	adc  a, (ix+object.Y+1)
 	ld   l, h
 	ld   h, a
 	add  hl, bc
@@ -14554,8 +14664,8 @@ _7cf6:
 	jr      nz,++
 	bit     1,(ix+$18)
 	jr      nz,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$fff4
 	add     hl,de
 	ld      (ix+$12),l
@@ -14595,14 +14705,14 @@ _7cf6:
 	ld      (ix+$0c),a
 	ld      e,(ix+$12)
 	ld      d,(ix+$13)
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	jr      c,+++
 	ld      (ix+$04),a
-	ld      (ix+$05),e
-	ld      (ix+$06),d
+	ld      (ix+object.Y),e
+	ld      (ix+object.Y+1),d
 	ld      (ix+$0a),a
 	ld      (ix+$0b),a
 	ld      (ix+$0c),a
@@ -14653,9 +14763,9 @@ _7e02:
 	ld      (ix+$10),>_7e89
 	bit     0,(ix+$18)
 	jr      nz,_7e3c
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	ld      (ix+$12),a
-	ld      a,(ix+$06)
+	ld      a,(ix+object.Y+1)
 	ld      (ix+$13),a
 	ld      (ix+$14),$c0
 	set     0,(ix+$18)
@@ -14675,7 +14785,7 @@ _7e3c:
 	ld   e, (ix+$0A)
 	ld   d, (ix+$0B)
 	call _LABEL_7CC1_12
-+	ld   a, ($D223)
++	ld   a, (RAM_FRAMECOUNT)
 	and  $03
 	ret  nz
 	inc  (ix+$11)
@@ -14686,9 +14796,9 @@ _7e3c:
 	ld   (ix+$11), a
 	ld   (ix+$04), a
 	ld   a, (ix+$12)
-	ld   (ix+$05), a
+	ld   (ix+object.Y), a
 	ld   a, (ix+$13)
-	ld   (ix+$06), a
+	ld   (ix+object.Y+1), a
 	ret
 
 ;sprite layout
@@ -14712,9 +14822,9 @@ _7e9b:
 	ld      (ix+$10),>_7ed9
 	bit     0,(ix+$18)
 	jp      nz,_7e3c
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	ld      (ix+$12),a
-	ld      a,(ix+$06)
+	ld      a,(ix+object.Y+1)
 	ld      (ix+$13),a
 	ld      (ix+$14),$c6
 	set     0,(ix+$18)
@@ -14735,12 +14845,12 @@ _7ee6:
 	ld      (ix+$0e),$10
 	bit     0,(ix+$18)
 	jr      nz,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffe8
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	set     0,(ix+$18)
 +	ld      (ix+$0a),$40
 	xor     a
@@ -14772,7 +14882,7 @@ _7ee6:
 	jr      z,+
 	ld      bc,$fffe
 +	ld      de,$0000
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      e,(hl)
 	ld      d,$00
 	ld      a,(RAM_LEVEL_SOLIDITY)
@@ -14945,8 +15055,8 @@ _8053:
 	ld      (ix+$0a),$80
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0058
 	xor     a
 	sbc     hl,de
@@ -15019,8 +15129,8 @@ _8053:
 	ret     c
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -15034,8 +15144,8 @@ _8053:
 	ld      (ix+$04),a
 	ld      hl,$0030
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$07),a
 	ld      (ix+$08),a
 	ld      (ix+$09),a
@@ -15106,7 +15216,7 @@ _8218:
 +	ld      (ix+$0a),l
 	ld      (ix+$0b),h
 	ld      (ix+$0c),c
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	add     a,(ix+$11)
 	ld      (ix+$11),a
@@ -15119,7 +15229,7 @@ _8218:
 	ret
 	
 +	jr      nz,+
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	ret     z
 	ld      (ix+$16),$00
@@ -15197,7 +15307,7 @@ _82e6:
 	ld      de,_837e
 	ld      bc,_8374
 	call    _7c41
-++	ld      a,($D223)
+++	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -15261,8 +15371,8 @@ _83c1:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      ($D2AB),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$000e
 	add     hl,de
 	ld      ($D2AD),hl
@@ -15290,8 +15400,8 @@ _83c1:
 	ld      (RAM_TEMP1),hl
 	ld      de,(RAM_CAMERA_Y)
 	inc     d
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	and     a
 	sbc     hl,de
 	jr      c,++++
@@ -15370,10 +15480,10 @@ _8496:
 	ld      (ix+$03),a
 	ld      a,(hl)
 	inc     hl
-	ld      (ix+$05),a
+	ld      (ix+object.Y),a
 	ld      a,(hl)
 	inc     hl
-	ld      (ix+$06),a
+	ld      (ix+object.Y+1),a
 	inc     (ix+$11)
 	jp      +++
 	
@@ -15383,8 +15493,8 @@ _8496:
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
 	ld      hl,$0380
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	jp      c,+++
@@ -15427,8 +15537,8 @@ _8496:
 	ld      h,(ix+$03)
 	add     hl,de
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
 	ld      (RAM_TEMP3),hl
 	pop     hl
@@ -15462,8 +15572,8 @@ _8496:
 	ld      (ix+$0b),$00
 	ld      (ix+$0c),$00
 	ld      hl,$03c0
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	jr      nc,+++
@@ -15491,8 +15601,8 @@ _85d1:
 	ld      (ix+$03),h
 	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$13),c
 	ld      (ix+$14),a
@@ -15615,8 +15725,8 @@ _866c:
 ++++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -15702,8 +15812,8 @@ _866c:
 	ld      hl,($D2E6)
 	ld      ($D406),hl
 	ld      ($D408),a
-+	ld      l,(ix+$05)
-	ld      h,(ix+$06)
++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0010
 	add     hl,bc
 	ld      a,(RAM_TEMP7)
@@ -15778,7 +15888,7 @@ _8837:
 	ld      de,_88be
 	ld      bc,_88b9
 	call    _7c41
-++	ld      a,($D223)
+++	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -15824,8 +15934,8 @@ _88fb:
 	add     hl,de
 	ld      (ix+$12),l
 	ld      (ix+$13),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0008
 	add     hl,de
 	ld      (ix+$14),l
@@ -15855,8 +15965,8 @@ _88fb:
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      hl,$0204
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
@@ -16076,18 +16186,18 @@ _8af6:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rlca    
 	rlca    
 	and     $03
 	jr      nz,+
 	ld      hl,_8bbc
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $3f
 	ld      e,a
 	cp      $08
@@ -16105,7 +16215,7 @@ _8af6:
 +	cp      $02
 	jr      nz,+
 	ld      hl,_8bc4
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $3f
 	ld      e,a
 	cp      $08
@@ -16152,7 +16262,7 @@ _8af6:
 	ld      (ix+$0e),a
 	call    _LABEL_3956_11
 	call    nc,_35fd
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	cp      $80
 	ret     nz
 	ld      a,$1d
@@ -16191,19 +16301,19 @@ _8c16:
 	ld      (ix+$03),h
 	ld      (ix+$12),l
 	ld      (ix+$13),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0008
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$14),l
 	ld      (ix+$15),h
 	ld      (ix+$11),$96
 	set     0,(ix+$18)
 	ld      bc,$0000
 	ld      de,$0000
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      a,(hl)
 	cp      $52
 	jr      z,+
@@ -16263,8 +16373,8 @@ _8c16:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff0
 	add     hl,bc
@@ -16285,8 +16395,8 @@ _8c16:
 	ld      (ix+$03),h
 	ld      l,(ix+$14)
 	ld      h,(ix+$15)
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),$96
 	jp      -
 
@@ -16315,15 +16425,15 @@ _8d48:
 	dec     a
 	dec     d
 +	ld      l,(ix+$04)
-	ld      h,(ix+$05)
+	ld      h,(ix+object.Y)
 	add     hl,de
-	adc     a,(ix+$06)
+	adc     a,(ix+object.Y+1)
 	ld      (ix+$04),l
-	ld      (ix+$05),h
-	ld      (ix+$06),a
+	ld      (ix+object.Y),h
+	ld      (ix+object.Y+1),a
 	ld      l,h
-	ld      h,(ix+$06)
-	ld      a,($D223)
+	ld      h,(ix+object.Y+1)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $0f
 	jr      nz,+
 	inc     (ix+$11)
@@ -16366,7 +16476,7 @@ _8d48:
 	push    hl
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $03
 	add     a,a
 	add     a,a
@@ -16380,7 +16490,7 @@ _8d48:
 	ld      c,(hl)
 	inc     hl
 	push    hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $0f
 	add     a,c
 	ld      l,a
@@ -16430,8 +16540,8 @@ _8e56:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      a,(ix+$11)
 	add     a,a
@@ -16447,7 +16557,7 @@ _8e56:
 	ld      a,$0c
 	call    _3581
 	inc     (ix+$12)
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	ret     nz
 	inc     (ix+$11)
@@ -16509,8 +16619,8 @@ _8eca:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ex      de,hl
 	ld      hl,($D2DC)
@@ -16678,18 +16788,18 @@ _90c0:
 	ld      h,(ix+$03)
 	ld      (ix+$11),l
 	ld      (ix+$12),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffff
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$13),l
 	ld      (ix+$14),h
 	set     1,(ix+$18)
 +	ld      bc,$0010
 	ld      de,$0020
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      e,(hl)
 	ld      d,$00
 	ld      a,(RAM_LEVEL_SOLIDITY)
@@ -16741,8 +16851,8 @@ _90c0:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$ffe0
 	add     hl,bc
@@ -16761,8 +16871,8 @@ _90c0:
 	ld      (ix+$03),h
 	ld      l,(ix+$13)
 	ld      h,(ix+$14)
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	xor     a
 	ld      (ix+$01),a
 	ld      (ix+$04),a
@@ -16817,8 +16927,8 @@ _91eb:
 +	ld      a,c
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -16839,8 +16949,8 @@ _91eb:
 	xor     a
 	ld      h,a
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$12),a
 	ld      (ix+$18),a
@@ -16906,10 +17016,10 @@ _9267:
 	ld      (ix+$03),a
 	ld      a,(hl)
 	inc     hl
-	ld      (ix+$05),a
+	ld      (ix+object.Y),a
 	ld      a,(hl)
 	inc     hl
-	ld      (ix+$06),a
+	ld      (ix+object.Y+1),a
 	inc     (ix+$11)
 	jp      _f
 	
@@ -16936,8 +17046,8 @@ _9267:
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	and     a
 	sbc     hl,de
 	jp      nz,_f
@@ -16961,8 +17071,8 @@ _9267:
 	ld      de,$000f
 	add     hl,de
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0022
 	add     hl,bc
 	ld      (RAM_TEMP3),hl
@@ -16985,8 +17095,8 @@ _9267:
 	ld      (ix+$03),h
 	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$18),a
 	ld      (ix+$07),a
 	ld      (ix+$08),a
@@ -17018,8 +17128,8 @@ _9267:
 	inc     hl
 	ld      h,(hl)
 	ld      l,a
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	xor     a
 	sbc     hl,de
 	jr      nz,_f
@@ -17040,14 +17150,14 @@ __	ld      hl,$00a2
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0010
 	ld      (RAM_TEMP4),hl
 	ld      hl,$0030
 	ld      (RAM_TEMP6),hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $02
 	call    _3581
 	ret
@@ -17057,8 +17167,8 @@ _9432:
 	ld      de,$0004
 	add     hl,de
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$fffa
 	add     hl,de
 	ld      (RAM_TEMP3),hl
@@ -17132,8 +17242,8 @@ _94a5:
 +	ld      (ix+$0f),l
 	ld      (ix+$10),h
 	ld      hl,($D401)
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	and     a
 	sbc     hl,de
 	ret     nc
@@ -17154,8 +17264,8 @@ _94a5:
 	and     a
 	sbc     hl,de
 	jr      nc,+
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	ld      hl,$fff0
 	add     hl,bc
 	ld      de,(RAM_CAMERA_Y)
@@ -17202,8 +17312,8 @@ _94a5:
 	ld      de,$0010
 	add     hl,de
 	ex      de,hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0008
 	add     hl,bc
 	and     a
@@ -17280,10 +17390,10 @@ _94a5:
 	ld      de,$000f
 +	add     hl,de
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $0f
 	ret     nz
 	call    _7c7b
@@ -17299,8 +17409,8 @@ _94a5:
 	ld      (ix+$03),h
 	ld      hl,(RAM_TEMP3)
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$12),a
 	ld      (ix+$07),a
@@ -17333,8 +17443,8 @@ _96a8:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      l,a
 	ld      h,a
@@ -17384,8 +17494,8 @@ _96f8:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -17436,8 +17546,8 @@ _96f8:
 	call    _LABEL_3956_11
 	jr      c,+
 	ld      bc,($D401)
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,$fff8
 	add     hl,de
 	and     a
@@ -17500,8 +17610,8 @@ _96f8:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ex      de,hl
 	ld      hl,($D2DC)
 	and     a
@@ -17711,8 +17821,8 @@ _9aaf:
 	bit     7,c
 	jr      z,+
 	dec     b
-+	ld      l,(ix+$05)
-	ld      h,(ix+$06)
++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
 	ld      ($D401),hl
 	ld      a,($D407)
@@ -17823,8 +17933,8 @@ _9b75:
 	add     a,a
 	rl      h
 	ld      e,h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      a,l
 	add     a,a
 	rl      h
@@ -17953,20 +18063,20 @@ _9c8e:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0012
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	call    _LABEL_625_57
 	ld      (ix+$11),a
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -18088,16 +18198,16 @@ _9dfa:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffe0
 	add     hl,de
 	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
@@ -18118,8 +18228,8 @@ _9e7e:
 	ld      h,(ix+$13)
 	and     a
 	sbc     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      a,(ix+$11)
 	srl     a
 	srl     a
@@ -18190,7 +18300,7 @@ _9ed4:
 	ret     nz
 	ld      bc,$0000
 	ld      de,$fff0
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      de,$0014
 	ld      a,(hl)
 	cp      $a3
@@ -18202,9 +18312,9 @@ _9ed4:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	ld      (ix+$12),a
-	ld      a,(ix+$06)
+	ld      a,(ix+object.Y+1)
 	ld      (ix+$13),a
 	set     0,(ix+$18)
 	ret
@@ -18265,16 +18375,16 @@ _9f62:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffe0
 	add     hl,de
 	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
@@ -18342,16 +18452,16 @@ _a025:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffe0
 	add     hl,de
 	ld      de,($D401)
 	xor     a
 	sbc     hl,de
 	jr      nc,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$0050
 	add     hl,bc
 	and     a
@@ -18394,12 +18504,12 @@ _a0e8:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0010
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	set     0,(ix+$18)
 +	ld      a,(ix+$11)
 	cp      $64
@@ -18495,8 +18605,8 @@ _a1aa:
 	jp      c,++++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -18508,8 +18618,8 @@ _a1aa:
 	ld      hl,$0006
 	add     hl,bc
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
@@ -18538,8 +18648,8 @@ _a1aa:
 	jp      c,++++
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    ix
 	push    hl
 	pop     ix
@@ -18551,8 +18661,8 @@ _a1aa:
 	ld      hl,$0006
 	add     hl,bc
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$16),a
 	ld      (ix+$17),a
@@ -18814,7 +18924,7 @@ _a51a:
 _a551:
 	ld      (ix+$0d),$06
 	ld      (ix+$0e),$10
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	jr      nz,+++
 	ld      hl,_a6b9
@@ -18859,8 +18969,8 @@ _a551:
 +++	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	bit     1,(ix+$18)
 	jr      nz,++
@@ -18921,7 +19031,7 @@ _a551:
 	ld      (RAM_TEMP1),hl
 	call    nc,_35e5
 +++	ld      (ix+$0b),$01
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $01
 	ret     nz
 	inc     (ix+$11)
@@ -19169,8 +19279,8 @@ _a7ed:
 	xor     a
 	sbc     hl,de
 	ld      (ix+$04),a
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      e,(ix+$11)
 	ld      d,$00
 	ld      hl,$02af
@@ -19223,8 +19333,8 @@ _a9c7:
 	ld      c,a
 	ld      de,($D2A1)
 	ld      l,(ix+$04)
-	ld      h,(ix+$05)
-	ld      a,(ix+$06)
+	ld      h,(ix+object.Y)
+	ld      a,(ix+object.Y+1)
 	add     hl,de
 	adc     a,c
 	ld      l,h
@@ -19294,18 +19404,18 @@ _aa6a:
 	add     hl,de
 	ld      (ix+$02),l
 	ld      (ix+$03),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$fffa
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	set     0,(ix+$18)
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      e,(ix+$11)
 	ld      d,$00
@@ -19488,7 +19598,7 @@ _ab21:
 	ld      (RAM_TEMP6),hl
 	call    _LABEL_3956_11
 	call    nc,_35fd
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $3f
 	ret     nz
 	inc     (ix+$11)
@@ -19507,8 +19617,8 @@ _ac96:
 	ld      h,(ix+$03)
 	add     hl,de
 	ex      de,hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
 	ld      c,l
 	ld      b,h
@@ -19519,8 +19629,8 @@ _ac96:
 	ld      (ix+$02),e
 	ld      (ix+$03),d
 	ld      (ix+$04),a
-	ld      (ix+$05),c
-	ld      (ix+$06),b
+	ld      (ix+object.Y),c
+	ld      (ix+object.Y+1),b
 	ld      (ix+$11),a
 	ld      (ix+$13),$24
 	ld      (ix+$14),a
@@ -19598,8 +19708,8 @@ _ad6c:
 	push    ix
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    hl
 	pop     ix
 	xor     a
@@ -19612,8 +19722,8 @@ _ad6c:
 	ld      (ix+$04),a
 	ld      hl,$0010
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	pop     ix
 	ld      a,$1c
 	rst     $28			;`playSFX`
@@ -19653,7 +19763,7 @@ _ae04:
 .db $FF
 
 ;____________________________________________________________________________[$AE35]___
-;OBJECT: UNKNOWN
+;OBJECT: cannon ball (Sky Base)
 
 _ae35:
 	set     5,(ix+$18)
@@ -19737,8 +19847,8 @@ _ae88:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	push    ix
 	pop     hl
@@ -19798,7 +19908,7 @@ _ae88:
 	inc     hl
 	djnz    -
 	
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	ret     z
 	ld      a,(ix+$15)
@@ -19816,16 +19926,16 @@ _af98:
 	ld      a,(RAM_LEVEL_SOLIDITY)
 	cp      $03
 	ret     nz
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffd0
 	add     hl,de
 	ld      de,($D401)
 	and     a
 	sbc     hl,de
 	ret     nc
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      bc,$002c
 	add     hl,bc
 	and     a
@@ -19858,8 +19968,8 @@ _afdb:
 	push    ix
 	ld      e,(ix+$02)
 	ld      d,(ix+$03)
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	push    hl
 	pop     ix
 	xor     a
@@ -19872,8 +19982,8 @@ _afdb:
 	ld      (ix+$04),a
 	ld      hl,$001e
 	add     hl,bc
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      hl,($D216)
 	ld      (ix+$07),l
 	ld      (ix+$08),h
@@ -19942,8 +20052,8 @@ _b0f4:
 	and     a
 	sbc     hl,de
 	jr      c,+
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ex      de,hl
 	ld      hl,(RAM_CAMERA_Y)
@@ -19984,8 +20094,8 @@ _b16c:
 	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      a,(ix+$11)
 	add     a,a
@@ -20023,7 +20133,7 @@ _b16c:
 +	pop     bc
 	djnz    -
 	
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $3f
 	jr      nz,+
 	ld      a,(ix+$11)
@@ -20087,9 +20197,9 @@ _b297:
 	jr      nz,+
 	ld      a,(ix+$04)
 	ld      (ix+$12),a
-	ld      a,(ix+$05)
+	ld      a,(ix+object.Y)
 	ld      (ix+$13),a
-	ld      a,(ix+$06)
+	ld      a,(ix+object.Y+1)
 	ld      (ix+$14),a
 	set     0,(ix+$18)
 +	ld      a,($D2A3)
@@ -20101,8 +20211,8 @@ _b297:
 	add     hl,de
 	adc     a,c
 	ld      (ix+$04),l
-	ld      (ix+$05),h
-	ld      (ix+$06),a
+	ld      (ix+object.Y),h
+	ld      (ix+object.Y+1),a
 	ld      a,($D408)
 	and     a
 	jp      m,+
@@ -20137,8 +20247,8 @@ _b297:
 +	ld      l,(ix+$02)
 	ld      h,(ix+$03)
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$fff8
 	ld      (RAM_TEMP4),hl
@@ -20212,8 +20322,8 @@ _b398:
 	ld      l,h
 	ld      h,a
 	ld      (RAM_TEMP1),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      (RAM_TEMP3),hl
 	ld      hl,$0000
 	ld      (RAM_TEMP4),hl
@@ -20234,8 +20344,8 @@ _b398:
 	ld      (ix+$09),a
 	sbc     hl,de
 	ret     nc
-	ld      c,(ix+$05)
-	ld      b,(ix+$06)
+	ld      c,(ix+object.Y)
+	ld      b,(ix+object.Y+1)
 	ld      hl,$0040
 	add     hl,bc
 	ld      de,(RAM_CAMERA_Y)
@@ -20278,7 +20388,7 @@ _b46d:
 	ld      bc,$0000
 	ld      e,c
 	ld      d,b
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      a,(hl)
 	sub     $3c
 	cp      $04
@@ -20331,8 +20441,8 @@ _b46d:
 	ret     nz
 	inc     hl
 	exx     
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,($D401)
 	and     a
 	sbc     hl,de
@@ -20449,8 +20559,8 @@ _b5c2:
 	ld      h,(ix+$03)
 	add     hl,de
 	ex      de,hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	add     hl,bc
 	ld      c,l
 	ld      b,h
@@ -20461,8 +20571,8 @@ _b5c2:
 	ld      (ix+$02),e
 	ld      (ix+$03),d
 	ld      (ix+$04),a
-	ld      (ix+$05),c
-	ld      (ix+$06),b
+	ld      (ix+object.Y),c
+	ld      (ix+object.Y+1),b
 	ld      (ix+$11),a
 	ld      (ix+$13),a
 	ld      (ix+$14),a
@@ -20515,12 +20625,12 @@ _b634:
 	ld      (ix+$03),h
 	ld      (ix+$11),l
 	ld      (ix+$12),h
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0010
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$13),l
 	ld      (ix+$14),h
 	xor     a
@@ -20535,7 +20645,7 @@ _b634:
 	and     a
 	jp      nz,+++
 	call    _b99f
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	jp      nz,++++
 	ld      a,(ix+$16)
@@ -20589,16 +20699,16 @@ _b634:
 	ld      (ix+$0c),c
 	ld      (ix+$0f),<_bb1d
 	ld      (ix+$10),>_bb1d
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	dec     hl
 	ld      e,(ix+$13)
 	ld      d,(ix+$14)
 	and     a
 	sbc     hl,de
 	jr      c,++++
-	ld      (ix+$05),e
-	ld      (ix+$06),d
+	ld      (ix+object.Y),e
+	ld      (ix+object.Y+1),d
 	xor     a
 	ld      (ix+$16),a
 	ld      (ix+$0a),a
@@ -20778,7 +20888,7 @@ _b821:
 	ld      (ix+$0c),$ff
 +	ld      de,$0017
 	ld      bc,$0036
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      e,(hl)
 	ld      d,$00
 	ld      hl,$3f28
@@ -20794,7 +20904,7 @@ _b821:
 	ld      (ix+$0c),$ff
 +	ld      de,$0000
 	ld      bc,$0008
-	call    _36f9
+	call    getFloorLayoutRAMPositionForObject
 	ld      a,(hl)
 	cp      $49
 	jr      nz,+
@@ -20844,7 +20954,7 @@ _b821:
 	cp      $30
 	jr      nc,++
 	ld      c,a
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	and     $07
 	jr      nz,+
 	ld      a,(ix+$17)
@@ -20898,8 +21008,8 @@ _b99f:
 	ld      l,(ix+$13)
 	ld      h,(ix+$14)
 	add     hl,de
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ret
 
 ;____________________________________________________________________________[$B9D5]___
@@ -20920,8 +21030,8 @@ _b9d5:
 	ld      (ix+$03),h
 	ld      (ix+$04),a
 	ld      hl,$012f
-	ld      (ix+$05),l
-	ld      (ix+$06),h
+	ld      (ix+object.Y),l
+	ld      (ix+object.Y+1),h
 	ld      (ix+$11),a
 	ld      (ix+$18),a
 	ld      (ix+$07),a
@@ -21028,7 +21138,7 @@ _bb84:
 	ret     z
 	bit     1,(ix+$18)
 	jr      z,+
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	bit     0,a
 	ret     nz
 	and     $02
@@ -21080,14 +21190,14 @@ _bb84:
 	ld      (ix+$11),a
 	cp      $80
 	ret     c
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	ld      c,a
 	and     $01
 	ret     nz
 	set     1,(ix+$18)
 	ret
 	
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	and     $0f
 	jr      nz,+
 	ld      a,$13
@@ -21115,7 +21225,7 @@ _bb84:
 	jr      nc,++
 	inc     (ix+$11)
 ++	res     1,(ix+$18)
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	ld      c,a
 	and     $40
 	ret     nz
@@ -21213,8 +21323,8 @@ _bcdf:
 	ld      (ix+$07),l
 	ld      (ix+$08),h
 	ld      (ix+$09),a
-	ld      e,(ix+$05)
-	ld      d,(ix+$06)
+	ld      e,(ix+object.Y)
+	ld      d,(ix+object.Y+1)
 	ld      hl,(RAM_CAMERA_Y)
 	ld      bc,$fff4
 	add     hl,bc
@@ -21296,7 +21406,7 @@ _bdf9:
 	ld      (ix+$12),$ff
 	set     6,(iy+vars.timeLightningFlags)
 	set     1,(ix+$18)
-+	ld      a,($D223)
++	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	jr      c,+
 	ld      a,(ix+$12)
@@ -21309,8 +21419,8 @@ _bdf9:
 	ld      de,$003c
 	add     hl,de
 	ld      ($D3FE),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$ffc0
 	add     hl,de
 	ld      ($D401),hl
@@ -21416,7 +21526,7 @@ _bf33:
 _bf4c:
 	set     5,(ix+$18)
 	ld      hl,$5400		;$15400 - emerald image
-	call    _c1d
+	call    loadPowerUpIcon
 	
 	bit     0,(ix+$18)
 	jr      nz,+
@@ -21445,7 +21555,7 @@ _bf4c:
 	ld      (ix+$0b),$ff
 	ld      (ix+$0c),$ff
 ++	ld      hl,_bff1
-	ld      a,($D223)
+	ld      a,(RAM_FRAMECOUNT)
 	rrca    
 	jr      nc,+
 	ld      a,(iy+vars.spriteUpdateCount)
@@ -21454,8 +21564,8 @@ _bf4c:
 	push    hl
 	ld      hl,RAM_SPRITETABLE
 	ld      (RAM_SPRITETABLE_CURRENT),hl
-	ld      l,(ix+$05)
-	ld      h,(ix+$06)
+	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,(RAM_CAMERA_Y)
 	and     a
 	sbc     hl,de
@@ -21471,8 +21581,8 @@ _bf4c:
 	pop     af
 	ld      (RAM_SPRITETABLE_CURRENT),hl
 	ld      (iy+vars.spriteUpdateCount),a
-+	ld      l,(ix+$05)
-	ld      h,(ix+$06)
++	ld      l,(ix+object.Y)
+	ld      h,(ix+object.Y+1)
 	ld      de,$0020
 	add     hl,de
 	ld      de,(RAM_CAMERA_Y)
