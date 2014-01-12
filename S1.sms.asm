@@ -278,7 +278,7 @@
 ;--------------------------------------------------------------------------------------
 
 .STRUCT object
-	unknown0		DB
+	type			DB	;IX+$00 - the object type index number
 	unknown1		DB	
 	X			DW	;IX+$02/03
 	unknown4		DB	
@@ -5955,7 +5955,7 @@ _232b:
 	ret	z
 	ld	b,a
 
--	ld	(ix+$00),$ff
+-	ld	(ix+object.type),$FF	;remove object?
 	add	ix,de
 	djnz	-
 	ret
@@ -5964,7 +5964,7 @@ _232b:
 
 ;add object
 _235e:
-	ld	(ix+$00),a		;set $D3FC with the Object ID
+	ld	(ix+object.type),a	;set $D3FC with the Object ID
 	ld	a,(hl)			;X or Y position?
 	exx	
 	ld	l,a			;convert A to 16-bit number in HL
@@ -8109,7 +8109,7 @@ _3644:
 	push	ix
 	push	hl
 	pop	ix
-	ld	(ix+$00),$55
+	ld	(ix+object.type),$55	;"make Sonic blink"?
 	ld	(ix+$11),$06
 	ld	(ix+$12),$00
 	ld	hl,($D3FE)
@@ -8154,7 +8154,7 @@ _367e:
 
 ;----------------------------------------------------------------------------[$36BE]---
 _36be:
-	ld	(ix+$00),$0a
+	ld	(ix+object.type),$0A	;explosion
 	ld	a,(RAM_TEMP1)
 	ld	e,a
 	ld	d,$00
@@ -10467,7 +10467,7 @@ _529c:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$54
+	ld	(ix+object.type),$54	;all emeralds animation
 	ld	(ix+$11),a
 	ld	(ix+$18),a
 	ld	(ix+$01),a
@@ -11322,8 +11322,8 @@ _5893:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
-	ld	(ix+$00),$2e
+	xor	a			;set A to 0
+	ld	(ix+object.type),$2E	;falling bridge piece
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),c
 	ld	(ix+object.X+1),b
@@ -11511,7 +11511,7 @@ _5c05:
 	and	c
 	jr	z,+			;if not set, skip ahead
 	
-	ld	(ix+$00),$FF
+	ld	(ix+object.type),$FF	;remove object?
 	jp	_5b29
 	
 +	ld	hl,$0003
@@ -11598,7 +11598,7 @@ _5c05:
 ++++	ld	a,($D280)
 	cp	$11
 	jr	nc,-
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	jr	-
 
 ;____________________________________________________________________________[$5CD7]___
@@ -11864,7 +11864,7 @@ _5ea2:
 	ld	a,index_music_emerald
 	rst	$18			;`playMusic`
 	
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 ++	ld	a,(RAM_FRAMECOUNT)
@@ -12726,7 +12726,7 @@ _693f:
 	ld	a,(ix+$11)
 	cp	$18
 	ret	c
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 _69b7:
@@ -12842,7 +12842,7 @@ _6a47:
 	and	a
 	sbc	hl,de
 	ret	nc
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 ;____________________________________________________________________________[$6AC1]___
@@ -12920,7 +12920,7 @@ _6ac1:
 	and	a
 	sbc	hl,bc
 	ret	nc
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;remove object?
 	ret	
 
 _6b70:
@@ -13023,7 +13023,7 @@ _6b74:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0d
+	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -13348,7 +13348,7 @@ _6f08:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0d
+	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -13846,7 +13846,7 @@ _732c:
 	ld	a,(ix+$16)
 	cp	$0c
 	ret	c
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;unknown object
 	ret
 
 ;____________________________________________________________________________[$74B6]___
@@ -13863,7 +13863,7 @@ _74b6:
 	push	hl
 	pop	ix
 	ld	a,($D216)
-	ld	(ix+$00),a
+	ld	(ix+object.type),a
 	xor	a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
@@ -13973,7 +13973,7 @@ _7612:
 	and	a
 	sbc	hl,de
 	ret	nc
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 	
 _7629:
@@ -14261,7 +14261,7 @@ _77be:
 	ret	c
 	
 	;unlocks the screen?
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ld	hl,$2000		;8192 -- max width of a level in pixels
 	ld	(RAM_LEVEL_RIGHT),hl
 	ld	hl,$0000
@@ -14388,7 +14388,7 @@ _7a3a:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0a
+	ld	(ix+object.type),$0A	;explosion
 	ld	(ix+$01),a
 	ld	hl,(RAM_TEMP1)
 	add	hl,de
@@ -14553,7 +14553,7 @@ _7b95:
 	xor	a
 	sbc	hl,de
 	jr	nc,+
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	res	0,(iy+vars.flags9)
 	ret
 	
@@ -15210,7 +15210,7 @@ _8053:
 	push	ix
 	push	hl
 	pop	ix
-	ld	(ix+$00),$2b
+	ld	(ix+object.type),$2B	;unknown object
 	xor	a
 	ld	(ix+$01),a
 	ld	hl,$000b
@@ -15322,7 +15322,7 @@ _8218:
 	add	a,$12
 	cp	(ix+$11)
 	ret	nc
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 _82c1:
@@ -15481,7 +15481,7 @@ _83c1:
 	and	a
 	sbc	hl,de
 	jr	c,++++
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 	
 ++++	ld	hl,$0402
@@ -15672,7 +15672,7 @@ _85d1:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0d
+	ld	(ix+object.type),$0D	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),l
@@ -16723,7 +16723,7 @@ _8eca:
 	and	a
 	sbc	hl,de
 	jr	nc,++
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;remove object?
 ++	ld	hl,$0000
 	ld	(RAM_TEMP4),hl
 	ld	(RAM_TEMP6),hl
@@ -16996,7 +16996,7 @@ _91eb:
 	call	_7c7b
 	ret	c
 	ld	c,$42
-	ld	a,(ix+$00)
+	ld	a,(ix+object.type)
 	cp	$41
 	jr	nz,+
 	push	hl
@@ -17016,7 +17016,7 @@ _91eb:
 	push	ix
 	push	hl
 	pop	ix
-	ld	(ix+$00),a
+	ld	(ix+object.type),a
 	xor	a
 	ld	(ix+$01),a
 	call	_LABEL_625_57
@@ -17172,7 +17172,7 @@ _9267:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$2f
+	ld	(ix+object.type),$2F	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),l
@@ -17361,7 +17361,7 @@ _94a5:
 	and	a
 	sbc	hl,bc
 	jr	nc,++
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;unknown object
 ++	xor	a
 	ld	hl,$0002
 	bit	2,(ix+$18)
@@ -17486,7 +17486,7 @@ _94a5:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$2a
+	ld	(ix+object.type),$2A	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),l
@@ -17549,7 +17549,7 @@ _96a8:
 	ld	a,(ix+$12)
 	cp	$03
 	ret	c
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 _96f5:
@@ -17622,7 +17622,7 @@ _96f8:
 	ld	(ix+$0c),c
 	dec	(ix+$12)
 	jp	nz,++
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object
 	jp	++
 	
 +	ld	hl,$0206
@@ -17713,7 +17713,7 @@ _96f8:
 	and	a
 	sbc	hl,de
 	jr	nc,++
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;remove object
 ++	inc	(ix+$11)
 	ret
 
@@ -18696,7 +18696,7 @@ _a1aa:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$1c
+	ld	(ix+object.type),$1C	;ball from the Ball Hog
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -18739,7 +18739,7 @@ _a1aa:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$1c
+	ld	(ix+object.type),$1C	;ball from the Ball Hog
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -18837,7 +18837,7 @@ _a33c:
 	ld	a,(ix+$11)
 	cp	$a5
 	ret	c
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 _a3b1:
@@ -19645,7 +19645,7 @@ _ab21:
 	ld	de,$0008
 	ld	bc,$0008
 	call	_ac96
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ld	a,$1b
 	rst	$28			;`playSFX`
 	jr	++++
@@ -19711,7 +19711,7 @@ _ac96:
 	ld	b,h
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0d
+	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -19800,7 +19800,7 @@ _ad6c:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$34
+	ld	(ix+object.type),$34	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0004
 	add	hl,de
@@ -19864,7 +19864,7 @@ _ae35:
 	and	a
 	sbc	hl,de
 	jr	nc,+
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 +	ld	hl,$0202
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -20060,7 +20060,7 @@ _afdb:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$36
+	ld	(ix+object.type),$36	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0012
 	add	hl,de
@@ -20162,7 +20162,7 @@ _b0f4:
 	call	_3581
 	ret
 	
-+	ld	(ix+$00),$ff
++	ld	(ix+object.type),$FF	;remove object?
 	ret
 
 ;____________________________________________________________________________[$B16C]___
@@ -20663,7 +20663,7 @@ _b5c2:
 	ld	b,h
 	pop	ix
 	xor	a
-	ld	(ix+$00),$0d
+	ld	(ix+object.type),$0D	;unknown object?
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
 	ld	(ix+object.X+1),d
@@ -21073,7 +21073,7 @@ _b821:
 	ld	a,(ix+$16)
 	cp	$70
 	ret	c
-	ld	(ix+$00),$ff
+	ld	(ix+object.type),$FF	;remove object?
 	ret
 	
 ;____________________________________________________________________________[$B99F]___
@@ -21120,7 +21120,7 @@ _b9d5:
 	push	hl
 	pop	ix
 	xor	a
-	ld	(ix+$00),$47
+	ld	(ix+object.type),$47	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0420
 	ld	(ix+object.X+0),l
@@ -21465,7 +21465,7 @@ _bcdf:
 	call	_7c41
 	bit	4,(iy+vars.unknown0)
 	ret	nz
-++++	ld	(ix+$00),$ff
+++++	ld	(ix+object.type),$FF	;remove object?
 	res	5,(iy+vars.unknown0)
 	ret
 
