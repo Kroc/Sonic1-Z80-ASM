@@ -279,19 +279,17 @@
 
 .STRUCT object
 	type			DB	;IX+$00 - the object type index number
-	unknown1		DB	
-	X			DW	;IX+$02/03
-	unknown4		DB	
-	Y			DW	;IX+$05/06
-	unknown7		DB
-	unknown8		DB
-	unknown9		DB
-	unknownA		DB
-	unknownB		DB
-	unknownC		DB
-	width			DB	;IX+$0D
-	height			DB	;IX+$0E
-	spriteLayout		DW	;IX+$0F/10
+	unknown1		DB	;related to X somehow?
+	X			DW	;IX+$02/03 - in px
+	unknown4		DB	;related to Y somehow?
+	Y			DW	;IX+$05/06 - in px
+	Xspeed			DW	;IX+$07/08 - in px, signed (i.e. $F??? = left)
+	Xdirection		DB	;IX+$09 - $FF for left, else $00
+	Yspeed			DW	;IX+$0A/0B - in px, signed  (i.e. $F??? = left)
+	Ydirection		DB	;IX+$0C - $FF for left, else $00
+	width			DB	;IX+$0D - in px
+	height			DB	;IX+$0E - in px
+	spriteLayout		DW	;IX+$0F/10 - address to current sprite layout
 .ENDST
 
 ;======================================================================================
@@ -5964,6 +5962,8 @@ _232b:
 
 ;add object
 _235e:
+;IX : ?
+;HL : ?
 	ld	(ix+object.type),a	;set $D3FC with the Object ID
 	ld	a,(hl)			;X or Y position?
 	exx	
@@ -5971,16 +5971,16 @@ _235e:
 	ld	h,$00
 	ld	(ix+$01),h
 	;multiply by 32
-	add	hl,hl
-	add	hl,hl
-	add	hl,hl
-	add	hl,hl
-	add	hl,hl
+	add	hl,hl			;x2 ...
+	add	hl,hl			;x4 ...
+	add	hl,hl			;x8 ...
+	add	hl,hl			;x16 ...
+	add	hl,hl			;x32
 	ld	(ix+object.X+0),l
 	ld	(ix+object.X+1),h
 	exx	
 	
-	;X or Y positiond
+	;X or Y position
 	inc	hl
 	ld	a,(hl)
 	
@@ -7563,9 +7563,9 @@ doObjectCode:
 ;----------------------------------------------------------------------------[$32E2]---
 
 _32e2:
-	ld	e, (ix+$07)
-	ld	d, (ix+$08)
-	ld	c, (ix+$09)
+	ld	e, (ix+object.Xspeed+0)
+	ld	d, (ix+object.Xspeed+1)
+	ld	c, (ix+object.Xdirection)
 	ld	l, (ix+$01)
 	ld	h, (ix+object.X+0)
 	ld	a, (ix+object.X+1)
@@ -7574,9 +7574,9 @@ _32e2:
 	ld	(ix+$01), l
 	ld	(ix+object.X+0), h
 	ld	(ix+object.X+1), a
-	ld	e, (ix+$0A)
-	ld	d, (ix+$0B)
-	ld	c, (ix+$0C)
+	ld	e, (ix+object.Yspeed+0)
+	ld	d, (ix+object.Yspeed+1)
+	ld	c, (ix+object.Ydirection)
 	ld	l, (ix+$04)
 	ld	h, (ix+object.Y+0)
 	ld	a, (ix+object.Y+1)
@@ -7591,7 +7591,7 @@ _32e2:
 	ld	d, b
 	ld	e, (ix+object.height)
 	srl	e
-	bit	7, (ix+$08)
+	bit	7, (ix+object.Xspeed+1)
 	jr	nz, +
 	ld	c, (ix+object.width)
 	ld	hl, $411E
@@ -7650,7 +7650,7 @@ _32e2:
 	ld	h,(ix+object.X+1)
 	ld	bc,(RAM_TEMP3)
 	add	hl,bc
-	bit	7,(ix+$09)
+	bit	7,(ix+object.Xdirection)
 	jr	nz,+
 	and	a
 	jp	m,++
@@ -7681,25 +7681,25 @@ _32e2:
 	ld	hl,$3fbf		;data?
 	add	hl,de
 	ld	c,(hl)
-	ld	(ix+$07),d
-	ld	(ix+$08),d
-	ld	(ix+$09),d
+	ld	(ix+object.Xspeed+0),d
+	ld	(ix+object.Xspeed+1),d
+	ld	(ix+object.Xdirection),d
 	ld	a,d
 	ld	b,d
 	bit	7,c
 	jr	z,+
 	dec	a
 	dec	b
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
 	add	hl,bc
-	adc	a,(ix+$0c)
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	adc	a,(ix+object.Ydirection)
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 +++	ld	b,$00
 	ld	d,b
-	bit	7,(ix+$0b)
+	bit	7,(ix+object.Yspeed+1)
 	jr	nz,+
 	ld	c,(ix+object.width)
 	srl	c
@@ -7762,7 +7762,7 @@ _32e2:
 	ld	h,(ix+object.Y+1)
 	ld	de,(RAM_TEMP3)
 	add	hl,de
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	jr	nz,+
 	and	a
 	jp	m,++
@@ -7807,22 +7807,22 @@ _32e2:
 	ld	hl,$3f90		;data?
 	add	hl,de
 	ld	c,(hl)
-	ld	(ix+$0a),d
-	ld	(ix+$0b),d
-	ld	(ix+$0c),d
+	ld	(ix+object.Yspeed+0),d
+	ld	(ix+object.Yspeed+1),d
+	ld	(ix+object.Ydirection),d
 	ld	a,d
 	ld	b,d
 	bit	7,c
 	jr	z,+
 	dec	a
 	dec	b
-+	ld	l,(ix+$07)
-	ld	h,(ix+$08)
++	ld	l,(ix+object.Xspeed+0)
+	ld	h,(ix+object.Xspeed+1)
 	add	hl,bc
-	adc	a,(ix+$09)
-	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),a
+	adc	a,(ix+object.Xdirection)
+	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),a
 _34e6:
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
@@ -8118,9 +8118,9 @@ _3644:
 	ld	hl,($D401)
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fc
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fc
+	ld	(ix+object.Ydirection),$ff
 	pop	ix
 _367e:
 	ld	hl,$D414
@@ -9289,7 +9289,7 @@ _48c8:
 +	ld	(ix+object.width),$18
 	ld	(ix+object.height),$20
 	ld	hl,(RAM_SONIC_SPEED_HORZ)
-	ld	b,(ix+$09)
+	ld	b,(ix+object.Xdirection)
 	ld	c,$00
 	ld	e,c
 	ld	d,c
@@ -9363,8 +9363,8 @@ _4b1b:
 	ld	c,a
 	jp	p,++
 	ld	a,(RAM_SONIC_SPEED_HORZ)
-	or	(ix+$08)
-	or	(ix+$09)
+	or	(ix+object.Xspeed+1)
+	or	(ix+object.Xdirection)
 	jr	z,++
 	ld	c,$00
 	ld	l,c
@@ -9383,7 +9383,7 @@ _4b1b:
 	ld	(RAM_SONIC_DIRECTION),a
 _4b49:
 	ld	hl,(RAM_SONIC_SPEED_VERT)
-	ld	b,(ix+$0c)
+	ld	b,(ix+object.Ydirection)
 	ld	c,$00
 	ld	e,c
 	ld	d,c
@@ -9491,7 +9491,7 @@ _4bac:
 	ld	a,($D414)
 	and	$85
 	jr	nz,++
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	jr	z,+
 	ld	(ix+$14),$13
 	jr	++
@@ -10300,7 +10300,7 @@ _51b3:
 _51bc:
 	ld	(ix+object.width),$1c
 	ld	(ix+$14),$10
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	ret	nz
 	bit	7,(ix+$18)
 	ret	z
@@ -10466,7 +10466,7 @@ _529c:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$54	;all emeralds animation
 	ld	(ix+$11),a
 	ld	(ix+$18),a
@@ -10516,7 +10516,7 @@ _532e:
 +	ld	(ix+object.width),$18
 	ld	(ix+object.height),$18
 	ld	hl,(RAM_SONIC_SPEED_HORZ)
-	ld	b,(ix+$09)
+	ld	b,(ix+object.Xdirection)
 	ld	c,$00
 	ld	e,c
 	ld	d,c
@@ -10661,7 +10661,7 @@ _543c:
 	sbc	hl,de
 	jr	c,++++
 +	ex	de,hl
-	ld	b,(ix+$0c)
+	ld	b,(ix+object.Ydirection)
 	ld	a,h
 	cp	$80
 	jr	nc,+
@@ -10720,16 +10720,16 @@ _54ce:
 	jr	c,+
 	and	$02
 	ret	z
-+	ld	l,(ix+$07)
-	ld	h,(ix+$08)
-	bit	7,(ix+$09)
++	ld	l,(ix+object.Xspeed+0)
+	ld	h,(ix+object.Xspeed+1)
+	bit	7,(ix+object.Xdirection)
 	ret	nz
 	ld	de,$0301
 	and	a
 	sbc	hl,de
 	ret	c
-	ld	l,(ix+$08)
-	ld	h,(ix+$09)
+	ld	l,(ix+object.Xspeed+1)
+	ld	h,(ix+object.Xdirection)
 	add	hl,hl
 	ld	a,l
 	cpl	
@@ -10738,9 +10738,9 @@ _54ce:
 	cpl	
 	ld	h,a
 	inc	hl
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),l
-	ld	(ix+$0c),h
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),l
+	ld	(ix+object.Ydirection),h
 	ld	a,$05
 	rst	$28			;`playSFX`
 	ret
@@ -10754,9 +10754,9 @@ _550f:
 	and	$1f
 	cp	$10
 	ret	c
-	ld	(ix+$07),$00
-	ld	(ix+$08),$f8
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$f8
+	ld	(ix+object.Xdirection),$ff
 	set	1,(ix+$18)
 	ld	a,$04
 	rst	$28			;`playSFX`
@@ -10777,9 +10777,9 @@ _552d:
 	and	$80
 	ret	nz
 	res	6,(iy+vars.flags6)
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$f4
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$f4
+	ld	(ix+object.Ydirection),$ff
 	ld	a,$04
 	rst	$28			;`playSFX`
 	ret
@@ -10794,9 +10794,9 @@ _5556:
 	cp	$10
 	ret	nc
 	res	6,(iy+vars.flags6)
-	ld	(ix+$07),$00
-	ld	(ix+$08),$08
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$08
+	ld	(ix+object.Xdirection),$00
 	res	1,(ix+$18)
 	ld	a,$04
 	rst	$28			;`playSFX`
@@ -10860,9 +10860,9 @@ _55b6:
 	and	$80
 	ret	nz
 	res	6,(iy+vars.flags6)
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$f4
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$f4
+	ld	(ix+object.Ydirection),$ff
 	ld	a,$04
 	rst	$28			;`playSFX`
 	ret
@@ -10871,7 +10871,7 @@ _55b6:
 ;referenced by table at _58e5
 
 _55e2:
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	ret	nz
 	ld	a,$05
 	rst	$28			;`playSFX`
@@ -11110,9 +11110,9 @@ _5727:
 ;referenced by table at _58e5
 
 _5761:
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$f6
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$f6
+	ld	(ix+object.Ydirection),$ff
 	ld	a,$04
 	rst	$28			;`playSFX`
 	ret
@@ -11121,9 +11121,9 @@ _5761:
 ;referenced by table at _58e5
 
 _5771:
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$f4
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$f4
+	ld	(ix+object.Ydirection),$ff
 	ld	a,$04
 	rst	$28			;`playSFX`
 	ret
@@ -11132,9 +11132,9 @@ _5771:
 ;referenced by table at _58e5
 
 _5781:
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$f2
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$f2
+	ld	(ix+object.Ydirection),$ff
 	ld	a,$04
 	rst	$28			;`playSFX`
 	ret
@@ -11330,12 +11330,12 @@ _5893:
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),e
 	ld	(ix+object.Y+1),d
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	(ix+$18),a
 	pop	ix
 	and	a
@@ -11423,10 +11423,10 @@ _5b34:
 	ld	l,(ix+$01)
 	ld	h,(ix+object.X+0)
 	ld	a,(ix+object.X+1)
-	ld	e,(ix+$07)
-	ld	d,(ix+$08)
+	ld	e,(ix+object.Xspeed+0)
+	ld	d,(ix+object.Xspeed+1)
 	add	hl,de
-	adc	a,(ix+$09)
+	adc	a,(ix+object.Xdirection)
 	ld	l,h
 	ld	h,a
 	ld	(RAM_TEMP1),hl
@@ -11435,10 +11435,10 @@ _5b34:
 	ld	a,(ix+object.Y+1)
 	bit	7,(ix+$18)
 	jr	nz,+
-	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
+	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	add	hl,de
-	adc	a,(ix+$0c)
+	adc	a,(ix+object.Ydirection)
 +	ld	l,h
 	ld	h,a
 	ld	(RAM_TEMP3),hl
@@ -11454,15 +11454,15 @@ _5b34:
 	call	_3581
 	bit	1,(ix+$18)
 	ret	z
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0040
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ret
 
 _5bbf:
@@ -11568,9 +11568,9 @@ _5c05:
 	jr	c,+
 	dec	c
 	ld	de,$ffc0
-+	ld	(ix+$0a),e
-	ld	(ix+$0b),d
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),e
+	ld	(ix+object.Yspeed+1),d
+	ld	(ix+object.Ydirection),c
 	inc	(ix+$13)
 	ld	a,(ix+$13)
 	cp	$50
@@ -11590,9 +11590,9 @@ _5c05:
 	jp	_5b34
 	
 +++	set	1,(ix+$18)
-	ld	(ix+$07),$80
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	jr	-
 	
 ++++	ld	a,($D280)
@@ -11794,9 +11794,9 @@ _5deb:
 	and	a
 	ret
 
-+	ld	(ix+$0a),$80
-	ld	(ix+$0b),$fe
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$fe
+	ld	(ix+object.Ydirection),$ff
 	ld	hl,$0400
 	xor	a
 	ld	(RAM_SONIC_SPEED_VERT),hl
@@ -11872,15 +11872,15 @@ _5ea2:
 	jr	c,+
 	ld	(ix+object.spriteLayout+0),<_5f10
 	ld	(ix+object.spriteLayout+1),>_5f10
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	hl,$5400		;$15400 - emerald in the blinking items art
 	call	loadPowerUpIcon
 	ret
@@ -11955,18 +11955,18 @@ _5f17:
 	and	a
 	sbc	hl,de
 	jr	nc,++
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fe
-	ld	(ix+$0c),$ff
-++	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fe
+	ld	(ix+object.Ydirection),$ff
+++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$001a
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	bit	3,(ix+$11)
 	jr	nz,++
 	bit	2,(ix+$11)
@@ -11990,7 +11990,7 @@ _5f17:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	jr	c,++
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	jr	nz,++
 	bit	1,(ix+$11)
 	jr	nz,++
@@ -12105,9 +12105,9 @@ __	ld      l,(ix+$12)
 	jr	c,+
 	xor	a
 +	ld	(ix+$12),a
-	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	and	a
 	jp	p,+
 	ld	hl,$fc00
@@ -12131,9 +12131,9 @@ __	ld      l,(ix+$12)
 	and	a
 	sbc	hl,de
 	sbc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	xor	a
@@ -12148,9 +12148,9 @@ __	ld      l,(ix+$12)
 	ld	(ix+$14),l
 	ld	(ix+$15),h
 	ret	nc
-+	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
++	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	res	1,(ix+$11)
 	set	2,(ix+$11)
 	ld	(ix+$12),$00
@@ -12366,24 +12366,24 @@ _65ee:
 	rst	$28			;`playSFX`
 	jp	+
 	
-++	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),c
+++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),c
 +	ld	l,(ix+$11)
 	ld	h,(ix+$12)
 	ld	de,$0008
 	add	hl,de
 	ld	(ix+$11),l
 	ld	(ix+$12),h
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,d
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	hl,(RAM_TEMP6)
 	ld	a,(hl)
 	add	a,a
@@ -12713,12 +12713,12 @@ _693f:
 	ld	(RAM_SONIC_ISJUMPING),a
 	
 +	xor	a			;set A to 0
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	de,_69be
 	ld	bc,_69b7
 	call	_7c41
@@ -12771,9 +12771,9 @@ _69e9:
 	jr	nc,+
 	
 	ld	e,$80
-+	ld	(ix+$0a),e
-	ld	(ix+$0b),d
-	ld	(ix+$0c),$00
++	ld	(ix+object.Yspeed+0),e
+	ld	(ix+object.Yspeed+1),d
+	ld	(ix+object.Ydirection),$00
 	ld	bc,$0010
 	call	_LABEL_7CC1_12
 	ret
@@ -12787,9 +12787,9 @@ _69e9:
 	
 	ld	hl,$ffc0
 	dec	c
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ret
 
 ;____________________________________________________________________________[$6A47]___
@@ -12802,15 +12802,15 @@ _6a47:
 	ld	(ix+$17),a
 	cp	$18
 	jr	c,+
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0040
 	add	hl,de
 	adc	a,d
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 +	ld	(ix+object.width),$1a		;this can't mean `_101a`?
 	ld	(ix+object.height),$10
 	
@@ -12824,8 +12824,8 @@ _6a47:
 	jr	c,+
 	ld	(ix+$16),$01
 	ld	bc,$0010
-	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
+	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	call	_LABEL_7CC1_12
 +	ld	hl,_6911
 	ld	a,(RAM_LEVEL_SOLIDITY)
@@ -12856,16 +12856,16 @@ _6ac1:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	call	nc,_35fd
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	e,(ix+$13)
 	ld	d,(ix+$14)
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	(RAM_TEMP1),hl
@@ -12943,9 +12943,9 @@ _6b74:
 	ld	(ix+object.spriteLayout+0),a
 	ld	(ix+object.spriteLayout+1),a
 	ld	(ix+$12),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	hl,(RAM_CAMERA_X)
 	ld	bc,$0100
 	add	hl,bc
@@ -13022,7 +13022,7 @@ _6b74:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -13038,12 +13038,12 @@ _6b74:
 	ld	(ix+$15),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),$00
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$01
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$01
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	pop	bc
 	ld	a,$0a
@@ -13051,9 +13051,9 @@ _6b74:
 	ld	c,$00
 	ld	l,c
 	ld	h,c
-+++	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),c
++++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),c
 +	ld	l,(ix+$11)
 	ld	h,(ix+$12)
 	ld	de,$0008
@@ -13240,18 +13240,18 @@ _6e0c:
 +	ld	c,$00
 	ld	l,c
 	ld	h,c
-++	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),c
+++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),c
 	ld	l,(ix+$11)
 	ld	h,(ix+$12)
 	ld	de,$0008
 	add	hl,de
 	ld	(ix+$11),l
 	ld	(ix+$12),h
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$02
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$02
+	ld	(ix+object.Ydirection),$00
 	ld	hl,(RAM_TEMP6)
 	ld	a,(hl)
 	add	a,a
@@ -13347,7 +13347,7 @@ _6f08:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -13363,12 +13363,12 @@ _6f08:
 	ld	(ix+$15),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),$00
-	ld	(ix+$08),$fe
-	ld	(ix+$09),$ff
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$fe
+	ld	(ix+object.Xdirection),$ff
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	pop	bc
 	ld	a,$0a
@@ -13461,9 +13461,9 @@ _700c:
 	ld	c,$ff
 	jr	++
 +	ld	c,$00
-++	ld	(ix+$0a),a
-	ld	(ix+$0b),c
-	ld	(ix+$0c),c
+++	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),c
+	ld	(ix+object.Ydirection),c
 -	ld	e,(ix+$12)
 	ld	d,$00
 	ld	l,(ix+$14)
@@ -13533,9 +13533,9 @@ _700c:
 	ld	(ix+$15),$72
 	res	2,(ix+$11)
 	jp	++
-	ld	(ix+$0a),$60
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$60
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	ld	hl,(RAM_CAMERA_Y)
 	ld	de,$0074
 	add	hl,de
@@ -13554,9 +13554,9 @@ _700c:
 	ld	c,$00
 	ld	hl,$0400
 	jp	++
-	ld	(ix+$0a),$60
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$60
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	ld	hl,(RAM_CAMERA_Y)
 	ld	de,$0074
 	add	hl,de
@@ -13587,9 +13587,9 @@ _700c:
 	ld	(ix+$12),c
 	ld	(ix+$13),c
 	jr	++
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	ld	hl,(RAM_CAMERA_Y)
 	ld	de,$001a
 	add	hl,de
@@ -13619,9 +13619,9 @@ _700c:
 	ld	(ix+$15),$72
 	ld	(ix+$12),a
 	jr	++			;this doesn't look right
-++	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),c
+++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),c
 	ld	hl,(RAM_TEMP6)
 	ld	e,(hl)
 	ld	d,$00
@@ -13864,7 +13864,7 @@ _74b6:
 	pop	ix
 	ld	a,($D216)
 	ld	(ix+object.type),a
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$16),a
 	ld	(ix+$17),a
 	ld	(ix+$01),a
@@ -13878,14 +13878,14 @@ _74b6:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	call	_LABEL_625_57
-	ld	(ix+$0a),a
+	ld	(ix+object.Yspeed+0),a
 	call	_LABEL_625_57
 	and	$01
 	inc	a
 	inc	a
 	neg	
-	ld	(ix+$0b),a
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),$ff
 	pop	ix
 	ret	
 
@@ -13923,17 +13923,17 @@ _7594:
 	ld	(ix+object.height),$10
 	bit	7,(ix+$18)
 	jr	z,+
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fd
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fd
+	ld	(ix+object.Ydirection),$ff
 +	ld	de,$0012
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	cp	$03
 	jr	nz,+
 	ld	de,$0038
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	add	hl,de
 	adc	a,$00
 	ld	c,a
@@ -13943,17 +13943,17 @@ _7594:
 	jr	c,+
 	ld	hl,$0200
 	ld	c,$00
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	hl,$fe00
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	cp	$03
 	jr	nz,+
 	ld	hl,$fe80
-+	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),$ff
++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),$ff
 	ld	bc,_7629
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	and	a
@@ -14031,12 +14031,12 @@ _7699:
 	bit	7,(ix+$18)
 	jr	z,++
 	xor	a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),$01
-	ld	(ix+$0c),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),$01
+	ld	(ix+object.Ydirection),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	hl,_7752
 	ld	a,(RAM_LEVEL_SOLIDITY)
 	ld	c,a
@@ -14060,12 +14060,12 @@ _7699:
 	and	a
 	jr	z,+
 	ld	hl,$fffe
-+	ld	(ix+$0a),$00
-	ld	(ix+$0b),l
-	ld	(ix+$0c),h
-++	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
++	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),l
+	ld	(ix+object.Ydirection),h
+++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0028
 	add	hl,de
 	adc	a,$00
@@ -14076,12 +14076,12 @@ _7699:
 	jr	c,+
 	ld	hl,$0200
 	ld	c,$00
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
-	ld	(ix+$07),$80
-	ld	(ix+$08),$fe
-	ld	(ix+$09),$ff
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),$fe
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+$11),$00
 	jp	_7612
 
@@ -14186,12 +14186,12 @@ _77be:
 	ret
 	
 +++	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	de,$0024
 	ld	hl,($D216)
 	bit	1,(ix+$18)
@@ -14244,12 +14244,12 @@ _77be:
 	res	0,(iy+vars.flags0)
 	call	waitForInterrupt
 	ld	(iy+vars.spriteUpdateCount),a
-+	ld	(ix+$07),$00
-	ld	(ix+$08),$03
-	ld	(ix+$09),$00
-	ld	(ix+$0a),$60
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$03
+	ld	(ix+object.Xdirection),$00
+	ld	(ix+object.Yspeed+0),$60
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	ld	(ix+object.spriteLayout+0),<_7922
 	ld	(ix+object.spriteLayout+1),>_7922
 	ld	l,(ix+object.X+0)
@@ -14337,8 +14337,8 @@ _7922:
 ;____________________________________________________________________________[$79FA]___
 
 _79fa:
-	ld	a,(ix+$07)
-	or	(ix+$08)
+	ld	a,(ix+object.Xspeed+0)
+	or	(ix+object.Xspeed+1)
 	ret	z
 	ld	a,(RAM_FRAMECOUNT)
 	bit	0,a
@@ -14353,7 +14353,7 @@ _79fa:
 	ld	hl,$fff8
 	ld	de,$0010
 	ld	c,$04
-	bit	7,(ix+$09)
+	bit	7,(ix+object.Xdirection)
 	jr	z,+
 	ld	hl,$0028
 	ld	c,$00
@@ -14387,7 +14387,7 @@ _7a3a:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0A	;explosion
 	ld	(ix+$01),a
 	ld	hl,(RAM_TEMP1)
@@ -14402,12 +14402,12 @@ _7a3a:
 	ld	(ix+$11),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ld	a,$01
 	rst	$28			;`playSFX`
@@ -14537,15 +14537,15 @@ _7b95:
 	
 +	ld	(ix+object.spriteLayout+0),a
 	ld	(ix+object.spriteLayout+1),a
-++	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	e,(ix+object.Y+0)
 	ld	d,(ix+object.Y+1)
 	ld	hl,(RAM_CAMERA_Y)
@@ -14557,9 +14557,9 @@ _7b95:
 	res	0,(iy+vars.flags9)
 	ret
 	
-+	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
++	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	dec	(ix+$11)
 	ret	nz
 	ld	(ix+$11),$06
@@ -14749,18 +14749,18 @@ _7cf6:
 	ld	(ix+object.X+0),l
 	ld	(ix+object.X+1),h
 	set	1,(ix+$18)
-+	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fc
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fc
+	ld	(ix+object.Ydirection),$ff
 	set	0,(ix+$18)
 	ld	a,$12
 	rst	$28			;`playSFX`
 	ld	(ix+$11),$03
 	jr	+++
 	
-++	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0010
 	add	hl,de
 	adc	a,$00
@@ -14772,9 +14772,9 @@ _7cf6:
 	sbc	hl,de
 	jr	nc,+
 	ld	de,$0400
-+	ld	(ix+$0a),e
-	ld	(ix+$0b),d
-	ld	(ix+$0c),a
++	ld	(ix+object.Yspeed+0),e
+	ld	(ix+object.Yspeed+1),d
+	ld	(ix+object.Ydirection),a
 	ld	e,(ix+$12)
 	ld	d,(ix+$13)
 	ld	l,(ix+object.Y+0)
@@ -14785,9 +14785,9 @@ _7cf6:
 	ld	(ix+$04),a
 	ld	(ix+object.Y+0),e
 	ld	(ix+object.Y+1),d
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	(ix+$14),$1e
 	res	0,(ix+$18)
 +++	ld	de,_7de1
@@ -14842,10 +14842,10 @@ _7e02:
 	ld	(ix+$14),$c0
 	set	0,(ix+$18)
 _7e3c:
-	ld	(ix+$0a),$80
+	ld	(ix+object.Yspeed+0),$80
 	xor	a
-	ld	(ix+$0B), a
-	ld	(ix+$0C), a
+	ld	(ix+object.Yspeed+1), a
+	ld	(ix+object.Ydirection), a
 	
 	ld	a, (RAM_SONIC_ISJUMPING)
 	and	a
@@ -14856,8 +14856,8 @@ _7e3c:
 	call	_LABEL_3956_11
 	jr	c, +
 	ld	bc, $0010
-	ld	e, (ix+$0A)
-	ld	d, (ix+$0B)
+	ld	e, (ix+object.Yspeed+0)
+	ld	d, (ix+object.Yspeed+1)
 	call	_LABEL_7CC1_12
 +	ld	a, (RAM_FRAMECOUNT)
 	and	$03
@@ -14866,7 +14866,7 @@ _7e3c:
 	ld	a, (ix+$11)
 	cp	(ix+$14)
 	ret	c
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$11), a
 	ld	(ix+$04), a
 	ld	a, (ix+$12)
@@ -14926,16 +14926,16 @@ _7ee6:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	set	0,(ix+$18)
-+	ld	(ix+$0a),$40
++	ld	(ix+object.Yspeed+0),$40
 	xor	a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	a,(ix+$11)
 	cp	$14
 	jr	c,+
-	ld	(ix+$0a),$c0
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$c0
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	
 +	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
@@ -14946,8 +14946,8 @@ _7ee6:
 	call	_LABEL_3956_11
 	jp	c,_8003
 	ld	bc,$0010
-	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
+	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	call	_LABEL_7CC1_12
 	ld	hl,(RAM_SONIC_SPEED_HORZ)
 	ld	a,l
@@ -15128,18 +15128,18 @@ _8053:
 	jr	nz,+
 	ld	(ix+object.spriteLayout+0),<_81f4
 	ld	(ix+object.spriteLayout+1),>_81f4
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	ld	l,(ix+object.Y+0)
 	ld	h,(ix+object.Y+1)
 	ld	de,$0058
 	xor	a
 	sbc	hl,de
 	ret	c
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	set	0,(ix+$11)
 +	ld	a,(ix+$12)
 	and	a
@@ -15151,9 +15151,9 @@ _8053:
 	ld	(ix+object.spriteLayout+0),<_81f4
 	ld	(ix+object.spriteLayout+1),>_81f4
 	res	1,(ix+$18)
-	ld	(ix+$07),$00
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	de,$021c
 	and	a
 	sbc	hl,de
@@ -15164,9 +15164,9 @@ _8053:
 +	ld	(ix+object.spriteLayout+0),<_8206
 	ld	(ix+object.spriteLayout+1),>_8206
 	set	1,(ix+$18)
-	ld	(ix+$07),$00
-	ld	(ix+$08),$01
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$01
+	ld	(ix+object.Xdirection),$00
 	ld	de,$02aa
 	and	a
 	sbc	hl,de
@@ -15175,9 +15175,9 @@ _8053:
 	jp	++++
 	
 ++	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	hl,$0001
 	dec	(ix+$12)
 	jr	z,+
@@ -15190,9 +15190,9 @@ _8053:
 	cp	$34
 	jr	z,+++
 +	ld	hl,$0000
-++	ld	(ix+$0a),$00
-	ld	(ix+$0b),l
-	ld	(ix+$0c),h
+++	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),l
+	ld	(ix+object.Ydirection),h
 	jr	++++
 	
 +++	ld	a,(ix+$11)
@@ -15211,7 +15211,7 @@ _8053:
 	push	hl
 	pop	ix
 	ld	(ix+object.type),$2B	;unknown object
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$01),a
 	ld	hl,$000b
 	add	hl,de
@@ -15222,12 +15222,12 @@ _8053:
 	add	hl,bc
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	(ix+$11),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
@@ -15263,9 +15263,9 @@ _8218:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	call	nc,_35fd
-	ld	l,(ix+$07)
-	ld	h,(ix+$08)
-	ld	a,(ix+$09)
+	ld	l,(ix+object.Xspeed+0)
+	ld	h,(ix+object.Xspeed+1)
+	ld	a,(ix+object.Xdirection)
 	ld	de,$0002
 	ld	c,$00
 	and	a
@@ -15274,12 +15274,12 @@ _8218:
 	ld	de,$fffe
 +	add	hl,de
 	adc	a,c
-	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),a
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),a
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,$00
@@ -15289,9 +15289,9 @@ _8218:
 	jr	c,+
 	ld	hl,$0300
 	ld	c,$00
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	a,(RAM_FRAMECOUNT)
 	and	$01
 	add	a,(ix+$11)
@@ -15312,9 +15312,9 @@ _8218:
 	ld	a,$01
 	rst	$28			;`playSFX`
 +	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	bc,_82c6
 	ld	de,_a3bb
 	call	_7c41
@@ -15357,29 +15357,29 @@ _82e6:
 	ld	hl,$0404
 	ld	(RAM_TEMP1),hl
 	call	nc,_35e5
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	a,(ix+$11)
 	cp	$50
 	jr	c,+
-	ld	(ix+$07),$40
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$40
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	de,_837e
 	ld	bc,_8379
 	call	_7c41
 	jp	++
 	
-+	ld	(ix+$07),$c0
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
++	ld	(ix+object.Xspeed+0),$c0
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	de,_837e
 	ld	bc,_8374
 	call	_7c41
@@ -15459,9 +15459,9 @@ _83c1:
 	rst	$28			;`playSFX`
 ++	ld	(ix+object.spriteLayout+0),<_8481
 	ld	(ix+object.spriteLayout+1),>_8481
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0020
 	add	hl,de
 	adc	a,$00
@@ -15470,9 +15470,9 @@ _83c1:
 	cp	$04
 	jr	c,++
 	ld	h,$04
-++	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
+++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	(RAM_TEMP1),hl
 	ld	de,(RAM_CAMERA_Y)
 	inc	d
@@ -15567,9 +15567,9 @@ _8496:
 	
 +	dec	a
 	jr	nz,+
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	ld	hl,$0380
 	ld	e,(ix+object.Y+0)
 	ld	d,(ix+object.Y+1)
@@ -15583,9 +15583,9 @@ _8496:
 +	dec	a
 	jr	nz,++
 	xor	a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	inc	(ix+$12)
 	ld	a,(ix+$12)
 	cp	$64
@@ -15646,9 +15646,9 @@ _8496:
 	rst	$28			;`playSFX`
 	jp	+++
 	
-++	ld	(ix+$0a),$80
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	ld	hl,$03c0
 	ld	e,(ix+object.Y+0)
 	ld	d,(ix+object.Y+1)
@@ -15671,7 +15671,7 @@ _85d1:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0D	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
@@ -15692,17 +15692,17 @@ _85d1:
 	bit	7,h
 	jr	z,+
 	dec	a
-+	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),a
++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),a
 	ld	hl,(RAM_TEMP6)
 	xor	a
 	bit	7,h
 	jr	z,+
 	dec	a
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ret
 
@@ -15942,9 +15942,9 @@ _8837:
 	ld	a,(ix+$11)
 	cp	$80
 	jr	nc,+
-	ld	(ix+$07),$20
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$20
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$0c
 	ld	hl,$0a02
@@ -15958,9 +15958,9 @@ _8837:
 	call	_7c41
 	jr	++
 	
-+	ld	(ix+$07),$e0
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
++	ld	(ix+object.Xspeed+0),$e0
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$0c
 	ld	hl,$0202
@@ -16410,9 +16410,9 @@ _8c16:
 -	xor	a
 	ld	(ix+object.spriteLayout+0),a
 	ld	(ix+object.spriteLayout+1),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ret
 	
 +	ld	a,$18
@@ -16420,21 +16420,21 @@ _8c16:
 ++	xor	a
 	bit	1,(ix+$18)
 	jr	nz,+
-	ld	(ix+$07),$00
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+object.spriteLayout+0),<_8d39
 	ld	(ix+object.spriteLayout+1),>_8d39
 	jr	++
 	
-+	ld	(ix+$07),a
-	ld	(ix+$08),$01
-	ld	(ix+$09),a
++	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),$01
+	ld	(ix+object.Xdirection),a
 	ld	(ix+object.spriteLayout+0),<_8d41
 	ld	(ix+object.spriteLayout+1),>_8d41
-++	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+++	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	bit	6,(ix+$18)
 	jr	nz,+
 	bit	7,(ix+$18)
@@ -16677,12 +16677,12 @@ _8eca:
 	jr	c,+
 	ld	bc,$ffe0
 	ld	d,$ff
-+	ld	(ix+$07),c
-	ld	(ix+$08),b
-	ld	(ix+$09),d
-++	ld	(ix+$0a),$a0
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Xspeed+0),c
+	ld	(ix+object.Xspeed+1),b
+	ld	(ix+object.Xdirection),d
+++	ld	(ix+object.Yspeed+0),$a0
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	(RAM_TEMP1),hl
@@ -16750,9 +16750,9 @@ _8f6d:
 	ld	hl,$0800
 	ld	(RAM_TEMP1),hl
 	call	nc,_35e5
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$0010
 	add	hl,de
 	adc	a,$00
@@ -16763,9 +16763,9 @@ _8f6d:
 	jr	c,+
 	ld	hl,$0300
 	ld	c,$00
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	bit	0,(ix+$18)
 	jp	nz,++
 	ld	de,$ffd0
@@ -16784,27 +16784,27 @@ _8f6d:
 	sbc	hl,de
 	jr	c,+
 	set	0,(ix+$18)
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$fd
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$fd
+	ld	(ix+object.Ydirection),$ff
 +	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	de,($D3FE)
 	and	a
 	sbc	hl,de
 	jr	c,+
-	ld	(ix+$07),$c0
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$c0
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	de,_9059
 	ld	bc,_904a
 	call	_7c41
 	set	1,(ix+$18)
 	ret
 	
-+	ld	(ix+$07),$40
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
++	ld	(ix+object.Xspeed+0),$40
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	de,_9059
 	ld	bc,_9045
 	call	_7c41
@@ -16906,9 +16906,9 @@ _90c0:
 	jr	z,+
 	bit	0,(ix+$18)
 	jr	z,++
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$fff8
 	add	hl,de
 	adc	a,$ff
@@ -16919,9 +16919,9 @@ _90c0:
 	jr	c,+
 	ld	hl,$ff00
 	ld	c,$ff
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 ++	ld	e,(ix+object.X+0)
 	ld	d,(ix+object.X+1)
 	ld	hl,(RAM_CAMERA_X)
@@ -16957,12 +16957,12 @@ _90c0:
 	ld	h,(ix+$14)
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$01),a
 	ld	(ix+$04),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	res	0,(ix+$18)
 	ret
 	
@@ -16978,8 +16978,8 @@ _90c0:
 	cp	$02
 	ret	nc
 	
-+	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
++	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	ld	bc,$0010
 	call	_LABEL_7CC1_12
 	ret
@@ -17017,7 +17017,7 @@ _91eb:
 	push	hl
 	pop	ix
 	ld	(ix+object.type),a
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$01),a
 	call	_LABEL_625_57
 	and	$0f
@@ -17038,9 +17038,9 @@ _91eb:
 	ld	(ix+$11),a
 	ld	(ix+$12),a
 	ld	(ix+$18),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	pop	ix
 	ret
 
@@ -17112,14 +17112,14 @@ _9267:
 	ld	a,(ix+$13)
 	and	a
 	jr	nz,+
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	jp	++
 	
-+	ld	(ix+$0a),$80
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 ++	ld	hl,_9487
 	ld	a,(ix+$13)
 	add	a,a
@@ -17142,9 +17142,9 @@ _9267:
 +++	dec	a
 	jp	nz,+
 	xor	a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	inc	(ix+$12)
 	ld	a,(ix+$12)
 	cp	$64
@@ -17171,7 +17171,7 @@ _9267:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$2F	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
@@ -17182,26 +17182,26 @@ _9267:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	ld	(ix+$18),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	jp	_f
 	
 +	ld	a,(ix+$13)
 	and	a
 	jr	nz,+
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	jp	++
 	
-+	ld	(ix+$0a),$80
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 ++	ld	hl,$948d
 	ld	a,(ix+$13)
 	add	a,a
@@ -17229,7 +17229,7 @@ __	ld      hl,$00a2
 	ld	a,($D2EC)
 	cp	$08
 	ret	nc
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	ret	z
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
@@ -17316,9 +17316,9 @@ _94a5:
 	set	2,(ix+$18)
 +	bit	0,(ix+$18)
 	jr	nz,++
-	ld	(ix+$0a),$40
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$40
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 	ld	hl,_9698
 	bit	2,(ix+$18)
 	jr	z,+
@@ -17368,10 +17368,10 @@ _94a5:
 	jr	nz,+
 	dec	a
 	ld	hl,$fffe
-+	ld	e,(ix+$07)
-	ld	d,(ix+$08)
++	ld	e,(ix+object.Xspeed+0)
+	ld	d,(ix+object.Xspeed+1)
 	add	hl,de
-	adc	a,(ix+$09)
+	adc	a,(ix+object.Xdirection)
 	ld	c,a
 	ld	a,h
 	ld	de,$0100
@@ -17389,9 +17389,9 @@ _94a5:
 +	and	a
 	jr	z,+
 	ex	de,hl
-+	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),c
++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),c
 	ld	hl,($D401)
 	ld	de,$0010
 	add	hl,de
@@ -17404,19 +17404,19 @@ _94a5:
 	sbc	hl,de
 	ld	a,$ff
 	ld	hl,$fffe
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	jr	nz,+
 	ld	hl,$fffc
 +	jr	nc,+
 	inc	a
 	ld	hl,$0002
-	bit	7,(ix+$0c)
+	bit	7,(ix+object.Ydirection)
 	jr	z,+
 	ld	hl,$0004
-+	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
++	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	add	hl,de
-	adc	a,(ix+$0c)
+	adc	a,(ix+object.Ydirection)
 	ld	c,a
 	ld	a,h
 	ld	de,$0100
@@ -17434,16 +17434,16 @@ _94a5:
 +	and	a
 	jr	z,+
 	ex	de,hl
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	hl,_9688
-	bit	7,(ix+$09)
+	bit	7,(ix+object.Xdirection)
 	jr	z,+
 	ld	hl,_9698
 +	push	hl
-	ld	l,(ix+$07)
-	ld	h,(ix+$08)
+	ld	l,(ix+object.Xspeed+0)
+	ld	h,(ix+object.Xspeed+1)
 	bit	7,h
 	jr	z,+
 	ld	a,l
@@ -17469,7 +17469,7 @@ _94a5:
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	de,$fff9
-	bit	7,(ix+$09)
+	bit	7,(ix+object.Xdirection)
 	jr	z,+
 	ld	de,$000f
 +	add	hl,de
@@ -17485,7 +17485,7 @@ _94a5:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$2A	;unknown object
 	ld	hl,(RAM_TEMP1)
 	ld	(ix+$01),a
@@ -17497,12 +17497,12 @@ _94a5:
 	ld	(ix+object.Y+1),h
 	ld	(ix+$11),a
 	ld	(ix+$12),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ret
 
@@ -17617,9 +17617,9 @@ _96f8:
 	ld	c,$00
 	ld	b,c
 	ld	d,c
-	ld	(ix+$0a),c
-	ld	(ix+$0b),c
-	ld	(ix+$0c),c
+	ld	(ix+object.Yspeed+0),c
+	ld	(ix+object.Yspeed+1),c
+	ld	(ix+object.Ydirection),c
 	dec	(ix+$12)
 	jp	nz,++
 	ld	(ix+object.type),$FF	;remove object
@@ -17658,9 +17658,9 @@ _96f8:
 	ld	(ix+$12),$10
 	ld	a,$22
 	rst	$28			;`playSFX`
-+	ld	(ix+$0a),$98
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Yspeed+0),$98
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 	ld	a,(ix+$11)
 	and	$0f
 	jr	nz,+
@@ -17672,9 +17672,9 @@ _96f8:
 	jr	c,++
 	ld	bc,$ffe0
 	ld	d,$ff
-++	ld	(ix+$07),c
-	ld	(ix+$08),b
-	ld	(ix+$09),d
+++	ld	(ix+object.Xspeed+0),c
+	ld	(ix+object.Xspeed+1),b
+	ld	(ix+object.Xdirection),d
 +	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ex	de,hl
@@ -17950,9 +17950,9 @@ _9afb:
 	cp	$60
 	jr	nc,+
 	ld	hl,$ffff
-+	ld	(ix+$07),$00
-	ld	(ix+$08),l
-	ld	(ix+$09),h
++	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),l
+	ld	(ix+object.Xdirection),h
 	inc	a
 	cp	$c0
 	jr	c,+
@@ -18064,9 +18064,9 @@ _9be4:
 ;OBJECT: UNKNOWN
 
 _9be8:
-	ld	(ix+$07),$80
-	ld	(ix+$08),$01
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),$01
+	ld	(ix+object.Xdirection),$00
 	ld	(ix+object.spriteLayout+0),<_9c69
 	ld	(ix+object.spriteLayout+1),>_9c69
 _9bfc:
@@ -18095,7 +18095,7 @@ _9bfc:
 	ret	c
 	cp	$f0
 	jr	c,+
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+$01),a
 	ld	(ix+$13),a
 	ld	a,(ix+$11)
@@ -18109,9 +18109,9 @@ _9bfc:
 +	xor	a
 	ld	(ix+object.spriteLayout+0),a
 	ld	(ix+object.spriteLayout+1),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ret
 
 ;sprite layout
@@ -18123,9 +18123,9 @@ _9c69:
 ;OBJECT: UNKNOWN
 
 _9c70:
-	ld	(ix+$07),$80
-	ld	(ix+$08),$fe
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),$fe
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+object.spriteLayout+0),<_9c87
 	ld	(ix+object.spriteLayout+1),>_9c87
 	jp	_9bfc
@@ -18660,9 +18660,9 @@ _a1aa:
 	ld	hl,$0e00
 	ld	(RAM_TEMP1),hl
 	call	nc,_35e5
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$01
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$01
+	ld	(ix+object.Ydirection),$00
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	de,$000a
@@ -18695,7 +18695,7 @@ _a1aa:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$1C	;ball from the Ball Hog
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -18708,12 +18708,12 @@ _a1aa:
 	ld	(ix+$11),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),a
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
-	ld	(ix+$0a),a
-	ld	(ix+$0b),$01
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),$01
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	jp	++++
 	
@@ -18738,7 +18738,7 @@ _a1aa:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$1C	;ball from the Ball Hog
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -18751,12 +18751,12 @@ _a1aa:
 	ld	(ix+$11),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),a
-	ld	(ix+$08),$01
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),$01
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),$01
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),$01
+	ld	(ix+object.Ydirection),a
 	pop	ix
 ++++	inc	(ix+$11)
 	ret
@@ -18806,18 +18806,18 @@ _a33c:
 	call	nc,_35fd
 	bit	7,(ix+$18)
 	jr	z,+
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fd
-	ld	(ix+$0c),$ff
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fd
+	ld	(ix+object.Ydirection),$ff
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$001f
 	add	hl,de
 	adc	a,$00
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	a,(ix+$11)
 	cp	$82
 	jr	nc,+
@@ -18917,9 +18917,9 @@ _a3f8:
 	ld	(ix+object.spriteLayout+0),$a3
 	ld	(ix+object.spriteLayout+1),$a4
 +	xor	a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),$02
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),$02
+	ld	(ix+object.Ydirection),a
 	ret
 
 ;sprite layout
@@ -19117,7 +19117,7 @@ _a551:
 	ld	hl,$0000
 	ld	(RAM_TEMP1),hl
 	call	nc,_35e5
-+++	ld	(ix+$0b),$01
++++	ld	(ix+object.Yspeed+1),$01
 	ld	a,(RAM_FRAMECOUNT)
 	and	$01
 	ret	nz
@@ -19251,9 +19251,9 @@ _a7ed:
 	jr	c,++
 +	ld	bc,$ff80
 ++	inc	b
-	ld	(ix+$07),c
-	ld	(ix+$08),b
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),c
+	ld	(ix+object.Xspeed+1),b
+	ld	(ix+object.Xdirection),a
 	ld	l,(ix+object.X+0)
 	ld	h,(ix+object.X+1)
 	ld	de,$05a0
@@ -19262,8 +19262,8 @@ _a7ed:
 	jp	c,++++
 	ld	l,a
 	ld	h,a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
 	ld	(RAM_SONIC_SPEED_HORZ),hl
 	ld	(RAM_SONIC_DIRECTION),a
 	set	1,(ix+$18)
@@ -19464,9 +19464,9 @@ _a9c7:
 	add	hl,bc
 	ld	(ix+object.X+0),l
 	ld	(ix+object.X+1),h
-+	ld	(ix+$07),$00
-	ld	(ix+$08),$fd
-	ld	(ix+$09),$ff
++	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$fd
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+object.spriteLayout+0),$00
 	ld	(ix+object.spriteLayout+1),$00
 	ret
@@ -19583,9 +19583,9 @@ _ab21:
 +	ld	a,(ix+$11)
 	cp	$1e
 	jr	nc,+
-	ld	(ix+$07),$f8
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$f8
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	de,_ad0b
 	ld	bc,_acf1
 	call	_7c41
@@ -19594,9 +19594,9 @@ _ab21:
 +	ld	a,(ix+$11)
 	cp	$64
 	jp	c,++
-	ld	(ix+$07),$00
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	cp	$66
 	jr	nc,+
 	ld	de,_ad0b
@@ -19653,9 +19653,9 @@ _ab21:
 ++	cp	$23
 	jr	nc,+
 	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	de,_ad0b
 	ld	bc,_acf6
 	call	_7c41
@@ -19664,23 +19664,23 @@ _ab21:
 +	ld	a,(ix+$11)
 	cp	$41
 	jr	nc,+
-	ld	(ix+$07),$08
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
+	ld	(ix+object.Xspeed+0),$08
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	de,_ad0b
 	ld	bc,_acf9
 	call	_7c41
 	jr	+++
 	
-+	ld	(ix+$07),$00
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
++	ld	(ix+object.Xspeed+0),$00
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	de,_ad0b
 	ld	bc,_acfe
 	call	_7c41
-+++	ld	(ix+$0a),$80
-	ld	(ix+$0b),$00
-	ld	(ix+$0c),$00
++++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$00
+	ld	(ix+object.Ydirection),$00
 ++++	ld	hl,$0202
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
@@ -19710,7 +19710,7 @@ _ac96:
 	ld	c,l
 	ld	b,h
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0D	;unknown object
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -19724,14 +19724,14 @@ _ac96:
 	ld	(ix+$15),a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),a
+	ld	(ix+object.Xspeed+0),a
 	ld	hl,(RAM_TEMP4)
-	ld	(ix+$08),l
-	ld	(ix+$09),h
-	ld	(ix+$0a),a
+	ld	(ix+object.Xspeed+1),l
+	ld	(ix+object.Xdirection),h
+	ld	(ix+object.Yspeed+0),a
 	ld	hl,(RAM_TEMP6)
-	ld	(ix+$0b),l
-	ld	(ix+$0c),h
+	ld	(ix+object.Yspeed+1),l
+	ld	(ix+object.Ydirection),h
 	pop	ix
 	ret	
 
@@ -19799,7 +19799,7 @@ _ad6c:
 	ld	b,(ix+object.Y+1)
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$34	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0004
@@ -19870,12 +19870,12 @@ _ae35:
 	call	_LABEL_3956_11
 	call	nc,_35fd
 	xor	a
-	ld	(ix+$07),$80
-	ld	(ix+$08),$02
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),$02
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	(ix+object.spriteLayout+0),<_ae81
 	ld	(ix+object.spriteLayout+1),>_ae81
 	ret
@@ -19903,9 +19903,9 @@ _ae88:
 	and	a
 	sbc	hl,de
 	jr	c,+
-	ld	(ix+$07),$f8
-	ld	(ix+$08),$ff
-	ld	(ix+$09),$ff
+	ld	(ix+object.Xspeed+0),$f8
+	ld	(ix+object.Xspeed+1),$ff
+	ld	(ix+object.Xdirection),$ff
 	ld	(ix+object.spriteLayout+0),<_b0d5
 	ld	(ix+object.spriteLayout+1),>_b0d5
 	ld	hl,$ff80
@@ -19914,9 +19914,9 @@ _ae88:
 	ld	(ix+$16),$01
 	jr	++
 	
-+	ld	(ix+$07),$08
-	ld	(ix+$08),$00
-	ld	(ix+$09),$00
++	ld	(ix+object.Xspeed+0),$08
+	ld	(ix+object.Xspeed+1),$00
+	ld	(ix+object.Xdirection),$00
 	ld	(ix+object.spriteLayout+0),<_b0e7
 	ld	(ix+object.spriteLayout+1),>_b0e7
 	ld	hl,$0080
@@ -20059,7 +20059,7 @@ _afdb:
 	ld	b,(ix+object.Y+1)
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$36	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0012
@@ -20072,17 +20072,17 @@ _afdb:
 	ld	(ix+object.Y+0),l
 	ld	(ix+object.Y+1),h
 	ld	hl,($D216)
-	ld	(ix+$07),l
-	ld	(ix+$08),h
+	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
 	xor	a
 	bit	7,h
 	jr	z,+
 	ld	a,$ff
-+	ld	(ix+$09),a
++	ld	(ix+object.Xdirection),a
 	xor	a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ret
 
@@ -20434,9 +20434,9 @@ _b398:
 	ld	h,(ix+object.X+1)
 	ld	de,$0580
 	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	sbc	hl,de
 	ret	nc
 	ld	c,(ix+object.Y+0)
@@ -20462,9 +20462,9 @@ _b398:
 	xor	a
 	sbc	hl,de
 	ret	c
-	ld	(ix+$07),$80
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),$80
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ret
 
 ;sprite layout
@@ -20587,14 +20587,14 @@ _b53b:
 	jr	c,+
 	dec	c
 	ld	de,$fff0
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	add	hl,de
 	adc	a,c
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	ld	a,h
 	and	a
 	jp	p,+
@@ -20608,16 +20608,16 @@ _b53b:
 	ld	a,h
 	cp	$02
 	jr	c,++
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$fe
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$fe
+	ld	(ix+object.Ydirection),$ff
 	jr	++
 	
 +	cp	$02
 	jr	c,++
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$02
-	ld	(ix+$0c),$00
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$02
+	ld	(ix+object.Ydirection),$00
 	
 ++	ld	a,(RAM_SONIC_ISJUMPING)
 	and	a
@@ -20629,8 +20629,8 @@ _b53b:
 	ld	(RAM_TEMP6),hl
 	call	_LABEL_3956_11
 	ret	c
-	ld	e,(ix+$0a)
-	ld	d,(ix+$0b)
+	ld	e,(ix+object.Yspeed+0)
+	ld	d,(ix+object.Yspeed+1)
 	ld	bc,$0010
 	call	_LABEL_7CC1_12
 	ret
@@ -20662,7 +20662,7 @@ _b5c2:
 	ld	c,l
 	ld	b,h
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$0D	;unknown object?
 	ld	(ix+$01),a
 	ld	(ix+object.X+0),e
@@ -20680,17 +20680,17 @@ _b5c2:
 	bit	7,h
 	jr	z,+
 	ld	a,$ff
-+	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),a
++	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),a
 	xor	a
 	ld	hl,(RAM_TEMP6)
 	bit	7,h
 	jr	z,+
 	ld	a,$ff
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ld	a,$01
 	rst	$28			;`playSFX`
@@ -20763,9 +20763,9 @@ _b634:
 	
 +++	dec	a
 	jr	nz,+
-	ld	(ix+$0a),$40
-	ld	(ix+$0b),$fe
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$40
+	ld	(ix+object.Yspeed+1),$fe
+	ld	(ix+object.Ydirection),$ff
 	inc	(ix+$15)
 	ld	l,(ix+$11)
 	ld	h,(ix+$12)
@@ -20779,9 +20779,9 @@ _b634:
 	
 +	dec	a
 	jp	nz,++
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$000e
 	add	hl,de
 	adc	a,$00
@@ -20791,9 +20791,9 @@ _b634:
 	cp	$02
 	jr	c,+
 	ld	hl,$0200
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	(ix+object.spriteLayout+0),<_bb1d
 	ld	(ix+object.spriteLayout+1),>_bb1d
 	ld	l,(ix+object.Y+0)
@@ -20808,9 +20808,9 @@ _b634:
 	ld	(ix+object.Y+1),d
 	xor	a
 	ld	(ix+$16),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	inc	(ix+$15)
 	jp	++++
 	
@@ -20969,9 +20969,9 @@ _b821:
 	jr	c,++
 +	ld	bc,$ff80
 ++	inc	b
-+++	ld	(ix+$07),c
-	ld	(ix+$08),b
-	ld	(ix+$09),a
++++	ld	(ix+object.Xspeed+0),c
+	ld	(ix+object.Xspeed+1),b
+	ld	(ix+object.Xdirection),a
 	ld	a,(ix+$17)
 	cp	$06
 	jr	nz,+
@@ -20980,9 +20980,9 @@ _b821:
 	jr	nz,+
 	bit	7,(ix+$18)
 	jr	z,+
-	ld	(ix+$0a),$00
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$00
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 +	ld	de,$0017
 	ld	bc,$0036
 	call	getFloorLayoutRAMPositionForObject
@@ -20996,9 +20996,9 @@ _b821:
 	jr	z,+
 	bit	7,(ix+$18)
 	jr	z,+
-	ld	(ix+$0a),$80
-	ld	(ix+$0b),$fd
-	ld	(ix+$0c),$ff
+	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$fd
+	ld	(ix+object.Ydirection),$ff
 +	ld	de,$0000
 	ld	bc,$0008
 	call	getFloorLayoutRAMPositionForObject
@@ -21010,9 +21010,9 @@ _b821:
 	xor	a
 	ld	(ix+$16),a
 	ld	(ix+$17),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	ld	(ix+$11),$e0
 	ld	(ix+$12),$05
 	ld	(ix+$13),$60
@@ -21025,9 +21025,9 @@ _b821:
 	set	3,(ix+$18)
 	jp	++++
 	
-+	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
++	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	ld	de,$000e
 	add	hl,de
 	adc	a,$00
@@ -21037,9 +21037,9 @@ _b821:
 	cp	$02
 	jr	c,+
 	ld	hl,$0200
-+	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),c
++	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),c
 	ld	bc,_ba28
 	ld	de,_baf9
 	call	_7c41
@@ -21119,7 +21119,7 @@ _b9d5:
 	push	ix
 	push	hl
 	pop	ix
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.type),$47	;unknown object
 	ld	(ix+$01),a
 	ld	hl,$0420
@@ -21131,12 +21131,12 @@ _b9d5:
 	ld	(ix+object.Y+1),h
 	ld	(ix+$11),a
 	ld	(ix+$18),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	pop	ix
 	ret
 
@@ -21399,9 +21399,9 @@ _bcdf:
 	ld	hl,($D3FE)
 	and	a
 	sbc	hl,de
-	ld	l,(ix+$07)
-	ld	h,(ix+$08)
-	ld	a,(ix+$09)
+	ld	l,(ix+object.Xspeed+0)
+	ld	h,(ix+object.Xspeed+1)
+	ld	a,(ix+object.Xdirection)
 	jr	nc,+
 	ld	c,$ff
 	ld	de,$fff4
@@ -21417,9 +21417,9 @@ _bcdf:
 	ld	de,$0018
 ++	add	hl,de
 	adc	a,c
-	ld	(ix+$07),l
-	ld	(ix+$08),h
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),l
+	ld	(ix+object.Xspeed+1),h
+	ld	(ix+object.Xdirection),a
 	ld	e,(ix+object.Y+0)
 	ld	d,(ix+object.Y+1)
 	ld	hl,(RAM_CAMERA_Y)
@@ -21437,9 +21437,9 @@ _bcdf:
 	ld	hl,($D401)
 	and	a
 	sbc	hl,de
-	ld	l,(ix+$0a)
-	ld	h,(ix+$0b)
-	ld	a,(ix+$0c)
+	ld	l,(ix+object.Yspeed+0)
+	ld	h,(ix+object.Yspeed+1)
+	ld	a,(ix+object.Ydirection)
 	jr	nc,+
 	ld	c,$ff
 	ld	de,$fff6
@@ -21455,9 +21455,9 @@ _bcdf:
 	ld	de,$0005
 ++	add	hl,de
 	adc	a,c
-	ld	(ix+$0a),l
-	ld	(ix+$0b),h
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),l
+	ld	(ix+object.Yspeed+1),h
+	ld	(ix+object.Ydirection),a
 	jr	+
 +++	inc	(ix+$11)
 +	ld	bc,_bdc7
@@ -21529,12 +21529,12 @@ _bdf9:
 +	ld	(ix+object.width),$20
 	ld	(ix+object.height),$1c
 	xor	a
-	ld	(ix+$07),a
-	ld	(ix+$08),$01
-	ld	(ix+$09),a
-	ld	(ix+$0a),a
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),$01
+	ld	(ix+object.Xdirection),a
+	ld	(ix+object.Yspeed+0),a
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	bit	6,(iy+vars.timeLightningFlags)
 	jr	z,+
 	ld	de,(RAM_CAMERA_X)
@@ -21578,9 +21578,9 @@ _bdf9:
 	bit	0,(ix+$18)
 	ret	z
 	xor	a
-	ld	(ix+$0a),$40
-	ld	(ix+$0b),a
-	ld	(ix+$0c),a
+	ld	(ix+object.Yspeed+0),$40
+	ld	(ix+object.Yspeed+1),a
+	ld	(ix+object.Ydirection),a
 	ld	(ix+object.spriteLayout+0),<_bf33
 	ld	(ix+object.spriteLayout+1),>_bf33
 	dec	(ix+$11)
@@ -21628,12 +21628,12 @@ _bf4c:
 	bit	0,(ix+$18)
 	jr	nz,+
 	
-	xor	a
+	xor	a			;set A to 0
 	ld	(ix+object.spriteLayout+0),a
 	ld	(ix+object.spriteLayout+1),a
-	ld	(ix+$07),a
-	ld	(ix+$08),a
-	ld	(ix+$09),a
+	ld	(ix+object.Xspeed+0),a
+	ld	(ix+object.Xspeed+1),a
+	ld	(ix+object.Xdirection),a
 	inc	(ix+$11)
 	ld	a,(ix+$11)
 	cp	$50
@@ -21648,9 +21648,9 @@ _bf4c:
 	dec	(ix+$11)
 	jr	++
 	
-+	ld	(ix+$0a),$80
-	ld	(ix+$0b),$ff
-	ld	(ix+$0c),$ff
++	ld	(ix+object.Yspeed+0),$80
+	ld	(ix+object.Yspeed+1),$ff
+	ld	(ix+object.Ydirection),$ff
 ++	ld	hl,_bff1
 	ld	a,(RAM_FRAMECOUNT)
 	rrca	
