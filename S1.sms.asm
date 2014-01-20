@@ -1,63 +1,111 @@
-;Sonic 1 Master System Disassembly
- ;created by Kroc Camen <kroc@camendesign.com>
- ;for MaSS1VE: The Master System Sonic 1 Visual Editor <github.com/Kroc/MaSS1VE>
-;======================================================================================
-;please use tab stops at 8 and a line width of 88 chars, thanks
-;--------------------------------------------------------------------------------------
+/* Sonic 1 Master System Disassembly
+   created by Kroc Camen <kroc@camendesign.com>
+   for MaSS1VE: The Master System Sonic 1 Visual Editor <github.com/Kroc/MaSS1VE>
+   ================================================================================= */
+/* please use tab stops at 8 and a line width of 88 chars, thanks
+   ================================================================================= */
+/*
+			W    A    R    N    I    N    G    !
+	
+	Here be dragons! This disassembly is in progress, expect constant
+	changes as well as future planned improvements:
+	
+	*	split up into categorised files
+	
+	*	fully commented and described program flow
+	
+	*	portable data
 
-;This source code is given to the public domain
- ;whilst "SEGA" and "Sonic" are registered trademarks of Sega Enterprises, Ltd.,
- ;this is not their source code (I haven't broken into SEGA's offices ¬__¬), so not
- ;their copyright. Neither does this contain any byte-for-byte data of the original
- ;ROM (this is all ASCII codes, even the hex data parts). the fact that this text file
- ;can be processed with an algorithm and produces a file that is the same as the
- ;original ROM is also not a copyright violation -- SEGA don't own a patent on the
- ;compiling algorithm
- 
-;--------------------------------------------------------------------------------------
- 
-;this disassembly was made by using these tools:
+   --------------------------------------------------------------------------------- */
+/* This source code is given to the public domain:
+   
+   whilst "SEGA" and "Sonic" are registered trademarks of Sega Enterprises, Ltd.,
+   this is not their source code (I haven't broken into SEGA's offices ¬__¬), so not
+   their copyright. Neither does this contain any byte-for-byte data of the original
+   ROM (this is all ASCII codes, even the hex data parts). the fact that this text
+   file can be processed with an algorithm and produces a file that is the same as
+   the original ROM is also not a copyright violation -- SEGA don't own a patent on
+   the compiling algorithm
 
-;SMSExamine: <smspower.org/Development/SMSExamine>
- ;this excellent tool disassembles much of the ROM by effectively 'running' the code
- ;to determine what parts are code and what parts are data. this saved a very large
- ;amount of effort, but due to the dynamic and complex nature of code, it didn't get
- ;all of it right, therefore I used:
- 
-;dz80: <inkland.org.uk/dz80>
- ;to do a byte-for-byte disassembly to fill in the blanks
- ;(this had to all be manually labelled!). that was largely wasted time as I later got
- ;help from the author of:
- 
-;Emulicious: <emulicious.net>
- ;which was able to provide a far superior disassembly that filled in all the gaps
- ;through a specific configuration file provided kindly by the author to assist me
- 
-;WLA DX <villehelin.com/wla.html>
- ;I was intending to write my own Z80 assembler (in VB6!), but I have found -- after
- ;some struggling to learn it -- that WLA DX will do an excellent job
+   --------------------------------------------------------------------------------- */
+/* this disassembly was made by using these tools:
 
-;this disassembly was made possible by earlier documentation provided by
- ;David Declerk, ValleyBell, Penta Penguin and Ravenfreak
+:: SMSExamine: <smspower.org/Development/SMSExamine>
+	this excellent tool disassembles much of the ROM by effectively 'running'
+	the code to determine what parts are code and what parts are data.
+	this saved a very large amount of effort, but due to the dynamic and complex
+	nature of code, it didn't get all of it right, therefore I used:
+ 
+:: dz80: <inkland.org.uk/dz80>
+	to do a byte-for-byte disassembly to fill in the blanks (this had to all be
+	manually labelled!). that was largely wasted time as I later got help from
+	the author of:
+ 
+:: Emulicious: <emulicious.net>
+	which was able to provide a far superior disassembly that filled in all the
+	gaps through a specific configuration file provided kindly by the author to
+	assist me
+ 
+:: WLA DX <villehelin.com/wla.html>
+	I was intending to write my own Z80 assembler (in VB6!), but I have found --
+	after some struggling to learn it -- that WLA DX will do an excellent job
 
-;======================================================================================
+   this disassembly was made possible by earlier documentation provided by
+   David Declerk, ValleyBell, Penta Penguin and Ravenfreak */
 
+
+/* memory configuration:
+   ====================================================================================
+   the Master System can address 64 KB of memory which is mapped into different 
+   configurable slots. Since a cartridge may contain more than 64 KB (typically 256 KB
+   or 512 KB), the contents of the cartridge can be "paged" into the slots in memory
+   in 16 KB chunks known as "banks"
+   
+   here's a map of the Master System's memory as seen by the Z80 processor
+
+	$FFFF	+-----------------+
+	        | RAM (mirror)    |
+	$E000	+-----------------+
+	        | RAM             | 8 KB
+	$C000	+-----------------+
+		|                 |
+		| SLOT 2          | 16 KB
+		|                 |
+	$8000	+-----------------+
+		|                 |
+		| SLOT 1          | 16 KB
+		|                 |
+	$4000	+-----------------+
+		|                 |
+		| SLOT 0          | 15 KB
+	$0400	+ - - - - - - - - +
+	$0000	+-----------------+ 1 KB
+
+   it's important to note that the first 1 KB of memory is *always* paged in to the
+   first 1 KB of the cartridge, regardless of which bank in the cartridge slot 0 is
+   assigned to. That means that $0000-$03FF in the memory is always mapped to
+   $0000-$03FF in the ROM
+*/
+
+;configure the memory layout for the assembler,   
 .MEMORYMAP		
-	SLOTSIZE	$4000	
+	SLOTSIZE	$4000		;16 KB slots
 	SLOT		0	$0000
 	SLOT		1	$4000
 	SLOT		2	$8000
 	DEFAULTSLOT	0
 .ENDME
 
+;define the ROM (cartridge) size
 .ROMBANKMAP
-	BANKSTOTAL	16
-	BANKSIZE	$4000
-	BANKS		16
+	BANKSTOTAL	16		;use 16 banks,
+	BANKSIZE	$4000		;each 16 KB in size
+	BANKS		16		 ;(that's 256 KB)
 .ENDRO
 
 
 .IFEXISTS "ROM.sms"
+	;once all large data is inserted with `INCBIN`, this won't be needed
 	.BACKGROUND "ROM.sms"
 .ELSE
 	.PRINTT "Please provide a Sonic 1 ROM "
@@ -65,20 +113,78 @@
 	.FAIL
 .ENDIF
 
+
+;experimental configuration:
+;======================================================================================
+
+/* the Master System has a typical screen image height of 192px.
+   enabling the definition below will expand this by 32px to 224px
+   WARNING:
+   - this only works on the Master System II and not all emulators
+   - the feature is incomplete and breaks the game
+   - there's not enough VRAM for the Sonic sprite
+*/
+;.DEF S1_CONFIG_BIGGERSCREEN
+
+;keep the screen height handy, it'll be used in a lot of places
+.IFDEF S1_CONFIG_BIGGERSCREEN
+.DEF SMS_SCREENHEIGHT_PX	224
+.ELSE
+.DEF SMS_SCREENHEIGHT_PX	192
+.ENDIF
+;how many blocks (32x32px) fit in the screen height
+.DEF SMS_SCREENHEIGHT_BLOCKS	SMS_SCREENHEIGHT_PX / 32
+
+
 ;hardware constants:
 ;======================================================================================
-.DEF SMS_CURRENT_SCANLINE 	$7E	;current vertical scanline from 0 to 191
-.DEF SMS_SOUND_PORT		$7F	;write-only port to send data to sound chip
-.DEF SMS_VDP_DATA		$BE	;graphics data port
-.DEF SMS_VDP_CONTROL		$BF	;graphics control port
-
+;the banking of the cartridge ROM into the slots of the Z80 address space is handled
+ ;by the mapper chip. for standard Sega mappers, writing to $FFFC configures the
+ ;mapper and $FFFD/E/F sets the ROM bank number to page into the relevant memory slot.
+ ;for more details, see http://www.smspower.org/Development/Mappers
+ 
 .DEF SMS_PAGE_RAM		$FFFC	;RAM select register
 .DEF SMS_PAGE_0			$FFFD	;Page 0 ROM Bank
 .DEF SMS_PAGE_1			$FFFE	;Page 1 ROM Bank
 .DEF SMS_PAGE_2			$FFFF	;Page 2 ROM Bank
 
+;VDP:
+;--------------------------------------------------------------------------------------
+;the Video Display Processor in the Master System handles the graphics and sprites
+ ;stored in video RAM ("VRAM"), composites the display and outputs it to the TV
+ 
+.DEF SMS_CURRENT_SCANLINE 	$7E	;current vertical scanline from 0 to 191
+.DEF SMS_VDP_DATA		$BE	;graphics data port
+.DEF SMS_VDP_CONTROL		$BF	;graphics control port
+
+;VDP registers are written to by sending first the data byte, and then the 4-bit
+ ;register number with bit 7 set. for more details, see
+ ;http://www.smspower.org/Development/VDPRegisters
+
+.DEF SMS_VDP_REGISTER_WRITE	%10000000
+.DEF SMS_VDP_REGISTER_0		SMS_VDP_REGISTER_WRITE | 0
+.DEF SMS_VDP_REGISTER_1		SMS_VDP_REGISTER_WRITE | 1
+.DEF SMS_VDP_REGISTER_2		SMS_VDP_REGISTER_WRITE | 2
+.DEF SMS_VDP_REGISTER_5		SMS_VDP_REGISTER_WRITE | 5
+.DEF SMS_VDP_REGISTER_6		SMS_VDP_REGISTER_WRITE | 6
+.DEF SMS_VDP_REGISTER_7		SMS_VDP_REGISTER_WRITE | 7
+.DEF SMS_VDP_REGISTER_8		SMS_VDP_REGISTER_WRITE | 8
+.DEF SMS_VDP_REGISTER_9		SMS_VDP_REGISTER_WRITE | 9
+.DEF SMS_VDP_REGISTER_10	SMS_VDP_REGISTER_WRITE | 10
+
+;location of the screen name table (layout of the tiles on screen) in VRAM
+.IFDEF S1_CONFIG_BIGGERSCREEN
+.DEF SMS_VDP_SCREENNAMETABLE	$3700
+.ELSE
+.DEF SMS_VDP_SCREENNAMETABLE	$3800
+.ENDIF
+
+;--------------------------------------------------------------------------------------
+.DEF SMS_SOUND_PORT		$7F	;write-only port to send data to sound chip
+
 .DEF SMS_JOYPAD_1		$DC
 .DEF SMS_JOYPAD_2		$DD
+
 
 ;game variables:
 ;======================================================================================
@@ -292,9 +398,10 @@
 	unknown16		DB
 	unknown17		DB
 	unknown18		DB
-	unknown19		DB	;not certain if this exists yet
+	unknown19		DB	;unused?
 .ENDST
 
+;the player is an object like any other and has reserved object parameters in memory
 .DEF RAM_SONIC			$D3FC
 	;type			$D3FC
 	;unknown1		$D3FD
@@ -322,7 +429,7 @@ START:
 	in	a, (SMS_CURRENT_SCANLINE)
 	cp	176
 	jr	nz, -
-	jp	_init
+	jp	init
 
 ;______________________________________________________________________________________
 
@@ -340,7 +447,7 @@ START:
 
 ;the hardware interrupt generator jumps here
 .ORG $0038
-	jp	IRQHandler
+	jp	interruptHandler
 
 .ORG $003B
 .db "Developed By (C) 1991 Ancient - S", $A5, "Hayashi.", $00
@@ -362,12 +469,17 @@ START:
 
 ;____________________________________________________________________________[$0073]___
 
-IRQHandler:
+interruptHandler:
 	di				;disable interrupts during the interrupt!
 	
 	;push everything we're going to use to the stack so that when we return
 	 ;from the interrupt we don't find that our registers have changed
 	 ;mid-instruction!
+	
+	;NOTE: the interrupt automatically swaps in the shadow registers, therefore
+	      ;if we ensure that interrupts are disabled during routines that use the
+	      ;shadow registers, we might conceivably do away with these leading /
+	      ;trailing stack exchanges and save some cycles on the interrupt handler
 	push	af
 	push	hl
 	push	de
@@ -404,14 +516,14 @@ IRQHandler:
 	 ;we will then set another interrupt to fire where we want the split to occur
 	ld	a, 10
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80 + 10
+	ld	a, SMS_VDP_REGISTER_10
 	out	(SMS_VDP_CONTROL), a
 	
 	;enable line interrupt IRQs (bit 5 of VDP register 0)
 	ld	a, (RAM_VDPREGISTER_0)
 	or	%00010000
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80
+	ld	a, SMS_VDP_REGISTER_0
 	out	(SMS_VDP_CONTROL), a
 	
 	;initialise the step counter for the water line raster split
@@ -447,7 +559,7 @@ IRQHandler:
 	
 	call	readJoypad
 	bit	4, (iy+vars.joypad)	;joypad button A?
-	call	z, _setJoypadButtonB	;set joypad button B too
+	call	z, setJoypadButtonB	;set joypad button B too
 	
 	call	_LABEL_625_57
 	
@@ -473,8 +585,9 @@ IRQHandler:
 	ret
 
 ;----------------------------------------------------------------------------[$00F2]---
+;only called by `interruptHandler` above
 
-_setJoypadButtonB:
+setJoypadButtonB:
 	res	5, (iy+vars.joypad)	;set joypad button B as on
 	ret
 
@@ -485,20 +598,20 @@ _LABEL_F7_25:
 	ld	a, (RAM_VDPREGISTER_1)	;get our cache value from RAM
 	and	%10111111		;remove bit 6
 	out	(SMS_VDP_CONTROL), a	;write the value,
-	ld	a, $80 + 1		;followed by the register number
+	ld	a, SMS_VDP_REGISTER_1	;followed by the register number
 	out	(SMS_VDP_CONTROL), a
 	
 	;horizontal scroll
 	ld	a, (RAM_VDPSCROLL_HORIZONTAL)
 	neg				;I don't understand the reason for this
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80 + 8		;VDP register 8
+	ld	a, SMS_VDP_REGISTER_8
 	out	(SMS_VDP_CONTROL), a
 	
 	;vertical scroll
 	ld	a, (RAM_VDPSCROLL_VERTICAL)
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80 + 9		;VDP register 9
+	ld	a, SMS_VDP_REGISTER_9
 	out	(SMS_VDP_CONTROL), a
 	
 	bit	5, (iy+vars.flags0)			
@@ -511,7 +624,7 @@ _LABEL_F7_25:
 	 ;(or if it was already blank before this function, leave it blank)
 	ld	a, (RAM_VDPREGISTER_1)
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80 + 1		;VDP register 1
+	ld	a, SMS_VDP_REGISTER_1
 	out	(SMS_VDP_CONTROL), a
 	
 	ld	a, 8			;Sonic sprites?
@@ -543,7 +656,6 @@ _LABEL_F7_25:
 	ld	a, ($D2AC)
 	and	%10000000
 	call	z, _LABEL_38B0_51
-	
 	ld	a, $FF
 	ld	($D2AC), a
 	
@@ -578,10 +690,11 @@ loadPaletteFromInterrupt:
 	
 	;when the level is underwater, different logic controls loading the palette
 	 ;as we have to deal with the water line
-+	call	_LABEL_1BA_40
++	call	loadPaletteFromInterrupt_water
 	ret
 
 ;----------------------------------------------------------------------------[$01A0]---
+;called only from `interruptHandler`
 
 _LABEL_1A0_18:
 	bit	7, (iy+vars.flags6)	;check the underwater flag
@@ -602,8 +715,9 @@ _LABEL_1A0_18:
 	djnz	-
 
 ;----------------------------------------------------------------------------[$01BA]---
-	
-_LABEL_1BA_40:
+;called only from `loadPaletteFromInterrupt`
+
+loadPaletteFromInterrupt_water:
 	ld	a, (RAM_WATERLINE)	;get the position of the water line on screen
 	and	a
 	jr	z, ++			;is it 0? (above the screen)
@@ -671,7 +785,7 @@ doRasterSplit:
 	;set VDP register 10 with the scanline number to interrupt at next
 	 ;(that is, set the next interrupt to occur at the water line)
 	out	(SMS_VDP_CONTROL), a
-	ld	a, %10000000 + 10
+	ld	a, SMS_VDP_REGISTER_10
 	out	(SMS_VDP_CONTROL), a
 	
 	jp	+++
@@ -692,7 +806,7 @@ doRasterSplit:
 	ld	a, %11000000
 	out	(SMS_VDP_CONTROL), a
 	
-	ld	b, $10
+	ld	b, 16
 	ld	hl, S1_UnderwaterPalette
 	
 	;underwater boss palette?
@@ -714,7 +828,7 @@ __	ld   a, (hl)
 	ld	a, (RAM_VDPREGISTER_0)
 	and	%11101111		;remove bit 4 -- disable line interrupts
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $80
+	ld	a, SMS_VDP_REGISTER_0
 	out	(SMS_VDP_CONTROL), a
 
 +++	pop	bc
@@ -734,7 +848,7 @@ S1_UnderwaterPalette_Boss:		;[$026B]
 
 ;____________________________________________________________________________[$028B]___
 
-_init:
+init:
 	;tell the SMS the cartridge has no RAM and to use ROM banking
 	 ;(the meaning of bit 7 is undocumented)
 	ld	a, %10000000
@@ -759,7 +873,7 @@ _init:
 					 ;(note that LDIR increased the HL register)
 	
 	;initialize the VDP:
-	ld	hl, _InitVDPRegisterValues
+	ld	hl, initVDPRegisterValues
 	ld	de, RAM_VDPREGISTER_0
 	ld	b, 11
 	ld	c, $8B
@@ -780,7 +894,7 @@ _init:
 	ld	hl, $3F00
 	ld	bc, 64
 	ld	a, 224
-	call	_clearVRAM
+	call	clearVRAM
 	
 	call	muteSound
 	
@@ -845,20 +959,29 @@ playSFX:
 
 ;____________________________________________________________________________[$031B]___
 
-_InitVDPRegisterValues:							;	cache:
+initVDPRegisterValues:							;	cache:
 .db %00100110   ;VDP Register 0:						$D218
     ;......x.    stretch screen (33 columns)
     ;.....x..    unknown
     ;..x.....    hide left column (for scrolling)
-.db %10100010	;VDP Register 1:						$D219
+
+;if the option to increase the vertical height of the screen is present,
+ ;change the initial value for VDP register 1 to enable this
+.IFDEF S1_CONFIG_BIGGERSCREEN
+.db %10110010	;VDP Register 1: (bigger screen)				$D219
+    ;...x....    expand screen height to 224px
+.ELSE
+.db %10100010	;VDP Register 1: (original ROM)					$D219
     ;......x.    enable 8x16 sprites
-    ;..x.....    enable vsync IRQ
+    ;..x.....    enable vsync interrupt
     ;.x......	 disable screen (no display)				;these caches
     ;x.......    unknown						;are not used
+.ENDIF
+
 .db $FF		;VDP Register 2: place screen at VRAM:$3800			$D21A
 .db $FF		;VDP Register 3: unused						$D21B
 .db $FF		;VDP Register 4: unused						$D21C
-.db $FF		;VDP Register 5: set sprites at VRAM:$3f00			$D21D
+.db $FF		;VDP Register 5: set sprites at VRAM:$3F00			$D21D
 .db $FF		;VDP Register 6: set sprites to use tiles from VRAM:$2000	$D21E
 .db $00		;VDP Register 7: set border colour from the sprite palette	$D21F
 .db $00		;VDP Register 8: horizontal scroll offset			$D220
@@ -866,6 +989,8 @@ _InitVDPRegisterValues:							;	cache:
 .db $FF		;VDP Register 10: disable line interrupts			$D222
 
 ;____________________________________________________________________________[$031C]___
+;a commonly used routine to essentially 'refresh the screen' by halting main execution
+ ;until the interrupt handler has done its work
 
 waitForInterrupt:
 	;test bit 0 of the IY parameter (IY=$D200)
@@ -898,9 +1023,9 @@ updateVDPSprites:
 	;--- sprite Y positions -------------------------------------------------------
 	
 	;set the VDP address to $3F00 (sprite info table, Y-positions)
-	ld	a, $00
+	ld	a, <$3F00
 	out	(SMS_VDP_CONTROL), a
-	ld	a, $3F
+	ld	a, >$3F00
 	or	%01000000		;add bit 6 to mark an address being given
 	out	(SMS_VDP_CONTROL), a
 	
@@ -1243,7 +1368,7 @@ _processRow:
 	 ;HL will be the absolute address of the art header
 	exx
 	
-	;write 1 row of pixles (4 bytes) to the VDP
+	;write 1 row of pixels (4 bytes) to the VDP
 	ld	a, (bc)
 	out	(SMS_VDP_DATA), a
 	inc	bc
@@ -1519,8 +1644,9 @@ _sendPalette:
 	ret
 
 ;____________________________________________________________________________[$0595]___
+;called only by `init`
 
-_clearVRAM:
+clearVRAM:
 ;HL : VRAM address
 ;BC : length
 ;A  : value
@@ -1581,7 +1707,7 @@ print:
 	ex	de, hl
 	sla	c			;multiply column number by 2 (16-bit values)
 	add	hl, bc
-	ld	bc, $3800
+	ld	bc, SMS_VDP_SCREENNAMETABLE
 	add	hl, bc
 	
 	;set the VDP to point to the screen address calculated
@@ -1640,7 +1766,7 @@ hideSprites:
 ;____________________________________________________________________________[$05FC]___
 ;does a decimal multiplication by 10. e.g. 3 > 30
 
-_LABEL_5FC_114:
+decimalMultiplyBy10:
 ;HL : input number, e.g. RAM_LIVES
 ; C : base? i.e. 10
 	xor	a			;set A to 0
@@ -2085,7 +2211,7 @@ fillScrollTiles:
 	add	a, c
 	ld	c, a
 	
-	ld	hl, $3800		;beginning of the screen table
+	ld	hl, SMS_VDP_SCREENNAMETABLE
 	add	hl, bc			;offset to the top of the column needed
 	set	6, h			;add bit 6 to label as a VDP VRAM address
 	
@@ -2167,7 +2293,7 @@ fillScrollTiles:
 	srl	a
 	add	a, c
 	ld	c, a
-	ld	hl, $3800
+	ld	hl, SMS_VDP_SCREENNAMETABLE
 	add	hl, bc
 	set	6, h
 	ex	de, hl
@@ -2330,8 +2456,8 @@ getFloorLayoutRAMPosition:
 	ret
 
 ;____________________________________________________________________________[$0966]___
-;this routine is only called once (during level loading) to populate the screen with
- ;the visible portion of the Floor Layout. Scrolling fills in the new tiles so a full
+;this routine is only called during level loading to populate the screen with the
+ ;visible portion of the Floor Layout. Scrolling fills in the new tiles so a full
  ;refresh of the screen is not required
 
 fillScreenWithFloorLayout:
@@ -2348,8 +2474,10 @@ fillScreenWithFloorLayout:
 	call	getFloorLayoutRAMPosition
 	
 	;------------------------------------------------------------------------------
-	ld	de,$3800		;beginning of the screen name table
-	ld	b,6			;the screen is 6 blocks tall
+	ld	de,SMS_VDP_SCREENNAMETABLE
+	;in 192-line mode, the screen is 6 blocks tall,
+	 ;in 224-line mode it's 7 blocks tall
+	ld	b,SMS_SCREENHEIGHT_BLOCKS
 	
 ---	push	bc
 	push	hl
@@ -2982,7 +3110,7 @@ _LABEL_C52_106:
 	;map 1 background
 	ld	hl,$627e
 	ld	bc,$0178
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,$10
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -2990,7 +3118,7 @@ _LABEL_C52_106:
 	;map 1 foreground
 	ld	hl,$63f6
 	ld	bc,$0145
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,$00
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -3033,7 +3161,7 @@ _LABEL_C52_106:
 	;map screen 2 background
 	ld	hl,$653b
 	ld	bc,$0170
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,$10
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -3041,7 +3169,7 @@ _LABEL_C52_106:
 	;map screen 2 foreground
 	ld	hl,$66ab
 	ld	bc,$0153
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,$00
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -3268,8 +3396,8 @@ _LABEL_E86_110:
 	add	a, a
 	add	a, $80
 	ld	($D2BE), a
-	ld	c, $0A
-	call	_LABEL_5FC_114
+	ld	c, 10
+	call	decimalMultiplyBy10
 	
 	ex	de, hl
 	
@@ -3618,7 +3746,7 @@ titleScreen:
 	
 	;load the title screen itself
 	ld	hl, $6000		;ROM:$16000
-	ld	de, $3800
+	ld	de, SMS_VDP_SCREENNAMETABLE
 	ld	bc, $012E
 	ld	a, $00
 	ld	(RAM_TEMP1), a
@@ -3789,7 +3917,7 @@ _1401:
 	;act complete background
 	ld	hl,$67fe
 	ld	bc,$0032
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,$00
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -3950,7 +4078,7 @@ _155e:
 	;UNKNOWN
 	ld	hl,$612e
 	ld	bc,$00bb
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	ld	a,(RAM_CURRENT_LEVEL)
 	cp	28
 	jr	c,+
@@ -3958,7 +4086,7 @@ _155e:
 	;UNKNOWN
 	ld	hl,$61e9		;$161E9?
 	ld	bc,$0095
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 
 +	xor	a
 	ld	(RAM_TEMP1),a
@@ -4604,8 +4732,8 @@ _1aca:
 	add	a,a
 	add	a,$80
 	ld	($D2BE),a
-	ld	c,$0a
-	call	_LABEL_5FC_114
+	ld	c,10
+	call	decimalMultiplyBy10
 	
 	ex	de,hl
 	ld	a,(RAM_LIVES)
@@ -5054,10 +5182,10 @@ _1de2:					;jump to here from _2067
 	xor	a			;set A to 0
 	sbc	hl,de
 	ret	c
-	ld	(iy+vars.joypad),$ff
+	ld	(iy+vars.joypad),$FF
 	ld	l,a
 	ld	h,a
-	ld	(RAM_SONIC+object.Xspeed+0),hl
+	ld	(RAM_SONIC+object.Xspeed),hl
 	ld	(RAM_SONIC+object.Xdirection),a
 	ld	(RAM_SONIC+object.Yspeed),hl
 	ld	(RAM_SONIC+object.Ydirection),a
@@ -5377,12 +5505,14 @@ _20a4:
 	ld	a,(RAM_RASTERSPLIT_STEP)
 	and	a
 	jr	nz,_20a4
+	
 	di	
 	res	7,(iy+vars.flags6)	;underwater?
-	xor	a
+	xor	a			;set A to 0
 	ld	(RAM_RASTERSPLIT_LINE),a
 	ld	(RAM_WATERLINE),a
 	ei	
+	
 	ret
 
 ;____________________________________________________________________________[$20B8]___
@@ -6207,7 +6337,7 @@ _LABEL_258B_133:
 	;map 3 screen (end of game)
 	ld	hl,$6830
 	ld	bc,$0179
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	xor	a
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -6308,7 +6438,7 @@ _LABEL_258B_133:
 	;UNKNOWN
 	ld	hl,$69a9
 	ld	bc,$0145
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	xor	a
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -6347,7 +6477,7 @@ _LABEL_258B_133:
 	;credits screen
 	ld	hl,$6c61
 	ld	bc,$0189
-	ld	de,$3800
+	ld	de,SMS_VDP_SCREENNAMETABLE
 	xor	a
 	ld	(RAM_TEMP1),a
 	call	decompressScreen
@@ -6758,91 +6888,91 @@ S1_Credits_Palette:			;[$2AD6]
 ;____________________________________________________________________________[$2AF6]___
 
 S1_Object_Pointers:
-.dw _48c8				;#00: Sonic
-.dw _5b09				;#01: monitor - ring
-.dw _5bd9				;#02: monitor - speed shoes
-.dw _5c05				;#03: monitor - life
-.dw _5cd7				;#04: monitor - shield
-.dw _5cff				;#05: monitor - invincibility
-.dw _5ea2				;#06: chaos emerald
-.dw _5f17				;#07: end sign
-.dw _65ee				;#08: badnick - crabmeat
-.dw _673c				;#09: wooden platform - swinging (Green Hill)
-.dw _693f				;#0A: explosion
-.dw _69e9				;#0B: wooden platform (Green Hill)
-.dw _6a47				;#0C: wooden platform - falling (Green Hill)
+.dw doObjectCode_Sonic			;#00: Sonic
+.dw doObjectCode_powerUp_ring		;#01: monitor - ring
+.dw doObjectCode_powerUp_speed		;#02: monitor - speed shoes
+.dw doObjectCode_powerUp_life		;#03: monitor - life
+.dw doObjectCode_powerUp_shield		;#04: monitor - shield
+.dw doObjectCode_powerUp_invincibility	;#05: monitor - invincibility
+.dw doObjectCode_powerUp_emerald	;#06: chaos emerald
+.dw doObjectCode_boss_endSign		;#07: end sign
+.dw doObjectCode_badnick_crabMeat	;#08: badnick - crabmeat
+.dw doObjectCode_platform_swinging	;#09: wooden platform - swinging (Green Hill)
+.dw doObjectCode_explosion		;#0A: explosion
+.dw doObjectCode_platform		;#0B: wooden platform (Green Hill)
+.dw doObjectCode_platform_weight	;#0C: wooden platform - falling (Green Hill)
 .dw _6ac1				;#0D: UNKNOWN
-.dw _6b74				;#0E: badnick - buzz bomber
-.dw _6d65				;#0F: wooden platform - moving (Green Hill)
-.dw _6e0c				;#10: badnick - motobug
-.dw _6f08				;#11: badnick - newtron
-.dw _700c				;#12: boss (Green Hill)
+.dw doObjectCode_badnick_buzzBomber	;#0E: badnick - buzz bomber
+.dw doObjectCode_platform_leftRight	;#0F: wooden platform - moving (Green Hill)
+.dw doObjectCode_badnick_motobug	;#10: badnick - motobug
+.dw doObjectCode_badnick_newtron	;#11: badnick - newtron
+.dw doObjectCode_boss_greenHill		;#12: boss (Green Hill)
 .dw _9b75				;#13: UNKNOWN - bullet?
 .dw _9be8				;#14: UNKNOWN - fireball right?
 .dw _9c70				;#15: UNKNOWN - fireball left?
-.dw _9c8e				;#16: flame thrower (Scrap Brain)
-.dw _9dfa				;#17: door - one way left (Scrap Brain)
-.dw _9f62				;#18: door - one way right (Scrap Brain)
-.dw _a025				;#19: door (Scrap Brain)
-.dw _a0e8				;#1A: electric sphere (Scrap Brain)
-.dw _a1aa				;#1B: badnick - ball hog (Scrap Brain)
+.dw doObjectCode_trap_flameThrower	;#16: flame thrower (Scrap Brain)
+.dw doObjectCode_door_left		;#17: door - one way left (Scrap Brain)
+.dw doObjectCode_door_right		;#18: door - one way right (Scrap Brain)
+.dw doObjectCode_door			;#19: door (Scrap Brain)
+.dw doObjectCode_trap_electric		;#1A: electric sphere (Scrap Brain)
+.dw doObjectCode_badnick_ballHog	;#1B: badnick - ball hog (Scrap Brain)
 .dw _a33c				;#1C: UNKNOWN - ball from ball hog?
-.dw _a3f8				;#1D: switch
-.dw _a4ab				;#1E: switch door
-.dw _a551				;#1F: badnick - caterkiller
+.dw doObjectCode_switch			;#1D: switch
+.dw doObjectCode_door_switchActivated	;#1E: switch door
+.dw doObjectCode_badnick_caterkiller	;#1F: badnick - caterkiller
 .dw _96f8				;#20: UNKNOWN
-.dw _9afb				;#21: moving bumper (Special Stage)
-.dw _a7ed				;#22: boss (Scrap Brain)
-.dw _7699				;#23: free animal - rabbit
-.dw _7594				;#24: free animal - bird
-.dw _732c				;#25: capsule
-.dw _7cf6				;#26: badnick - chopper
-.dw _7e02				;#27: log - vertical (Jungle)
-.dw _7e9b				;#28: log - horizontal (Jungle)
-.dw _7ee6				;#29: log - floating (Jungle)
+.dw doObjectCode_platform_bumber	;#21: moving bumper (Special Stage)
+.dw doObjectCode_boss_scrapBrain	;#22: boss (Scrap Brain)
+.dw doObjectCode_boss_freeRabbit	;#23: free animal - rabbit
+.dw doObjectCode_boss_freeBird		;#24: free animal - bird
+.dw doObjectCode_boss_capsule		;#25: capsule
+.dw doObjectCode_badnick_chopper	;#26: badnick - chopper
+.dw doObjectCode_platform_fallVertical	;#27: log - vertical (Jungle)
+.dw doObjectCode_platform_fallHorizontal;#28: log - horizontal (Jungle)
+.dw doObjectCode_platform_roll		;#29: log - floating (Jungle)
 .dw _96a8				;#2A: UNKNOWN
 .dw _8218				;#2B: UNKNOWN
-.dw _8053				;#2C: boss (Jungle)
-.dw _82e6				;#2D: badnick - yadrin (Bridge)
-.dw _83c1				;#2E: falling bridge (Bridge)
+.dw doObjectCode_boss_jungle		;#2C: boss (Jungle)
+.dw doObjectCode_badnick_yadrin		;#2D: badnick - yadrin (Bridge)
+.dw doObjectCode_platform_bridge	;#2E: falling bridge (Bridge)
 .dw _94a5				;#2F: UNKNOWN - wave moving projectile?
-.dw _a9c7				;#30: meta - clouds (Sky Base)
-.dw _aa6a				;#31: propeller (Sky Base)
-.dw _ab21				;#32: badnick - bomb (Sky Base)
-.dw _ad6c				;#33: canon (Sky Base)
-.dw _ae35				;#34: canon ball (Sky Base)
-.dw _ae88				;#35: badnick - unidos (Sky Base)
+.dw doObjectCode_meta_clouds		;#30: meta - clouds (Sky Base)
+.dw doObjectCode_trap_propeller		;#31: propeller (Sky Base)
+.dw doObjectCode_badnick_bomb		;#32: badnick - bomb (Sky Base)
+.dw doObjectCode_trap_cannon		;#33: cannon (Sky Base)
+.dw doObjectCode_trap_cannonBall	;#34: cannon ball (Sky Base)
+.dw doObjectCode_badnick_unidos		;#35: badnick - unidos (Sky Base)
 .dw _b0f4				;#36: UNKNOWN - stationary, lethal
-.dw _b16c				;#37: rotating turret (Sky Base)
-.dw _b297				;#38: flying platform (Sky Base)
+.dw doObjectCode_trap_turretRotating	;#37: rotating turret (Sky Base)
+.dw doObjectCode_platform_flyingRight	;#38: flying platform (Sky Base)
 .dw _b398				;#39: moving spiked wall (Sky Base)
-.dw _b46d				;#3A: fixed turret (Sky Base)
-.dw _b50e				;#3B: flying platform - up/down (Sky Base)
-.dw _8837				;#3C: badnick - jaws (Labyrinth)
-.dw _88fb				;#3D: spike ball (Labyrinth)
-.dw _8af6				;#3E: spear (Labyrinth)
+.dw doObjectCode_trap_turretFixed	;#3A: fixed turret (Sky Base)
+.dw doObjectCode_platform_flyingUpDown	;#3B: flying platform - up/down (Sky Base)
+.dw doObjectCode_badnick_jaws		;#3C: badnick - jaws (Labyrinth)
+.dw doObjectCode_trap_spikeBall		;#3D: spike ball (Labyrinth)
+.dw doObjectCode_trap_spear		;#3E: spear (Labyrinth)
 .dw _8c16				;#3F: fire ball head (Labyrinth)
-.dw _8d48				;#40: meta - water line position
-.dw _8e56				;#41: bubbles (Labyrinth)
+.dw doObjectCode_meta_water		;#40: meta - water line position
+.dw doObjectCode_powerUp_bubbles	;#41: bubbles (Labyrinth)
 .dw _8eca				;#42: UNKNOWN
-.dw _8f6c				;#43: NO-CODE
-.dw _8f6d				;#44: badnick - burrobot
-.dw _90c0				;#45: platform - float up (Labyrinth)
-.dw _bb84				;#46: boss - electric beam (Sky Base)
+.dw doObjectCode_null			;#43: NO-CODE
+.dw doObjectCode_badnick_burrobot	;#44: badnick - burrobot
+.dw doObjectCode_platform_float		;#45: platform - float up (Labyrinth)
+.dw doObjectCode_boss_electricBeam	;#46: boss - electric beam (Sky Base)
 .dw _bcdf				;#47: UNKNOWN
-.dw _8496				;#48: boss (Bridge)
-.dw _9267				;#49: boss (Labyrinth)
-.dw _b634				;#4A: boss (Sky Base)
-.dw _7aa7				;#4B: trip zone (Green Hill)
-.dw _9866				;#4C: Flipper (Special Stage)
+.dw doObjectCode_boss_bridge		;#48: boss (Bridge)
+.dw doObjectCode_boss_labyrinth		;#49: boss (Labyrinth)
+.dw doObjectCode_boss_skyBase		;#4A: boss (Sky Base)
+.dw doObjectCode_meta_trip		;#4B: trip zone (Green Hill)
+.dw doObjectCode_platform_flipper	;#4C: Flipper (Special Stage)
 .dw $0000				;#4D: RESET!
-.dw _866c				;#4E: balance (Bridge)
+.dw doObjectCode_platform_balance	;#4E: balance (Bridge)
 .dw $0000				;#4F: RESET!
-.dw _7aed				;#50: flower (Green Hill)
-.dw _5d2f				;#51: monitor - checkpoint
-.dw _5d80				;#52: monitor - continue
-.dw _bdf9				;#53: final animation
-.dw _bf4c				;#54: all emeralds animation
+.dw doObjectCode_flower			;#50: flower (Green Hill)
+.dw doObjectCode_powerUp_checkpoint	;#51: monitor - checkpoint
+.dw doObjectCode_powerUp_continue	;#52: monitor - continue
+.dw doObjectCode_anim_final		;#53: final animation
+.dw doObjectCode_anim_emeralds		;#54: all emeralds animation
 .dw _7b95				;#55: "make sonic blink"
 
 ;____________________________________________________________________________[$2BA2]___
@@ -7414,7 +7544,7 @@ _31e6:
 	and	$07
 	ld	c,a
 	ld	hl,$0068
-	call	_LABEL_5FC_114
+	call	decimalMultiplyBy10
 	ld	de,RAM_SONIC
 	add	hl,de
 	ex	de,hl
@@ -8614,7 +8744,7 @@ _LABEL_38B0_51:
 	xor	l
 	ld	h, a
 	add	hl, bc
-	ld	bc, $3800
+	ld	bc, SMS_VDP_SCREENNAMETABLE
 	add	hl, bc
 	ld	de, ($D2AF)
 	ld	b, $02
@@ -8653,7 +8783,7 @@ _LABEL_38B0_51:
 	ret
 
 ;____________________________________________________________________________[$3956]___
-;called by objects, very common
+;called by objects, very common -- collision detection?
 
 _LABEL_3956_11:
 ;RAM_TEMP6/7 : e.g. $0806
@@ -9104,7 +9234,7 @@ S1_SolidityData_7:			;[$3F28] Sky Base 2 & 3 (interior)
 ;____________________________________________________________________________[$48C8]___
 ;OBJECT - Sonic
 
-_48c8:
+doObjectCode_Sonic:
 	res	1,(iy+vars.unknown0)
 	
 	bit	7,(ix+$18)
@@ -9687,7 +9817,7 @@ _4c39:
 	or	h
 	or	l
 	jr	z,++
-	xor	a
+	xor	a			;set A to 0
 	ld	(RAM_SONIC+object.Xspeed+0),a
 	ld	(RAM_SONIC+object.Xspeed+1),a
 	ld	(RAM_SONIC+object.Xdirection),a
@@ -9742,7 +9872,8 @@ _4ddd:
 _4de6:
 .db $10, $00, $30, $00, $08, $00, $00, $08, $02
 
-;____________________________________________________________________________[$4DEF]___
+;----------------------------------------------------------------------------[$4DEF]---
+;called only by `doObjectCode_Sonic`
 
 _4def:
 	ex	de,hl
@@ -9799,20 +9930,23 @@ _4def:
 	call	_39ac
 	ret
 
-;____________________________________________________________________________[$4E48]___
+;----------------------------------------------------------------------------[$4E48]---
+;called only by `doObjectCode_Sonic`
 
 _4e48:
 	ld	d,a
 	ld	bc,_7000
 	ret
 
-;____________________________________________________________________________[$4E4D]___
+;----------------------------------------------------------------------------[$4E4D]---
+;called only by `doObjectCode_Sonic`
 
 _4e4d:
 	ld	hl,$0000
 	ret
 
-;____________________________________________________________________________[$4E51]___
+;----------------------------------------------------------------------------[$4E51]---
+;called only by `doObjectCode_Sonic`
 
 _4e51:
 	dec	a
@@ -9837,13 +9971,15 @@ _4e51:
 	call	_3581
 	ret
 
-;____________________________________________________________________________[$4E88]___
+;----------------------------------------------------------------------------[$4E88]---
+;called only by `doObjectCode_Sonic`
 
 _4e88:
 	set	1,(iy+vars.unknown0)
 	ret
 
-;____________________________________________________________________________[$4E8D]___
+;----------------------------------------------------------------------------[$4E8D]---
+;called only by `doObjectCode_Sonic`
 
 _4e8d:
 	ld	hl,(RAM_SONIC+object.X)
@@ -9886,7 +10022,8 @@ __	push    hl
 	djnz	_b
 	ret
 
-;____________________________________________________________________________[$4EDD]___
+;----------------------------------------------------------------------------[$4EDD]---
+;called only by `doObjectCode_Sonic`
 
 _4edd:
 	ld	hl,(RAM_SONIC+object.Xspeed)
@@ -10023,7 +10160,8 @@ _4fa6:
 	ld	(ix+$14),$01
 	jp	_4b1b
 
-;____________________________________________________________________________[$4FD3]___
+;----------------------------------------------------------------------------[$4FD3]---
+;called only by `doObjectCode_Sonic`
 
 _4fd3:
 	bit	0,(ix+$18)
@@ -10042,20 +10180,23 @@ _4fd3:
 	ld	($D2B7),hl
 	ret
 
-;____________________________________________________________________________[$4FEC]___
+;----------------------------------------------------------------------------[$4FEC]---
+;called only by `doObjectCode_Sonic`
 
 _4fec:
 	dec	(ix+$15)
 	ret
 
-;____________________________________________________________________________[$4FF0]___
+;----------------------------------------------------------------------------[$4FF0]---
+;called only by `doObjectCode_Sonic`
 
 _4ff0:
 	dec	a
 	ld	($D412),a
 	ret
 
-;____________________________________________________________________________[$4FF5]___
+;----------------------------------------------------------------------------[$4FF5]---
+;called only by `doObjectCode_Sonic`
 
 _4ff5:
 	ld	a,(RAM_FRAMECOUNT)
@@ -10071,7 +10212,8 @@ _4ff5:
 	
 	ret
 
-;____________________________________________________________________________[$5009]___
+;----------------------------------------------------------------------------[$5009]---
+;called only by `doObjectCode_Sonic`
 
 _5009:
 	ld	a,(RAM_LEVEL_SOLIDITY)
@@ -10145,7 +10287,8 @@ _5009:
 _5097:
 .db $01, $07, $0f, $1f, $3f, $7f
 
-;____________________________________________________________________________[$509D]___
+;----------------------------------------------------------------------------[$509D]---
+;called only by `doObjectCode_Sonic`
 
 _509d:
 	ld	a,$10
@@ -10154,14 +10297,14 @@ _509d:
 	rst	$28			;`playSFX`
 	ret
 
-;unreferenced?
-_50a6:
+;--- UNUSED! (8 bytes) ------------------------------------------------------[$50A6]---
 	xor	a
 	ld	($D3FD),a
 	ld	(RAM_SONIC+object.X),de
 	ret
 
-;____________________________________________________________________________[$50AF]___
+;----------------------------------------------------------------------------[$50AF]---
+;called only by `doObjectCode_Sonic`
 
 _50af:
 	exx	
@@ -10173,7 +10316,8 @@ _50af:
 	res	2,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$50C1]___
+;----------------------------------------------------------------------------[$50C1]---
+;called only by `doObjectCode_Sonic`
 
 _50c1:
 	bit	2,(ix+$18)
@@ -10192,13 +10336,15 @@ _50c1:
 +	set	2,(iy+vars.timeLightningFlags)
 	ret
 
-;____________________________________________________________________________[$50E3]___
+;----------------------------------------------------------------------------[$50E3]---
+;called only by `doObjectCode_Sonic`
 
 _50e3:
 	res	2,(iy+vars.timeLightningFlags)
 	ret
 
-;____________________________________________________________________________[$50E8]___
+;----------------------------------------------------------------------------[$50E8]---
+;called only by `doObjectCode_Sonic`
 
 _50e8:
 	ld	hl,($D2DC)
@@ -10211,19 +10357,22 @@ _50e8:
 	res	4,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$5100]___
+;----------------------------------------------------------------------------[$5100]---
+;called only by `doObjectCode_Sonic`
 
 _5100:
 	set	2,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$5105]___
+;----------------------------------------------------------------------------[$5105]---
+;called only by `doObjectCode_Sonic`
 
 _5105:
 	ld	(ix+$14),$0d
 	ret
 
-;____________________________________________________________________________[$510A]___
+;----------------------------------------------------------------------------[$510A]---
+;called only by `doObjectCode_Sonic`
 
 _510a:
 	ld	(iy+vars.joypad),$ff
@@ -10232,8 +10381,8 @@ _510a:
 	ld	($D414),a
 	ret
 
-;____________________________________________________________________________[$5117]___
-;jumped to here from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$5117]---
+;jumped to here from `doObjectCode_Sonic`
 
 _5117:
 	dec	a
@@ -10303,8 +10452,8 @@ _5117:
 	ld	($D400),a
 	ret
 
-;____________________________________________________________________________[$5193]___
-;jumped to from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$5193]---
+;jumped to from `doObjectCode_Sonic`
 
 _5193:
 	xor	a			;set A to 0
@@ -10320,7 +10469,8 @@ _5193:
 	set	2,(ix+$18)
 	jp	_4c39
 
-;____________________________________________________________________________[$51B3]___
+;----------------------------------------------------------------------------[$51B3]---
+;called only by `doObjectCode_Sonic`
 
 _51b3:
 	dec	a
@@ -10328,7 +10478,8 @@ _51b3:
 	ld	(ix+$14),$11
 	ret
 
-;____________________________________________________________________________[$51BC]___
+;----------------------------------------------------------------------------[$51BC]---
+;called only by `doObjectCode_Sonic`
 
 _51bc:
 	ld	(ix+object.width),$1c
@@ -10344,7 +10495,8 @@ _51bc:
 	ld	(RAM_SONIC+object.Xdirection),a
 	ret
 
-;____________________________________________________________________________[$51DD]___
+;----------------------------------------------------------------------------[$51DD]---
+;called only by `doObjectCode_Sonic`
 
 _51dd:
 	ld	a,($D414)
@@ -10357,7 +10509,8 @@ _51dd:
 	res	2,(iy+vars.unknown0)
 	ret
 
-;____________________________________________________________________________[$51F3]___
+;----------------------------------------------------------------------------[$51F3]---
+;called only by `doObjectCode_Sonic`
 
 _51f3:
 	ld	a,($D412)
@@ -10371,7 +10524,8 @@ _51f3:
 	ld	($D412),a
 	ret
 
-;____________________________________________________________________________[$5206]___
+;----------------------------------------------------------------------------[$5206]---
+;called only by `doObjectCode_Sonic`
 
 _5206:
 	ld	a,(RAM_FRAMECOUNT)
@@ -10380,13 +10534,15 @@ _5206:
 	ld	d,$18
 	ret
 
-;____________________________________________________________________________[$520F]___
+;----------------------------------------------------------------------------[$520F]---
+;called only by `doObjectCode_Sonic`
 
 _520f:
 	ld	hl,_592b
 	ret
 
-;____________________________________________________________________________[$5213]___
+;----------------------------------------------------------------------------[$5213]---
+;called only by `doObjectCode_Sonic`
 
 _5213:
 	ld	hl,_5939
@@ -10395,13 +10551,15 @@ _5213:
 	ld	hl,_594b
 	ret
 
-;____________________________________________________________________________[$521F]___
+;----------------------------------------------------------------------------[$521F]---
+;called only by `doObjectCode_Sonic`
 
 _521f:
 	ld	(ix+$13),$00
 	ret
 
-;____________________________________________________________________________[$5224]___
+;----------------------------------------------------------------------------[$5224]---
+;called only by `doObjectCode_Sonic`
 
 _5224:
 	bit	4,(ix+$18)
@@ -10411,7 +10569,8 @@ _5224:
 	call	z,_91eb
 	ret
 
-;____________________________________________________________________________[$5231]___
+;----------------------------------------------------------------------------[$5231]---
+;called only by `doObjectCode_Sonic`
 
 _5231:
 	dec	a
@@ -10450,13 +10609,15 @@ _526e:
 .db $20, $22, $24, $26, $FF, $FF
 .db $FF, $FF, $FF, $FF, $FF, $FF
 
-;____________________________________________________________________________[$5280]___
+;----------------------------------------------------------------------------[$5280]---
+;called only by `doObjectCode_Sonic`
 
 _5280:
 	ld	(ix+$14),$09
 	ret
 
-;____________________________________________________________________________[$5285]___
+;----------------------------------------------------------------------------[$5285]---
+;called only by `doObjectCode_Sonic`
 
 _5285:
 	dec	a
@@ -10472,7 +10633,8 @@ _5285:
 	ld	(iy+vars.spriteUpdateCount),c
 	ret
 
-;____________________________________________________________________________[$529C]___
+;----------------------------------------------------------------------------[$529C]---
+;called only by `doObjectCode_Sonic`
 
 _529c:
 	ld	(iy+vars.joypad),$fb
@@ -10535,8 +10697,8 @@ _529c:
 +	ld	(ix+$14),$19
 	jp	_4c39
 
-;____________________________________________________________________________[$532E]___
-;jumped to from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$532E]---
+;jumped to from `doObjectCode_Sonic`
 
 _532e:
 	ld	a,(ix+object.height)
@@ -10636,8 +10798,8 @@ _532e:
 	ld	(ix+$14),$09
 	jp	_4b1b
 
-;____________________________________________________________________________[$5407]___
-;jumped to from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$5407]---
+;jumped to from `doObjectCode_Sonic`
 
 _5407:
 	bit	7,(ix+$18)
@@ -10659,8 +10821,8 @@ _5407:
 +++	set	3,(ix+$18)
 	jp	_4bac
 
-;____________________________________________________________________________[$543C]___
-;jumped to from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$543C]---
+;jumped to from `doObjectCode_Sonic`
 
 _543c:
 	set	5,(ix+$18)
@@ -10713,8 +10875,8 @@ _543c:
 	ld	(RAM_SONIC+object.Xspeed),hl
 	ld	(RAM_SONIC+object.Xdirection),a
 
-;____________________________________________________________________________[$54AA]___
-;jumped to from _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$54AA]---
+;jumped to from `doObjectCode_Sonic`
 
 _54aa:
 	ld	(ix+$14),$0b
@@ -10723,24 +10885,25 @@ _54aa:
 	ld	(ix+$14),$15
 	jp	_4c39
 
-;____________________________________________________________________________[$54BC]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$54BC]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
+
 _54bc:
 	bit	7,(iy+vars.flags6)
 	ret	nz
 	res	4,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$54C6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$54C6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _54c6:
 	bit	0,(iy+vars.scrollRingFlags)
 	jp	z,_35fd
 	ret
 
-;____________________________________________________________________________[$54CE]___
-;referenced by table at _58e5	
+;----------------------------------------------------------------------------[$54CE]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _54ce:
 	ld	a,(ix+object.X+0)
@@ -10778,8 +10941,8 @@ _54ce:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$550F]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$550F]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _550f:
 	ld	a,(ix+object.X+0)
@@ -10795,8 +10958,8 @@ _550f:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$552D]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$552D]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _552d:
 	ld	a,(ix+object.X+0)
@@ -10817,8 +10980,8 @@ _552d:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5556]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5556]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5556:
 	ld	a,(ix+object.X+0)
@@ -10835,8 +10998,8 @@ _5556:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5578]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5578]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5578:
 	bit	7,(ix+$18)
@@ -10850,8 +11013,8 @@ _5578:
 	ld	(RAM_SONIC+object.X+1),a
 	ret
 
-;____________________________________________________________________________[$5590]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5590]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5590:
 	bit	7,(ix+$18)
@@ -10865,8 +11028,8 @@ _5590:
 	ld	(RAM_SONIC+object.X+1),a
 	ret
 
-;____________________________________________________________________________[$55A8]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$55A8]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _55a8:
 	bit	4,(ix+$18)
@@ -10876,8 +11039,8 @@ _55a8:
 +	set	4,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$55B6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$55B6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _55b6:
 	ld	a,(ix+object.X+0)
@@ -10900,8 +11063,8 @@ _55b6:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$55E2]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$55E2]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _55e2:
 	bit	7,(ix+object.Ydirection)
@@ -10910,8 +11073,8 @@ _55e2:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$55EB]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$55EB]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _55eb:
 	bit	4,(iy+vars.flags6)
@@ -10975,8 +11138,8 @@ _5643:
 .db $34, $3c, $34, $2f, $00, $19, $3a, $19, $04, $00, $0e, $3a, $00, $00, $16, $1b
 .db $32, $00, $00, $17, $2f, $0c, $00, $00, $ff
 
-;____________________________________________________________________________[$565C]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$565C]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _565c:
 	ld	hl,(RAM_SONIC+object.Xspeed)
@@ -10993,8 +11156,8 @@ _565c:
 +	set	4,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$567C]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$567C]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _567c:
 	xor	a			;set A to 0
@@ -11006,8 +11169,8 @@ _568a:
 	ld	a,$06
 	ld	($D28C),a
 
-;____________________________________________________________________________[$568F]___
-;called by _48c8 (ix+object: Sonic)
+;----------------------------------------------------------------------------[$568F]---
+;called only by `doObjectCode_Sonic`
 
 _568f:
 	ld	a,(iy+vars.joypad)
@@ -11019,8 +11182,8 @@ _568f:
 	res	2,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$56A6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$56A6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _56a6:
 	xor	a
@@ -11030,8 +11193,8 @@ _56a6:
 	res	1,(ix+$18)
 	jr	_568a
 
-;____________________________________________________________________________[$56B6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$56B6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _56b6:
 	xor	a
@@ -11041,8 +11204,8 @@ _56b6:
 	set	1,(ix+$18)
 	jr	_568a
 
-;____________________________________________________________________________[$56C6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$56C6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _56c6:
 	xor	a
@@ -11052,8 +11215,8 @@ _56c6:
 	set	1,(ix+$18)
 	jr	_568a
 	
-;____________________________________________________________________________[$56D6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$56D6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _56d6:
 	ld	a,($D2E1)
@@ -11099,8 +11262,8 @@ _56d6:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5727]___
-
+;----------------------------------------------------------------------------[$5727]---
+;called by functions referenced by `58e5`, part of `doObjectCode_Sonic`
 _5727:
 	ld	hl,(RAM_SONIC+object.Xspeed)
 	ld	a,(RAM_SONIC+object.Xdirection)
@@ -11139,8 +11302,8 @@ _5727:
 	ld	(RAM_SONIC+object.Xdirection),a
 	ret
 
-;____________________________________________________________________________[$5761]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5761]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5761:
 	ld	(ix+object.Yspeed+0),$00
@@ -11150,8 +11313,8 @@ _5761:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5771]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5771]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5771:
 	ld	(ix+object.Yspeed+0),$00
@@ -11161,8 +11324,8 @@ _5771:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5781]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5781]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5781:
 	ld	(ix+object.Yspeed+0),$00
@@ -11172,8 +11335,8 @@ _5781:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$5791]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5791]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5791:
 	ld	a,($D2B1)
@@ -11211,8 +11374,8 @@ _57be:
 	rst	$28			;`playSFX`
 	ret
 
-;____________________________________________________________________________[$57CD]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$57CD]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _57cd:
 	call	_5727
@@ -11237,8 +11400,8 @@ _57cd:
 	ld	(RAM_SONIC+object.Ydirection),a
 	jp	_57be
 
-;____________________________________________________________________________[$57F6]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$57F6]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _57f6:
 	ld	hl,($D2E9)
@@ -11250,8 +11413,8 @@ _57f6:
 	jp	z,_35fd
 	ret
 
-;____________________________________________________________________________[$5808]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5808]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5808:
 	ld	a,($D414)
@@ -11293,8 +11456,8 @@ _5849:
 	ld	(hl),c
 	ret
 
-;____________________________________________________________________________[$584B]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$584B]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _584b:
 	ld	hl,(RAM_SONIC+object.X)
@@ -11330,8 +11493,8 @@ _5858:
 	ld	(hl),c
 	ret
 
-;____________________________________________________________________________[$5883]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$5883]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _5883:
 	ld	hl,(RAM_SONIC+object.X)
@@ -11343,7 +11506,8 @@ _5883:
 	ret	nc
 	jp	_581b
 
-;____________________________________________________________________________[$5893]___
+;----------------------------------------------------------------------------[$5893]---
+;called by functions referenced by `58e5`, part of `doObjectCode_Sonic`
 
 _5893:
 	push	bc
@@ -11374,8 +11538,8 @@ _5893:
 	and	a
 	ret
 
-;____________________________________________________________________________[$58D0]___
-;referenced by table at _58e5
+;----------------------------------------------------------------------------[$58D0]---
+;referenced by table at `_58e5`, part of `doObjectCode_Sonic`
 
 _58d0:
 	bit	7,(ix+$18)
@@ -11389,14 +11553,16 @@ _58d0:
 	ret
 
 ;lookup table to the functions above
- ;(these are probably handle the different solidity values)
+ ;(these probably handle the different solidity values)
 _58e5:
 .dw _54bc, _54c6, _54ce, _550f, _552d, _5556, _5578, _5590
 .dw _55a8, _55b6, _55e2, _55eb, _565c, _567c, _56a6, _56b6
 .dw _56c6, _56d6, _5761, _5771, _5781, _5791, _57cd, _57f6
 .dw _5808, _584b, _5883, _58d0
 
+;----------------------------------------------------------------------------[$591D]---
 ;sprite layouts
+
 _591d:					;Sonic's sprite layout
 .db $B4, $B6, $B8, $FF, $FF, $FF
 .db $BA, $BC, $BE, $FF, $FF, $FF
@@ -11413,9 +11579,9 @@ _594b:
 .db $B4, $B6, $B8, $FF, $FF, $FF
 .db $BA, $BC, $BE, $FF, $FF, $FF
 .db $FE, $9C, $9E, $FF, $FF, $FF
-_595d:
+_595d:					;unknown data
 .db $00, $00, $00, $00, $00, $00, $00, $00
-_5965:
+_5965:					;unknown data
 .db $99, $59, $99, $59, $CB, $59, $DD, $59, $DF, $59, $E2, $59, $E5, $59, $FB, $59
 .db $FE, $59, $01, $5A, $53, $5A, $65, $5A, $68, $5A, $6B, $5A, $AF, $5A, $C5, $5A
 .db $CC, $5A, $D0, $5A, $DE, $5A, $E1, $5A, $E4, $5A, $E7, $5A, $EA, $5A, $00, $5B
@@ -11445,9 +11611,10 @@ _5965:
 .db $00, $1B, $FF, $00
 
 ;____________________________________________________________________________[$5B09]___
-
 ;OBJECT: monitor - rings
-_5b09:
+;NOTE: the power-ups share code between themselves
+
+doObjectCode_powerUp_ring:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11532,9 +11699,9 @@ _5bcc:
 .db $FF
 
 ;____________________________________________________________________________[$5BD9]___
-
 ;OBJECT: monitor - speed shoes
-_5bd9:
+
+doObjectCode_powerUp_speed:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11554,9 +11721,9 @@ _5bd9:
 	jp	_5b34
 
 ;____________________________________________________________________________[$5C05]___
-
 ;OBJECT: monitor - life
-_5c05:
+
+doObjectCode_powerUp_life:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11659,9 +11826,9 @@ _5c05:
 	jr	-
 
 ;____________________________________________________________________________[$5CD7]___
-
 ;OBJECT: monitor - shield
-_5cd7:
+
+doObjectCode_powerUp_shield:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11678,9 +11845,9 @@ _5cd7:
 	jp	_5b34
 
 ;____________________________________________________________________________[$5CFF]___
-
 ;OBJECT: monitor - invincibility
-_5cff:
+
+doObjectCode_powerUp_invincibility:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11705,7 +11872,7 @@ _5cff:
 ;____________________________________________________________________________[$5D2F]___
 ;OBJECT: monitor - checkpoint
 
-_5d2f:
+doObjectCode_powerUp_checkpoint:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11753,7 +11920,7 @@ _5d2f:
 ;____________________________________________________________________________[$5D80]___
 ;OBJECT: monitor - continue
 
-_5d80:
+doObjectCode_powerUp_continue:
 	ld	(ix+object.width),$14
 	ld	(ix+object.height),$18
 	call	_5da8
@@ -11769,7 +11936,7 @@ _5d80:
 +	ld	hl,$5500
 	jp	_5b34
 
-;____________________________________________________________________________[$5DA8]___
+;----------------------------------------------------------------------------[$5DA8]---
 
 _5da8:
 	bit	0,(ix+$18)
@@ -11801,7 +11968,7 @@ _5da8:
 	set	0,(ix+$18)
 	ret
 
-;____________________________________________________________________________[$5DEB]___
+;----------------------------------------------------------------------------[$5DEB]---
 
 _5deb:
 	ld	hl,$0804
@@ -11890,9 +12057,9 @@ _5deb:
 	ret
 
 ;____________________________________________________________________________[$5EA2]___
-
 ;OBJECT: chaos emerald	
-_5ea2:	
+
+doObjectCode_powerUp_emerald:	
 	ld	hl,$D30B
 	call	getLevelBitFlag
 	ld	a,(hl)
@@ -11947,9 +12114,9 @@ _5f10:
 .db $FF
 
 ;____________________________________________________________________________[$5F17]___
-
 ;OBJECT: end sign
-_5f17:
+
+doObjectCode_boss_endSign:
 	ld	(ix+object.width),$18
 	ld	(ix+object.height),$30
 	bit	0,(ix+$11)
@@ -12360,9 +12527,9 @@ S1_PaletteCycles_6:			;[$65AE] Sky Base 2/3 Interior Cycles
 .db $00, $14, $39, $3D, $28, $10, $20, $34, $07, $0F, $00, $14, $39, $0F, $00, $3F
 
 ;____________________________________________________________________________[$65EE]___
-
 ;OBJECT: badnick - crabmeat
-_65ee:
+
+doObjectCode_badnick_crabMeat:
 	ld	(ix+object.width),$10
 	ld	(ix+object.height),$1f
 	ld	e,(ix+$12)
@@ -12489,9 +12656,9 @@ _66f9:					;sprite layouts
 .db $FF
 
 ;____________________________________________________________________________[$673C]___
-
 ;OBJECT: wooden platform - swinging (Green Hill)
-_673c:
+
+doObjectCode_platform_swinging:
 	set	5,(ix+$18)
 	ld	hl,$0020
 	ld	($D267),hl
@@ -12729,7 +12896,7 @@ _6931:
 ;____________________________________________________________________________[$693F]___
 ;OBJECT: Explosion
 
-_693f:
+doObjectCode_explosion:
 	set	5,(ix+$18)
 	ld	a,(ix+$15)
 	cp	$aa
@@ -12801,9 +12968,9 @@ _69be:
 .db $FF
 
 ;____________________________________________________________________________[$69E9]___
-
 ;OBJECT: wooden platform (Green Hill)
-_69e9:
+
+doObjectCode_platform:
 	set	5,(ix+$18)
 	
 	ld	(ix+object.width),$1A
@@ -12850,9 +13017,9 @@ _69e9:
 	ret
 
 ;____________________________________________________________________________[$6A47]___
-
 ;OBJECT: wooden platform - falling (Green Hill)
-_6a47:
+
+doObjectCode_platform_weight:
 	set	5,(ix+$18)
 	ld	a,(ix+$16)
 	add	a,(ix+$17)
@@ -12986,9 +13153,9 @@ _6b72:
 .db $34, $36
 
 ;____________________________________________________________________________[$6B74]___
-
 ;OBJECT: badnick - buzz bomber
-_6b74:
+
+doObjectCode_badnick_buzzBomber:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -13174,9 +13341,9 @@ _6cf9:
 .db $30, $34, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$6D65]___
-
 ;OBJECT: wooden platform - moving (Green Hill)
-_6d65:
+
+doObjectCode_platform_leftRight:
 	set	5,(ix+$18)
 	
 	ld	a,(RAM_CURRENT_LEVEL)
@@ -13265,9 +13432,9 @@ _6d65:
 	ret
 
 ;____________________________________________________________________________[$6E0C]___
-
 ;OBJECT: badnick - motobug
-_6e0c:
+
+doObjectCode_badnick_motobug:
 	res	5,(ix+$18)
 	ld	(ix+object.width),$0a
 	ld	(ix+object.height),$10
@@ -13363,9 +13530,9 @@ _6ecb:
 .db $FF
 
 ;____________________________________________________________________________[$6F08]___
-
 ;OBJECT: badnick - newtron
-_6f08:
+
+doObjectCode_badnick_newtron:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$14
@@ -13466,9 +13633,9 @@ _7000:
 .db $62, $FF, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$700C]___
-
 ;OBJECT: boss (Green Hill)
-_700c:
+
+doObjectCode_boss_greenHill:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$20
 	ld	(ix+object.height),$1c
@@ -13726,9 +13893,9 @@ S1_BossPalette:				;[$731C]
 .db $38, $20, $35, $1B, $16, $2A, $00, $3F, $15, $3A, $0F, $03, $01, $02, $3E, $00   
 
 ;____________________________________________________________________________[$732C]___
-
 ;OBJECT: capsule
-_732c:
+
+doObjectCode_boss_capsule:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -13972,9 +14139,9 @@ _757c:
 .db $00, $00, $00, $00, $4D, $19, $4F, $19
 
 ;____________________________________________________________________________[$7594]___
-
 ;OBJECT: free animal - bird
-_7594:
+
+doObjectCode_boss_freeBird:
 	res	5,(ix+$18)
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$10
@@ -14066,9 +14233,9 @@ _7638:
 .db $FF
 
 ;____________________________________________________________________________[$7699]___
-
 ;OBJECT: free animal - rabbit
-_7699:
+
+doObjectCode_boss_freeRabbit:
 	res	5,(ix+$18)
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$20
@@ -14473,7 +14640,7 @@ _7a3a:
 ;____________________________________________________________________________[$7AA7]___
 ;OBJECT: trip zone (Green Hill)
 
-_7aa7:
+doObjectCode_meta_trip:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$40
 	ld	(ix+object.height),$40
@@ -14505,7 +14672,7 @@ _7aa7:
 ;____________________________________________________________________________[$7AED]___
 ;OBJECT: flower (Green Hill)
 
-_7aed:
+doObjectCode_flower:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -14774,9 +14941,9 @@ _LABEL_7CC1_12:
 	ret
 
 ;____________________________________________________________________________[$7CF6]___
-
 ;OBJECT: badnick - chopper
-_7cf6:
+
+doObjectCode_badnick_chopper:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$08
 	ld	(ix+object.height),$0c
@@ -14878,9 +15045,9 @@ _7df7:
 .db $FF, $FF, $FF, $FF, $FF
 
 ;____________________________________________________________________________[$7E02]___
-
 ;OBJECT: log - vertical (Jungle)
-_7e02:
+
+doObjectCode_platform_fallVertical:
 	set	5,(ix+$18)
 	ld	hl,$0030
 	ld	($D267),hl
@@ -14941,7 +15108,7 @@ _7e89:
 ;____________________________________________________________________________[$7E9B]___
 ;OBJECT: log - horizontal (Jungle)
 
-_7e9b:
+doObjectCode_platform_fallHorizontal:
 	set	5,(ix+$18)
 	ld	hl,$0030
 	ld	($D267),hl
@@ -14970,7 +15137,7 @@ _7ed9:
 ;____________________________________________________________________________[$7EE6]___
 ;OBJECT: log - floating (Jungle)
 
-_7ee6:
+doObjectCode_platform_roll:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$0a
 	ld	(ix+object.height),$10
@@ -15102,7 +15269,7 @@ _7ee6:
 
 .db $00, $00, $00
 
-;jumped to by _7ee6, OBJECT: log - floating (Jungle)
+;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
 _8003:   
 	ld	(ix+object.spriteLayout+0),<_8022
 	ld	(ix+object.spriteLayout+1),>_8022
@@ -15134,7 +15301,7 @@ _8022:
 ;____________________________________________________________________________[$8053]___
 ;OBJECT: boss (Jungle)
 
-_8053:
+doObjectCode_boss_jungle:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$20
 	ld	(ix+object.height),$1c
@@ -15399,7 +15566,7 @@ _82cd:
 ;____________________________________________________________________________[$82E6]___
 ;OBJECT: badnick - Yadrin (Bridge)
 
-_82e6:
+doObjectCode_badnick_yadrin:
 	ld	(ix+object.width),$10
 	ld	(ix+object.height),$0f
 	ld	hl,$0408
@@ -15476,7 +15643,7 @@ _837e:
 ;____________________________________________________________________________[$83C1]___
 ;OBJECT: falling bridge (Bridge)
 
-_83c1:
+doObjectCode_platform_bridge:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$0e
 	ld	(ix+object.height),$08
@@ -15566,7 +15733,7 @@ _8481:
 ;____________________________________________________________________________[$8496]___
 ;OBJECT: boss (Bridge)
 
-_8496:
+doObjectCode_boss_bridge:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$1e
 	ld	(ix+object.height),$1c
@@ -15779,7 +15946,7 @@ _865a:
 ;____________________________________________________________________________[$866C]___
 ;OBJECT: balance (Bridge)
 
-_866c:
+doObjectCode_platform_balance:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -15994,7 +16161,7 @@ _8834:
 ;____________________________________________________________________________[$8837]___
 ;OBJECT: badnick - Jaws (Labyrinth)
 
-_8837:
+doObjectCode_badnick_jaws:
 	set	5,(ix+$18)
 	ld	a,(ix+$11)
 	cp	$80
@@ -16063,7 +16230,7 @@ _88be:
 ;____________________________________________________________________________[$88FB]___
 ;OBJECT: spike ball (Labyrinth)
 
-_88fb:
+doObjectCode_trap_spikeBall:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$08
 	ld	(ix+object.height),$0c
@@ -16313,7 +16480,7 @@ _898e:
 ;____________________________________________________________________________[$8AF6]___
 ;OBJECT: spear (Labyrinth)
 
-_8af6:
+doObjectCode_trap_spear:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -16552,7 +16719,7 @@ _8d41:
 ;____________________________________________________________________________[$8D48]___
 ;OBJECT: meta - water line position (Labyrinth)
 
-_8d48:
+doObjectCode_meta_water:
 	set	5,(ix+$18)
 	ld	a,(ix+$11)
 	ld	e,a
@@ -16665,7 +16832,7 @@ _8e36:
 ;____________________________________________________________________________[$8E56]___
 ;OBJECT: bubbles (Labyrinth)
 
-_8e56:
+doObjectCode_powerUp_bubbles:
 	set	5,(ix+$18)
 	ld	a,(ix+$12)
 	and	$7f
@@ -16792,13 +16959,13 @@ _8eca:
 ;____________________________________________________________________________[$8F6C]___
 ;OBJECT: UNKNOWN
 
-_8f6c:
+doObjectCode_null:
 	ret				;object nullified!
 
 ;____________________________________________________________________________[$8F6D]___
 ;OBJECT: badnick - Burrobot (Labyrinth)
 
-_8f6d:
+doObjectCode_badnick_burrobot:
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$20
 	ld	hl,$0202
@@ -16917,7 +17084,7 @@ _9059:
 ;____________________________________________________________________________[$90C0]___
 ;OBJECT: platform - float up (Labyrinth)
 
-_90c0:
+doObjectCode_platform_float:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$1e
 	ld	(ix+object.height),$1c
@@ -17107,7 +17274,7 @@ _9257:
 ;____________________________________________________________________________[$9267]___
 ;OBJECT: boss (Labyrinth)
 
-_9267:
+doObjectCode_boss_labyrinth:
 	set	5, (ix+$18)
 	ld	(ix+object.width), $20
 	ld	(ix+object.height), $1C
@@ -17777,7 +17944,7 @@ _96f8:
 ;____________________________________________________________________________[$9866]___
 ;OBJECT: flipper (Special Stage)
 
-_9866:
+doObjectCode_platform_flipper:
 	set	5,(ix+$18)
 	ld	(ix+object.spriteLayout+0),<_9a7e
 	ld	(ix+object.spriteLayout+1),>_9a7e
@@ -17996,7 +18163,7 @@ _9aaf:
 ;____________________________________________________________________________[$9AFB]___
 ;OBJECT: moving bumper (Special Stage)
 
-_9afb:
+doObjectCode_platform_bumber:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$1c
 	ld	(ix+object.height),$06
@@ -18195,7 +18362,7 @@ _9c87:
 ;____________________________________________________________________________[$9C8E]___
 ;OBJECT: flame thrower - scrap brain
 
-_9c8e:
+doObjectCode_trap_flameThrower:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -18303,7 +18470,7 @@ _9d6a:
 ;____________________________________________________________________________[$9DFA]___
 ;OBJECT: door - one way left (Scrap Brain)
 
-_9dfa:
+doObjectCode_door_left:
 	set	5,(ix+$18)
 	call	_9ed4
 	ld	a,(ix+$11)
@@ -18479,7 +18646,7 @@ _9f2b:
 ;____________________________________________________________________________[$9F62]___
 ;OBJECT: door - one way right (Scrap Brain)
 
-_9f62:
+doObjectCode_door_right:
 	set	5,(ix+$18)
 	call	_9ed4
 	ld	a,(ix+$11)
@@ -18556,7 +18723,7 @@ _9fee:
 ;____________________________________________________________________________[$A025]___
 ;OBJECT: door (Scrap Brain)
 
-_a025:
+doObjectCode_door:
 	set	5,(ix+$18)
 	call	_9ed4
 	ld	a,(ix+$11)
@@ -18634,7 +18801,7 @@ _a0b1:
 ;____________________________________________________________________________[$A0E8]___
 ;OBJECT: electric sphere (Scrap Brain)
 
-_a0e8:
+doObjectCode_trap_electric:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$30
 	ld	(ix+object.height),$10
@@ -18708,7 +18875,7 @@ _a173:
 ;____________________________________________________________________________[$A1AA]___
 ;OBJECT: badnick - Ball Hog (Scrap Brain)
 
-_a1aa:
+doObjectCode_badnick_ballHog:
 	ld	(ix+object.width),$0a
 	ld	(ix+object.height),$20
 	ld	hl,$0803
@@ -18922,7 +19089,7 @@ _a3bb:
 ;____________________________________________________________________________[$A3F8]___
 ;OBJECT: switch
 
-_a3f8:
+doObjectCode_switch:
 	ld	(ix+object.width),$0a
 	ld	(ix+object.height),$11
 	bit	0,(ix+$18)
@@ -18994,7 +19161,7 @@ _a49b:
 ;____________________________________________________________________________[$A4AB]___
 ;OBJECT: switch door
 
-_a4ab:
+doObjectCode_door_switchActivated:
 	set	5,(ix+$18)
 	call	_9ed4
 	ld	a,(ix+$11)
@@ -19065,7 +19232,7 @@ _a51a:
 ;____________________________________________________________________________[$A551]___
 ;OBJECT: badnick - Caterkiller
 
-_a551:
+doObjectCode_badnick_caterkiller:
 	ld	(ix+object.width),$06
 	ld	(ix+object.height),$10
 	ld	a,(RAM_FRAMECOUNT)
@@ -19254,7 +19421,7 @@ _a795:
 ;____________________________________________________________________________[$A7ED]___
 ;OBJECT: boss (Scrap Brain)
 
-_a7ed:
+doObjectCode_boss_scrapBrain:
 	ld	(ix+object.width),$1e
 	ld	(ix+object.height),$2f
 	bit	0,(ix+$18)
@@ -19459,7 +19626,7 @@ _a9c0:
 ;____________________________________________________________________________[$A9C7]___
 ;OBJECT: meta - clouds (Sky Base)
 
-_a9c7:
+doObjectCode_meta_clouds:
 	set	5,(ix+$18)
 	ld	a,(iy+vars.spriteUpdateCount)
 	ld	hl,(RAM_SPRITETABLE_CURRENT)
@@ -19536,7 +19703,7 @@ _aa63:
 ;____________________________________________________________________________[$AA6A]___
 ;OBJECT: propeller (Sky Base)
 
-_aa6a:
+doObjectCode_trap_propeller:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$05
 	ld	(ix+object.height),$14
@@ -19612,7 +19779,7 @@ _ab01:
 ;____________________________________________________________________________[$AB21]___
 ;OBJECT: badnick - bomb (Sky Base)
 
-_ab21:
+doObjectCode_badnick_bomb:
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$10
 	ld	a,(ix+$11)
@@ -19831,7 +19998,7 @@ _ad53:
 ;____________________________________________________________________________[$AD6C]___
 ;OBJECT: canon (Sky Base)
 
-_ad6c:
+doObjectCode_trap_cannon:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -19909,7 +20076,7 @@ _ae04:
 ;____________________________________________________________________________[$AE35]___
 ;OBJECT: cannon ball (Sky Base)
 
-_ae35:
+doObjectCode_trap_cannonBall:
 	set	5,(ix+$18)
 	ld	(ix+object.width),$0c
 	ld	(ix+object.height),$0c
@@ -19945,7 +20112,7 @@ _ae81:
 ;____________________________________________________________________________[$AE88]___
 ;OBJECT: badnick - Unidos (Sky Base)
 
-_ae88:
+doObjectCode_badnick_unidos:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -20225,7 +20392,7 @@ _b0f4:
 ;____________________________________________________________________________[$B16C]___
 ;OBJECT: rotating turret (Sky Base)
 
-_b16c:
+doObjectCode_trap_turretRotating:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -20335,7 +20502,7 @@ _b267:
 ;____________________________________________________________________________[$B297]___
 ;OBJECT: flying platform (Sky Base)
 
-_b297:
+doObjectCode_platform_flyingRight:
 	set	5, (ix+$18)
 	bit	0, (ix+$18)
 	jr	nz,+
@@ -20533,7 +20700,7 @@ _b45b:
 ;____________________________________________________________________________[$B46D]___
 ;OBJECT: fixed turret (Sky Base)
 
-_b46d:
+doObjectCode_trap_turretFixed:
 	set	5,(ix+$18)
 	bit	0,(ix+$18)
 	jr	nz,+
@@ -20613,7 +20780,7 @@ _b4e6:
 ;____________________________________________________________________________[$B50E]___
 ;OBJECT: flying platform - up/down (Sky Base)
 
-_b50e:
+doObjectCode_platform_flyingUpDown:
 	set	5,(ix+$18)
 	ld	hl,_b37b
 	ld	a,(RAM_LEVEL_SOLIDITY)
@@ -20756,7 +20923,7 @@ _b5c2:
 ;____________________________________________________________________________[$B634]___
 ;OBJECT: boss (Sky Base)
 
-_b634:
+doObjectCode_boss_skyBase:
 	ld	(ix+object.width),$1e
 	ld	(ix+object.height),$2f
 	set	5,(ix+$18)
@@ -21257,7 +21424,7 @@ _bb77:
 ;____________________________________________________________________________[$BB84]___
 ;OBJECT: boss - electric beam (Sky Base)
 
-_bb84:
+doObjectCode_boss_electricBeam:
 	set	5,(ix+$18)
 	ld	hl,$0008
 	ld	($D26B),hl
@@ -21545,7 +21712,7 @@ _bdce:
 ;____________________________________________________________________________[$BDF9]___
 ;OBJECT: final animation
 
-_bdf9:
+doObjectCode_anim_final:
 	set	5,(ix+$18)
 	ld	(iy+vars.joypad),$ff
 	bit	1,(ix+$18)
@@ -21677,7 +21844,7 @@ _bf33:
 ;____________________________________________________________________________[$BF4C]___
 ;OBJECT: all emeralds animation
 
-_bf4c:
+doObjectCode_anim_emeralds:
 	set	5,(ix+$18)
 	ld	hl,$5400		;$15400 - emerald image
 	call	loadPowerUpIcon
