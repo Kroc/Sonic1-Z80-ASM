@@ -72,11 +72,11 @@ pause:                                                                          
         push    AF`stack
         
         ;level time HUD / lightning flags
-        ld      A`pauseStatus   [IY`vars+%vars.timeLightningFlags]
+        ld      A`pauseStatus   [IY`vars+Vars.timeLightningFlags]
         ;flip bit 3 (the pause bit)
         xor     %00001000
         ;save it back
-        ld      [IY`vars+%vars.timeLightningFlags]      A`pauseStatus
+        ld      [IY`vars+Vars.timeLightningFlags]      A`pauseStatus
         
         pop     AF`stack
         ei                                                      ;enable interrupts
@@ -99,7 +99,7 @@ interruptHandler:                                                               
         ;get the status of the VDP (the Master System's GPU)
         in      A`vdpStatus     [%sms.ports.vdp.control]
         
-        bit     7       [IY`vars+%vars.flags6]                  ;check the underwater flag
+        bit     7       [IY`vars+Vars.flags6]                  ;check the underwater flag
         jr      z	@_1                                     ;if off, skip ahead
         
         ;the raster split is controlled across multiple interrupts, a counter is used to remember at which step
@@ -151,10 +151,10 @@ interruptHandler:                                                               
         push    HL`banks
         
         ;if the main thread is not held up at the `waitForInterrupt` routine
-        bit     0       [IY`vars+%vars.flags0]
+        bit     0       [IY`vars+Vars.flags0]
         call    nz      _LABEL_1A0_18                          ;continue to maintain the water-line raster split
         ;and if it is...
-        bit     0       [IY`vars+%vars.flags0]
+        bit     0       [IY`vars+Vars.flags0]
         call    z       @_LABEL_F7_25
         
         ;interrupts are re-enabled before the interrupt handler is finished so that should the remainder of this
@@ -173,7 +173,7 @@ interruptHandler:                                                               
 	.ENDIF
 	
         call    readJoypad
-        bit     4       [IY`vars+%vars.joypad]                  ;joypad button 1?
+        bit     4       [IY`vars+Vars.joypad]                  ;joypad button 1?
         call    z       @setJoypadButtonB                       ;set joypad button 2 too
         
         call    \\math\_LABEL_625_57
@@ -199,7 +199,7 @@ interruptHandler:                                                               
 	
 @setJoypadButtonB                                                                                               ;$00F2
         ;===============================================================================================================
-        res     5       [IY`vars+%vars.joypad]                  ;set joypad button 2 as on
+        res     5       [IY`vars+Vars.joypad]                  ;set joypad button 2 as on
         ret
 	
 @_LABEL_F7_25                                                                                                   ;$00F7
@@ -224,10 +224,10 @@ interruptHandler:                                                               
         ld      A`vdpControl                    !VDP_REGISTER_9
         out     [%sms.ports.vdp.control]        A`vdpControl
         
-        bit     5       [IY`vars+%vars.flags0]                    
+        bit     5       [IY`vars+Vars.flags0]                    
         call    nz      \\floors\fillScrollTiles
         
-        bit     5       [IY`vars+%vars.flags0]
+        bit     5       [IY`vars+Vars.flags0]
         call    nz      loadPaletteFromInterrupt
         
         ;turn the screen back on 
@@ -247,7 +247,7 @@ interruptHandler:                                                               
         
         ;does the Sonic sprite need updating?
         ;(the particular frame of animation is copied to the VRAM)
-        bit     7       [IY`vars+%vars.timeLightningFlags]
+        bit     7       [IY`vars+Vars.timeLightningFlags]
         call    nz      :mobsupdateSonicSpriteFrame
         
         ;TODO: set these bank numbers according to the data location
@@ -259,10 +259,10 @@ interruptHandler:                                                               
         ld      [$.SLOT2]               A`bank
         
         ;update sprite table?
-        bit     1       [IY`vars+%vars.flags0]
+        bit     1       [IY`vars+Vars.flags0]
         call    nz      updateVDPSprites
         
-        bit     5       [IY`vars+%vars.flags0]
+        bit     5       [IY`vars+Vars.flags0]
         call    z       loadPaletteFromInterrupt
         
         ld      A       [$.D2AB+1]
@@ -272,7 +272,7 @@ interruptHandler:                                                               
         ld      A               $FF
         ld      [$.D2AB+1]      A
         
-        set     0       [IY`vars+%vars.flags0]
+        set     0       [IY`vars+Vars.flags0]
         ret
 	;
 	
@@ -294,7 +294,7 @@ loadPaletteFromInterrupt:                                                       
         
         ;if the level is underwater then skip loading the palette as the palettes
         ;are handled by the code that does the raster split
-        bit     7       [IY`vars+%vars.flags6]                  ;underwater flag
+        bit     7       [IY`vars+Vars.flags6]                  ;underwater flag
         jr      nz	@_1
         
         ;get the palette loading parameters that were assigned by the main thread
@@ -302,9 +302,9 @@ loadPaletteFromInterrupt:                                                       
         ld      HL`addr         [$.LOADPALETTE_ADDRESS]
         ld      A`flags         [$.LOADPALETTE_FLAGS]
         
-        bit     3       [IY`vars+%vars.flags0]                  ;check flag to specify loading palette
+        bit     3       [IY`vars+Vars.flags0]                  ;check flag to specify loading palette
         call    nz      \\gfx\loadPalette                      ;load the palette if flag is set
-        res     3       [IY`vars+%vars.flags0]                  ;unset flag so it doesn't happen again
+        res     3       [IY`vars+Vars.flags0]                  ;unset flag so it doesn't happen again
         ret
         
         ;when the level is underwater, different logic controls loading the palette
@@ -318,7 +318,7 @@ _LABEL_1A0_18:                                                                  
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
-        bit     7       [IY`vars+%vars.flags6]                  ;check the underwater flag
+        bit     7       [IY`vars+Vars.flags6]                  ;check the underwater flag
         ret     z                                               ;if off, leave now
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
@@ -363,7 +363,7 @@ loadPaletteFromInterrupt_water:                                                 
         ;load their palettes on-demand `;
         ld      HL`addr         underwaterPalette
         ;underwater boss palette?
-        bit     4       [IY`vars+%vars.timeLightningFlags]
+        bit     4       [IY`vars+Vars.timeLightningFlags]
         jr      z       @_1
         ld      HL`addr         underwaterPalette_Boss
         
@@ -449,7 +449,7 @@ doRasterSplit:                                                                  
         ;the boss level of Labyrinth is hardwired to use a specific palette as it is both
         ;underwater and contains the boss who would normally auto-load their palette
         ;and this would conflict
-        bit     4       [IY`vars+%vars.timeLightningFlags]
+        bit     4       [IY`vars+Vars.timeLightningFlags]
         jr      z	@loop
         ld      HL      underwaterPalette_Boss
 
@@ -659,7 +659,7 @@ waitForInterrupt:                                                               
         ;---------------------------------------------------------------------------------------------------------------
         
         ;test bit 0 of the IY parameter (IY=$D200)
-        bit     0       [IY`vars+%vars.flags0]
+        bit     0       [IY`vars+Vars.flags0]
         ;if bit 0 is off, then wait!
         jr      z	:
         
@@ -670,7 +670,7 @@ unused_0323:                                                                    
 ;=======================================================================================================================
 ;params IY`vars         : Address of the common variables (used throughout)        
         ;---------------------------------------------------------------------------------------------------------------
-        set     2   [IY`vars+%vars.flags0]
+        set     2   [IY`vars+Vars.flags0]
         ld      [$.UNUSED_D225]         HL                      ;unused RAM location!
         ld      [$.UNUSED_D227]         DE                      ;unused RAM location!
         ld      [$.UNUSED_D229]         BC                      ;unused RAM location!
@@ -685,7 +685,7 @@ loadPaletteOnInterrupt:                                                         
 ;       A`flags
 ;       HL`addr
 	;---------------------------------------------------------------------------------------------------------------
-        set     3       [IY`vars+%vars.flags0]                  ;set the flag for the interrupt handler
+        set     3       [IY`vars+Vars.flags0]                  ;set the flag for the interrupt handler
         ;store the parameters
         ld      [$.LOADPALETTE_FLAGS]   A`flags
         ld      [$.LOADPALETTE_ADDRESS] HL`addr
@@ -705,7 +705,7 @@ updateVDPSprites:                                                               
         or      %01000000                                       ;add bit 6 to mark a VRAM address being given
         out     [%sms.ports.vdp.control]        A`yPositionsHI  ;write the high-byte, with the 'address flag'
         
-        ld      B       [IY`vars+%vars.spriteUpdateCount]
+        ld      B       [IY`vars+Vars.spriteUpdateCount]
         ld      HL      $.SPRITETABLE+1                         ;Y-position of the first sprite
         ld      DE      3                                       ;sprite table is 3 bytes per sprite
         
@@ -723,7 +723,7 @@ updateVDPSprites:                                                               
         ;sprites, skip ahead to setting the X-positions and indexes
 @_1     ld      A       [$.ACTIVESPRITECOUNT]
         ld      B       A
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         ld      C       A
         cp      B                                               ;test spriteUpdateCount - RAM_ACTIVESPRITECOUNT 
         jr      nc	@_2
@@ -747,7 +747,7 @@ updateVDPSprites:                                                               
         ret     z
         
         ld      HL      $.SPRITETABLE                           ;first X-position in the sprite table
-        ld      B       [IY`vars+%vars.spriteUpdateCount]
+        ld      B       [IY`vars+Vars.spriteUpdateCount]
         
         ;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
         ld      A       ?< $3F80
@@ -766,10 +766,10 @@ updateVDPSprites:                                                               
         djnz    @xLoop
 
         ;set the new number of active sprites
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         ld      [$.ACTIVESPRITECOUNT]   A
         ;set the update count to 0
-        ld      [IY`vars+%vars.spriteUpdateCount]       B
+        ld      [IY`vars+Vars.spriteUpdateCount]       B
         ret
 	;
 	
@@ -953,7 +953,7 @@ decompressArt:                                                                  
         ;read art header:
         ;---------------------------------------------------------------------------------------------------------------
         
-        bit     1       [IY`vars + %vars.flags9]
+        bit     1       [IY`vars + Vars.flags9]
         jr      nz      @_3
         ei
         
@@ -1166,7 +1166,7 @@ decompressArt:                                                                  
         or      C
         jp      nz      @processRow
 
-@_5     bit     1       [IY`vars+%vars.flags9]
+@_5     bit     1       [IY`vars+Vars.flags9]
         jr      nz      @_6
         di
 @_6     ;restore the pages to the original banks at the beginning of the procedure
@@ -1175,7 +1175,7 @@ decompressArt:                                                                  
         ld      [%sms.mapper.slot1]     DE`banks
         
         ei
-        res     1       [IY`vars + %vars.flags9]
+        res     1       [IY`vars + Vars.flags9]
         ret
 
 @rowIndexTable
@@ -1396,7 +1396,7 @@ readJoypad:                                                                     
         in      A`joypad        [%sms.ports.joy.a]              ;read the joypad port
         or      %11000000                                       ;mask out bits 7 & 6 -
                                                                 ;these are joypad 2 down / up
-        ld      [IY`vars+%vars.joypad]  A                       ;store the joypad value in $D203
+        ld      [IY`vars+Vars.joypad]  A                       ;store the joypad value in $D203
         ret
 	;
 
@@ -1488,7 +1488,7 @@ hideSprites:                                                                    
         ;all sprites will be hidden (see `updateVDPSprites`)
          
         ;mark all 64 hardware sprites as requiring update
-        ld      [IY`vars+%vars.spriteUpdateCount]       64
+        ld      [IY`vars+Vars.spriteUpdateCount]       64
         ;and set zero active sprites
         xor     A`zero                                          ;(set A to 0)
         ld      [$.ACTIVESPRITECOUNT]   A`zero
@@ -1639,14 +1639,14 @@ updateVDPscroll:                                                                
         ld      A       L
         add     A       C
         ld      C       A
-        res     6       [IY`vars+%vars.flags0]
+        res     6       [IY`vars+Vars.flags0]
         jp      @_2
         
         ;camera moved left:
 @_1     ld      A       L
         add     A       C
         ld      C       A
-        set     6       [IY`vars+%vars.flags0]
+        set     6       [IY`vars+Vars.flags0]
         
         ;has the camera moved vertically?
         ;---------------------------------------------------------------------------------------------------------------
@@ -1666,7 +1666,7 @@ updateVDPscroll:                                                                
         add     A       256 - :system.sms@screen.height        ;add 32 to wrap 224 around 256 back to 0+
         
 @_3     ld      B       A
-        res     7       [IY`vars+%vars.flags0]
+        res     7       [IY`vars+Vars.flags0]
         jp      @_6
         
         ;camera moved up:
@@ -1678,7 +1678,7 @@ updateVDPscroll:                                                                
         sub     A       256 - !SMS.SCREEN.HEIGHT        	;subtract 32 to wrap 0 around 256 back to 224-
         
 @_5     ld      B       A
-        set     7       [IY`vars+%vars.flags0]
+        set     7       [IY`vars+Vars.flags0]
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -1729,7 +1729,7 @@ fillOverscrollCache:                                                            
         ;---------------------------------------------------------------------------------------------------------------
         ;scrolling enabled??
         ;TODO: this could be located at the call site (macro?) to avoid the wasted `call`+`ret`
-        bit     5       [IY`vars+%vars.flags0]
+        bit     5       [IY`vars+Vars.flags0]
         ret     z
         
         ;interrupts are disabled so that tiles do not get written to the screen between updating them
@@ -1767,11 +1767,11 @@ fillOverscrollCache:                                                            
         
         ;---------------------------------------------------------------------------------------------------------------
         ;horizontal scrolling allowed??
-        bit     0       [IY`vars+%vars.flags2]
+        bit     0       [IY`vars+Vars.flags2]
         jp      z       @vert                                   ;skip to vertical scroll handling
         
         ;has the camera moved left?
-        bit     6       [IY`vars+%vars.flags0]
+        bit     6       [IY`vars+Vars.flags0]
         jr      nz      @horz
         
         ld      B       $00
@@ -1799,7 +1799,7 @@ fillOverscrollCache:                                                            
         ld      A       [$.VDPSCROLL_HORZ]
         
         ;has the camera moved left?
-        bit     6       [IY`vars+%vars.flags0]
+        bit     6       [IY`vars+Vars.flags0]
         jr      z       @_2
         add     A       8
         
@@ -1879,10 +1879,10 @@ fillOverscrollCache:                                                            
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@vert   bit     1       [IY`vars+%vars.flags2]
+@vert   bit     1       [IY`vars+Vars.flags2]
         jp      z       @exit
         
-        bit     7       [IY`vars+%vars.flags0]                  ;camera moved up?
+        bit     7       [IY`vars+Vars.flags0]                  ;camera moved up?
         jr      nz      @_3
         
         ld      B       $06
@@ -1962,7 +1962,7 @@ fillScrollTiles:                                                                
 	*/
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        bit     0       [IY`vars+%vars.flags2]
+        bit     0       [IY`vars+Vars.flags2]
         jp      z       @_4
         
         exx
@@ -1993,7 +1993,7 @@ fillScrollTiles:                                                                
         
         ld      A`scrollHorz    [$.VDPSCROLL_HORZ]
         
-        bit     6       [IY`vars+%vars.flags0]                  ;camera moved left?
+        bit     6       [IY`vars+Vars.flags0]                  ;camera moved left?
         jr      z       @_1
         
         add     A`scrollHorz    8                               ;add 8 pixels (left screen border?)
@@ -2066,7 +2066,7 @@ fillScrollTiles:                                                                
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_4     bit     1       [IY`vars+%vars.flags2]
+@_4     bit     1       [IY`vars+Vars.flags2]
         jp      z       @exit                                   ;could  optimise to `ret z`?
         
         ld      A       [$.VDPSCROLL_VERT]
@@ -2075,7 +2075,7 @@ fillScrollTiles:                                                                
         srl     A
         srl     A
         
-        bit     7       [IY`vars+%vars.flags0]                  ;camera moved up?
+        bit     7       [IY`vars+Vars.flags0]                  ;camera moved up?
         jr      nz      @_5
         
         add     A       $18
@@ -2506,13 +2506,13 @@ fadeOut:                                                                        
         ld      [%sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]                  ;wait for interrupt to occur
+        res     0       [IY`vars+Vars.flags0]                  ;wait for interrupt to occur
         call    \\interrupt\waitForInterrupt                   ;refresh screen
         
         ;after the interrupt, the sprite update count would be cleared, put it back to its old value
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         
         ld      B       4
 @_1     push    BC                                              ;put aside the loop counter
@@ -2535,12 +2535,12 @@ fadeOut:                                                                        
         
         ;wait 10 frames
         ld      B       10
-@_2     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_2     ld      A       [IY`vars+Vars.spriteUpdateCount]
                 
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         djnz    @_2
 
         pop     BC                                              ;retrieve the loop counter
@@ -2614,7 +2614,7 @@ _aae:                                                                           
         ld      A       %00000011
         call    loadPaletteOnInterrupt
         
-        ld      C       [IY`vars+%vars.spriteUpdateCount]
+        ld      C       [IY`vars+Vars.spriteUpdateCount]
         
         ld      A       [$.VDPREGISTER_1]
         or      %01000000                                       ;enable screen (bit6 of VDP register 1)
@@ -2622,20 +2622,20 @@ _aae:                                                                           
         
         ;wait for interrupt (refresh screen)
         ;-- the switch to the temporary palette (above) will occur
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;refreshing the screen will zero-out the sprite update count, return it to the previous value
-        ld      [IY`vars+%vars.spriteUpdateCount]       C
+        ld      [IY`vars+Vars.spriteUpdateCount]       C
         
         ;wait for 9 more frames
         ld      B       9
-@_1     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_1     ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         djnz    @_1
         
         ;fade palette
@@ -2689,12 +2689,12 @@ _aae:                                                                           
         
         ;wait for 10 frames
         ld      B       10
-@_7     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_7     ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         djnz    @_7
         
         pop     BC
@@ -2743,23 +2743,23 @@ _b60:                                                                           
         ld      A       %00000011
         call    loadPaletteOnInterrupt
         
-        ld      C       [IY`vars+%vars.spriteUpdateCount]
+        ld      C       [IY`vars+Vars.spriteUpdateCount]
         ld      A       [$.VDPREGISTER_1]
         or      $40
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       C
+        ld      [IY`vars+Vars.spriteUpdateCount]       C
         ld      B       $09
         
-@_2     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_2     ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         djnz    @_2
         
         ld      B       $04
@@ -2809,12 +2809,12 @@ _b60:                                                                           
         call    loadPaletteOnInterrupt
         
         ld      B       10
-@_8     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_8     ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         djnz    @_8
         
         pop     BC
@@ -2952,7 +2952,7 @@ _LABEL_C52_106:                                                                 
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen (wait for interrupt to complete)
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;TODO: use labels & expressions to specify the tileset locations
@@ -3008,7 +3008,7 @@ _LABEL_C52_106:                                                                 
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;map screen 2 tileset
@@ -3159,7 +3159,7 @@ _LABEL_C52_106:                                                                 
         or      C
         ret     z
         
-        bit     5       [IY`vars+%vars.joypad]
+        bit     5       [IY`vars+Vars.joypad]
         jp      nz      @_5
         ret     nz
         
@@ -3180,7 +3180,7 @@ _0dd9:                                                                          
         ld      B               $00
         
 @_1     call    _LABEL_E86_110
-        ld      A       [IY`vars+%vars.joypad]
+        ld      A       [IY`vars+Vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
         
@@ -3199,7 +3199,7 @@ _0dd9:                                                                          
         ld      B               $80
         
 @_2     call    _LABEL_E86_110
-        ld      A               [IY`vars+%vars.joypad]
+        ld      A               [IY`vars+Vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
 	
@@ -3226,7 +3226,7 @@ _0e24:                                                                          
         ld      B               $78
         
 @loop   call    _LABEL_E86_110
-        ld      A       [IY`vars+%vars.joypad]
+        ld      A       [IY`vars+Vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
 	
@@ -3253,7 +3253,7 @@ _0e4b:                                                                          
         ld      B               $30
         
 @loop   call    _LABEL_E86_110
-        ld      A       [IY`vars+%vars.joypad]
+        ld      A       [IY`vars+Vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
 	
@@ -3297,10 +3297,10 @@ _LABEL_E86_110:                                                                 
         ld      HL      [$.TEMP1]
         push    HL
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         ld      A`lives         [$.LIVES]
         ld      L       A
         ld      H       $00
@@ -3828,7 +3828,7 @@ titleScreen:                                                                    
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;load the title screen tile set
@@ -3868,7 +3868,7 @@ titleScreen:                                                                    
         ld      A       %00000011                               ;flags to load tile & sprite palettes
         call    \\gfx\loadPaletteOnInterrupt
         
-        set     1       [IY`vars+%vars.flags0]
+        set     1       [IY`vars+Vars.flags0]
         
         ;play title screen music:
 	;(we can compile with, or without, audio)
@@ -3892,7 +3892,7 @@ titleScreen:                                                                    
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;count to 100:
@@ -3945,7 +3945,7 @@ titleScreen:                                                                    
         call    \\gfx.sprites\processSpriteLayout
         
         ;has the button been pressed? if not, repeat
-        bit     5       [IY`vars+%vars.joypad]
+        bit     5       [IY`vars+Vars.joypad]
         jp      nz      @_1
         
         scf
@@ -4026,7 +4026,7 @@ _1401:                                                                          
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         di      
@@ -4068,7 +4068,7 @@ _1401:                                                                          
         ld      [$.VDPREGISTER_1]       A
         
         ;refresh the screen
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         djnz    @_1
@@ -4080,7 +4080,7 @@ _1401:                                                                          
         ld      BC      $00B4
 @_2     push    BC
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         pop     BC
@@ -4089,7 +4089,7 @@ _1401:                                                                          
         or      C
         ret     z
         
-        bit     5       [IY`vars+%vars.joypad]
+        bit     5       [IY`vars+Vars.joypad]
         jp      nz      @_2
         
         and     A
@@ -4110,10 +4110,10 @@ _1401:                                                                          
 @_4     ld      B       $3C
 @_5     push    BC
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         ld      HL      $.D216
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $01
@@ -4128,7 +4128,7 @@ _1401:                                                                          
         ld      [$.SPRITETABLE_ADDR]    HL
         
         pop     BC
-        bit     5       [IY`vars+%vars.joypad]
+        bit     5       [IY`vars+Vars.joypad]
         jr      z       @_6
 	
         djnz    @_5
@@ -4200,7 +4200,7 @@ _155e:                                                                          
         and     %10111111
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;load HUD sprites
@@ -4292,7 +4292,7 @@ _155e:                                                                          
 	
         ld      HL      $D281
         inc     [HL]
-        bit     2       [IY`vars+%vars.flags9]
+        bit     2       [IY`vars+Vars.flags9]
         jr      nz      @_4
 	
         ld      HL      $D282
@@ -4300,10 +4300,10 @@ _155e:                                                                          
         ld      HL      $.D285
         inc     [HL]
 
-@_4     bit     2       [IY`vars+%vars.flags9]
+@_4     bit     2       [IY`vars+Vars.flags9]
         call    nz      _1719
         
-        bit     3       [IY`vars+%vars.flags9]
+        bit     3       [IY`vars+Vars.flags9]
         call    nz      _1726
         
         ld      HL      $153E
@@ -4347,7 +4347,7 @@ _155e:                                                                          
         ldi     
         ldi     
         ldi     
-        set     1       [IY`vars+%vars.flags0]
+        set     1       [IY`vars+Vars.flags0]
         ld      B       $78
         
 @_11    push    BC
@@ -4355,14 +4355,14 @@ _155e:                                                                          
         or      $40
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         call    _1a18
         pop     BC
         djnz    @_11
         
-@_12    res     0       [IY`vars+%vars.flags0]
+@_12    res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         call    _1a18
@@ -4395,12 +4395,12 @@ _155e:                                                                          
         
 @_14    push    BC
 
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         call    _1a18
         pop     BC
-        bit     5       [IY`vars+%vars.joypad]
+        bit     5       [IY`vars+Vars.joypad]
         jr      z       @exit
         djnz    @_14
 
@@ -4460,8 +4460,8 @@ _1719:                                                                          
         xor     A`zero                                          ;set A to 0
         ld      [$.RINGS]       A`zero                          ;set ring-count to 0
         
-        res     3       [IY`vars+%vars.flags9]
-        res     2       [IY`vars+%vars.flags9]
+        res     3       [IY`vars+Vars.flags9]
+        res     2       [IY`vars+Vars.flags9]
         
         ret
 	;
@@ -4474,7 +4474,7 @@ _1726:                                                                          
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      HL      $.D284
         inc     [HL]
-        res     3       [IY`vars+%vars.flags9]
+        res     3       [IY`vars+Vars.flags9]
         ret
 	;
 
@@ -4663,10 +4663,10 @@ _1860:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         push    BC
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         ld      HL      $.SPRITETABLE
         ld      [$.SPRITETABLE_ADDR]    HL
         ld      HL      $.SCORE_MILLIONS
@@ -4944,7 +4944,7 @@ _1a18:                                                                          
 ;=======================================================================================================================
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         ld      HL      $.SPRITETABLE
         ld      [$.SPRITETABLE_ADDR]    HL
         ld      HL      $.SCORE_MILLIONS
@@ -5160,7 +5160,7 @@ _1bad:                                                                          
         ld      DE      @_1bc6
         add     HL      DE
         ld      A       [HL]
-        ld      [IY`vars+%vars.joypad]  A
+        ld      [IY`vars+Vars.joypad]  A
         ld      A	[$.FRAMECOUNT]
         and     %00011111
         ret     nz
@@ -5190,7 +5190,7 @@ _LABEL_1C49_62:                                                                 
         ;---------------------------------------------------------------------------------------------------------------
         ;set bit 0 of the parameter address (IY=$D200);
         ;`waitForInterrupt` will pause until an interrupt event switches bit 0 of $D200 on
-        set     0       [IY`vars+%vars.flags0]
+        set     0       [IY`vars+Vars.flags0]
         ei                                                      ;enable interrupts
         
         ;default to 3 lives
@@ -5207,7 +5207,7 @@ _LABEL_1C49_62:                                                                 
         xor     A`zero                                          ;set A to 0
         ld      [$.CURRENT_LEVEL]               A`zero          ;set starting level!
         ld      [$.FRAMECOUNT]                  A`zero
-        ld      [IY`vars+%vars.unknown_0D]      A`zero
+        ld      [IY`vars+Vars.unknown_0D]      A`zero
         
         ld      HL      $.D27F
         ld      B       $08
@@ -5225,15 +5225,15 @@ _LABEL_1C49_62:                                                                 
         ld      B       $18
         call    \\init\fillMemoryWithValue
         
-        res     0       [IY`vars+%vars.flags2]
-        res     1       [IY`vars+%vars.flags2]
+        res     0       [IY`vars+Vars.flags2]
+        res     1       [IY`vars+Vars.flags2]
         call    \\gfx.sprites\hideSprites
         call    titleScreen
         
-        res     1       [IY`vars+%vars.scrollRingFlags]
+        res     1       [IY`vars+Vars.scrollRingFlags]
         jr      c       @_LABEL_1C9F_104
         
-        set     1       [IY`vars+%vars.scrollRingFlags]
+        set     1       [IY`vars+Vars.scrollRingFlags]
         
 @_LABEL_1C9F_104
         ;are we on the end sequence?
@@ -5241,27 +5241,27 @@ _LABEL_1C49_62:                                                                 
         cp      19
         jr      nc      @_1
         
-        res     0       [IY`vars+%vars.flags2]
-        res     1       [IY`vars+%vars.flags2]
+        res     0       [IY`vars+Vars.flags2]
+        res     1       [IY`vars+Vars.flags2]
         call    \\gfx.sprites\hideSprites
         call    _LABEL_C52_106
-        bit     1       [IY`vars+%vars.scrollRingFlags]
+        bit     1       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_LABEL_1CBD_120
         jp      c       @_1
         
 @_LABEL_1CBD_120
         call    \\gfx\fadeOut
         call    \\gfx.sprites\hideSprites
-        bit     0       [IY`vars+%vars.scrollRingFlags]
+        bit     0       [IY`vars+Vars.scrollRingFlags]
         jr      nz      @_2
 	
-        bit     4       [IY`vars+%vars.flags6]
+        bit     4       [IY`vars+Vars.flags6]
         jr      nz      @_3
         
         ;wait at title screen for button press?
 @_2     ld      B       $3C
         
-@wait   res     0       [IY`vars+%vars.flags0]
+@wait   res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         djnz    @wait
 		
@@ -5306,7 +5306,7 @@ _LABEL_1CED_131:                                                                
         
         ld      A`level	[$.CURRENT_LEVEL]
         
-        bit     4       [IY`vars+%vars.flags6]
+        bit     4       [IY`vars+Vars.flags6]
         jr      z       @_1
         
         ld      A       [$.D2D3]
@@ -5335,18 +5335,18 @@ _LABEL_1CED_131:                                                                
         add     HL      DE                  
         call    \\levels.load\loadLevel
         
-        set     0       [IY`vars+%vars.flags2]
-        set     1       [IY`vars+%vars.flags2]
-        set     1       [IY`vars+%vars.flags0]
-        set     3       [IY`vars+%vars.flags6]
-        res     3       [IY`vars+%vars.timeLightningFlags]      ;unknown
-        res     0       [IY`vars+%vars.flags9]
-        res     6       [IY`vars+%vars.flags6]
-        res     0       [IY`vars+%vars.unknown0]
-        res     6       [IY`vars+%vars.flags0]                  ;camera moved left flag
+        set     0       [IY`vars+Vars.flags2]
+        set     1       [IY`vars+Vars.flags2]
+        set     1       [IY`vars+Vars.flags0]
+        set     3       [IY`vars+Vars.flags6]
+        res     3       [IY`vars+Vars.timeLightningFlags]      ;unknown
+        res     0       [IY`vars+Vars.flags9]
+        res     6       [IY`vars+Vars.flags6]
+        res     0       [IY`vars+Vars.unknown0]
+        res     6       [IY`vars+Vars.flags0]                  ;camera moved left flag
         
         ;auto scroll right?
-        bit     3       [IY`vars+%vars.scrollRingFlags]
+        bit     3       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game.camera\lockCameraHorizontal	;prevent the camera from scrolling manually
         
         ;loop 16 times...
@@ -5355,10 +5355,10 @@ _LABEL_1CED_131:                                                                
 @_2     push    BC
         
         ;wait one frame
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.joypad]  $FF                     ;clear joypad input
+        ld      [IY`vars+Vars.joypad]  $FF                     ;clear joypad input
         
         ;increase the frame counter
         ld      HL      [$.FRAMECOUNT]
@@ -5371,7 +5371,7 @@ _LABEL_1CED_131:                                                                
         ld      [$.SLOT1]               A`bank
         
         ;are rings enabled?
-        bit     2       [IY`vars+%vars.scrollRingFlags]
+        bit     2       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game\animateFloorRing
         
         ;establish the default zones around the edges of the screen which initiate scrolling.
@@ -5403,7 +5403,7 @@ _LABEL_1CED_131:                                                                
         call    \game.camera\updateVDPscroll
         call    \\floors\fillOverscrollCache
         
-        set     5       [IY`vars+%vars.flags0]             
+        set     5       [IY`vars+Vars.flags0]             
         
         pop     BC
         djnz    @_2
@@ -5411,14 +5411,14 @@ _LABEL_1CED_131:                                                                
         ;---------------------------------------------------------------------------------------------------------------
         
         ;demo mode?
-        bit     1       [IY`vars+%vars.scrollRingFlags]
+        bit     1       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_1dae
         
         ld      HL              $0000
         ld      [$.D2B5]        HL
-        ld      [IY`vars+%vars.spriteUpdateCount]       H
+        ld      [IY`vars+Vars.spriteUpdateCount]       H
         
-@_1dae  res     0       [IY`vars+%vars.flags0]
+@_1dae  res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
@@ -5427,10 +5427,10 @@ _LABEL_1CED_131:                                                                
         ld      [$.SLOT1]               A
         
         ;are rings enabled?
-        bit     2       [IY`vars+%vars.scrollRingFlags]
+        bit     2       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game\animateFloorRing
         
-        bit     3       [IY`vars+%vars.flags6]             
+        bit     3       [IY`vars+Vars.flags6]             
         call    nz      :mobsupdateTime
         
         ;every other frame?
@@ -5455,17 +5455,17 @@ _LABEL_1CED_131:                                                                
         call    nz      _1f06
         
         ;is lightning effect enabled?
-        bit     1       [IY`vars+%vars.timeLightningFlags]
+        bit     1       [IY`vars+Vars.timeLightningFlags]
         call    nz      _1f49                                  ;if so, handle that
         
-@_4     bit     1       [IY`vars+%vars.flags6]
+@_4     bit     1       [IY`vars+Vars.flags6]
         call    nz      @_7
         
         ;are we in demo mode?
-        bit     1       [IY`vars+%vars.scrollRingFlags]
+        bit     1       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_5                                     ;no, skip ahead
         
-        bit     5       [IY`vars+%vars.joypad]                  ;is button pressed?
+        bit     5       [IY`vars+Vars.joypad]                  ;is button pressed?
         jp      z       _20b8                                  ;if yes, end demo mode
         
         call    _1bad                                          ;process demo mode?
@@ -5476,28 +5476,28 @@ _LABEL_1CED_131:                                                                
         ld      [$.FRAMECOUNT]  HL
         
         ;auto scrolling to the right? (ala Bridge 2)
-        bit     3       [IY`vars+%vars.scrollRingFlags]
+        bit     3       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game.camera\autoscrollRight
         
         ;auto scrolling upwards?
-        bit     4       [IY`vars+%vars.scrollRingFlags]
+        bit     4       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game.camera\autoscrollUp
         
         ;no down scrolling (ala Jungle 2)
-        bit     7       [IY`vars+%vars.scrollRingFlags]
+        bit     7       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game.camera\dontScrollDown
         
         call    _23c9
         
         ;are rings enabled?
-        bit     2       [IY`vars+%vars.scrollRingFlags]
+        bit     2       [IY`vars+Vars.scrollRingFlags]
         call    nz      _239c
         
         xor     A`zero                                          ;set A to 0
         ld      [$.D302]        A`zero
         ld      [$.D2DE]        A`zero
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       $15
+        ld      [IY`vars+Vars.spriteUpdateCount]       $15
         ld      HL                      $D03F                   ;lives icon sprite table entry
         ld      [$.SPRITETABLE_ADDR]    HL
         
@@ -5530,14 +5530,14 @@ _LABEL_1CED_131:                                                                
         set     6       [HL]
         
         ;paused?
-        bit     3       [IY`vars+%vars.timeLightningFlags]
+        bit     3       [IY`vars+Vars.timeLightningFlags]
         call    nz      _1e9e
         
         jp      @_1dae
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_7     ld      [IY`vars+%vars.joypad]  $F7
+@_7     ld      [IY`vars+Vars.joypad]  $F7
         ld      HL      [$.LEVEL_LEFT]
         ld      DE      $0112
         add     HL      DE
@@ -5548,7 +5548,7 @@ _LABEL_1CED_131:                                                                
         sbc     HL      DE
         ret     c
         
-        ld      [IY`vars+%vars.joypad]  $FF
+        ld      [IY`vars+Vars.joypad]  $FF
         
         ld      L`zero                  A`zero
         ld      H`zero                  A`zero
@@ -5566,7 +5566,7 @@ _1e9e:                                                                          
         
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        bit     1       [IY`vars+%vars.scrollRingFlags]
+        bit     1       [IY`vars+Vars.scrollRingFlags]
         ret     nz
         
 	;(we can compile with, or without, audio)
@@ -5574,24 +5574,24 @@ _1e9e:                                                                          
 		rst     \\sound\rst_muteSound
 	.ENDIF
         
-@_1     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_1     ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]	A
+        ld      [IY`vars+Vars.spriteUpdateCount]	A
         
         ld      A                       11
         ld      [%sms.mapper.slot1]     A   
         ld      [$.SLOT1]               A
         
         ;are rings enabled?
-        bit     2       [IY`vars+%vars.scrollRingFlags]
+        bit     2       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game\animateFloorRing
         call    _23c9
         call    _239c
         ;paused?
-        bit     3       [IY`vars+%vars.timeLightningFlags]
+        bit     3       [IY`vars+Vars.timeLightningFlags]
         jr      nz      @_1
         
 	;(we can compile with, or without, audio)
@@ -5822,11 +5822,11 @@ _1fa9:                                                                          
 @_1     call    \\gfx\fadeOut
         
         pop     HL
-        res     5       [IY`vars+%vars.flags0]
-        bit     2       [IY`vars+%vars.unknown_0D]
+        res     5       [IY`vars+Vars.flags0]
+        bit     2       [IY`vars+Vars.unknown_0D]
         jr      nz      @_4
 	
-        bit     4       [IY`vars+%vars.flags6]
+        bit     4       [IY`vars+Vars.flags6]
         jr      nz      @_5
 	
 	;(we can compile with, or without, audio)
@@ -5834,7 +5834,7 @@ _1fa9:                                                                          
 		rst     \\sound\rst_muteSound
 	.ENDIF
 		
-        bit     7       [IY`vars+%vars.flags6]
+        bit     7       [IY`vars+Vars.flags6]
         call    nz      disableWaterline
 	
         call    \\gfx.sprites\hideSprites
@@ -5844,7 +5844,7 @@ _1fa9:                                                                          
         cp      $1A
         jr      nc      @_3
         
-        bit     0       [IY`vars+%vars.timeLightningFlags]
+        bit     0       [IY`vars+Vars.timeLightningFlags]
         jr      z       @_2
         
         ld      HL      $2047
@@ -5863,7 +5863,7 @@ _1fa9:                                                                          
         ld      A       $01
         ret
         
-@_3     res     0       [IY`vars+%vars.timeLightningFlags]
+@_3     res     0       [IY`vars+Vars.timeLightningFlags]
         ld      A       $FF
         ret
         
@@ -5923,7 +5923,7 @@ _203f:                                                                          
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-        set     0       [IY`vars+%vars.timeLightningFlags]
+        set     0       [IY`vars+Vars.timeLightningFlags]
         
         ret
 	;
@@ -5947,7 +5947,7 @@ _2067:                                                                          
         
         di
         
-        res     7       [IY`vars+%vars.flags6]                  ;underwater?
+        res     7       [IY`vars+Vars.flags6]                  ;underwater?
         
         xor     A`zero                                          ;set A to 0
         ld      [$.RASTERSPLIT_LINE]    A`zero
@@ -5987,7 +5987,7 @@ loadLevel:                                                                      
         and     %10111111                                       ;remove bit 6
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;copy the level header from ROM to RAM starting at $D354
@@ -6001,10 +6001,10 @@ loadLevel:                                                                      
         push    HL`header                                       ;remember the start point
         
         ;read the current Scrolling / Ring HUD value
-        ld      A       [IY`vars+%vars.scrollRingFlags]         ;take a copy
-        ld      [IY`vars+%vars.origScrollRingFlags]     A
-        ld      A       [IY`vars+%vars.flags6]                  ;read the current underwater flag value
-        ld      [IY`vars+%vars.origFlags6]      A               ;take a copy
+        ld      A       [IY`vars+Vars.scrollRingFlags]         ;take a copy
+        ld      [IY`vars+Vars.origScrollRingFlags]     A
+        ld      A       [IY`vars+Vars.flags6]                  ;read the current underwater flag value
+        ld      [IY`vars+Vars.origFlags6]      A               ;take a copy
         
         ld      A               $FF
         ld      [$.D2AB]        A
@@ -6062,10 +6062,10 @@ loadLevel:                                                                      
         ld      [$.TIME]        HL
         ld      HL              $23FF
         
-        bit     4       [IY`vars+%vars.flags6]
+        bit     4       [IY`vars+Vars.flags6]
         jr      z       @_3
         
-        bit     0       [IY`vars+%vars.scrollRingFlags]
+        bit     0       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_5
         
         ld      HL      \screens.temp\_2402
@@ -6399,7 +6399,7 @@ loadLevel:                                                                      
         ld      A       %00000011
         call    \\gfx\loadPaletteOnInterrupt
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         call    \floors\fillScreenWithFloorLayout
@@ -6488,27 +6488,27 @@ loadLevel:                                                                      
         ;SR: Scrolling / Ring HUD flags
 	;---------------------------------------------------------------------------------------------------------------
         ld      C       [HL]
-        ld      A	[IY`vars+%vars.scrollRingFlags]            
+        ld      A	[IY`vars+Vars.scrollRingFlags]            
         and     %00000010
         or      C
-        ld      [IY`vars+%vars.scrollRingFlags] A
+        ld      [IY`vars+Vars.scrollRingFlags] A
         
         ;UW: Underwater flag
 	;---------------------------------------------------------------------------------------------------------------
         inc     HL
         ld      A	[HL]
-        ld      [IY`vars+%vars.flags6]  A
+        ld      [IY`vars+Vars.flags6]  A
         
         ;TL: Time HUD / Lightning effect flags
 	;---------------------------------------------------------------------------------------------------------------
         inc     HL
         ld      A	[HL]
-        ld      [IY`vars+%vars.timeLightningFlags]      A
+        ld      [IY`vars+Vars.timeLightningFlags]      A
         
         ;00: Unknown byte
         inc     HL
         ld      A	[HL]
-        ld      [IY`vars+%vars.unknown0]        A
+        ld      [IY`vars+Vars.unknown0]        A
         
         ;MU: Music
 	;---------------------------------------------------------------------------------------------------------------
@@ -6543,10 +6543,10 @@ loadLevel:                                                                      
         inc     HL
         djnz    @_12
         
-        bit     5       [IY`vars+%vars.origFlags6]
+        bit     5       [IY`vars+Vars.origFlags6]
         ret     z
 	
-        set     5       [IY`vars+%vars.flags6]
+        set     5       [IY`vars+Vars.flags6]
         ret
 	;
 	
@@ -6563,7 +6563,7 @@ loadMobList:                                                                    
         
         ;add Sonic to the list of active mobs first
         ld      IX`mob	$.SONIC
-        ld      DE      %mob@size				;=$001A (length of the mob?)
+        ld      DE      Mob@size				;=$001A (length of the mob?)
         ld      C       $00					;?
         ld      HL      [$.D216]                                ;= D32E + (level number * 2)
         ld      A       mobPointers.sonic@index		;=0
@@ -6596,7 +6596,7 @@ loadMobList:                                                                    
         
         ;remove the remaining mobs (out of 32)
         ld      B       A
-@_2     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+@_2     ld      [IX`mob+Mob.type]      $FF                     ;remove mob?
         add     IX      DE
         djnz    @_2
         
@@ -6612,7 +6612,7 @@ loadMobFromList:												;$235E
 ;return	IX`mob		: IX will be updated to be pointing to the next mob structure in RAM
 ;	HL`mobLayout	: The pointer to the mob layout list will have been moved forward to the next mob in the list
         ;--------------------------------------------------------------------------------------------------------------- 
-        ld      [IX`mob+%mob.type]      A`mobType		;set the mob type
+        ld      [IX`mob+Mob.type]      A`mobType		;set the mob type
         
 	;x position:
         ;---------------------------------------------------------------------------------------------------------------
@@ -6622,7 +6622,7 @@ loadMobFromList:												;$235E
 	ld      L'xpos	A`xpos
         ld      H'xpos	$00
 	;align the mob to whole pixels (not sub-pixels)
-        ld      [IX`mob+%mob.Xsubpixel] H'zero
+        ld      [IX`mob+Mob.Xsubpixel] H'zero
         
 	;multiply by 32: (expand Blocks to pixels)
         add     HL'xpos	HL'xpos                                 ;x2 ...
@@ -6632,8 +6632,8 @@ loadMobFromList:												;$235E
         add     HL'xpos	HL'xpos                                 ;x32
         
 	;set the pixel X-position of the mob on the Floor
-	ld      [IX`mob+%mob.X+0]       L'xpos
-        ld      [IX`mob+%mob.X+1]       H'xpos
+	ld      [IX`mob+Mob.X+0]       L'xpos
+        ld      [IX`mob+Mob.X+1]       H'xpos
         
 	;y position:
         ;---------------------------------------------------------------------------------------------------------------
@@ -6645,7 +6645,7 @@ loadMobFromList:												;$235E
         ld      L'ypos	A`ypos
         ld      H'ypos  $00
 	;align the mob to whole pixels (not sub-pixels)
-        ld      [IX`mob+%mob.Ysubpixel]	H'zero
+        ld      [IX`mob+Mob.Ysubpixel]	H'zero
         
 	;multiply by 32: (expand Blocks to pixels)
 	add     HL'ypos	HL'ypos                              	;x2 ...
@@ -6655,12 +6655,12 @@ loadMobFromList:												;$235E
         add     HL'ypos	HL'ypos                              	;x32
         
 	;set the pixel Y-position of the mob on the Floor
-	ld      [IX`mob+%mob.Y+0]       L'ypos
-        ld      [IX`mob+%mob.Y+1]       H'ypos
+	ld      [IX`mob+Mob.Y+0]       L'ypos
+        ld      [IX`mob+Mob.Y+1]       H'ypos
         
 	;set the rest of the mob structure to 0:
         ;---------------------------------------------------------------------------------------------------------------
-        ;TODO: sizes used here need to be calculated directly off of the `%mob` type
+        ;TODO: sizes used here need to be calculated directly off of the `Mob` type
 	
 	;transfer IX (mob address) to HL
         push    IX`mobData
@@ -6668,7 +6668,7 @@ loadMobFromList:												;$235E
 	
         ;skip to the 7th byte of the mob: `.xpseed`, skipping type/x/y-pos,
 	;this assumes a contiguous order
-        ld      DE'skip		%mob.Xspeed			;=7
+        ld      DE'skip		Mob.Xspeed			;=7
         add     HL'mobData	DE'skip
         
         ;erase the next 19 bytes (remainder of mob data structure)
@@ -6844,7 +6844,7 @@ _LABEL_258B_133:                                                                
         and     %10111111
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;reset the screen scroll (for static screens)
@@ -6879,7 +6879,7 @@ _LABEL_258B_133:                                                                
         or      %01000000
         ld      [$.VDPREGISTER_1]       A
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      A`bank                  1
@@ -6893,7 +6893,7 @@ _LABEL_258B_133:                                                                
         
 @_1     push    BC
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      HL      $.SPRITETABLE
@@ -6915,14 +6915,14 @@ _LABEL_258B_133:                                                                
         ld      B       $3D
         
 @_2     push    BC
-        ld      C       [IY`vars+%vars.spriteUpdateCount]
+        ld      C       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       C
+        ld      [IY`vars+Vars.spriteUpdateCount]       C
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      DE      $.SPRITETABLE
@@ -6970,7 +6970,7 @@ _LABEL_258B_133:                                                                
         
         ld      HL      _2047
         call    \\gfx\_b60
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         
         ld      A`bank                  5
         ld      [%sms.mapper.slot1]     A`bank
@@ -7081,10 +7081,10 @@ _2718:                                                                          
         push    AF  HL  DE  BC
 @_1     push    BC
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       $00
+        ld      [IY`vars+Vars.spriteUpdateCount]       $00
         ld      HL      $.SPRITETABLE
         ld      [$.SPRITETABLE_ADDR]	HL
         
@@ -7116,12 +7116,12 @@ waitFrames:                                                                     
         push    BC`count
         
         ;refresh the screen
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         
         pop     BC`count
         dec     BC`count
@@ -7858,7 +7858,7 @@ refresh:													;$2E5A
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;do not update the Sonic sprite frame (upon Interrupt)
-        res     7       [IY`vars+%vars.timeLightningFlags]
+        res     7       [IY`vars+Vars.timeLightningFlags]
         
         ;populate the buffer with the bytes in the layout
         ld      HL`layoutAddr	\game.hud\hudLivesLayout
@@ -7887,11 +7887,11 @@ refresh:													;$2E5A
         ;---------------------------------------------------------------------------------------------------------------
         
         ;show rings?
-        bit     2       [IY`vars+%vars.scrollRingFlags]
+        bit     2       [IY`vars+Vars.scrollRingFlags]
         call    nz      \game.hud\displayRingCount
         
         ;show time?
-        bit     5       [IY`vars+%vars.timeLightningFlags]
+        bit     5       [IY`vars+Vars.timeLightningFlags]
         call    nz      \game.hud\displayTime
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -7924,7 +7924,7 @@ refresh:													;$2E5A
         inc     HL
         ld      DE      $0070
         ;up-down wave scrolling?
-        bit     6       [IY`vars+%vars.scrollRingFlags]
+        bit     6       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_2
         
         ld      DE      $0080
@@ -7934,7 +7934,7 @@ refresh:													;$2E5A
         call    z       updateCamera._311a
         
         ;is Sonic alive?
-        bit     0       [IY`vars+%vars.scrollRingFlags]    
+        bit     0       [IY`vars+Vars.scrollRingFlags]    
         call    z       updateCamera                           ;handle camera movement
         
         ld      HL`zero                         $0000
@@ -8065,7 +8065,7 @@ mobs_updateCamera:                                                              
         ;---------------------------------------------------------------------------------------------------------------
         ;if scrolling is locked, do nothing
         ;TODO: we could do this test at the call site instead and avoid the wasted call/ret?
-        bit     6       [IY`vars+%vars.timeLightningFlags]
+        bit     6       [IY`vars+Vars.timeLightningFlags]
         ret     nz
         
         ;does the camera need to be moved horizontally toward a target?
@@ -8177,11 +8177,11 @@ mobs_updateCamera:                                                              
         ;---------------------------------------------------------------------------------------------------------------
         
         ;is the camera auto-scrolling to the right?
-@_2     bit     3       [IY`vars+%vars.scrollRingFlags]
+@_2     bit     3       [IY`vars+Vars.scrollRingFlags]
         jr      nz      @levelLeftLimit
         
         ;is camera set to smooth scrolling?
-        bit     5       [IY`vars+%vars.scrollRingFlags]
+        bit     5       [IY`vars+Vars.scrollRingFlags]
         jr      z	@_3                                     ;if not, skip ahead
         
         ;smooth scrolling: scroll only 1 pixel at a time
@@ -8246,12 +8246,12 @@ mobs_updateCamera:                                                              
         ld      HL`scrollSpeed  $0008
         
         ;is the camera auto-scrolling to the right?
-@_6     bit     3       [IY`vars+%vars.scrollRingFlags]
+@_6     bit     3       [IY`vars+Vars.scrollRingFlags]
         ;yes? skip ahead
         jr      nz      @levelLeftLimit
         
         ;is camera set to smooth scrolling?
-        bit     5       [IY`vars+%vars.scrollRingFlags]
+        bit     5       [IY`vars+Vars.scrollRingFlags]
         jr      z       @checkOverflow
         
         ;smooth scrolling: scroll only 1 pixel at a time
@@ -8295,7 +8295,7 @@ mobs_updateCamera:                                                              
 @cameraY
         ;---------------------------------------------------------------------------------------------------------------
         ;is the camera waving up and down?
-        bit     6       [IY`vars+%vars.scrollRingFlags]
+        bit     6       [IY`vars+Vars.scrollRingFlags]
         call    nz      @_3164
         
         ld      BC`scrollZoneTop        [$.SCROLLZONE_TOP]
@@ -8303,12 +8303,12 @@ mobs_updateCamera:                                                              
         ld      HL`cameraY              [$.CAMERA_Y]
         
         ;is the camera waving up and down?
-        bit     6       [IY`vars+%vars.scrollRingFlags]
+        bit     6       [IY`vars+Vars.scrollRingFlags]
         ;-- if so, the top scroll zone is set to a fixed value
         call    nz      @updateCamera_scrollZone_waving         ;=`ld BC $0020`
         
         ;is the camera prevented from scrolling down?
-        bit     7       [IY`vars+%vars.scrollRingFlags]
+        bit     7       [IY`vars+Vars.scrollRingFlags]
         ;-- if so, the top scroll zone is set to a fixed value
         call    nz      @updateCamera_scrollZone_noDown         ;=`ld BC $0070`
         
@@ -8316,7 +8316,7 @@ mobs_updateCamera:                                                              
         add     HL`cameraY      BC`scrollZoneTop
         
         ;is the camera prevented from scrolling down?
-        bit     7       [IY`vars+%vars.scrollRingFlags]
+        bit     7       [IY`vars+Vars.scrollRingFlags]
         ;-- if so, increase the scroll zone further
         call    z       @updateCamera_scrollZone_increase
         
@@ -8331,7 +8331,7 @@ mobs_updateCamera:                                                              
         jr      nz      @_10
         
         ;is the camera waving up and down?
-        bit     6       [IY`vars+%vars.scrollRingFlags]
+        bit     6       [IY`vars+Vars.scrollRingFlags]
         call    nz      @_311f
         
         ld      A       L
@@ -8343,12 +8343,12 @@ mobs_updateCamera:                                                              
         ld      H                   $00
         
         ;is the camera prevented from scrolling down?
-@_11    bit     7       [IY`vars+%vars.scrollRingFlags]
+@_11    bit     7       [IY`vars+Vars.scrollRingFlags]
         jr      z       @_12
         
         srl     H
         rr      L
-        bit     1       [IY`vars+%vars.unknown0]
+        bit     1       [IY`vars+Vars.unknown0]
         jr      nz      @_12
         
         ld      HL              $0000
@@ -8369,7 +8369,7 @@ mobs_updateCamera:                                                              
         add     HL`cameraY              BC`scrollZoneBottom
         
         ;is the camera prevented from scrolling down?
-        bit     7       [IY`vars+%vars.scrollRingFlags]
+        bit     7       [IY`vars+Vars.scrollRingFlags]
         ;- if so, increase the scroll zone further
         call    z       @updateCamera_scrollZone_increase
         
@@ -8389,7 +8389,7 @@ mobs_updateCamera:                                                              
         and     A
         jr      nz      @_14
         
-        bit     6       [IY`vars+%vars.scrollRingFlags]         ;up-down wave scrolling?
+        bit     6       [IY`vars+Vars.scrollRingFlags]         ;up-down wave scrolling?
         call    nz      @_311f
         ld      A                   L
         cp      C
@@ -8399,7 +8399,7 @@ mobs_updateCamera:                                                              
         ld      L                   C
         ld      H                   $00
         
-@_15    bit     4       [IY`vars+%vars.scrollRingFlags]         ;auto scroll up?
+@_15    bit     4       [IY`vars+Vars.scrollRingFlags]         ;auto scroll up?
         jr      nz      @levelTopLimit
         
         ld      DE`cameraY      [$.CAMERA_Y]
@@ -8574,7 +8574,7 @@ mobs_updateCamera:                                                              
 @updateCamera_scrollZone_increase                                                                               ;$31DB
         ;===============================================================================================================
         ;not applicable with up-down wave scrolling
-        bit     6	[IY`vars+%vars.scrollRingFlags]
+        bit     6	[IY`vars+Vars.scrollRingFlags]
         ret     nz
         
         ld      BC	[$.D2B7]
@@ -8680,8 +8680,8 @@ checkMobsOutOfBounds:                                                           
         xor     A`zero
         
         ;has the mob gone too far left of the camera?
-@x      ld      E'mobXpos           [IX`mob+%mob.X+0]
-        ld      D'mobXpos           [IX`mob+%mob.X+1]
+@x      ld      E'mobXpos           [IX`mob+Mob.X+0]
+        ld      D'mobXpos           [IX`mob+Mob.X+1]
         sbc     HL'leftLimit        DE'mobXpos
         jp      nc	@removeMobExx                               ;if so, remove it
         
@@ -8712,8 +8712,8 @@ checkMobsOutOfBounds:                                                           
         xor     A`zero
         
 @y      ;has the mob gone too far above the camera?
-        ld      E'mobYpos           [IX`mob+%mob.Y+0]
-        ld      D'mobYpos           [IX`mob+%mob.Y+1]
+        ld      E'mobYpos           [IX`mob+Mob.Y+0]
+        ld      D'mobYpos           [IX`mob+Mob.Y+1]
         sbc     HL'                 DE'mobYpos
         jp      nc	@removeMobExx                               ;if so, remove it
         
@@ -8808,7 +8808,7 @@ processMobs:													;$392B
         
         ;---------------------------------------------------------------------------------------------------------------
         
-        ld      A                   [IY`vars+%vars.spriteUpdateCount]
+        ld      A                   [IY`vars+Vars.spriteUpdateCount]
         ld      HL                  [$.SPRITETABLE_ADDR]
         
         push    AF  HL
@@ -8822,7 +8822,7 @@ processMobs:													;$392B
         pop     HL  AF
         
         ld      [$.SPRITETABLE_ADDR]    HL
-        ld      [IY`vars+%vars.spriteUpdateCount]   A
+        ld      [IY`vars+Vars.spriteUpdateCount]   A
         ret
 	;
 
@@ -8876,35 +8876,35 @@ postProcessMob:													;$32E2
         ;      alternatively, the callback set up before processing the mob could be selected based on the mob's flags
         
         ;move the mob horizontally 
-        ld      E`speed         [IX`mob+%mob.Xspeed+0]
-        ld      D`speed         [IX`mob+%mob.Xspeed+1]
-        ld      C`dir           [IX`mob+%mob.Xdirection]
-        ld      L`xpos          [IX`mob+%mob.Xsubpixel]
-        ld      H`xpos          [IX`mob+%mob.X+0]
-        ld      A`xpos          [IX`mob+%mob.X+1]
+        ld      E`speed         [IX`mob+Mob.Xspeed+0]
+        ld      D`speed         [IX`mob+Mob.Xspeed+1]
+        ld      C`dir           [IX`mob+Mob.Xdirection]
+        ld      L`xpos          [IX`mob+Mob.Xsubpixel]
+        ld      H`xpos          [IX`mob+Mob.X+0]
+        ld      A`xpos          [IX`mob+Mob.X+1]
         add     HL`xpos         DE`speed
         adc     A`xpos          C`dir
         
-        ld      [IX`mob+%mob.Xsubpixel] L`xpos
-        ld      [IX`mob+%mob.X+0]       H`xpos
-        ld      [IX`mob+%mob.X+1]       A`xpos
+        ld      [IX`mob+Mob.Xsubpixel] L`xpos
+        ld      [IX`mob+Mob.X+0]       H`xpos
+        ld      [IX`mob+Mob.X+1]       A`xpos
         
         ;move the mob vertically
-        ld      E`speed             [IX`mob+%mob.Yspeed+0]
-        ld      D`speed             [IX`mob+%mob.Yspeed+1]
-        ld      C`dir               [IX`mob+%mob.Ydirection]
-        ld      L`ypos              [IX`mob+%mob.Ysubpixel]
-        ld      H`ypos              [IX`mob+%mob.Y+0]
-        ld      A`ypos              [IX`mob+%mob.Y+1]
+        ld      E`speed             [IX`mob+Mob.Yspeed+0]
+        ld      D`speed             [IX`mob+Mob.Yspeed+1]
+        ld      C`dir               [IX`mob+Mob.Ydirection]
+        ld      L`ypos              [IX`mob+Mob.Ysubpixel]
+        ld      H`ypos              [IX`mob+Mob.Y+0]
+        ld      A`ypos              [IX`mob+Mob.Y+1]
         add     HL`ypos             DE`speed
         adc     A`ypos              C`dir
         
-        ld      [IX`mob+%mob.Ysubpixel] L`ypos
-        ld      [IX`mob+%mob.Y+0]       H`ypos
-        ld      [IX`mob+%mob.Y+1]       A`ypos
+        ld      [IX`mob+Mob.Ysubpixel] L`ypos
+        ld      [IX`mob+Mob.Y+0]       H`ypos
+        ld      [IX`mob+Mob.Y+1]       A`ypos
         
         ;does the mob interact with the floor?
-        bit     5       [IX`mob+%mob.flags]
+        bit     5       [IX`mob+Mob.flags]
         jp      nz      @_34e6                                  ;if not skip over collision handling
         
         ;find the 'nose' of the mob, according to its direction:
@@ -8914,16 +8914,16 @@ postProcessMob:													;$32E2
         ;TODO: would it be worthwhile storing this with the mob or using a lookup table?
         ld      B`zero              $00
         ld      D`yOffset           B`zero
-        ld      E`yOffset           [IX`mob+%mob.height]
+        ld      E`yOffset           [IX`mob+Mob.height]
         srl     E`yOffset                                       ;divide height by 2
         
         ;moving left or right?
-        bit     7       [IX`mob+%mob.Xspeed+1]
+        bit     7       [IX`mob+Mob.Xspeed+1]
         jr      nz      @facingLeft
         
 @facingRight
         ;- collision will be checked with the right side of the mob
-        ld      C`xOffset           [IX`mob+%mob.width]
+        ld      C`xOffset           [IX`mob+Mob.width]
         ld      HL`table            Unknown._411E
         jp      @_2
         
@@ -8936,7 +8936,7 @@ postProcessMob:													;$32E2
 @_2     ld      [$.TEMP3]           BC`xOffset
         
         ;clear the flag for mob-collision-with-floor
-        res     6       [IX`mob+%mob.flags]
+        res     6       [IX`mob+Mob.flags]
         
         push    DE`yOffset
                 HL`table
@@ -9001,7 +9001,7 @@ postProcessMob:													;$32E2
         ld      L`pointer           A`pointer
         
         ;the data is a per-line solidity lookup!
-        ld      A`yPos              [IX`mob+%mob.Y+0]
+        ld      A`yPos              [IX`mob+Mob.Y+0]
         add     A`yPos              E`yOffset                   ;get the vertical middle point
         and     %00011111                                       ;"MOD 32", i.e. position within the Block
         ld      E`yPos              A`yPos
@@ -9022,14 +9022,14 @@ postProcessMob:													;$32E2
         
         ;here, D is $00 or $FF?
         
-@_3     ld      L`xPos              [IX`mob+%mob.X+0]
-        ld      H`xPos              [IX`mob+%mob.X+1]
+@_3     ld      L`xPos              [IX`mob+Mob.X+0]
+        ld      H`xPos              [IX`mob+Mob.X+1]
         ;retrieve the 'nose' position of the mob
         ld      BC`xOffset          [$.TEMP3]
         add     HL`xPos             BC`xOffset
         
         ;facing left or right?
-        bit     7       [IX`mob+%mob.Xdirection]
+        bit     7       [IX`mob+Mob.Xdirection]
         jr      nz      @_4
         
         ;facing left:
@@ -9057,7 +9057,7 @@ postProcessMob:													;$32E2
         
         ;set the flag for mob collision with the Floor,
         ;this can simply mean that the mob is standing on the floor rather than "in air"/
-@_5     set     6       [IX`mob+%mob.flags]
+@_5     set     6       [IX`mob+Mob.flags]
         
         ;clip xPos to whole counts of 32 -- convert xPos to the left-nearest block
         ;(effectively "INT(xPos / 32) * 32")
@@ -9068,8 +9068,8 @@ postProcessMob:													;$32E2
         add     HL`xPos             DE`lineSolidity
         and     A`flags                                         ;clear carry flag
         sbc     HL`xPos             BC`xOffset
-        ld      [IX`mob+%mob.X+0]   L`xPos
-        ld      [IX`mob+%mob.X+1]   H`xPos
+        ld      [IX`mob+Mob.X+0]   L`xPos
+        ld      [IX`mob+Mob.X+1]   H`xPos
         
         ld      A`solidity          [$.TEMP6]
         ld      E`solidity          A`solidity
@@ -9078,9 +9078,9 @@ postProcessMob:													;$32E2
         add     HL                  DE
         ld      C                   [HL]
         
-        ld      [IX`mob+%mob.Xspeed+0]      D`zero
-        ld      [IX`mob+%mob.Xspeed+1]      D`zero
-        ld      [IX`mob+%mob.Xdirection]    D`zero
+        ld      [IX`mob+Mob.Xspeed+0]      D`zero
+        ld      [IX`mob+Mob.Xspeed+1]      D`zero
+        ld      [IX`mob+Mob.Xdirection]    D`zero
         ld      A                   D`zero
         ld      B                   D`zero
         
@@ -9091,13 +9091,13 @@ postProcessMob:													;$32E2
         dec     A
         dec     B
         
-@_6     ld      L                   [IX`mob+%mob.Yspeed+0]
-        ld      H                   [IX`mob+%mob.Yspeed+1]
+@_6     ld      L                   [IX`mob+Mob.Yspeed+0]
+        ld      H                   [IX`mob+Mob.Yspeed+1]
         add     HL                  BC
-        adc     A                   [IX`mob+%mob.Ydirection]
-        ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    A
+        adc     A                   [IX`mob+Mob.Ydirection]
+        ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    A
         
         ;no collision?
         ;...............................................................................................................
@@ -9107,22 +9107,22 @@ postProcessMob:													;$32E2
         ld      D`zero              B`zero
         
         ;negative speed? i.e. is moving up
-        bit     7       [IX`mob+%mob.Yspeed+1]
+        bit     7       [IX`mob+Mob.Yspeed+1]
         jr      nz      @_8                                     ;skip the next bit if speed is negative
         
-        ld      C                   [IX`mob+%mob.width]
+        ld      C                   [IX`mob+Mob.width]
         srl     C
-        ld      E                   [IX`mob+%mob.height]
+        ld      E                   [IX`mob+Mob.height]
         ld      HL                  Unknown._448A
         jp      @_9
         
-@_8     ld      C                   [IX`mob+%mob.width]
+@_8     ld      C                   [IX`mob+Mob.width]
         srl     C
         ld      E                   $00
         ld      HL                  Unknown._41EC
         
 @_9     ld      [$.TEMP3]           DE
-        res     7   [IX`mob+%mob.flags]
+        res     7   [IX`mob+Mob.flags]
         push    BC
         push    HL
         call    getFloorLayoutRAMAddressForMob
@@ -9156,7 +9156,7 @@ postProcessMob:													;$32E2
         inc     HL
         ld      H                   [HL]
         ld      L                   A
-        ld      A                   [IX`mob+%mob.X+0]
+        ld      A                   [IX`mob+Mob.X+0]
         add     A                   C
         and     %00011111
         ld      C                   A
@@ -9168,11 +9168,11 @@ postProcessMob:													;$32E2
         and     A
         jp      p	@_10
         ld      B                   $FF
-@_10    ld      L                   [IX`mob+%mob.Y+0]
-        ld      H                   [IX`mob+%mob.Y+1]
+@_10    ld      L                   [IX`mob+Mob.Y+0]
+        ld      H                   [IX`mob+Mob.Y+1]
         ld      DE                  [$.TEMP3]
         add     HL                  DE
-        bit     7   [IX`mob+%mob.Ydirection]
+        bit     7   [IX`mob+Mob.Ydirection]
         jr      nz	@_11
         and     A
         jp      m	@_12                                        ;skip if bit 7 is set
@@ -9187,7 +9187,7 @@ postProcessMob:													;$32E2
         exx     
         cp      C
         jr      c	@_34e6
-        set     7   [IX`mob+%mob.flags]
+        set     7   [IX`mob+Mob.flags]
         jp      @_12
         
 @_11    and     A
@@ -9209,51 +9209,51 @@ postProcessMob:													;$32E2
         add     HL                  BC
         and     A
         sbc     HL                  DE
-        ld      [IX`mob+%mob.Y+0]   L
-        ld      [IX`mob+%mob.Y+1]   H
+        ld      [IX`mob+Mob.Y+0]   L
+        ld      [IX`mob+Mob.Y+1]   H
         ld      A                   [$.TEMP6]
         ld      E                   A
         ld      D                   $00
         ld      HL                  $3F90                       ;data?
         add     HL                  DE
         ld      C                   [HL]
-        ld      [IX`mob+%mob.Yspeed+0]      D
-        ld      [IX`mob+%mob.Yspeed+1]      D
-        ld      [IX`mob+%mob.Ydirection]    D
+        ld      [IX`mob+Mob.Yspeed+0]      D
+        ld      [IX`mob+Mob.Yspeed+1]      D
+        ld      [IX`mob+Mob.Ydirection]    D
         ld      A                   D
         ld      B                   D
         bit     7   C
         jr      z	@_13
         dec     A
         dec     B
-@_13    ld      L                   [IX`mob+%mob.Xspeed+0]
-        ld      H                   [IX`mob+%mob.Xspeed+1]
+@_13    ld      L                   [IX`mob+Mob.Xspeed+0]
+        ld      H                   [IX`mob+Mob.Xspeed+1]
         add     HL                  BC
-        adc     A                   [IX`mob+%mob.Xdirection]
-        ld      [IX`mob+%mob.Xspeed+0]      L
-        ld      [IX`mob+%mob.Xspeed+1]      H
-        ld      [IX`mob+%mob.Xdirection]    A
+        adc     A                   [IX`mob+Mob.Xdirection]
+        ld      [IX`mob+Mob.Xspeed+0]      L
+        ld      [IX`mob+Mob.Xspeed+1]      H
+        ld      [IX`mob+Mob.Xdirection]    A
         
         ;is the mob on-screen?
         ;---------------------------------------------------------------------------------------------------------------
 
-@_34e6  ld      L`yPos              [IX`mob+%mob.Y+0]
-        ld      H`yPos              [IX`mob+%mob.Y+1]
+@_34e6  ld      L`yPos              [IX`mob+Mob.Y+0]
+        ld      H`yPos              [IX`mob+Mob.Y+1]
         ld      BC`cameraY          [$.CAMERA_Y]
         and     A`clearCarry                                    ;clear Carry before subtracting
         sbc     HL`yPos             BC`cameraY
         
         ex      DE                  HL
         
-        ld      L`xPos              [IX`mob+%mob.X+0]
-        ld      H`xpos              [IX`mob+%mob.X+1]
+        ld      L`xPos              [IX`mob+Mob.X+0]
+        ld      H`xpos              [IX`mob+Mob.X+1]
         ld      BC`cameraX          [$.CAMERA_X]
         and     A`clearCarry                                    ;clear Carry before subtracting
         sbc     HL                  BC
         
         ;if the mob has a sprite layout, update the mob's position on the screen
-        ld      C                   [IX`mob+%mob.spriteLayout+0]
-        ld      B                   [IX`mob+%mob.spriteLayout+1]
+        ld      C                   [IX`mob+Mob.spriteLayout+0]
+        ld      B                   [IX`mob+Mob.spriteLayout+1]
         ld      A                   C
         or      B
         call    nz  \\gfx.sprites\processSpriteLayout
@@ -9356,7 +9356,7 @@ processSpriteLayout:                                                            
         ;move to the next sprite table entry
         inc     E'
         ld      [$.SPRITETABLE_ADDR]    DE'        
-        inc     [IY`vars+%vars.spriteUpdateCount]
+        inc     [IY`vars+Vars.spriteUpdateCount]
         
         ;move across 8 pixels
 @_4     inc     BC'
@@ -9455,7 +9455,7 @@ _3581:                                                                          
         ld      [BC]    A
         inc     C
         ld      [$.SPRITETABLE_ADDR]    BC
-        inc     [IY`vars+%vars.spriteUpdateCount]
+        inc     [IY`vars+Vars.spriteUpdateCount]
         ret
 	;
 	
@@ -9484,7 +9484,7 @@ layoutSpritesHorizontal:                                                        
         ld      [HL`addr]       A`tileIndex
         inc     L`addr
         
-        inc     [IY`vars+%vars.spriteUpdateCount]
+        inc     [IY`vars+Vars.spriteUpdateCount]
         
 @skip   inc     DE`data                                         ;move to the next data byte
         ;move right 8 pixels
@@ -9498,10 +9498,10 @@ hitPlayer:                                                                      
 ;=======================================================================================================================
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        bit     0   [IY`vars+%vars.scrollRingFlags]             ;is the player already dead?
+        bit     0   [IY`vars+Vars.scrollRingFlags]             ;is the player already dead?
         ret     nz                                              ;if so, leave now
         
-        bit     0   [IY`vars+%vars.unknown0]
+        bit     0   [IY`vars+Vars.unknown0]
         jp      nz	_36be
         
         ld      A       [$.SONIC.flags]
@@ -9513,16 +9513,16 @@ hitPlayer:                                                                      
         
 @_35fd                                                                                                          ;$35FD
         ;---------------------------------------------------------------------------------------------------------------
-        bit     0   [IY`vars+%vars.flags9]
+        bit     0   [IY`vars+Vars.flags9]
         ret     nz
         
-        bit     6   [IY`vars+%vars.flags6]                      ;is player in damage-state?
+        bit     6   [IY`vars+Vars.flags6]                      ;is player in damage-state?
         ret     nz                                              ;if so, do not continue
         
-        bit     0   [IY`vars+%vars.unknown0]
+        bit     0   [IY`vars+Vars.unknown0]
         ret     nz
         
-        bit     5   [IY`vars+%vars.flags6]
+        bit     5   [IY`vars+Vars.flags6]
         jr      nz	dropRings._367e
         
         ;has the player any rings?
@@ -9532,7 +9532,7 @@ hitPlayer:                                                                      
         
 @kill   ;kill the player!                                                                                      `$3618
         ;---------------------------------------------------------------------------------------------------------------
-        set     0   [IY`vars+%vars.scrollRingFlags]
+        set     0   [IY`vars+Vars.scrollRingFlags]
         
         ;set flag 7 on the mob (mob death state?)
         ld      HL              $.SONIC.flags
@@ -9546,10 +9546,10 @@ hitPlayer:                                                                      
         ld      A               $60
         ld      [$.D287]        A
         
-        res     6   [IY`vars+%vars.flags6]                      ;turn off damage-state flag
-        res     5   [IY`vars+%vars.flags6]                      ;remove shield
-        res     6   [IY`vars+%vars.flags6]                      ;TODO: bug or oversight?
-        res     0   [IY`vars+%vars.unknown0]                    ;the 0 byte from the level header
+        res     6   [IY`vars+Vars.flags6]                      ;turn off damage-state flag
+        res     5   [IY`vars+Vars.flags6]                      ;remove shield
+        res     6   [IY`vars+Vars.flags6]                      ;TODO: bug or oversight?
+        res     0   [IY`vars+Vars.unknown0]                    ;the 0 byte from the level header
         
 	;play the death sound effect:
 	;(we can compile with, or without, audio)
@@ -9580,18 +9580,18 @@ dropRings:                                                                      
         push    IX, HL
         pop     IX
         
-        ld      [IX`mob+%mob.type],$55                          ;"make Sonic blink"?
-        ld      [IX`mob+%mob.unknown11],$06
-        ld      [IX`mob+%mob.unknown12],$00
+        ld      [IX`mob+Mob.type],$55                          ;"make Sonic blink"?
+        ld      [IX`mob+Mob.unknown11],$06
+        ld      [IX`mob+Mob.unknown12],$00
         ld      HL      [$.SONIC.X]
-        ld      [IX`mob+%mob.X+0],L
-        ld      [IX`mob+%mob.X+1],H
+        ld      [IX`mob+Mob.X+0],L
+        ld      [IX`mob+Mob.X+1],H
         ld      HL      [$.SONIC.Y]
-        ld      [IX`mob+%mob.Y+0],L
-        ld      [IX`mob+%mob.Y+1],H
-        ld      [IX`mob+%mob.Yspeed+0],$00
-        ld      [IX`mob+%mob.Yspeed+1],$fc
-        ld      [IX`mob+%mob.Ydirection],$ff
+        ld      [IX`mob+Mob.Y+0],L
+        ld      [IX`mob+Mob.Y+1],H
+        ld      [IX`mob+Mob.Yspeed+0],$00
+        ld      [IX`mob+Mob.Yspeed+1],$fc
+        ld      [IX`mob+Mob.Ydirection],$ff
         pop     IX
         
 @_367e  ld      HL      $.SONIC.flags
@@ -9618,9 +9618,9 @@ dropRings:                                                                      
         ld      DE      $FFFE
 @_3     ld      [$.SONIC.Xspeed+0],A
         ld      [$.SONIC.Xspeed+1],DE
-        res     5	[IY`vars+%vars.flags6]
-        set     6	[IY`vars+%vars.flags6]
-        ld      [IY`vars+%vars.joypad],$FF
+        res     5	[IY`vars+Vars.flags6]
+        set     6	[IY`vars+Vars.flags6]
+        ld      [IY`vars+Vars.joypad],$FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -9638,33 +9638,33 @@ _36be:                                                                          
 ;       $.TEMP1         : An X-offset to place the explosion in the right place
 ;       $.TEMP2         : A Y-offset to place the explosion in the right place
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.type]  $0A                         ;change mob to explosion
+        ld      [IX`mob+Mob.type]  $0A                         ;change mob to explosion
         
         ;get the X-offset given in the parameter
         ld      A`x_offset      [$.TEMP1]
         ld      E`x_offset      A`x_offset
         ld      D`x_offset      $00
         
-        ld      L`mob_xpos      [IX`mob+%mob.X+0]
-        ld      H`mob_xpos      [IX`mob+%mob.X+1]
+        ld      L`mob_xpos      [IX`mob+Mob.X+0]
+        ld      H`mob_xpos      [IX`mob+Mob.X+1]
         add     HL`mob_xpos     DE`x_offset
         
-        ld      [IX`mob+%mob.X+0]  L`mob_xpos
-        ld      [IX`mob+%mob.X+1]  H`mob_xpos
+        ld      [IX`mob+Mob.X+0]  L`mob_xpos
+        ld      [IX`mob+Mob.X+1]  H`mob_xpos
         
         ;get the Y-offset given in the parameter
         ld      A`x_offset      [$.TEMP2]
         ld      E`x_offset      A`x_offset                      ;note that D is still zero
         
-        ld      L`mob_ypos      [IX`mob+%mob.Y+0]
-        ld      H`mob_ypos      [IX`mob+%mob.Y+1]
+        ld      L`mob_ypos      [IX`mob+Mob.Y+0]
+        ld      H`mob_ypos      [IX`mob+Mob.Y+1]
         add     HL`mob_ypos     DE`y_offset
-        ld      [IX`mob+%mob.Y+0]  L`mob_ypos
-        ld      [IX`mob+%mob.Y+1]  H`mob_ypos
+        ld      [IX`mob+Mob.Y+0]  L`mob_ypos
+        ld      [IX`mob+Mob.Y+1]  H`mob_ypos
         
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0],A`zero
-        ld      [IX`mob+%mob.spriteLayout+1],A`zero
+        ld      [IX`mob+Mob.spriteLayout+0],A`zero
+        ld      [IX`mob+Mob.spriteLayout+1],A`zero
         
         ;play the explosion sound:
 	;(we can compile with, or without, audio)
@@ -9711,8 +9711,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;128 block wide level:
         
 @width128
-        ld      L`mob_ypos      [IX`mob+%mob.Y+0]
-        ld      H`mob_ypos      [IX`mob+%mob.Y+1]
+        ld      L`mob_ypos      [IX`mob+Mob.Y+0]
+        ld      H`mob_ypos      [IX`mob+Mob.Y+1]
         add     HL`mob_ypos     DE`yOffset
         ld      A               L
         add     A               A
@@ -9722,8 +9722,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         and     %10000000
         ld      L               A
         ex      DE              HL
-        ld      L               [IX`mob+%mob.X+0]
-        ld      H               [IX`mob+%mob.X+1]
+        ld      L               [IX`mob+Mob.X+0]
+        ld      H               [IX`mob+Mob.X+1]
         add     HL              BC
         ld      A               L
         add     A               A
@@ -9743,8 +9743,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;64 block wide level:
         
 @width64
-        ld      L               [IX`mob+%mob.Y+0]
-        ld      H               [IX`mob+%mob.Y+1]
+        ld      L               [IX`mob+Mob.Y+0]
+        ld      H               [IX`mob+Mob.Y+1]
         add     HL              DE
         ld      A               L
         add     A               A
@@ -9752,8 +9752,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         and     %11000000
         ld      L               A
         ex      DE              HL
-        ld      L               [IX`mob+%mob.X+0]
-        ld      H               [IX`mob+%mob.X+1]
+        ld      L               [IX`mob+Mob.X+0]
+        ld      H               [IX`mob+Mob.X+1]
         add     HL              BC
         ld      A               L
         add     A               A
@@ -9773,15 +9773,15 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;32 block wide level:
         
 @width32
-        ld      L               [IX`mob+%mob.Y+0]
-        ld      H               [IX`mob+%mob.Y+1]
+        ld      L               [IX`mob+Mob.Y+0]
+        ld      H               [IX`mob+Mob.Y+1]
         add     HL              DE
         ld      A               L
         and     %11100000
         ld      L               A
         ex      DE              HL
-        ld      L               [IX`mob+%mob.X+0]
-        ld      H               [IX`mob+%mob.X+1]
+        ld      L               [IX`mob+Mob.X+0]
+        ld      H               [IX`mob+Mob.X+1]
         add     HL              BC
         ld      A               L
         add     A               A
@@ -9801,8 +9801,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;16 block wide level:
         
 @width16
-        ld      L               [IX`mob+%mob.Y+0]
-        ld      H               [IX`mob+%mob.Y+1]
+        ld      L               [IX`mob+Mob.Y+0]
+        ld      H               [IX`mob+Mob.Y+1]
         add     HL              DE
         ld      A               L
         srl     H
@@ -9810,8 +9810,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         and     %11110000
         ld      L               A
         ex      DE              HL
-        ld      L               [IX`mob+%mob.X+0]
-        ld      H               [IX`mob+%mob.X+1]
+        ld      L               [IX`mob+Mob.X+0]
+        ld      H               [IX`mob+Mob.X+1]
         add     HL              BC
         ld      A               L
         add     A               A
@@ -9831,8 +9831,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;---------------------------------------------------------------------------------------------------------------
         ;level is 256 blocks wide:
         
-        ld      L`mob_ypos      [IX`mob+%mob.Y+0]
-        ld      H`mob_ypos      [IX`mob+%mob.Y+1]
+        ld      L`mob_ypos      [IX`mob+Mob.Y+0]
+        ld      H`mob_ypos      [IX`mob+Mob.Y+1]
         ;add the offset we've been given to aim at the "feet" of the mob
         add     HL`mob_ypos     DE`yOffset
         
@@ -9848,8 +9848,8 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;put Y-position aside into DE
         ex      DE`ypos         HL`yOffset
         
-        ld      L`mob_xpos      [IX`mob+%mob.X+0]
-        ld      H`mob_xpos      [IX`mob+%mob.X+1]
+        ld      L`mob_xpos      [IX`mob+Mob.X+0]
+        ld      H`mob_xpos      [IX`mob+Mob.X+1]
         ;add the offset we've been given to aim at the "feet" of the mob
         add     HL`mob_xpos     BC`xOffset
         
@@ -9889,7 +9889,7 @@ updateSonicSpriteFrame:                                                         
         ex      DE`vram         HL`discarded                    ;TODO: make this dynamic, somehow
         
         ;I can't find an instance where bit 0 of IY+$06 is set, this may be dead code
-        bit     0  [IY`vars+%vars.flags6]
+        bit     0  [IY`vars+Vars.flags6]
         jp      nz	@_2
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -10159,7 +10159,7 @@ detectCollisionWithSonic:                                                       
 ;return AF`carry        : Carry flag is clear if collision, otherwise set
         ;---------------------------------------------------------------------------------------------------------------
         ;is Sonic dead? (no collision detection)
-        bit     0   [IY`vars+%vars.scrollRingFlags]
+        bit     0   [IY`vars+Vars.scrollRingFlags]
         scf                                                     ;return carry flag set (no-collision)
         ret     nz                                              ;if Sonic-dead flag on, leave now
         
@@ -10167,9 +10167,9 @@ detectCollisionWithSonic:                                                       
         
         ;calculate the right-hand edge of the mob
         ;(mob X-position + mob width)
-        ld      L`mob_xpos      [IX`mob+%mob.X+0]
-        ld      H`mob_xpos      [IX`mob+%mob.X+1]
-        ld      C`mob_width     [IX`mob+%mob.width]
+        ld      L`mob_xpos      [IX`mob+Mob.X+0]
+        ld      H`mob_xpos      [IX`mob+Mob.X+1]
+        ld      C`mob_width     [IX`mob+Mob.width]
         ld      B`mob_width     $00
         add     HL`mob_xpos     BC`mob_width
         
@@ -10185,8 +10185,8 @@ detectCollisionWithSonic:                                                       
         ;calculate the mob's left edge:
         ;note that the mob provides an 'indent'. the sprite may well begin at
         ;a certain X-position but the graphic within may be indented a little
-        ld      L`mob_xpos      [IX`mob+%mob.X+0]
-        ld      H`mob_xpos      [IX`mob+%mob.X+1]
+        ld      L`mob_xpos      [IX`mob+Mob.X+0]
+        ld      H`mob_xpos      [IX`mob+Mob.X+1]
         ld      A`mob_left      [$.TEMP6]                       ;get the mob's left indent
         ld      C`mob_left      A`zero
         add     HL`mob_xpos     BC`mob_left                     ;combine the two
@@ -10208,9 +10208,9 @@ detectCollisionWithSonic:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         
         ;calculate the mob's bottom edge
-        ld      L`mob_ypos      [IX`mob+%mob.Y+0]
-        ld      H`mob_ypos      [IX`mob+%mob.Y+1]
-        ld      C`mob_height    [IX`mob+%mob.height]
+        ld      L`mob_ypos      [IX`mob+Mob.Y+0]
+        ld      H`mob_ypos      [IX`mob+Mob.Y+1]
+        ld      C`mob_height    [IX`mob+Mob.height]
         add     HL`mob_ypos     BC`mob_height
         
         ld      DE`sonic_ypos   [$.SONIC.Y]
@@ -10219,8 +10219,8 @@ detectCollisionWithSonic:                                                       
         ret     c                                               ;return carry-set for no-collision
         
         ;calculate the mob's top edge (including the indent)
-        ld      L`mob_ypos      [IX`mob+%mob.Y+0]
-        ld      H`mob_ypos      [IX`mob+%mob.Y+1]
+        ld      L`mob_ypos      [IX`mob+Mob.Y+0]
+        ld      H`mob_ypos      [IX`mob+Mob.Y+1]
         ld      A`mob_top       [$.TEMP7]
         ld      C`mob_top       A`mob_top
         add     HL`mob_ypos     BC`mob_top
@@ -10361,14 +10361,14 @@ updateTime:                                                                     
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;is Sonic dead? if so, exit now
-        bit     0   [IY`vars+%vars.scrollRingFlags]
+        bit     0   [IY`vars+Vars.scrollRingFlags]
         ret     nz
         
         ;address of level time?
         ld      HL              $.TIME_FRAMES
         
         ;is the time counting down? (special stages)
-        bit     0	[IY`vars+%vars.timeLightningFlags]
+        bit     0	[IY`vars+Vars.timeLightningFlags]
         jr      nz	@countdown
         
         ;time is counting up:
@@ -10444,7 +10444,7 @@ updateTime:                                                                     
         ;set some flags?
         ld      A               $01
         ld      [$.D289]        A
-        set     2	[IY`vars+%vars.flags9]
+        set     2	[IY`vars+Vars.flags9]
         
         xor     A`zero
 @_7     ld      [HL`time]       A`zero
@@ -10883,16 +10883,16 @@ sonic_process:                                                                  
 ;params IX`mob          : Address of the current mob being processed
 ;       IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        res     1	[IY`vars+%vars.unknown0]
+        res     1	[IY`vars+Vars.unknown0]
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         call    nz  	@_4e88
         
         ;flag to update the Sonic sprite frame
-        set     7   	[IY`vars+%vars.timeLightningFlags]
+        set     7   	[IY`vars+Vars.timeLightningFlags]
         
         ;is Sonic dead?
-        bit     0   	[IY`vars+%vars.scrollRingFlags]
+        bit     0   	[IY`vars+Vars.scrollRingFlags]
         jp      nz	@_543c
         
         ;reduce this number until it hits 0. appears to only be set when changing
@@ -10903,10 +10903,10 @@ sonic_process:                                                                  
         
         ;configure the flags on Sonic so that he adheres to the ground.
         ;I'm not sure why this is done every frame
-        res     5   	[IX`mob+%mob.flags]
+        res     5   	[IX`mob+Mob.flags]
         
         ;is Sonic in damage state?
-        bit     6   	[IY`vars+%vars.flags6]
+        bit     6   	[IY`vars+Vars.flags6]
         call    nz  	@_510a
         
         ld      A       [$.D28C]
@@ -10914,14 +10914,14 @@ sonic_process:                                                                  
         call    nz  	@_568f
         
         ;special stage? (time is centred)
-        bit     0   	[IY`vars+%vars.timeLightningFlags]
+        bit     0   	[IY`vars+Vars.timeLightningFlags]
         call    nz  	@_5100
         
-        bit     0   	[IY`vars+%vars.unknown0]
+        bit     0   	[IY`vars+Vars.unknown0]
         call    nz  	@_4ff5
         
         ;is Sonic underwater? -- count down oxygen...
-        bit     4   	[IX`mob+%mob.flags]                     ;check mob underwater flag
+        bit     4   	[IX`mob+Mob.flags]                     ;check mob underwater flag
         call    nz  	@drownTimer
         
         ld      A       [$.D28B]
@@ -10932,15 +10932,15 @@ sonic_process:                                                                  
         and     A
         jp      nz	@_5117
         
-        bit     6   	[IY`vars+%vars.unknown0]
+        bit     6   	[IY`vars+Vars.unknown0]
         jp      nz	@_5193
         
-        bit     7   	[IY`vars+%vars.unknown0]
+        bit     7   	[IY`vars+Vars.unknown0]
         call    nz  	@_529c
         
         ;---------------------------------------------------------------------------------------------------------------
         
-        bit     4   	[IX`mob+%mob.flags]                     ;mob underwater?
+        bit     4   	[IX`mob+Mob.flags]                     ;mob underwater?
         jp      z	@_1
         
         ld      HL	@_4ddd
@@ -10958,12 +10958,12 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_1     ld      A	[IX`mob+%mob.unknown15]
+@_1     ld      A	[IX`mob+Mob.unknown15]
         and     A
         jr      nz	@_4
         
         ;special stage?
-        bit     0   	[IY`vars+%vars.timeLightningFlags]
+        bit     0   	[IY`vars+Vars.timeLightningFlags]
         jr      nz	@_3
         
 @_2     ld      HL	@_4dcb
@@ -10981,7 +10981,7 @@ sonic_process:                                                                  
         ld      [$DC0A]         HL
         jp      @_5
         
-@_3     bit     7   	[IX`mob+%mob.flags]
+@_3     bit     7   	[IX`mob+Mob.flags]
         jr      nz	@_2
         
         ld      HL      @_4dd4
@@ -11021,10 +11021,10 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         
         ;is up pressed on the joypad?
-@_5     bit     1	[IY`vars+%vars.joypad]			;joypad up?
+@_5     bit     1	[IY`vars+Vars.joypad]			;joypad up?
         call    z	@_50c1
         
-        bit     1   	[IY`vars+%vars.joypad]			;joypad not up?
+        bit     1   	[IY`vars+Vars.joypad]			;joypad not up?
         call    nz  	@_50e3
         
         ;handle collision with tile underneath Sonic:
@@ -11114,7 +11114,7 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL`timer	$0000                       	;reset the idle timer?
         
-        ld      A	[IY`vars+%vars.joypad]      		;check joypad state
+        ld      A	[IY`vars+Vars.joypad]      		;check joypad state
         cp      $FF                                             ;is any button being pressed?
         jr      nz	@_7                                     ;skip the idle timer update
         
@@ -11136,10 +11136,10 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-        bit     7   	[IY`vars+%vars.flags6]
+        bit     7   	[IY`vars+Vars.flags6]
         call    nz  	@_50e8
         
-        ld      [IX`mob+%mob.unknown14]	$05
+        ld      [IX`mob+Mob.unknown14]	$05
         ld      HL`idleTime	[$.IDLE_TIME]
         ld      DE`idleWait     !IDLE_TIME                  	;idle time until waiting animation
         and     A`zero                                          ;clear the carry flag for below
@@ -11147,19 +11147,19 @@ sonic_process:                                                                  
         call    nc  	@_5105
         
         ;is up pressed?
-        ld      A	[IY`vars+%vars.joypad]
+        ld      A	[IY`vars+Vars.joypad]
         cp      %11111110
         call    z   	@_4edd
         
         ;up not pressed?
-        bit     0   	[IY`vars+%vars.joypad]
+        bit     0   	[IY`vars+Vars.joypad]
         call    nz  	@_4fd3
         
-        bit     0   	[IX`mob+%mob.flags]
+        bit     0   	[IX`mob+Mob.flags]
         jp      nz	@_532e
         
         ;ducking or spinning?
-        ld      A	[IX`mob+%mob.height]
+        ld      A	[IX`mob+Mob.height]
         cp      $20
         jr      z	@_8
         
@@ -11169,20 +11169,20 @@ sonic_process:                                                                  
         add     HL      	DE
         ld      [$.SONIC.Y]	HL
         
-@_8     ld      [IX`mob+%mob.width]     24
-        ld      [IX`mob+%mob.height]    32
+@_8     ld      [IX`mob+Mob.width]     24
+        ld      [IX`mob+Mob.height]    32
         ld      HL	[$.SONIC.Xspeed]
-        ld      B 	[IX`mob+%mob.Xdirection]
+        ld      B 	[IX`mob+Mob.Xdirection]
         ld      C 	$00
         ld      E 	C
         ld      D 	C
         
         ;is right pressed?
-        bit     3   	[IY`vars+%vars.joypad]
+        bit     3   	[IY`vars+Vars.joypad]
         jp      z	@_4f01
         
         ;is left pressed?
-        bit     2   	[IY`vars+%vars.joypad]
+        bit     2   	[IY`vars+Vars.joypad]
         jp      z	@_4f5c
         
         ld      A	H
@@ -11190,7 +11190,7 @@ sonic_process:                                                                  
         or      B
         jr      z	@_4b1b
         
-        ld      [IX`mob+%mob.unknown14] $01
+        ld      [IX`mob+Mob.unknown14] $01
         bit     7	B
         jr      nz	@_9
         
@@ -11223,7 +11223,7 @@ sonic_process:                                                                  
         inc     DE
         ld      C       $FF
         ld      A       [$.D216]
-        ld      [IX`mob+%mob.unknown14]	A
+        ld      [IX`mob+Mob.unknown14]	A
         jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -11249,7 +11249,7 @@ sonic_process:                                                                  
 	
         ld      DE      [$.TEMP1]
         ld      A       [$.D216]
-        ld      [IX`mob+%mob.unknown14] A
+        ld      [IX`mob+Mob.unknown14] A
 @_4b1b
         ld      A	B
         and     A
@@ -11261,8 +11261,8 @@ sonic_process:                                                                  
         jp      p	@_11
         
         ld      A       [$.SONIC.Xspeed]
-        or      [IX`mob+%mob.Xspeed+1]
-        or      [IX`mob+%mob.Xdirection]
+        or      [IX`mob+Mob.Xspeed+1]
+        or      [IX`mob+Mob.Xdirection]
         jr      z	@_11
         
         ld      C       $00
@@ -11284,26 +11284,26 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xdirection]    A
 @_4b49
         ld      HL      [$.SONIC.Yspeed]
-        ld      B       [IX`mob+%mob.Ydirection]
+        ld      B       [IX`mob+Mob.Ydirection]
         ld      C       $00
         ld      E       C
         ld      D       C
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         call    nz  	@_50af
-        bit     0   	[IX`mob+%mob.flags]
+        bit     0   	[IX`mob+Mob.flags]
         jp      nz	@_5407
         ld      A       [$.D28E]
         and     A
         jr      nz	@_12
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         jr      z	@_13
-        bit     3   	[IX`mob+%mob.flags]
+        bit     3   	[IX`mob+Mob.flags]
         jr      nz	@_12
         ;button 2 pressed?
-        bit     5   	[IY`vars+%vars.joypad]
+        bit     5   	[IY`vars+Vars.joypad]
         jr      z	@_13
         ;button 2 not pressed?
-@_12    bit     5   	[IY`vars+%vars.joypad]
+@_12    bit     5   	[IY`vars+Vars.joypad]
         jr      nz	@_14
 @_4b7f
         ld      A       [$.D28E]
@@ -11317,17 +11317,17 @@ sonic_process:                                                                  
         ld      A       [$.D28E]
         dec     A
         ld      [$.D28E]	A
-        set     2   	[IX`mob+%mob.flags]
+        set     2   	[IX`mob+Mob.flags]
         jp      @_17
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_13    res     3   	[IX`mob+%mob.flags]
+@_13    res     3   	[IX`mob+Mob.flags]
         jp      @_15
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_14    set     3   	[IX`mob+%mob.flags]
+@_14    set     3   	[IX`mob+Mob.flags]
 @_15    xor     A`zero
         ld      [$.D28E]	A`zero
 @_4bac
@@ -11340,7 +11340,7 @@ sonic_process:                                                                  
 @_16    ld      DE      [$.D244]
         ld      C       $00
         
-@_17    bit     0   	[IY`vars+%vars.flags6]
+@_17    bit     0   	[IY`vars+Vars.flags6]
         jr      z	@_18
         
         push    HL
@@ -11378,7 +11378,7 @@ sonic_process:                                                                  
         ld      [$.D2E6]	HL
         ld      [$.D2E8]        A
         pop     HL
-        bit     2   	[IX`mob+%mob.flags]
+        bit     2   	[IX`mob+Mob.flags]
         call    nz  	@_5280
         ld      A       H
         and     A
@@ -11398,11 +11398,11 @@ sonic_process:                                                                  
         ld      A       [$.SONIC.flags]
         and     $85
         jr      nz	@_21
-        bit     7   	[IX`mob+%mob.Ydirection]
+        bit     7   	[IX`mob+Mob.Ydirection]
         jr      z	@_20
-        ld      [IX`mob+%mob.unknown14]	$13
+        ld      [IX`mob+Mob.unknown14]	$13
         jr      @_21
-@_20    ld      [IX`mob+%mob.unknown14] $01
+@_20    ld      [IX`mob+Mob.unknown14] $01
 @_21    ld      BC	$000C
         ld      DE	$0008
         call    \\getFloorLayoutRAMAddressForMob
@@ -11414,14 +11414,14 @@ sonic_process:                                                                  
         ld      A       [$.D28C]
         and     A
         call    nz  	@_51b3
-        bit     6   	[IY`vars+%vars.flags6]
+        bit     6   	[IY`vars+Vars.flags6]
         call    nz  	@_51bc
-        bit     2   	[IY`vars+%vars.unknown0]
+        bit     2   	[IY`vars+Vars.unknown0]
         call    nz  	@_51dd
         ld      A       [$.SONIC.unknown14]
         cp      $0A
         call    z   	@_51f3
-        ld      L       [IX`mob+%mob.unknown14]
+        ld      L       [IX`mob+Mob.unknown14]
         ld      C       L
         ld      H       $00
         add     HL      HL
@@ -11452,10 +11452,10 @@ sonic_process:                                                                  
 @_23    ld      D	A
 	;TODO: what on earth is this? (could be a data ref, and not a ref to this label)
         ld      BC      \\sound\update
-        bit     1   	[IX`mob+%mob.flags]
+        bit     1   	[IX`mob+Mob.flags]
         jr      z	@_24
         ld      BC      _7000                      		;immediate $7000 or label?
-@_24    bit     5   	[IY`mob+%vars.flags6]
+@_24    bit     5   	[IY`mob+Vars.flags6]
         call    nz  	@_5206
         ld      A       [$.D302]
         and     A
@@ -11475,7 +11475,7 @@ sonic_process:                                                                  
         ld      [$.SONIC_CURRENT_FRAME]	HL
         ld      HL	@_591d
         
-        bit     0   	[IY`vars+$%vars.flags6]
+        bit     0   	[IY`vars+$Vars.flags6]
         call    nz  	@_520f
         
         ld      A       [$.SONIC.unknown14]
@@ -11512,9 +11512,9 @@ sonic_process:                                                                  
         jr      c	@_29
         add     HL      DE
         ld      [$.SONIC.Y]	HL
-@_29    bit     7	[IY`vars+%vars.flags6]
+@_29    bit     7	[IY`vars+Vars.flags6]
         call    nz  	@_5224
-        bit     0   	[IY`vars+%vars.unknown0]
+        bit     0   	[IY`vars+Vars.unknown0]
         call    nz  	@_4e8d
         ld      A       [$.D2E1]
         and     A
@@ -11522,7 +11522,7 @@ sonic_process:                                                                  
         ld      A       [$.D321]
         and     A
         call    nz  	@_4e51
-        bit     1   	[IY`vars+%vars.flags6]
+        bit     1   	[IY`vars+Vars.flags6]
         jr      nz	@_31
         ld      HL      [$.LEVEL_LEFT]
         ld      BC      $0008
@@ -11585,7 +11585,7 @@ sonic_process:                                                                  
         ld      C       $50
         cp      $09
         jr      z	@_32
-        inc     [IX`mob+%mob.unknown13]
+        inc     [IX`mob+Mob.unknown13]
         ret
         
 @_32    ld      A       [$.D2E0]
@@ -11607,7 +11607,7 @@ sonic_process:                                                                  
         ld      [$.D2E0]	A
         ld      A	H
         adc     A       D
-        adc     A       [IX`mob+%mob.unknown13]
+        adc     A       [IX`mob+Mob.unknown13]
         ld      [$.SONIC.unknown13]	A
         cp      C
         ret     c
@@ -11724,7 +11724,7 @@ sonic_process:                                                                  
 
         ;---------------------------------------------------------------------------------------------------------------
 
-@_4e88  set     1	[IY`vars+%vars.unknown0]								;$4E88
+@_4e88  set     1	[IY`vars+Vars.unknown0]								;$4E88
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
@@ -11781,7 +11781,7 @@ sonic_process:                                                                  
         rlca    
         ret     nc
         
-        ld      [IX`mob+%mob.unknown14]	$0C
+        ld      [IX`mob+Mob.unknown14]	$0C
         ld      DE	[$.D2B7]
         bit     7   	D
         jr      nz	@_38
@@ -11797,12 +11797,12 @@ sonic_process:                                                                  
 
         ;---------------------------------------------------------------------------------------------------------------
         
-@_4f01  res     1   	[IX`mob+%mob.flags]									;$4F01
+@_4f01  res     1   	[IX`mob+Mob.flags]									;$4F01
         bit     7   	B
         jr      nz	@_39
         ld      DE	[$.TEMP1]
         ld      C 	$00
-        ld      [IX`mob+%mob.unknown14]	$01
+        ld      [IX`mob+Mob.unknown14]	$01
         push    HL
         exx     
         pop     HL
@@ -11817,13 +11817,13 @@ sonic_process:                                                                  
         ld      C   	A
         ld      HL  	[$.D240]
         ld      A   	[$.D216]
-        ld      [IX`mob+%mob.unknown14]	A
+        ld      [IX`mob+Mob.unknown14]	A
         jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_39    set     1	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14]	$0A
+@_39    set     1	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14]	$0A
         push    HL
         ld      A	L
         cpl     
@@ -11839,14 +11839,14 @@ sonic_process:                                                                  
         ld      DE      [$.TEMP3]
         ld      C       $00
         jp      nc	@_4b1b
-        res     1   	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14]	$01
+        res     1   	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14]	$01
         jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_4f5c                                                                                                          ;$4F5C
-        set     1   	[IX`mob+%mob.flags]
+        set     1   	[IX`mob+Mob.flags]
         ld      A       L
         or      H
         jr      z	@_40
@@ -11861,7 +11861,7 @@ sonic_process:                                                                  
         ld      D       A
         inc     DE
         ld      C       $FF
-        ld      [IX`mob+%mob.unknown14] $01
+        ld      [IX`mob+Mob.unknown14] $01
         push    HL
         
         exx     
@@ -11892,14 +11892,14 @@ sonic_process:                                                                  
         inc     HL
         ld      B       $FF
         ld      A       [$.D216]
-        ld      [IX`mob+%mob.unknown14] A
+        ld      [IX`mob+Mob.unknown14] A
         jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_4fa6
-        res     1   	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14] $0A
+        res     1   	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14] $0A
         ld      DE      [$.TEMP3]
         ld      A       E
         cpl     
@@ -11919,13 +11919,13 @@ sonic_process:                                                                  
         exx     
         
         jp      nc	@_4b1b
-        set     1   	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14] $01
+        set     1   	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14] $01
         jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_4fd3  bit     0   	[IX`mob+%mob.flags]                                                                     ;$4FD3
+@_4fd3  bit     0   	[IX`mob+Mob.flags]                                                                     ;$4FD3
         ret     nz
         
         ld      HL      [$.D2B7]
@@ -11947,7 +11947,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_4fec  dec     [IX`mob+%mob.unknown15]                                                                         ;$4FEC
+@_4fec  dec     [IX`mob+Mob.unknown15]                                                                         ;$4FEC
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -11966,7 +11966,7 @@ sonic_process:                                                                  
         dec     [HL]
         ret     nz
         
-        res     0   	[IY`vars+%vars.unknown0]
+        res     0   	[IY`vars+Vars.unknown0]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12004,11 +12004,11 @@ sonic_process:                                                                  
         sub     H
         jr      nc	@_42
         
-        res     5   	[IY`vars+%vars.flags6]                  ;remove shield
-        res     6   	[IY`vars+%vars.flags6]                  ;clear damage state
-        res     0   	[IY`vars+%vars.unknown0]
-        set     3   	[IY`vars+%vars.unknown0]
-        set     0   	[IY`vars+%vars.scrollRingFlags]         ;mark player as dead
+        res     5   	[IY`vars+Vars.flags6]                  ;remove shield
+        res     6   	[IY`vars+Vars.flags6]                  ;clear damage state
+        res     0   	[IY`vars+Vars.unknown0]
+        set     3   	[IY`vars+Vars.unknown0]
+        set     0   	[IY`vars+Vars.scrollRingFlags]         ;mark player as dead
         ld      A               $C0
         ld      [$.D287]        A
         
@@ -12100,26 +12100,26 @@ sonic_process:                                                                  
         ld      HL'		[$.SONIC.Y]
         ld      [$.D2D9]        HL
         exx     
-        bit     2   	[IX`mob+%mob.flags]
+        bit     2   	[IX`mob+Mob.flags]
         ret     z
         
-        res     2   	[IX`mob+%mob.flags]
+        res     2   	[IX`mob+Mob.flags]
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
         ;joypad up is pressed...
         
-@_50c1  bit     2   	[IX`mob+%mob.flags]                                                                     ;$50C1
+@_50c1  bit     2   	[IX`mob+Mob.flags]                                                                     ;$50C1
         ret     nz
         
-        bit     0   	[IX`mob+%mob.flags]
+        bit     0   	[IX`mob+Mob.flags]
         ret     nz
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         ret     z
         
         ;is Sonic moving?
-        set     0   	[IX`mob+%mob.flags]
+        set     0   	[IX`mob+Mob.flags]
         
         ld      HL      [$.SONIC.Xspeed]
         ld      A       L
@@ -12132,12 +12132,12 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-@_44    set     2   	[IY`vars+%vars.timeLightningFlags]
+@_44    set     2   	[IY`vars+Vars.timeLightningFlags]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_50e3  res     2   	[IY`vars+%vars.timeLightningFlags]                                                     	;$50E3
+@_50e3  res     2   	[IY`vars+Vars.timeLightningFlags]                                                     	;$50E3
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -12151,23 +12151,23 @@ sonic_process:                                                                  
         ld      HL              $0000
         ld      [$.D29B]        HL
         
-        res     4   	[IX`mob+%mob.flags]                     ;mob not underwater
+        res     4   	[IX`mob+Mob.flags]                     ;mob not underwater
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5100  set     2   	[IX`mob+%mob.flags]                                                                    	;$5100
+@_5100  set     2   	[IX`mob+Mob.flags]                                                                    	;$5100
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5105  ld      [IX`mob+%mob.unknown14]	$0D                                                                     ;$5105
+@_5105  ld      [IX`mob+Mob.unknown14]	$0D                                                                     ;$5105
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_510a  ;clear joypad input                                                                                    `$510A
-        ld      [IY`vars+%vars.joypad]  $FF
+        ld      [IY`vars+Vars.joypad]  $FF
         
         ld      A`flags         [$.SONIC.flags]
         and     %11111010
@@ -12191,13 +12191,13 @@ sonic_process:                                                                  
         ld      [$.SONIC.Yspeed+0]  A`zero
         ld      [$.SONIC.Yspeed+1]  HL`zero
         
-        ld      [IX`mob+%mob.unknown14] $0F
+        ld      [IX`mob+Mob.unknown14] $0F
         jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_45    res     1   	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14] $0E
+@_45    res     1   	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14] $0E
         jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -12212,10 +12212,10 @@ sonic_process:                                                                  
         jr      z	@_49
         jp      m	@_47
         ld      [$.D2D3]        A
-        set     4   [IY`vars+%vars.flags6]
+        set     4   [IY`vars+Vars.flags6]
         jr      @_48
         
-@_47    set     2   [IY`vars+%vars.unknown_0D]
+@_47    set     2   [IY`vars+Vars.unknown_0D]
         
 @_48    ld      A               $01
         ld      [$.D289]	A
@@ -12261,34 +12261,34 @@ sonic_process:                                                                  
         ld      [$.SONIC.Yspeed]        HL`zero
         ld      [$.SONIC.Ydirection]    A`zero                  ;set "not jumping"
         
-        ld      [IX`mob+%mob.unknown14] $16
+        ld      [IX`mob+Mob.unknown14] $16
         ld      A       [$.SONIC.unknown13]
         cp      $12
         jp      c	@_4c39
         
-        res     6   	[IY`vars+%vars.unknown0]
-        set     2   	[IX`mob+%mob.flags]
+        res     6   	[IY`vars+Vars.unknown0]
+        set     2   	[IX`mob+Mob.flags]
         jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_51b3  dec     A                                                                                               ;$51B3
         ld      [$.D28C]        A
-        ld      [IX`mob+%mob.unknown14] $11
+        ld      [IX`mob+Mob.unknown14] $11
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_51bc  ld      [IX`mob+%mob.width]     28                                                                      ;$51BC
-        ld      [IX`mob+%mob.unknown14] 16
+@_51bc  ld      [IX`mob+Mob.width]     28                                                                      ;$51BC
+        ld      [IX`mob+Mob.unknown14] 16
         
-        bit     7   	[IX`mob+%mob.Ydirection]
+        bit     7   	[IX`mob+Mob.Ydirection]
         ret     nz
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         ret     z
         
-        res     6   	[IY`vars+%vars.flags6]
+        res     6   	[IY`vars+Vars.flags6]
         
         xor     A`zero
         ld      [$.SONIC.Xspeed+0]      A`zero
@@ -12302,12 +12302,12 @@ sonic_process:                                                                  
 @_51dd  ld      A       [$.SONIC.flags]                                                                         ;$51DD
         and     $FA
         ld      [$.SONIC.flags]	A
-        ld      [IX`mob+%mob.unknown14] $14
+        ld      [IX`mob+Mob.unknown14] $14
         ld      HL      $.D2FB
         dec     [HL]
         ret     nz
         
-        res     2	[IY`vars+%vars.unknown0]
+        res     2	[IY`vars+Vars.unknown0]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -12316,7 +12316,7 @@ sonic_process:                                                                  
         and     A
         ret     nz
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         ret     z
         
 	;(we can compile with, or without, audio)
@@ -12348,7 +12348,7 @@ sonic_process:                                                                  
         
 @_5213  ld      HL      @_5939                                                                                  ;$5213
         
-        bit     1   	[IX`mob+%mob.flags]
+        bit     1   	[IX`mob+Mob.flags]
         ret     z
         
         ld      HL      @_594b
@@ -12356,12 +12356,12 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_521f  ld      [IX`mob+%mob.unknown13] $00                                                                     ;$521F
+@_521f  ld      [IX`mob+Mob.unknown13] $00                                                                     ;$521F
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5224  bit     4   	[IX`mob+%mob.flags]                     ;mob underwater?                               	`$5224
+@_5224  bit     4   	[IX`mob+Mob.flags]                     ;mob underwater?                               	`$5224
         ret     z
         
         ld      A       [$.FRAMECOUNT]
@@ -12380,7 +12380,7 @@ sonic_process:                                                                  
         cp      $0A
         ret     c
         
-@_51    ld      A`updates       [IY`vars+%vars.spriteUpdateCount]
+@_51    ld      A`updates       [IY`vars+Vars.spriteUpdateCount]
         ld      HL`addr,[$.SPRITETABLE_ADDR]                    ;get current sprite-table address
         
         push    AF`updates                                      ;remember no. of sprite updates pending
@@ -12404,7 +12404,7 @@ sonic_process:                                                                  
         pop     AF
         
         ld      [$.SPRITETABLE_ADDR]    HL
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -12417,7 +12417,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5280  ld      [IX`mob+%mob.unknown14] $09                                                                     ;$5280
+@_5280  ld      [IX`mob+Mob.unknown14] $09                                                                     ;$5280
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -12432,37 +12432,37 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        ld      C       [IY`vars+%vars.spriteUpdateCount]
+        ld      C       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0   	[IY`vars+%vars.flags0]
+        res     0   	[IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       C
+        ld      [IY`vars+Vars.spriteUpdateCount]       C
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_529c  ld      [IY`vars+%vars.joypad]  $FB                                                                     ;$529C
+@_529c  ld      [IY`vars+Vars.joypad]  $FB                                                                     ;$529C
         ld      HL      [$.SONIC.X]
         ld      DE      $1B60
         and     A
         sbc     HL      DE
         ret     nc
         
-        ld      [IY`vars+%vars.joypad]  $FF
+        ld      [IY`vars+Vars.joypad]  $FF
         ld      HL      [$.SONIC.Xspeed]
         ld      A       L
         or      H
         ret     nz
         
-        res     1   	[IX`mob+%mob.flags]
+        res     1   	[IX`mob+Mob.flags]
         
         pop     HL
-        set     1   	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown14] $18
+        set     1   	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown14] $18
         ld      HL      $.D2FE
         
-        bit     0   	[IY`vars+%vars.unknown_0D]
+        bit     0   	[IY`vars+Vars.unknown_0D]
         jr      nz	@_52
         
         ld      [HL]    $50
@@ -12473,37 +12473,37 @@ sonic_process:                                                                  
         push    HL
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $54                     ;all emeralds animation
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.flags]     A`zero
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.type]      $54                     ;all emeralds animation
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.flags]     A`zero
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
         ld      HL      [$.SONIC.X]
         ld      DE      $0002
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
         ld      HL      [$.SONIC.Y]
         ld      DE      $000E
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
         pop     IX
         
-        set     0       [IY`vars+%vars.unknown_0D]
+        set     0       [IY`vars+Vars.unknown_0D]
         jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_52    bit     1   	[IY`vars+%vars.unknown_0D]
+@_52    bit     1   	[IY`vars+Vars.unknown_0D]
         jr      nz	@_53
         
         dec     [HL]
         jp      nz	@_4c39
         
-        set     1   	[IY`vars+%vars.unknown_0D]
+        set     1   	[IY`vars+Vars.unknown_0D]
         ld      [HL]    $8C
-@_53    ld      [IX`mob%mob.unknown14]  $17
+@_53    ld      [IX`mobMob.unknown14]  $17
         ld      A       [HL]
         and     A
         jr      z	@_54
@@ -12511,12 +12511,12 @@ sonic_process:                                                                  
         dec     [HL]
         jp      @_4c39
         
-@_54    ld      [IX`mob+%mob.unknown14] $19
+@_54    ld      [IX`mob+Mob.unknown14] $19
         jp      @_4c39
 
         ;---------------------------------------------------------------------------------------------------------------
         
-@_532e  ld      A       [IX`mob+%mob.height]                                                                    ;$532E
+@_532e  ld      A       [IX`mob+Mob.height]                                                                    ;$532E
         cp      $18
         jr      z	@_55
         
@@ -12525,10 +12525,10 @@ sonic_process:                                                                  
         add     HL      DE
         ld      [$.SONIC.Y]HL
         
-@_55    ld      [IX`mob+%mob.width]     $18
-        ld      [IX`mob+%mob.height]    $18
+@_55    ld      [IX`mob+Mob.width]     $18
+        ld      [IX`mob+Mob.height]    $18
         ld      HL      [$.SONIC.Xspeed]
-        ld      B       [IX`mob+%mob.Xdirection]
+        ld      B       [IX`mob+Mob.Xdirection]
         ld      C       $00
         ld      E       C
         ld      D       C
@@ -12537,40 +12537,40 @@ sonic_process:                                                                  
         or      B
         jp      z	@_60
         
-        ld      [IX`mob+%mob.unknown14] $09
+        ld      [IX`mob+Mob.unknown14] $09
         
-        bit     2   	[IY`vars+%vars.joypad]
+        bit     2   	[IY`vars+Vars.joypad]
         jr      nz	@_57
         
-        bit     1   	[IY`vars+%vars.joypad]
+        bit     1   	[IY`vars+Vars.joypad]
         jr      z	@_57
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         jp      z	@_56
         
         bit     7   	B
         jr      nz	@_59
         
-        res     0   	[IX`mob+%mob.flags]
+        res     0   	[IX`mob+Mob.flags]
         jp      @_4fa6
         
 @_56    ld      DE      $FFF0
         ld      C       $FF
         jp      @_4b1b
         
-@_57    bit     3   	[IY`vars+%vars.joypad]
+@_57    bit     3   	[IY`vars+Vars.joypad]
         jr      nz	@_59
         
-        bit     1   	[IY`vars+%vars.joypad]
+        bit     1   	[IY`vars+Vars.joypad]
         jr      z	@_59
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         jp      z	@_58
         
         bit     7   	B
         jr      z	@_59
         
-        res     0   	[IX`mob+%mob.flags]
+        res     0   	[IX`mob+Mob.flags]
         jp      @_4fa6
         
 @_58    ld      DE      $0010
@@ -12587,11 +12587,11 @@ sonic_process:                                                                  
         ld      C       $FF
         jp      @_4b1b
         
-@_60    bit     7   	[IX`mob+%mob.flags]
+@_60    bit     7   	[IX`mob+Mob.flags]
         jr      z	@_62
         
-        ld      [IX`mob+%mob.unknown14] $07
-        res     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown14] $07
+        res     0	[IX`mob+Mob.flags]
         ld      DE      [$.D2B7]
         
         bit     7   	D
@@ -12606,7 +12606,7 @@ sonic_process:                                                                  
         ld      [$.D2B7]        DE
         jp      @_4b49
         
-@_62    ld      [IX`mob+%mob.unknown14] $09
+@_62    ld      [IX`mob+Mob.unknown14] $09
         push    DE
         push    HL
         
@@ -12630,40 +12630,40 @@ sonic_process:                                                                  
         ld      C       A
         ld      E       C
         ld      D       C
-        ld      [IX`mob+%mob.unknown14] $09
+        ld      [IX`mob+Mob.unknown14] $09
         jp      @_4b1b
 
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5407  bit     7   	[IX`mob+%mob.flags]                                                                     ;$5407
+@_5407  bit     7   	[IX`mob+Mob.flags]                                                                     ;$5407
         jr      z	@_65
         
-        bit     3   	[IX`mob+%mob.flags]
+        bit     3   	[IX`mob+Mob.flags]
         jr      nz	@_64
         
-        bit     5   	[IY`vars+%vars.joypad]
+        bit     5   	[IY`vars+Vars.joypad]
         jr      z	@_65
         
-@_64    bit     5   	[IY`vars+%vars.joypad]
+@_64    bit     5   	[IY`vars+Vars.joypad]
         jr      nz	@_66
         
-        res     0   	[IX`mob+%mob.flags]
+        res     0   	[IX`mob+Mob.flags]
         
         ld      A       [$.SONIC.Xspeed]
         and     $F8
         ld      [$.SONIC.Xspeed]        A
         jp      @_4b7f
         
-@_65    res     3   	[IX`mob+%mob.flags]
+@_65    res     3   	[IX`mob+Mob.flags]
         jp      @_4bac
         
-@_66    set     3   	[IX`mob+%mob.flags]
+@_66    set     3   	[IX`mob+Mob.flags]
         jp      @_4bac
         
         ;---------------------------------------------------------------------------------------------------------------
         ;Sonic is dead...
         
-@_543c  set     5   	[IX`mob+%mob.flags]                     ;make Sonic pass over the floor                	`$543C
+@_543c  set     5   	[IX`mob+Mob.flags]                     ;make Sonic pass over the floor                	`$543C
         
         ld      A       [$.D287]
         cp      $60
@@ -12677,7 +12677,7 @@ sonic_process:                                                                  
         sbc     HL      DE
         jr      nc	@_67
         
-        bit     2   	[IY`vars+%vars.flags6]
+        bit     2   	[IY`vars+Vars.flags6]
         jr      nz	@_67
         
         ld      A               $01
@@ -12687,13 +12687,13 @@ sonic_process:                                                                  
         ld      HL      $.LIVES
         dec     [HL]
         
-        set     2   	[IY`vars+%vars.flags6]
+        set     2   	[IY`vars+Vars.flags6]
         jp      @_54aa
         
 @_67    xor     A`zero
         ld      HL      $0080
         
-        bit     3   	[IY`vars+%vars.unknown0]
+        bit     3   	[IY`vars+Vars.unknown0]
         jr      nz	@_71
         
         ld      DE      [$.SONIC.Yspeed]
@@ -12707,7 +12707,7 @@ sonic_process:                                                                  
         jr      c	@_72
         
 @_68    ex      DE      HL
-        ld      B       [IX`mob+%mob.Ydirection]
+        ld      B       [IX`mob+Mob.Ydirection]
         ld      A       H
         cp      $80
         jr      nc	@_69
@@ -12730,12 +12730,12 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xdirection]    A`zero
         
 @_54aa                                                                                                          ;$54AA
-        ld      [IX`mob+%mob.unknown14]	$0B
+        ld      [IX`mob+Mob.unknown14]	$0B
         
-        bit     3   	[IY`vars+%vars.unknown0]
+        bit     3   	[IY`vars+Vars.unknown0]
         jp      z	@_4c39
         
-        ld      [IX`mob+%mob.unknown14] $15
+        ld      [IX`mob+Mob.unknown14] $15
         jp      @_4c39
 
         ;===============================================================================================================
@@ -12743,17 +12743,17 @@ sonic_process:                                                                  
         ;air
         
 @_54bc  ;check if the player is underwater                                                                     	`$54BC
-        bit     7   	[IY`vars+%vars.flags6]                  ;underwater flag
+        bit     7   	[IY`vars+Vars.flags6]                  ;underwater flag
         ret     nz                                              ;this solidity is not valid underwater
         
-        res     4   	[IX`mob+%mob.flags]                     ;turn off mob underwater flag
+        res     4   	[IX`mob+Mob.flags]                     ;turn off mob underwater flag
         ret
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $01
         ;spikes?
         
-@_54c6  bit     0   	[IY`vars+%vars.scrollRingFlags]		;is the player dead?                           	`$54C6
+@_54c6  bit     0   	[IY`vars+Vars.scrollRingFlags]		;is the player dead?                           	`$54C6
         jp      z	hitPlayer._35fd              		;if not, damage them
         ret
 
@@ -12761,7 +12761,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $02
         ;jump ramp?
         
-@_54ce  ld      A       [IX`mob+%mob.X+0]                                                                       ;$54CE
+@_54ce  ld      A       [IX`mob+Mob.X+0]                                                                       ;$54CE
         add     A       $0C
         and     %00011111
         cp      $1A
@@ -12774,10 +12774,10 @@ sonic_process:                                                                  
         and     $02
         ret     z
         
-@_73    ld      L       [IX`mob+%mob.Xspeed+0]
-        ld      H       [IX`mob+%mob.Xspeed+1]
+@_73    ld      L       [IX`mob+Mob.Xspeed+0]
+        ld      H       [IX`mob+Mob.Xspeed+1]
         
-        bit     7   	[IX`mob+%mob.Xdirection]
+        bit     7   	[IX`mob+Mob.Xdirection]
         ret     nz
         
         ld      DE      $0301
@@ -12785,8 +12785,8 @@ sonic_process:                                                                  
         sbc     HL      DE
         ret     c
         
-        ld      L       [IX`mob+%mob.Xspeed+1]
-        ld      H       [IX`mob+%mob.Xdirection]
+        ld      L       [IX`mob+Mob.Xspeed+1]
+        ld      H       [IX`mob+Mob.Xdirection]
         add     HL      HL
         ld      A       L
         cpl     
@@ -12795,9 +12795,9 @@ sonic_process:                                                                  
         cpl     
         ld      H       A
         inc     HL
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          L
-        ld      [IX`mob+%mob.Ydirection]        H
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          L
+        ld      [IX`mob+Mob.Ydirection]        H
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12811,16 +12811,16 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $03
         ;horizontal spring? (facing left)
         
-@_550f  ld      A       [IX`mob+%mob.X+0]                                                                       ;$550F
+@_550f  ld      A       [IX`mob+Mob.X+0]                                                                       ;$550F
         add     A       $0C
         and     %00011111
         cp      $10
         ret     c
         
-        ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $F8
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        set     1   	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $F8
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        set     1   	[IX`mob+Mob.flags]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12835,23 +12835,23 @@ sonic_process:                                                                  
         ;vertical spring?
         
 @_552d 
-        ld      A       [IX`mob+%mob.X+0]                                                                       ;$552D
+        ld      A       [IX`mob+Mob.X+0]                                                                       ;$552D
         add     A       $0C
         and     %00011111
         cp      $10
         ret     c
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         ret     z
         
         ld      A       [$.D2B9]
         and     $80
         ret     nz
         
-        res     6   	[IY`vars+%vars.flags6]
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $F4
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        res     6   	[IY`vars+Vars.flags6]
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $F4
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12864,17 +12864,17 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $05
         
-@_5556  ld      A       [IX`mob+%mob.X+0]                                                                       ;$5556
+@_5556  ld      A       [IX`mob+Mob.X+0]                                                                       ;$5556
         add     A       $0C
         and     %00011111
         cp      $10
         ret     nc
         
-        res     6   	[IY`vars+%vars.flags6]
-        ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $08
-        ld      [IX`mob+%mob.Xdirection]        $00
-        res     1   	[IX`mob+%mob.flags]
+        res     6   	[IY`vars+Vars.flags6]
+        ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $08
+        ld      [IX`mob+Mob.Xdirection]        $00
+        res     1   	[IX`mob+Mob.flags]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12887,7 +12887,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $06
 
-@_5578  bit     7   	[IX`mob+%mob.flags]                                                                    	;$5578
+@_5578  bit     7   	[IX`mob+Mob.flags]                                                                    	;$5578
         ret     z
         
         ld      HL      [$.SONIC.Xsubpixel]
@@ -12902,7 +12902,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $07
         
-@_5590  bit     7   	[IX`mob+%mob.flags]									;$5590
+@_5590  bit     7   	[IX`mob+Mob.flags]									;$5590
         ret     z
         
         ld      HL      [$.SONIC.Xsubpixel]
@@ -12918,7 +12918,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $08
         ;water? (non-raster)
         
-@_55a8  bit     4   	[IX`mob+%mob.flags]			;mob underwater?                               	`$55A8
+@_55a8  bit     4   	[IX`mob+Mob.flags]			;mob underwater?                               	`$55A8
         jr      nz	@_74
         
 	;(we can compile with, or without, audio)
@@ -12927,14 +12927,14 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-@_74    set     4   	[IX`mob+%mob.flags]			;set mob underwater
+@_74    set     4   	[IX`mob+Mob.flags]			;set mob underwater
         ret
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $09
         ;vertical spring? (up-centre)
         
-@_55b6  ld      A       [IX`mob+%mob.X+0]                                                                       ;$55B6
+@_55b6  ld      A       [IX`mob+Mob.X+0]                                                                       ;$55B6
         add     A       $0C
         and     %00011111
         cp      $08
@@ -12943,17 +12943,17 @@ sonic_process:                                                                  
         cp      $18
         ret     nc
         
-        bit     7   	[IX`mob+%mob.flags]
+        bit     7   	[IX`mob+Mob.flags]
         ret     z
         
         ld      A       [$.D2B9]
         and     $80
         ret     nz
         
-        res     6   	[IY`vars+%vars.flags6]
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $F4
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        res     6   	[IY`vars+Vars.flags6]
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $F4
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -12966,7 +12966,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0A
         
-@_55e2  bit     7   	[IX`mob+%mob.Ydirection]                                                                ;$55E2
+@_55e2  bit     7   	[IX`mob+Mob.Ydirection]                                                                ;$55E2
         ret     nz
         
 	;(we can compile with, or without, audio)
@@ -12980,7 +12980,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0B
         
-@_55eb  bit     4   	[IY`vars+%vars.flags6]                                                                  ;$55EB
+@_55eb  bit     4   	[IY`vars+Vars.flags6]                                                                  ;$55EB
         ret     nz
         
         ld      A       [$.SONIC.X]
@@ -13064,7 +13064,7 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xspeed]        HL
         ld      [$.SONIC.Xdirection]    A
         
-        bit     4    	[IX`mob+%mob.flags]                     ;mob underwater?
+        bit     4    	[IX`mob+Mob.flags]                     ;mob underwater?
         jr      nz	@_77
         
 	;(we can compile with, or without, audio)
@@ -13073,7 +13073,7 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-@_77    set     4   	[IX`mob+%mob.flags]                     ;set mob underwater
+@_77    set     4   	[IX`mob+Mob.flags]                     ;set mob underwater
         ret
 
         ;===============================================================================================================
@@ -13084,22 +13084,22 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
-        res     1	[IX`mob+%mob.flags]
+        res     1	[IX`mob+Mob.flags]
         
 @_568a  ld      A               $06
         ld      [$.D28C]        A
 
         ;---------------------------------------------------------------------------------------------------------------
 
-@_568f  ld      A       [IY`vars+%vars.joypad]                                                                  ;$568F
+@_568f  ld      A       [IY`vars+Vars.joypad]                                                                  ;$568F
         or      $0F
-        ld      [IY`vars+%vars.joypad]  A
+        ld      [IY`vars+Vars.joypad]  A
         
         ld      HL                      $0004
         ld      [$.SONIC.Yspeed+1]      HL
         
-        res     0	[IX`mob+%mob.flags]
-        res     2	[IX`mob+%mob.flags]
+        res     0	[IX`mob+Mob.flags]
+        res     2	[IX`mob+Mob.flags]
         ret
         
         ;===============================================================================================================
@@ -13109,7 +13109,7 @@ sonic_process:                                                                  
         ld      HL      $0006
         ld      [$.SONIC.Xspeed+0],A`zero
         ld      [$.SONIC.Xspeed+1],HL
-        res     1   	[IX`mob+%mob.flags]
+        res     1   	[IX`mob+Mob.flags]
         jr      @_568a
         
         ;===============================================================================================================
@@ -13120,7 +13120,7 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
         
         jr      @_568a
         
@@ -13132,7 +13132,7 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
-        set     1   	[IX`mob+%mob.flags]
+        set     1   	[IX`mob+Mob.flags]
         
         jr      @_568a
         
@@ -13234,9 +13234,9 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $12
         
-@_5761  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5761
-        ld      [IX`mob+%mob.Yspeed+1]          $F6
-        ld      [IX`mob+%mob.Ydirection]        $FF
+@_5761  ld      [IX`mob+Mob.Yspeed+0]          $00                                                             ;$5761
+        ld      [IX`mob+Mob.Yspeed+1]          $F6
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -13249,9 +13249,9 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $13
         
-@_5771  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5771
-        ld      [IX`mob+%mob.Yspeed+1]          $F4
-        ld      [IX`mob+%mob.Ydirection]        $FF
+@_5771  ld      [IX`mob+Mob.Yspeed+0]          $00                                                             ;$5771
+        ld      [IX`mob+Mob.Yspeed+1]          $F4
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -13264,9 +13264,9 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $14
         
-@_5781  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5781
-        ld      [IX`mob+%mob.Yspeed+1]          $F2
-        ld      [IX`mob+%mob.Ydirection]        $FF
+@_5781  ld      [IX`mob+Mob.Yspeed+0]          $00                                                             ;$5781
+        ld      [IX`mob+Mob.Yspeed+1]          $F2
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -13355,7 +13355,7 @@ sonic_process:                                                                  
         sbc     HL      DE
         ret     c
         
-        bit     0   	[IY`vars+%vars.scrollRingFlags]
+        bit     0   	[IY`vars+Vars.scrollRingFlags]
         jp      z	hitPlayer._35fd
         ret
         
@@ -13467,20 +13467,20 @@ sonic_process:                                                                  
         pop     IX
         
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]          $2E                 ;falling bridge piece
-        ld      [IX`mob+%mob.Xsubpixel]     A`zero
-        ld      [IX`mob+%mob.X+0]           C
-        ld      [IX`mob+%mob.X+1]           B
-        ld      [IX`mob+%mob.Ysubpixel]     A`zero
-        ld      [IX`mob+%mob.Y+0]           E
-        ld      [IX`mob+%mob.Y+1]           D
-        ld      [IX`mob+%mob.Xspeed+0]      A`zero
-        ld      [IX`mob+%mob.Xspeed+1]      A`zero
-        ld      [IX`mob+%mob.Xdirection]    A`zero
-        ld      [IX`mob+%mob.Yspeed+0]      A`zero
-        ld      [IX`mob+%mob.Yspeed+1]      A`zero
-        ld      [IX`mob+%mob.Ydirection]    A`zero
-        ld      [IX`mob+%mob.flags]         A`zero
+        ld      [IX`mob+Mob.type]          $2E                 ;falling bridge piece
+        ld      [IX`mob+Mob.Xsubpixel]     A`zero
+        ld      [IX`mob+Mob.X+0]           C
+        ld      [IX`mob+Mob.X+1]           B
+        ld      [IX`mob+Mob.Ysubpixel]     A`zero
+        ld      [IX`mob+Mob.Y+0]           E
+        ld      [IX`mob+Mob.Y+1]           D
+        ld      [IX`mob+Mob.Xspeed+0]      A`zero
+        ld      [IX`mob+Mob.Xspeed+1]      A`zero
+        ld      [IX`mob+Mob.Xdirection]    A`zero
+        ld      [IX`mob+Mob.Yspeed+0]      A`zero
+        ld      [IX`mob+Mob.Yspeed+1]      A`zero
+        ld      [IX`mob+Mob.Ydirection]    A`zero
+        ld      [IX`mob+Mob.flags]         A`zero
         
         pop     IX
         and     A`zero
@@ -13489,7 +13489,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $1B
         
-@_58d0  bit     7   	[IX`mob+%mob.flags]                                                                     ;$58D0
+@_58d0  bit     7   	[IX`mob+Mob.flags]                                                                     ;$58D0
         ret     z
         
         ;is Sonic on the screen (vertically)
@@ -13500,7 +13500,7 @@ sonic_process:                                                                  
         ret     nc
         
         ;clear joypad input
-        ld      [IY`vars+%vars.joypad]  $FF
+        ld      [IY`vars+Vars.joypad]  $FF
         ret
         
         ;===============================================================================================================
@@ -13573,8 +13573,8 @@ powerUps_ring_process:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         ld      HL              $0003
         ld      [$.TEMP6]       HL
@@ -13590,8 +13590,8 @@ powerUps_ring_process:                                                          
         call    \\screens\game\increaseRings
         
 @_5b29  xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
         ret     
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -13600,37 +13600,37 @@ powerUps_ring_process:                                                          
         
 @_5b34  call    \loadPowerUpIcon
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5bbf
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5bbf
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_5bbf
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_5bbf
         
         ld      A       [$.FRAMECOUNT]
         and     %00000111
         cp      $05
         ret     nc
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5bcc
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5bcc
-        ld      L       [IX`mob+%mob.Xsubpixel]
-        ld      H       [IX`mob+%mob.X+0]
-        ld      A       [IX`mob+%mob.X+1]
-        ld      E       [IX`mob+%mob.Xspeed+0]
-        ld      D       [IX`mob+%mob.Xspeed+1]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_5bcc
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_5bcc
+        ld      L       [IX`mob+Mob.Xsubpixel]
+        ld      H       [IX`mob+Mob.X+0]
+        ld      A       [IX`mob+Mob.X+1]
+        ld      E       [IX`mob+Mob.Xspeed+0]
+        ld      D       [IX`mob+Mob.Xspeed+1]
         add     HL      DE
-        adc     A       [IX`mob+%mob.Xdirection]
+        adc     A       [IX`mob+Mob.Xdirection]
         ld      L       H
         ld      H       A
         ld      [$.TEMP1]       HL
-        ld      L       [IX`mob+%mob.Ysubpixel]
-        ld      H       [IX`mob+%mob.Y+0]
-        ld      A       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Ysubpixel]
+        ld      H       [IX`mob+Mob.Y+0]
+        ld      A       [IX`mob+Mob.Y+1]
         
-        bit     7       [IX`mob+%mob.flags]
+        bit     7       [IX`mob+Mob.flags]
         jr      nz      @_2
         
-        ld      E       [IX`mob+%mob.Yspeed+0]
-        ld      D       [IX`mob+%mob.Yspeed+1]
+        ld      E       [IX`mob+Mob.Yspeed+0]
+        ld      D       [IX`mob+Mob.Yspeed+1]
         add     HL      DE
-        adc     A       [IX`mob+%mob.Ydirection]
+        adc     A       [IX`mob+Mob.Ydirection]
 @_2     ld      L       H
         ld      H       A
         ld      [$.TEMP3]       HL
@@ -13648,18 +13648,18 @@ powerUps_ring_process:                                                          
         ld      A       $5E
         call    \\_3581
         
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         ret     z
         
-        ld      L       [IX`mob+%mob.Yspeed+0]
-        ld      H       [IX`mob+%mob.Yspeed+1]
-        ld      A       [IX`mob+%mob.Ydirection]
+        ld      L       [IX`mob+Mob.Yspeed+0]
+        ld      H       [IX`mob+Mob.Yspeed+1]
+        ld      A       [IX`mob+Mob.Ydirection]
         ld      DE      $0040
         add     HL      DE
         adc     A       $00
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
         ret
         
         %byte
@@ -13677,8 +13677,8 @@ powerUps_speed_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         ld      HL              $0003
         ld      [$.TEMP6]       HL
@@ -13707,8 +13707,8 @@ powerUps_life_process:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         
         ;check if the level has its bit flag set at $.D305+
@@ -13719,7 +13719,7 @@ powerUps_life_process:                                                          
         and     C
         jr      z       @_1                                     ;if not set, skip ahead
         
-        ld      [IX`mob+%mob.type]      $FF                     ;remove object?
+        ld      [IX`mob+Mob.type]      $FF                     ;remove object?
         jp      \powerups.ringprocess._5b29
         
 @_1     ld      HL              $0003
@@ -13730,7 +13730,7 @@ powerUps_life_process:                                                          
         call    \_5deb
         jr      c       @_2
         
-        bit     2       [IX`mob+%mob.flags]
+        bit     2       [IX`mob+Mob.flags]
         jp      nz      \powerups.ringprocess._5b24
         
         ld      HL      $.LIVES
@@ -13744,8 +13744,8 @@ powerUps_life_process:                                                          
         ld      [HL]    A
         
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -13781,26 +13781,26 @@ powerUps_life_process:                                                          
 
 @_4     ld      C       $00
         ld      DE      $0040
-        ld      A       [IX`mob+%mob.unknown13]
+        ld      A       [IX`mob+Mob.unknown13]
         cp      $3C
         jr      c       @_5
         
         dec     C
         ld      DE      $FFC0
         
-@_5     ld      [IX`mob+%mob.Yspeed+0]          E
-        ld      [IX`mob+%mob.Yspeed+1]          D
-        ld      [IX`mob+%mob.Ydirection]        C
+@_5     ld      [IX`mob+Mob.Yspeed+0]          E
+        ld      [IX`mob+Mob.Yspeed+1]          D
+        ld      [IX`mob+Mob.Ydirection]        C
         
-        inc     [IX`mob+%mob.unknown13]
-        ld      A       [IX`mob+%mob.unknown13]
+        inc     [IX`mob+Mob.unknown13]
+        ld      A       [IX`mob+Mob.unknown13]
         cp      $50
         jr      c       @_3
         
-        ld      [IX`mob+%mob.unknown13] $28
+        ld      [IX`mob+Mob.unknown13] $28
         jr      @_3
         
-@_6     set     2       [IX`mob+%mob.flags]
+@_6     set     2       [IX`mob+Mob.flags]
         ld      HL      $.D317
         call    \\levels.load\getLevelBitFlag
         ld      A       [HL]
@@ -13808,23 +13808,23 @@ powerUps_life_process:                                                          
         and     C
         jp      z       \powerups.ringprocess._5b34
         
-        res     2       [IX`mob+%mob.flags]
+        res     2       [IX`mob+Mob.flags]
         
         ld      HL      $5280
         jp      \powerups.ringprocess._5b34
         
-@_7     set     1       [IX`mob+%mob.flags]
+@_7     set     1       [IX`mob+Mob.flags]
 
-        ld      [IX`mob+%mob.Xspeed+0]          $80
-        ld      [IX`mob+%mob.Xspeed+1]          $00
-        ld      [IX`mob+%mob.Xdirection]        $00
+        ld      [IX`mob+Mob.Xspeed+0]          $80
+        ld      [IX`mob+Mob.Xspeed+1]          $00
+        ld      [IX`mob+Mob.Xdirection]        $00
         jr      @_3
         
 @_8     ld      A       [$.D280]
         cp      $11
         jr      nc      @_3
         
-        ld      [IX`mob+%mob.type]      $FF                     ;remove object?
+        ld      [IX`mob+Mob.type]      $FF                     ;remove object?
         jr      @_3
 	;
 
@@ -13832,8 +13832,8 @@ powerUps_shield_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         
         ld      HL              $0003
@@ -13844,7 +13844,7 @@ powerUps_shield_process:                                                        
         call    \_5deb
         jr      c       @_1
         
-        set     5       [IY`vars+%vars.flags6]
+        set     5       [IY`vars+Vars.flags6]
         jp      \powerups.ringprocess._5b29
         
 @_1     ld      HL      $5300
@@ -13855,8 +13855,8 @@ powerUps_invincibility_process:                                                 
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]	20
-        ld      [IX`mob+%mob.height]	24
+        ld      [IX`mob+Mob.width]	20
+        ld      [IX`mob+Mob.height]	24
         call    \_5da8
         
         ld      HL              $0003
@@ -13867,7 +13867,7 @@ powerUps_invincibility_process:                                                 
         call    \_5deb
         jr      c       @_1
         
-        set     0       [IY`vars+%vars.unknown0]
+        set     0       [IY`vars+Vars.unknown0]
         
         ld      A               $F0
         ld      [$.D28D]        A
@@ -13888,8 +13888,8 @@ powerUps_checkpoint_process:                                                    
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         
         ld      HL              $0003
@@ -13913,16 +13913,16 @@ powerUps_checkpoint_process:                                                    
         ld      HL      $.D32E
         add     HL      DE
         ex      DE      HL                                      ;DE is $.D32E + level number * 2
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      HL
         add     HL      HL
         add     HL      HL
         ld      A       H
         ld      [DE]    A
         inc     DE
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         add     HL      HL
         add     HL      HL
         add     HL      HL
@@ -13939,8 +13939,8 @@ powerUps_continue_process:                                                      
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    24
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    24
         call    \_5da8
         
         ld      HL              $0003
@@ -13951,7 +13951,7 @@ powerUps_continue_process:                                                      
         call    \_5deb
         jr      c       @_1
         
-        set     3       [IY`vars+%vars.flags9]
+        set     3       [IY`vars+Vars.flags9]
         jp      \powerups.ringprocess._5b29
         
 @_1     ld      HL      $5500
@@ -13962,7 +13962,7 @@ _5da8:                                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        bit     0       [IX`mob+%mob.flags]
+        bit     0       [IX`mob+Mob.flags]
         ret     nz
         
         ld      A       [$.LEVEL_SOLIDITY]
@@ -13982,18 +13982,18 @@ _5da8:                                                                          
         
 @_1     ld      DE      $0004
         ld      BC      $0000
-@_2     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_2     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
         
-        set     0       [IX`mob+%mob.flags]
+        set     0       [IX`mob+Mob.flags]
         
         ret
 	;
@@ -14010,8 +14010,8 @@ _5deb:                                                                          
         jr      nz      @_2
         
         ld      DE      [$.SONIC.X]
-        ld      C       [IX`mob+%mob.X+0]
-        ld      B       [IX`mob+%mob.X+1]
+        ld      C       [IX`mob+Mob.X+0]
+        ld      B       [IX`mob+Mob.X+1]
         ld      HL      $FFEE
         add     HL      BC
         and     A
@@ -14028,8 +14028,8 @@ _5deb:                                                                          
         and     $04
         jr      nz      @_1
         
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      A       [$.SONIC.height]
         ld      C       A
         xor     A`zero
@@ -14057,15 +14057,15 @@ _5deb:                                                                          
         
         ret
 
-@_3     ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $FE
-        ld      [IX`mob+%mob.Ydirection]        $FF
+@_3     ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $FE
+        ld      [IX`mob+Mob.Ydirection]        $FF
         ld      HL      $0400
         xor     A`zero
         ld      [$.SONIC.Yspeed]        HL
         ld      [$.SONIC.Ydirection]    A
         ld      [$.D28E]        A
-        set     1       [IX`mob+%mob.flags]
+        set     1       [IX`mob+Mob.flags]
         scf     
         ret
 
@@ -14073,8 +14073,8 @@ _5deb:                                                                          
         ld      DE      $000C
         add     HL      DE
         ex      DE      HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      BC      $000A
         add     HL      BC
         ld      BC      $FFEB
@@ -14083,8 +14083,8 @@ _5deb:                                                                          
         jr      nc      @_5
         
         ld      BC      $0015
-@_5     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_5     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      BC
         ld      [$.SONIC.X]     HL
         
@@ -14108,13 +14108,13 @@ powerUps_emerald_process:                                                       
         and     C
         jr      nz      @_1
         
-        ld      [IX`mob+%mob.width]     12
-        ld      [IX`mob+%mob.height]    17
+        ld      [IX`mob+Mob.width]     12
+        ld      [IX`mob+Mob.height]    17
         call    \_5da8
         
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
         
         ld      HL              $0202
         ld      [$.TEMP6]       HL
@@ -14138,24 +14138,24 @@ powerUps_emerald_process:                                                       
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-@_1     ld      [IX`mob+%mob.type]      $FF                     ;remove object?
+@_1     ld      [IX`mob+Mob.type]      $FF                     ;remove object?
         ret
         
 @_2     ld      A       [$.FRAMECOUNT]
         rrca    
         jr      c       @_3
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5f10
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5f10
-@_3     ld      L       [IX`mob+%mob.Yspeed+0]
-        ld      H       [IX`mob+%mob.Yspeed+1]
-        ld      A       [IX`mob+%mob.Ydirection]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_5f10
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_5f10
+@_3     ld      L       [IX`mob+Mob.Yspeed+0]
+        ld      H       [IX`mob+Mob.Yspeed+1]
+        ld      A       [IX`mob+Mob.Ydirection]
         ld      DE      $0020
         add     HL      DE
         adc     A       $00
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
         ld      HL      $5400                                   ;$15400 - emerald in blinking items art
         call    \loadPowerUpIcon
         
@@ -14171,12 +14171,12 @@ boss_endSign_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     24
-        ld      [IX`mob+%mob.height]    48
+        ld      [IX`mob+Mob.width]     24
+        ld      [IX`mob+Mob.height]    48
         
         ;the end-sign has to load its own graphics and palette,
         ;check if this has been done yet
-        bit     0       [IX`mob+%mob.unknown11]
+        bit     0       [IX`mob+Mob.unknown11]
         ;TODO: if we have to do this check every frame, then it would be better to turn this around and
         ;      fall through for the more common case, and jump for the one-time initialisation
         jr      nz      @_1
@@ -14185,10 +14185,10 @@ boss_endSign_process:                                                           
         ;---------------------------------------------------------------------------------------------------------------
 @init   ;turn 'under-water' mode off -- disabling the 'water line' raster effect,
         ;this is because the end-sign has no equivilent under-water palette
-        res     7       [IY`vars+%vars.flags6]
+        res     7       [IY`vars+Vars.flags6]
         ;turn off auto-scroll to the right, if it was on
         ;TODO: would also need to disable auto-scroll up, if it were in use
-        res     3       [IY`vars+%vars.scrollRingFlags]
+        res     3       [IY`vars+Vars.scrollRingFlags]
         
         ;end-sign sprite set
         ld      HL      $4294
@@ -14202,7 +14202,7 @@ boss_endSign_process:                                                           
         call    \\gf\loadPaletteOnInterrupt
         
         ;initialisation complete, do not repeat this step
-        set     0       [IX`mob+%mob.unknown11]
+        set     0       [IX`mob+Mob.unknown11]
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -14215,8 +14215,8 @@ boss_endSign_process:                                                           
         ;note that the right-hand edge of the level is defined as the maximum left-hand position of the screen on
         ;the level -- the width of the screen is implicit. i.e. the same value for the left & right level limits
         ;will simply lock the screen in place and prevent any scrolling
-        ld      L`signXpos      [IX`mob+%mob.X+0]
-        ld      H`signXpos      [IX`mob+%mob.X+1]
+        ld      L`signXpos      [IX`mob+Mob.X+0]
+        ld      H`signXpos      [IX`mob+Mob.X+1]
         ;subtract 112 -- it's faster to add a big number and cause an overflow into a lower number because
         ;the 16-bit subtract instruction `sbc` adds any existing carry
         ;TODO: this number should be calculated based on the width of the sign, and is currently incorrect
@@ -14233,28 +14233,28 @@ boss_endSign_process:                                                           
         ld      [$.SCROLLZONE_OVERRIDE_BOTTOM]  HL`scrollZoneBottom
         
         ;a copy of the player's status that the end-sign keeps
-        ld      C       [IX`mob+%mob.unknown13]
+        ld      C       [IX`mob+Mob.unknown13]
         ;get the player's current status
         ld      A       [$.SONIC.flags]
         ;TODO: whatever bit 7 is on Sonic, it's forced on
         and     %10000000
         
-        ld      [IX`mob+%mob.unknown13] A
+        ld      [IX`mob+Mob.unknown13] A
         ;BUG: this can never be true?
         jr      z       @_3
         ;has the player's status changed since the last frame?
         cp      C
         jr      z       @_3
         
-        bit     7       [IX`mob+%mob.flags]
+        bit     7       [IX`mob+Mob.flags]
         jr      z       @_3
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;compare the x-positions of the end-sign and player
         ;TODO: the sign X position was already read earlier, we could use the stack for that
-        ld      E`signXpos      [IX`mob+%mob.X+0]
-        ld      D`signXPos      [IX`mob+%mob.X+1]
+        ld      E`signXpos      [IX`mob+Mob.X+0]
+        ld      D`signXPos      [IX`mob+Mob.X+1]
         ld      HL`sonicXpos    [$.SONIC.X]
         and     A`clearCarry                                    ;clear the carry before doing a 16-bit add/subtract
         sbc     HL`sonicXpos    DE`signXpos
@@ -14282,27 +14282,27 @@ boss_endSign_process:                                                           
         jr      nc      @_3
         
         ;make the end-sign leap up into the air at maximum speed
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $FE
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $FE
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_3     ld      L`signYspeed    [IX`mob+%mob.Yspeed+0]
-        ld      H`signYspeed    [IX`mob+%mob.Yspeed+1]
-        ld      A`signDirection [IX`mob+%mob.Ydirection]
+@_3     ld      L`signYspeed    [IX`mob+Mob.Yspeed+0]
+        ld      H`signYspeed    [IX`mob+Mob.Yspeed+1]
+        ld      A`signDirection [IX`mob+Mob.Ydirection]
         ld      DE      26                                      ;=$001A
         add     HL`signYspeed   DE
         adc     A`signDirection $00
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A`signDirection
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A`signDirection
         
-        bit     3       [IX`mob+%mob.unknown11]
+        bit     3       [IX`mob+Mob.unknown11]
         jr      nz      @_7
-        bit     2       [IX`mob+%mob.unknown11]
+        bit     2       [IX`mob+Mob.unknown11]
         jr      z       @_4
-        bit     7       [IX`mob+%mob.flags]
+        bit     7       [IX`mob+Mob.flags]
         jr      z       @_7
         
 	;(we can compile with, or without, audio)
@@ -14313,11 +14313,11 @@ boss_endSign_process:                                                           
 		rst     \\sound\rst_playSFX
 	.ENDIF
 		
-        res     2       [IX`mob+%mob.unknown11]
-        set     3       [IX`mob+%mob.unknown11]
+        res     2       [IX`mob+Mob.unknown11]
+        set     3       [IX`mob+Mob.unknown11]
         ld      A       $A0
         ld      [$.D289]        A
-        set     1       [IY`vars+%vars.flags6]
+        set     1       [IY`vars+Vars.flags6]
         jp      @_7
         
 @_4     ld      HL              $0A0A
@@ -14325,10 +14325,10 @@ boss_endSign_process:                                                           
         call    \\detectCollisionWithSonic
         jr      c       @_7
         
-        bit     7       [IX`mob+%mob.Ydirection]
+        bit     7       [IX`mob+Mob.Ydirection]
         jr      nz      @_7
         
-        bit     1       [IX`mob+%mob.unknown11]
+        bit     1       [IX`mob+Mob.unknown11]
         jr      nz      @_7
         
         ld      DE      [$.SONIC.Xspeed]
@@ -14350,11 +14350,11 @@ boss_endSign_process:                                                           
         ld      DE      $0300
 @_6     ex      DE      HL
         add     HL      HL
-        ld      [IX`mob+%mob.unknown14] L
-        ld      [IX`mob+%mob.unknown15] H
-        ld      [IX`mob+%mob.unknown12] $00
-        set     1       [IX`mob+%mob.unknown11]
-        res     3       [IY`vars+%vars.flags6]
+        ld      [IX`mob+Mob.unknown14] L
+        ld      [IX`mob+Mob.unknown15] H
+        ld      [IX`mob+Mob.unknown12] $00
+        set     1       [IX`mob+Mob.unknown11]
+        res     3       [IY`vars+Vars.flags6]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -14363,14 +14363,14 @@ boss_endSign_process:                                                           
 	.ENDIF
         
 @_7     ld      DE      @_6157
-        bit     1       [IX`mob+%mob.unknown11]
+        bit     1       [IX`mob+Mob.unknown11]
         jr      nz      @_
         
-        bit     2       [IX`mob+%mob.unknown11]
+        bit     2       [IX`mob+Mob.unknown11]
         jr      nz      @_
         
         ld      DE      $6171
-        bit     3       [IX`mob+%mob.unknown11]
+        bit     3       [IX`mob+Mob.unknown11]
         jr      z       @_
         
         ld      A       [$.CURRENT_LEVEL]
@@ -14415,7 +14415,7 @@ boss_endSign_process:                                                           
         ld      C       $01
 @_11    ld      A       C
         ld      [$.D288]        A
-@_      ld      L       [IX`mob+%mob.unknown12]
+@_      ld      L       [IX`mob+Mob.unknown12]
         ld      H       $00
         add     HL      DE
         ld      A       [HL]
@@ -14424,7 +14424,7 @@ boss_endSign_process:                                                           
         
         inc     HL
         ld      A       [HL]
-        ld      [IX`mob+%mob.unknown12] A
+        ld      [IX`mob+Mob.unknown12] A
         jp      @_
         
 @_12    ld      L       A
@@ -14438,32 +14438,32 @@ boss_endSign_process:                                                           
         add     HL      DE
         ld      DE      @_61dc
         add     HL      DE
-        ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+        ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         
-        bit     1       [IX`mob+%mob.unknown11]
+        bit     1       [IX`mob+Mob.unknown11]
         jr      nz      @_13
         
-        inc     [IX`mob+%mob.unknown12]
+        inc     [IX`mob+Mob.unknown12]
         ret
         
-@_13    ld      A       [IX`mob+%mob.unknown14]
-        add     A       [IX`mob+%mob.unknown16]
-        ld      [IX`mob+%mob.unknown16] A
-        ld      A       [IX`mob+%mob.unknown15]
+@_13    ld      A       [IX`mob+Mob.unknown14]
+        add     A       [IX`mob+Mob.unknown16]
+        ld      [IX`mob+Mob.unknown16] A
+        ld      A       [IX`mob+Mob.unknown15]
         push    AF
-        adc     A       [IX`mob+%mob.unknown17]
-        ld      [IX`mob+%mob.unknown17] A
+        adc     A       [IX`mob+Mob.unknown17]
+        ld      [IX`mob+Mob.unknown17] A
         pop     AF
-        adc     A       [IX`mob+%mob.unknown12]
+        adc     A       [IX`mob+Mob.unknown12]
         cp      $18
         jr      c       @_14
         
         xor     A`zero
-@_14    ld      [IX`mob+%mob.unknown12] A
-        ld      E       [IX`mob+%mob.Yspeed+0]
-        ld      D       [IX`mob+%mob.Yspeed+1]
-        ld      A       [IX`mob+%mob.Ydirection]
+@_14    ld      [IX`mob+Mob.unknown12] A
+        ld      E       [IX`mob+Mob.Yspeed+0]
+        ld      D       [IX`mob+Mob.Yspeed+1]
+        ld      A       [IX`mob+Mob.Ydirection]
         and     A
         jp      p       @_15
         
@@ -14472,8 +14472,8 @@ boss_endSign_process:                                                           
         ret     nc
         
 @_15    ex      DE      HL
-        ld      E       [IX`mob+%mob.unknown14]
-        ld      D       [IX`mob+%mob.unknown15]
+        ld      E       [IX`mob+Mob.unknown14]
+        ld      D       [IX`mob+Mob.unknown15]
         ld      C       E
         ld      B       D
         srl     D
@@ -14489,11 +14489,11 @@ boss_endSign_process:                                                           
         and     A
         sbc     HL      DE
         sbc     A       $00
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         xor     A`zero
         ld      DE      $0008
         sbc     HL      DE
@@ -14504,16 +14504,16 @@ boss_endSign_process:                                                           
         ld      DE      $0010
         xor     A`zero
         sbc     HL      DE
-        ld      [IX`mob+%mob.unknown14] L
-        ld      [IX`mob+%mob.unknown15] H
+        ld      [IX`mob+Mob.unknown14] L
+        ld      [IX`mob+Mob.unknown15] H
         ret     nc
         
-@_16    ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
-        res     1       [IX`mob+%mob.unknown11]
-        set     2       [IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown12] $00
+@_16    ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
+        res     1       [IX`mob+Mob.unknown11]
+        set     2       [IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown12] $00
         
         ret
         
@@ -14798,8 +14798,8 @@ badnick_crabmeat_process:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
-        ld      [IX`mob+%mob.width]     16
-        ld      [IX`mob+%mob.height]    31
+        ld      [IX`mob+Mob.width]     16
+        ld      [IX`mob+Mob.height]    31
         
         ld      E       [IX`mob+$12]
         ld      D       $00
@@ -14850,7 +14850,7 @@ badnick_crabmeat_process:                                                       
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_5     ld      A                   [IX`mob+%mob.unknown11]
+@_5     ld      A                   [IX`mob+Mob.unknown11]
         cp      $20
         jp      nz	@_7
         
@@ -14890,25 +14890,25 @@ badnick_crabmeat_process:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         
         ;update the mob's speed and direction
-@_6     ld      [IX`mob+%mob.Xspeed+0]      L
-        ld      [IX`mob+%mob.Xspeed+1]      H
-        ld      [IX`mob+%mob.Xdirection]    C
+@_6     ld      [IX`mob+Mob.Xspeed+0]      L
+        ld      [IX`mob+Mob.Xspeed+1]      H
+        ld      [IX`mob+Mob.Xdirection]    C
         
-@_7     ld      L                   [IX`mob+%mob.unknown11]
+@_7     ld      L                   [IX`mob+Mob.unknown11]
         ld      H                   [IX`mob+$12]
         ld      DE                  $0008
         add     HL                  DE
-        ld      [IX`mob+%mob.unknown11] L
+        ld      [IX`mob+Mob.unknown11] L
         ld      [IX`mob+$12]            H
-        ld      L                   [IX`mob+%mob.Yspeed+0]
-        ld      H                   [IX`mob+%mob.Yspeed+1]
-        ld      A                   [IX`mob+%mob.Ydirection]
+        ld      L                   [IX`mob+Mob.Yspeed+0]
+        ld      H                   [IX`mob+Mob.Yspeed+1]
+        ld      A                   [IX`mob+Mob.Ydirection]
         ld      DE                  $0020
         add     HL                  DE
         adc     A                   D
-        ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    A
+        ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    A
         ld      HL                  [$.TEMP6]
         ld      A                   [HL]
         add     A                   A
@@ -14975,7 +14975,7 @@ platform_swinging_process:                                                      
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         
         ld      HL                              $0020
         ld      [$.SCROLLZONE_OVERRIDE_LEFT]    HL
@@ -14986,27 +14986,27 @@ platform_swinging_process:                                                      
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_BOTTOM]  HL
         
-        bit     0   [IX`mob+%mob.flags]
+        bit     0   [IX`mob+Mob.flags]
         jr      nz	@_1
         
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
-        ld      [IX`mob+%mob.unknown12]	L
-        ld      [IX`mob+%mob.unknown13]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.unknown14]	L
-        ld      [IX`mob+%mob.unknown15]	H
-        ld      [IX`mob+%mob.unknown11]	$E0
-        set     0	[IX`mob+%mob.flags]
-        set     1	[IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.width]	26
-        ld      [IX`mob+%mob.height]	16
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
+        ld      [IX`mob+Mob.unknown12]	L
+        ld      [IX`mob+Mob.unknown13]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.unknown14]	L
+        ld      [IX`mob+Mob.unknown15]	H
+        ld      [IX`mob+Mob.unknown11]	$E0
+        set     0	[IX`mob+Mob.flags]
+        set     1	[IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.width]	26
+        ld      [IX`mob+Mob.height]	16
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
         ld      HL      @_682f
-        ld      E	[IX`mob+%mob.unknown11]
+        ld      E	[IX`mob+Mob.unknown11]
         ld      D	$00
         add     HL      DE
         ld      C	L
@@ -15017,11 +15017,11 @@ platform_swinging_process:                                                      
 	
         dec     D
 @_2     ld      E	A
-        ld      L	[IX`mob+%mob.unknown12]
-        ld      H	[IX`mob+%mob.unknown13]
+        ld      L	[IX`mob+Mob.unknown12]
+        ld      H	[IX`mob+Mob.unknown13]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
         ld      DE      [$.TEMP1]
         and     A
         sbc     HL      DE
@@ -15034,11 +15034,11 @@ platform_swinging_process:                                                      
 	
         dec     D
 @_3     ld      E	A
-        ld      L	[IX`mob+%mob.unknown14]
-        ld      H	[IX`mob+%mob.unknown15]
+        ld      L	[IX`mob+Mob.unknown14]
+        ld      H	[IX`mob+Mob.unknown15]
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         
         ld      A	[$.SONIC.Ydirection]
         and     A
@@ -15062,27 +15062,27 @@ platform_swinging_process:                                                      
         jr      z	@_5
 	
         ld      HL      \spriteLayouts._6923
-@_5     ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
-        bit     1	[IX`mob+%mob.flags]
+@_5     ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_6
 	
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         inc     A
         inc     A
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         cp      $E0
         ret     c
 	
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
         ret
         
-@_6     ld      A	[IX`mob+%mob.unknown11]
+@_6     ld      A	[IX`mob+Mob.unknown11]
         dec     A
         dec     A
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         ret     nz
-        res     1	[IX`mob+%mob.flags]
+        res     1	[IX`mob+Mob.flags]
         ret
         
 @_682f  ;this is swinging position data
@@ -15224,21 +15224,21 @@ explosion_process:                                                              
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
         
-        ld      A       [IX`mob+%mob.unknown15]
+        ld      A       [IX`mob+Mob.unknown15]
         cp      $AA                                             ;=170, lifetime of explosion?
         jr      z       @_1
         
         ;---------------------------------------------------------------------------------------------------------------
         
         xor     A`zero
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.unknown15] $AA
-        ld      [IX`mob+%mob.unknown16] A`zero
-        ld      [IX`mob+%mob.unknown17] A`zero
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.unknown15] $AA
+        ld      [IX`mob+Mob.unknown16] A`zero
+        ld      [IX`mob+Mob.unknown17] A`zero
         
-        bit     5       [IY`vars+%vars.flags0]
+        bit     5       [IY`vars+Vars.flags0]
         jr      z       @_1
         
         ld      A	[$.CURRENT_LEVEL]
@@ -15274,24 +15274,24 @@ explosion_process:                                                              
 	;---------------------------------------------------------------------------------------------------------------
 	
 @_1     xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         
         ld      DE      @_69be
         ld      BC      @_69b7
         call    animateMob
         
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $18
         ret     c
         
 	;explosion has finished, remove it from the mob list:
-        ld      [IX`mob+%mob.type]      $FF
+        ld      [IX`mob+Mob.type]      $FF
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -15321,12 +15321,12 @@ platform_sinking_process:                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         
-        ld      [IX`mob+%mob.width]	26
-        ld      [IX`mob+%mob.height]	16
-        ld      [IX`mob+%mob.spriteLayout+0]	LO \spriteLayouts._6911
-        ld      [IX`mob+%mob.spriteLayout+1]	HI \spriteLayouts._6911
+        ld      [IX`mob+Mob.width]	26
+        ld      [IX`mob+Mob.height]	16
+        ld      [IX`mob+Mob.spriteLayout+0]	LO \spriteLayouts._6911
+        ld      [IX`mob+Mob.spriteLayout+1]	HI \spriteLayouts._6911
         
         ld      A	[$.SONIC.Ydirection]
         and     A
@@ -15339,15 +15339,15 @@ platform_sinking_process:                                                       
         
         ld      DE      $0000
         
-        ld      A	[IX`mob+%mob.Y+0]
+        ld      A	[IX`mob+Mob.Y+0]
         and     %00011111                       		;MOD 32
         cp      $10
         jr      nc	@_1
         
         ld      E	$80
-@_1     ld      [IX`mob+%mob.Yspeed+0]		E
-        ld      [IX`mob+%mob.Yspeed+1]		D
-        ld      [IX`mob+%mob.Ydirection]	$00
+@_1     ld      [IX`mob+Mob.Yspeed+0]		E
+        ld      [IX`mob+Mob.Yspeed+1]		D
+        ld      [IX`mob+Mob.Ydirection]	$00
         ld      BC      $0010
         call    _LABEL_7CC1_12
         ret
@@ -15355,15 +15355,15 @@ platform_sinking_process:                                                       
 @_2     ld      C	$00
         ld      L	C
         ld      H	C
-        ld      A	[IX`mob+%mob.Y+0]
+        ld      A	[IX`mob+Mob.Y+0]
         and     %00011111
         jr      z	@_3
         
         ld      HL      $ffc0
         dec     C
-@_3     ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
+@_3     ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
         ret
 	;
 
@@ -15371,24 +15371,24 @@ platform_falling_process:                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      A	[IX`mob+%mob.unknown16]
-        add     A	[IX`mob+%mob.unknown17]
-        ld      [IX`mob+%mob.unknown17]	A
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      A	[IX`mob+Mob.unknown16]
+        add     A	[IX`mob+Mob.unknown17]
+        ld      [IX`mob+Mob.unknown17]	A
         cp      $18
         jr      c	@_1
 	
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $0040
         add     HL      DE
         adc     A	D
-        ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	A
-@_1     ld      [IX`mob+%mob.width]		26
-        ld      [IX`mob+%mob.height]		16
+        ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	A
+@_1     ld      [IX`mob+Mob.width]		26
+        ld      [IX`mob+Mob.height]		16
         
         ld      A	[$.SONIC.Ydirection]
         and     A
@@ -15399,10 +15399,10 @@ platform_falling_process:                                                       
         call    \\detectCollisionWithSonic
         jr      c	@_2
 	
-        ld      [IX`mob+%mob.unknown16]	$01
+        ld      [IX`mob+Mob.unknown16]	$01
         ld      BC      $0010
-        ld      E	[IX`mob+%mob.Yspeed+0]
-        ld      D	[IX`mob+%mob.Yspeed+1]
+        ld      E	[IX`mob+Mob.Yspeed+0]
+        ld      D	[IX`mob+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
 @_2     ld      HL      \spriteLayouts._6911
         ld      A	[$.LEVEL_SOLIDITY]
@@ -15410,18 +15410,18 @@ platform_falling_process:                                                       
         jr      z	@_3
 	
         ld      HL      \spriteLayouts._6923
-@_3     ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
+@_3     ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
         ld      HL      [$.CAMERA_Y]
         ld      DE      $00c0
         add     HL      DE
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         and     A
         sbc     HL      DE
         ret     nc
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove object?
+        ld      [IX`mob+Mob.type]	$FF              	;remove object?
         ret
 	;
 
@@ -15429,35 +15429,35 @@ unknown_6ac1_process:													;$6AC1
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	2
-        ld      [IX`mob+%mob.height]	2
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	2
+        ld      [IX`mob+Mob.height]	2
         ld      HL      	$0303
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
-        ld      E	[IX`mob+%mob.unknown13]
-        ld      D	[IX`mob+%mob.unknown14]
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
+        ld      E	[IX`mob+Mob.unknown13]
+        ld      D	[IX`mob+Mob.unknown14]
         add     HL      DE
         adc     A	$00
-        ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	A	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	A	
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      $0000
         ld      [$.TEMP4]	HL
         ld      [$.TEMP6]	HL
-        ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
+        ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
         ld      HL      @_6b72
         ld      A	[$.CURRENT_LEVEL]
         cp      $05
@@ -15474,8 +15474,8 @@ unknown_6ac1_process:													;$6AC1
         add     HL      DE
         ld      A	[HL]
         call    \\_3581
-        ld      C	[IX`mob+%mob.X+0]
-        ld      B	[IX`mob+%mob.X+1]
+        ld      C	[IX`mob+Mob.X+0]
+        ld      B	[IX`mob+Mob.X+1]
         ld      L	C
         ld      H	B
         ld      DE      $FFF8
@@ -15490,8 +15490,8 @@ unknown_6ac1_process:													;$6AC1
         sbc     HL      BC
         jr      c	@_2
 	
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         ld      L	C
         ld      H	B
         ld      DE      $0010
@@ -15507,7 +15507,7 @@ unknown_6ac1_process:													;$6AC1
         sbc     HL      BC
         ret     nc
 	
-@_2     ld      [IX`mob+%mob.type]	$FF              	;remove object?
+@_2     ld      [IX`mob+Mob.type]	$FF              	;remove object?
         ret     
 
 	%byte
@@ -15520,23 +15520,23 @@ badnick_buzzbomber_process:                                                     
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
         
-        bit     0       [IX`mob+%mob.flags]
+        bit     0       [IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      [IX`mob+%mob.unknown14] E
-        ld      [IX`mob+%mob.unknown15] D
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      [IX`mob+Mob.unknown14] E
+        ld      [IX`mob+Mob.unknown15] D
         
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
         ld      [IX`mob+$12]                    A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
         
         ld      HL      [$.CAMERA_X]
         ld      BC      $0100
@@ -15544,11 +15544,11 @@ badnick_buzzbomber_process:                                                     
         sbc     HL      DE
         ret     nc
 	
-        set     0       [IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    32
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        set     0       [IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    32
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      [$.SONIC.X]
         and     A
         sbc     HL      DE
@@ -15580,8 +15580,8 @@ badnick_buzzbomber_process:                                                     
 @_4     dec     A
         jr      nz	@_6
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $0030
         add     HL      DE
         ld      DE      [$.CAMERA_X]
@@ -15589,13 +15589,13 @@ badnick_buzzbomber_process:                                                     
         sbc     HL      DE
         jr      nc	@_5
 	
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
-        ld      A       [IX`mob+%mob.unknown14]
-        ld      [IX`mob+%mob.X+0]       A
-        ld      A       [IX`mob+%mob.unknown15]
-        ld      [IX`mob+%mob.X+1]       A
-        res     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
+        ld      A       [IX`mob+Mob.unknown14]
+        ld      [IX`mob+Mob.X+0]       A
+        ld      A       [IX`mob+Mob.unknown15]
+        ld      [IX`mob+Mob.X+1]       A
+        res     0       [IX`mob+Mob.flags]
         ret
         
 @_5     ld      C       $FF
@@ -15610,7 +15610,7 @@ badnick_buzzbomber_process:                                                     
         ld      H       C
         jp      @_8
         
-@_7     ld      A       [IX`mob+%mob.unknown11]
+@_7     ld      A       [IX`mob+Mob.unknown11]
         cp      $20
         jp      nz	@_9
 	
@@ -15618,36 +15618,36 @@ badnick_buzzbomber_process:                                                     
         jp      c	@_9
 	
         push    BC
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]              $0D             ;unknown object
-        ld      [IX`mob+%mob.Xsubpixel]         A`zero
-        ld      [IX`mob+%mob.X+0]               E
-        ld      [IX`mob+%mob.X+1]               D
-        ld      [IX`mob+%mob.Ysubpixel]         A`zero
+        ld      [IX`mob+Mob.type]              $0D             ;unknown object
+        ld      [IX`mob+Mob.Xsubpixel]         A`zero
+        ld      [IX`mob+Mob.X+0]               E
+        ld      [IX`mob+Mob.X+1]               D
+        ld      [IX`mob+Mob.Ysubpixel]         A`zero
         ld      HL                              $0020
         add     HL                              BC
-        ld      [IX`mob+%mob.Y+0]               L
-        ld      [IX`mob+%mob.Y+1]               H
-        ld      [IX`mob+%mob.unknown11]         A`zero
-        ld      [IX`mob+%mob.unknown13]         A`zero
-        ld      [IX`mob+%mob.unknown14]         A`zero
-        ld      [IX`mob+%mob.unknown15]         A`zero
-        ld      [IX`mob+%mob.unknown16]         A`zero
-        ld      [IX`mob+%mob.unknown17]         A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $FF
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $01
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Y+0]               L
+        ld      [IX`mob+Mob.Y+1]               H
+        ld      [IX`mob+Mob.unknown11]         A`zero
+        ld      [IX`mob+Mob.unknown13]         A`zero
+        ld      [IX`mob+Mob.unknown14]         A`zero
+        ld      [IX`mob+Mob.unknown15]         A`zero
+        ld      [IX`mob+Mob.unknown16]         A`zero
+        ld      [IX`mob+Mob.unknown17]         A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $FF
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $01
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         
         pop     IX  BC
         
@@ -15661,15 +15661,15 @@ badnick_buzzbomber_process:                                                     
         ld      L       C
         ld      H       C
         
-@_8     ld      [IX`mob+%mob.Xspeed+0]          L
-        ld      [IX`mob+%mob.Xspeed+1]          H
-        ld      [IX`mob+%mob.Xdirection]        C
+@_8     ld      [IX`mob+Mob.Xspeed+0]          L
+        ld      [IX`mob+Mob.Xspeed+1]          H
+        ld      [IX`mob+Mob.Xdirection]        C
         
-@_9     ld      L       [IX`mob+%mob.unknown11]
+@_9     ld      L       [IX`mob+Mob.unknown11]
         ld      H       [IX`mob+$12]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.unknown11] L
+        ld      [IX`mob+Mob.unknown11] L
         ld      [IX`mob+$12]            H
         ld      HL      [$.TEMP6]
         ld      A       [HL]
@@ -15739,7 +15739,7 @@ platform_moving_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5   	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5   	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $07                                     	;Jungle act 2?
@@ -15754,8 +15754,8 @@ platform_moving_process:                                                        
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_BOTTOM]  HL
         
-@_1     ld      [IX`mob+%mob.width]     26
-        ld      [IX`mob+%mob.height]    16
+@_1     ld      [IX`mob+Mob.width]     26
+        ld      [IX`mob+Mob.height]    16
         ld      C       $00
         
         ld      A       [$.SONIC.Ydirection]
@@ -15775,32 +15775,32 @@ platform_moving_process:                                                        
         ld      C       $01
         
         ;move right 1px
-@_2     ld      L       [IX`mob+%mob.unknown12]
-        ld      H       [IX`mob+%mob.unknown13]
+@_2     ld      L       [IX`mob+Mob.unknown12]
+        ld      H       [IX`mob+Mob.unknown13]
         inc     HL
-        ld      [IX`mob+%mob.unknown12] L
-        ld      [IX`mob+%mob.unknown13] H
+        ld      [IX`mob+Mob.unknown12] L
+        ld      [IX`mob+Mob.unknown13] H
         
         ld      DE      $00A0
         xor     A`zero                          		;set A to 0
         sbc     HL      DE
         jr      c	@_3
         
-        ld      [IX`mob+%mob.unknown12] A`zero
-        ld      [IX`mob+%mob.unknown13] A`zero
-        inc     [IX`mob+%mob.unknown14]
+        ld      [IX`mob+Mob.unknown12] A`zero
+        ld      [IX`mob+Mob.unknown13] A`zero
+        inc     [IX`mob+Mob.unknown14]
         
 @_3     ld      DE      $0001
-        bit     0   	[IX`mob+%mob.unknown14]
+        bit     0   	[IX`mob+Mob.unknown14]
         jr      z	@_4
         
         ;move left 1px?
         ld      DE      $FFFF
-@_4     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_4     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
         ld      A       C
         and     A
         jr      z	@_5
@@ -15819,8 +15819,8 @@ platform_moving_process:                                                        
         jr      z	@_6
         
         ld      HL      \spriteLayouts._6923
-@_6     ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+@_6     ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         
         ret
 	;
@@ -15833,12 +15833,12 @@ badnick_motobug_process:                                                        
         ;---------------------------------------------------------------------------------------------------------------
         ;this mob adheres to the floor
         ;TODO: this shouldn't need to be done every frame?
-        res     5       [IX`mob+%mob.flags]
+        res     5       [IX`mob+Mob.flags]
         
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
-        ld      [IX`mob+%mob.width]     10
-        ld      [IX`mob+%mob.height]    16
+        ld      [IX`mob+Mob.width]     10
+        ld      [IX`mob+Mob.height]    16
         
         ld      E       [IX`mob+$12]
         ld      D       $00
@@ -15924,22 +15924,22 @@ badnick_motobug_process:                                                        
         ;       $.TEMP6         
                 ;-------------------------------------------------------------------------------------------------------
                 ;apply the chosen direction and speed
-                ld      [IX`mob+%mob.Xspeed+0]          L`speed
-                ld      [IX`mob+%mob.Xspeed+1]          H`speed
-                ld      [IX`mob+%mob.Xdirection]        C`direction
+                ld      [IX`mob+Mob.Xspeed+0]          L`speed
+                ld      [IX`mob+Mob.Xspeed+1]          H`speed
+                ld      [IX`mob+Mob.Xdirection]        C`direction
                 
-                ld      L       [IX`mob+%mob.unknown11]
+                ld      L       [IX`mob+Mob.unknown11]
                 ld      H       [IX`mob+$12]
                 ld      DE      $0008
                 add     HL      DE
-                ld      [IX`mob+%mob.unknown11] L
+                ld      [IX`mob+Mob.unknown11] L
                 ld      [IX`mob+$12]            H
                 
                 ;apply gravity to the mob, it will attempt to move downward any time possible.
                 ;because it adheres to the ground it won't fall through the floor
-                ld      [IX`mob+%mob.Yspeed+0]          $00
-                ld      [IX`mob+%mob.Yspeed+1]          $02
-                ld      [IX`mob+%mob.Ydirection]        $00
+                ld      [IX`mob+Mob.Yspeed+0]          $00
+                ld      [IX`mob+Mob.Yspeed+1]          $02
+                ld      [IX`mob+Mob.Ydirection]        $00
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -16060,10 +16060,10 @@ badnick_newtron_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5                   [IX`mob+%mob.flags]     	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]     12
-        ld      [IX`mob+%mob.height]    20
-        ld      A                   [IX`mob+%mob.unknown11]
+        set     5                   [IX`mob+Mob.flags]     	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]     12
+        ld      [IX`mob+Mob.height]    20
+        ld      A                   [IX`mob+Mob.unknown11]
         cp      $02
         jr      z	@_1
 	
@@ -16078,20 +16078,20 @@ badnick_newtron_process:                                                        
         jr      @_3
         
 @_2     ld      BC                  @_6fed
-@_3     inc     [IX`mob+%mob.unknown17]
-        ld      A                   [IX`mob+%mob.unknown17]
+@_3     inc     [IX`mob+Mob.unknown17]
+        ld      A                   [IX`mob+Mob.unknown17]
         cp      $3C
         jp      c	@_7
 	
-        ld      [IX`mob+%mob.unknown17] $00
-        inc     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown17] $00
+        inc     [IX`mob+Mob.unknown11]
         jp      @_7
         
 @_4     cp      $01
         jp      nz	@_6
 	
-        inc     [IX`mob+%mob.unknown17]
-        ld      A                   [IX`mob+%mob.unknown17]
+        inc     [IX`mob+Mob.unknown17]
+        ld      A                   [IX`mob+Mob.unknown17]
         cp      $64
         jr      nz	@_5
 	
@@ -16099,36 +16099,36 @@ badnick_newtron_process:                                                        
         jp      c	@_5
 	
         push    BC
-        ld      E                   [IX`mob+%mob.X+0]
-        ld      D                   [IX`mob+%mob.X+1]
-        ld      C                   [IX`mob+%mob.Y+0]
-        ld      B                   [IX`mob+%mob.Y+1]
+        ld      E                   [IX`mob+Mob.X+0]
+        ld      D                   [IX`mob+Mob.X+1]
+        ld      C                   [IX`mob+Mob.Y+0]
+        ld      B                   [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         
         xor     A`zero                                      	;set A to 0
-        ld      [IX`mob+%mob.type]      $0D                 	;unknown object
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       E
-        ld      [IX`mob+%mob.X+1]       D
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.type]      $0D                 	;unknown object
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       E
+        ld      [IX`mob+Mob.X+1]       D
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
         ld      HL                  $0006
         add     HL                  BC
-        ld      [IX`mob+%mob.Y+0]   L
-        ld      [IX`mob+%mob.Y+1]   H
-        ld      [IX`mob+%mob.unknown11]     A`zero
-        ld      [IX`mob+%mob.unknown13]     A`zero
-        ld      [IX`mob+%mob.unknown14]     A`zero
-        ld      [IX`mob+%mob.unknown15]     A`zero
-        ld      [IX`mob+%mob.unknown16]     A`zero
-        ld      [IX`mob+%mob.unknown17]     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]      $00
-        ld      [IX`mob+%mob.Xspeed+1]      $FE
-        ld      [IX`mob+%mob.Xdirection]    $FF
-        ld      [IX`mob+%mob.Yspeed+0]      A`zero
-        ld      [IX`mob+%mob.Yspeed+1]      A`zero
-        ld      [IX`mob+%mob.Ydirection]    A`zero
+        ld      [IX`mob+Mob.Y+0]   L
+        ld      [IX`mob+Mob.Y+1]   H
+        ld      [IX`mob+Mob.unknown11]     A`zero
+        ld      [IX`mob+Mob.unknown13]     A`zero
+        ld      [IX`mob+Mob.unknown14]     A`zero
+        ld      [IX`mob+Mob.unknown15]     A`zero
+        ld      [IX`mob+Mob.unknown16]     A`zero
+        ld      [IX`mob+Mob.unknown17]     A`zero
+        ld      [IX`mob+Mob.Xspeed+0]      $00
+        ld      [IX`mob+Mob.Xspeed+1]      $FE
+        ld      [IX`mob+Mob.Xdirection]    $FF
+        ld      [IX`mob+Mob.Yspeed+0]      A`zero
+        ld      [IX`mob+Mob.Yspeed+1]      A`zero
+        ld      [IX`mob+Mob.Ydirection]    A`zero
         
         pop     IX  BC
 	
@@ -16142,23 +16142,23 @@ badnick_newtron_process:                                                        
         cp      $78
         jr      c	@_7
 	
-        ld      [IX`mob+%mob.unknown17] $00
-        inc     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown17] $00
+        inc     [IX`mob+Mob.unknown11]
         jr      @_7
         
 @_6     cp      $03
         jr      nz	@_7
 	
         ld      BC                  $0000
-        inc     [IX`mob+%mob.unknown17]
-        ld      A                   [IX`mob+%mob.unknown17]
+        inc     [IX`mob+Mob.unknown17]
+        ld      A                   [IX`mob+Mob.unknown17]
         and     A
         jr      nz	@_7
 	
-        ld      [IX`mob+%mob.unknown11] C
+        ld      [IX`mob+Mob.unknown11] C
         
-@_7     ld      [IX`mob+%mob.spriteLayout+0]    C
-        ld      [IX`mob+%mob.spriteLayout+1]    B
+@_7     ld      [IX`mob+Mob.spriteLayout+0]    C
+        ld      [IX`mob+Mob.spriteLayout+1]    B
         ld      HL                  $0202
         ld      [$.TEMP6]           HL
         call    \\detectCollisionWithSonic
@@ -16184,19 +16184,19 @@ boss_greenHill_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]              	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	32
-        ld      [IX`mob+%mob.height]	28
+        set     5	[IX`mob+Mob.flags]              	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	32
+        ld      [IX`mob+Mob.height]	28
         call    _7ca6
-        bit     0	[IX`mob+%mob.unknown11]
+        bit     0	[IX`mob+Mob.unknown11]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $FFF8
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         
         ;boss sprite set
         ld      HL      $aeb1
@@ -16216,16 +16216,16 @@ boss_greenHill_process:                                                         
         
         xor     A`zero
         ld      [$.D2EC]		A`zero
-        ld      [IX`mob+%mob.unknown12]	A`zero
-        ld      [IX`mob+%mob.unknown14]	$A1
-        ld      [IX`mob+%mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	A`zero
+        ld      [IX`mob+Mob.unknown14]	$A1
+        ld      [IX`mob+Mob.unknown15]	$72
         
         ld      HL      $0760
         ld      DE      $00E8
         call    _7c8c
         
-        set     0	[IX`mob+%mob.unknown11]
-@_1     ld      A	[IX`mob+%mob.unknown13]
+        set     0	[IX`mob+Mob.unknown11]
+@_1     ld      A	[IX`mob+Mob.unknown13]
         and     $3F
         ld      E	A
         ld      D	$00
@@ -16238,13 +16238,13 @@ boss_greenHill_process:                                                         
         ld      C	$FF
         jr      @_3
 @_2     ld      C	$00
-@_3     ld      [IX`mob+%mob.Yspeed+0]		A
-        ld      [IX`mob+%mob.Yspeed+1]		C
-        ld      [IX`mob+%mob.Ydirection]	C
-@_4     ld      E	[IX`mob+%mob.unknown12]
+@_3     ld      [IX`mob+Mob.Yspeed+0]		A
+        ld      [IX`mob+Mob.Yspeed+1]		C
+        ld      [IX`mob+Mob.Ydirection]	C
+@_4     ld      E	[IX`mob+Mob.unknown12]
         ld      D	$00
-        ld      L	[IX`mob+%mob.unknown14]
-        ld      H	[IX`mob+%mob.unknown15]
+        ld      L	[IX`mob+Mob.unknown14]
+        ld      H	[IX`mob+Mob.unknown15]
         add     HL      DE
         ld      [$.TEMP6]	HL
         ld      A	[HL]
@@ -16253,7 +16253,7 @@ boss_greenHill_process:                                                         
 	
         inc     HL
         ld      A	[HL]
-        ld      [IX`mob+%mob.unknown12]	A
+        ld      [IX`mob+Mob.unknown12]	A
         jp      @_4
         
 @_5     dec     A
@@ -16270,61 +16270,61 @@ boss_greenHill_process:                                                         
         ld      HL      [$.LEVEL_LEFT]
         ld      DE      $0006
         add     HL      DE
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         ld      C	$FF
         ld      HL      $FF00
         jp      c	@_9
         
-        ld      [IX`mob+%mob.unknown12]	$00
-        bit     1	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown12]	$00
+        bit     1	[IX`mob+Mob.unknown11]
         jr      nz	@_6
 	
-        ld      [IX`mob+%mob.unknown14]	$A4
-        ld      [IX`mob+%mob.unknown15]	$72
-        set     1	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown14]	$A4
+        ld      [IX`mob+Mob.unknown15]	$72
+        set     1	[IX`mob+Mob.unknown11]
         jp      @_9
         
-@_6     ld      [IX`mob+%mob.unknown14]	$A7
-        ld      [IX`mob+%mob.unknown15]	$72
-        res     1	[IX`mob+%mob.unknown11]
+@_6     ld      [IX`mob+Mob.unknown14]	$A7
+        ld      [IX`mob+Mob.unknown15]	$72
+        res     1	[IX`mob+Mob.unknown11]
         jp      @_9
         
         ld      HL      [$.LEVEL_LEFT]
         ld      DE      $00e0
         add     HL      DE
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         ld      C	$00
         ld      HL      $0100
         jp      nc	@_9
 	
-        ld      [IX`mob+%mob.unknown12]	$00
-        bit     2	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown12]	$00
+        bit     2	[IX`mob+Mob.unknown11]
         jr      nz	@_7
 	
-        ld      [IX`mob+%mob.unknown14]	$A1
-        ld      [IX`mob+%mob.unknown15]	$72
-        set     2	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown14]	$A1
+        ld      [IX`mob+Mob.unknown15]	$72
+        set     2	[IX`mob+Mob.unknown11]
         jp      @_9
         
-@_7     ld      [IX`mob+%mob.unknown14],$aa
-        ld      [IX`mob+%mob.unknown15],$72
-        res     2	[IX`mob+%mob.unknown11]
+@_7     ld      [IX`mob+Mob.unknown14],$aa
+        ld      [IX`mob+Mob.unknown15],$72
+        res     2	[IX`mob+Mob.unknown11]
         jp      @_9
         
-        ld      [IX`mob+%mob.Yspeed+0]		$60
-        ld      [IX`mob+%mob.Yspeed+1]		$00
-        ld      [IX`mob+%mob.Ydirection]	$00
+        ld      [IX`mob+Mob.Yspeed+0]		$60
+        ld      [IX`mob+Mob.Yspeed+1]		$00
+        ld      [IX`mob+Mob.Ydirection]	$00
         ld      HL      [$.CAMERA_Y]
         ld      DE      $0074
         add     HL      DE
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         ld      C	A`zero
@@ -16332,23 +16332,23 @@ boss_greenHill_process:                                                         
         ld      H	C
         jp      nc	@_9
 	
-        ld      [IX`mob+%mob.unknown12]	$00
-        ld      [IX`mob+%mob.unknown14]	$B0
-        ld      [IX`mob+%mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	$00
+        ld      [IX`mob+Mob.unknown14]	$B0
+        ld      [IX`mob+Mob.unknown15]	$72
         jp      @_9
         
         ld      C	$00
         ld      HL      $0400
         jp      @_9
         
-        ld      [IX`mob+%mob.Yspeed+0]		$60
-        ld      [IX`mob+%mob.Yspeed+1]		$00
-        ld      [IX`mob+%mob.Ydirection]	$00
+        ld      [IX`mob+Mob.Yspeed+0]		$60
+        ld      [IX`mob+Mob.Yspeed+1]		$00
+        ld      [IX`mob+Mob.Ydirection]	$00
         ld      HL      [$.CAMERA_Y]
         ld      DE      $0074
         add     HL      DE
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         ld      C	A`zero
@@ -16356,9 +16356,9 @@ boss_greenHill_process:                                                         
         ld      H	C
         jp      nc	@_9
 	
-        ld      [IX`mob+%mob.unknown12]	$00
-        ld      [IX`mob+%mob.unknown14]	$BC
-        ld      [IX`mob+%mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	$00
+        ld      [IX`mob+Mob.unknown14]	$BC
+        ld      [IX`mob+Mob.unknown15]	$72
         jp      @_9
         
         ld      C	$FF
@@ -16373,28 +16373,28 @@ boss_greenHill_process:                                                         
         ld      C	$00
         ld      L	C
         ld      H	C
-        ld      [IX`mob+%mob.unknown14]	$AD
-        ld      [IX`mob+%mob.unknown15]	$72
-        ld      [IX`mob+%mob.unknown12]	C
-        ld      [IX`mob+%mob.unknown13]	C
+        ld      [IX`mob+Mob.unknown14]	$AD
+        ld      [IX`mob+Mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	C
+        ld      [IX`mob+Mob.unknown13]	C
         jr      @_9
         
-        ld      [IX`mob+%mob.Yspeed+0]		$00
-        ld      [IX`mob+%mob.Yspeed+1]		$FF
-        ld      [IX`mob+%mob.Ydirection]	$FF
+        ld      [IX`mob+Mob.Yspeed+0]		$00
+        ld      [IX`mob+Mob.Yspeed+1]		$FF
+        ld      [IX`mob+Mob.Ydirection]	$FF
         ld      HL      [$.CAMERA_Y]
         ld      DE      $001A
         add     HL      DE
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         ld      C	A`zero
         ld      L	C
         ld      H	C
         jp      c	@_9
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      [$.LEVEL_LEFT]
         xor     A`zero
         sbc     HL      DE
@@ -16402,19 +16402,19 @@ boss_greenHill_process:                                                         
         ld      L	C
         ld      H	C
         jr      c	@_8
-        ld      [IX`mob+%mob.unknown14]	$A1
-        ld      [IX`mob+%mob.unknown15]	$72
-        ld      [IX`mob+%mob.unknown12]	A
+        ld      [IX`mob+Mob.unknown14]	$A1
+        ld      [IX`mob+Mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	A
         jr      @_9
         
-@_8     ld      [IX`mob+%mob.unknown14]	$A4
-        ld      [IX`mob+%mob.unknown15]	$72
-        ld      [IX`mob+%mob.unknown12]	A
+@_8     ld      [IX`mob+Mob.unknown14]	$A4
+        ld      [IX`mob+Mob.unknown15]	$72
+        ld      [IX`mob+Mob.unknown12]	A
         jr      @_9
         
-@_9     ld      [IX`mob+%mob.Xspeed+0]		L
-        ld      [IX`mob+%mob.Xspeed+1]		H
-        ld      [IX`mob+%mob.Xdirection]	C
+@_9     ld      [IX`mob+Mob.Xspeed+0]		L
+        ld      [IX`mob+Mob.Xspeed+1]		H
+        ld      [IX`mob+Mob.Xdirection]	C
         ld      HL      [$.TEMP6]
         ld      E	[HL]
         ld      D	$00
@@ -16427,22 +16427,22 @@ boss_greenHill_process:                                                         
 	
         ld      HL      @_730a
 @_10    ld      E	A
-        ld      A	[IX`mob+%mob.flags]
+        ld      A	[IX`mob+Mob.flags]
         and     $FD
         or      E
-        ld      [IX`mob+%mob.flags]		A
-        ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
+        ld      [IX`mob+Mob.flags]		A
+        ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
         ld      HL      $0012
         ld      [$.D216]	HL
         call    _77be
         call    _79fa
-        inc     [IX`mob+%mob.unknown13]
-        ld      A	[IX`mob+%mob.unknown13]
+        inc     [IX`mob+Mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         and     $0F
         ret     nz
 	
-        inc     [IX`mob+%mob.unknown12]
+        inc     [IX`mob+Mob.unknown12]
         ret
 	
 	%byte
@@ -16479,21 +16479,21 @@ boss_capsule_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0010
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.width]	28
-        ld      [IX`mob+%mob.height]	64
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.width]	28
+        ld      [IX`mob+Mob.height]	64
         ld      HL      @_7564
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      z	@_2
 	
         ld      HL      @_757c
@@ -16508,8 +16508,8 @@ boss_capsule_process:                                                           
         ld      B	[HL]
         inc     HL
         ex      DE      HL
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         add     HL      BC
         ld      [$.D2AB]	HL
         ex      DE      HL
@@ -16518,8 +16518,8 @@ boss_capsule_process:                                                           
         ld      B	[HL]
         inc     HL
         ld      [$.D2AF]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         add     HL      BC
         ld      [$.D2AD]	HL
         ld      HL      @_752e
@@ -16528,14 +16528,14 @@ boss_capsule_process:                                                           
         jr      z	@_4
 	
         ld      HL      @_7552
-@_4     ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
+@_4     ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
         ld      HL      [$.CAMERA_X]
         ld      [$.LEVEL_LEFT]	HL
         
         ;something to do with scrolling
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $FF90
         add     HL      DE
         ld      [$.LEVEL_RIGHT]	HL
@@ -16549,15 +16549,15 @@ boss_capsule_process:                                                           
         and     A
         jp      m	@_8
         
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      [$.SONIC.Y]
         and     A
         sbc     HL      DE
         jr      c	@_6
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $0010
         add     HL      DE
         ld      DE      $FFEA
@@ -16567,8 +16567,8 @@ boss_capsule_process:                                                           
         jr      nc	@_5
 	
         ld      DE      $001d
-@_5     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+@_5     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
         jp      @_7
@@ -16578,8 +16578,8 @@ boss_capsule_process:                                                           
         add     HL      BC
         ld      C	L
         ld      B	H
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         ret     c
@@ -16598,8 +16598,8 @@ boss_capsule_process:                                                           
         ld      HL      @_750e
         add     HL      BC
         ld      C	[HL]
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $FFE0
         add     HL      DE
         add     HL      BC
@@ -16614,12 +16614,12 @@ boss_capsule_process:                                                           
         cp      $03
         ret     nz
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_7540
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_7540
-        bit     1	[IY`vars+%vars.flags6]
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_7540
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_7540
+        bit     1	[IY`vars+Vars.flags6]
         jr      nz	@_9
 	
-        set     1	[IY`vars+%vars.flags6]
+        set     1	[IY`vars+Vars.flags6]
         
         ;Stop Sonic's movement (reset speed and direction)
 @_7     xor     A`zero
@@ -16628,24 +16628,24 @@ boss_capsule_process:                                                           
         ld      [$.SONIC.Xspeed]	HL`zero
         ld      [$.SONIC.Xdirection]	A`zero
         
-@_8     bit     1	[IY`vars+%vars.flags6]
+@_8     bit     1	[IY`vars+Vars.flags6]
         ret     z
 	
-@_9     ld      A	[IX`mob+%mob.unknown12]
+@_9     ld      A	[IX`mob+Mob.unknown12]
         cp      $08
         jr      nc	@_10
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $14
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11],$00
+        ld      [IX`mob+Mob.unknown11],$00
         call    _7a3a
-        inc     [IX`mob+%mob.unknown12]
+        inc     [IX`mob+Mob.unknown12]
         ret
         
-@_10    bit     1	[IX`mob+%mob.flags]
+@_10    bit     1	[IX`mob+Mob.flags]
         jr      nz	@_11
 	
         ld      A		$A0
@@ -16657,11 +16657,11 @@ boss_capsule_process:                                                           
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
 @_11    xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        res     5	[IY`vars+%vars.flags0]
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        res     5	[IY`vars+Vars.flags0]
         ld      A	[$.FRAMECOUNT]
         and     $0F
         ret     nz
@@ -16670,12 +16670,12 @@ boss_capsule_process:                                                           
         and     %00000001
         add     A	$23
         call    @_74b6
-        inc     [IX`mob+%mob.unknown16]
-        ld      A	[IX`mob+%mob.unknown16]
+        inc     [IX`mob+Mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $0C
         ret     c
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove object?
+        ld      [IX`mob+Mob.type]	$FF              	;remove object?
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
@@ -16684,38 +16684,38 @@ boss_capsule_process:                                                           
         call    \\findEmptyMob
         ret     c
 	
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         ld      A	[$.D216]
-        ld      [IX`mob+%mob.type]	A
+        ld      [IX`mob+Mob.type]	A
         
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.unknown16]	A`zero
-        ld      [IX`mob+%mob.unknown17]	A`zero
-        ld      [IX`mob+%mob.Xsubpixel]	A`zero
+        ld      [IX`mob+Mob.unknown16]	A`zero
+        ld      [IX`mob+Mob.unknown17]	A`zero
+        ld      [IX`mob+Mob.Xsubpixel]	A`zero
         ld      HL      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.Ysubpixel]	A`zero
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.Ysubpixel]	A`zero
         ld      HL      $001A
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         call    \\math\_LABEL_625_57
-        ld      [IX`mob+%mob.Yspeed+0]	A	
+        ld      [IX`mob+Mob.Yspeed+0]	A	
         call    \\math\_LABEL_625_57
         and     %00000001
         inc     A
         inc     A
         neg     
-        ld      [IX`mob+%mob.Yspeed+1]		A
-        ld      [IX`mob+%mob.Ydirection]	$FF
+        ld      [IX`mob+Mob.Yspeed+1]		A
+        ld      [IX`mob+Mob.Ydirection]	$FF
         pop     IX
         ret
 	
@@ -16745,24 +16745,24 @@ boss_freeBird_process:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        res     5                   [IX`mob+%mob.flags]     	;mob adheres to the floor
-        ld      [IX`mob+%mob.width]     12
-        ld      [IX`mob+%mob.height]    16
-        bit     7   [IX`mob+%mob.flags]
+        res     5                   [IX`mob+Mob.flags]     	;mob adheres to the floor
+        ld      [IX`mob+Mob.width]     12
+        ld      [IX`mob+Mob.height]    16
+        bit     7   [IX`mob+Mob.flags]
         jr      z	@_1
 	
-        ld      [IX`mob+%mob.Yspeed+0]      $00
-        ld      [IX`mob+%mob.Yspeed+1]      $FD
-        ld      [IX`mob+%mob.Ydirection]    $FF
+        ld      [IX`mob+Mob.Yspeed+0]      $00
+        ld      [IX`mob+Mob.Yspeed+1]      $FD
+        ld      [IX`mob+Mob.Ydirection]    $FF
 @_1     ld      DE                  $0012
         ld      A                   [$.LEVEL_SOLIDITY]
         cp      $03
         jr      nz	@_2
 	
         ld      DE                  $0038
-@_2     ld      L                   [IX`mob+%mob.Yspeed+0]
-        ld      H                   [IX`mob+%mob.Yspeed+1]
-        ld      A                   [IX`mob+%mob.Ydirection]
+@_2     ld      L                   [IX`mob+Mob.Yspeed+0]
+        ld      H                   [IX`mob+Mob.Yspeed+1]
+        ld      A                   [IX`mob+Mob.Ydirection]
         add     HL                  DE
         adc     A                   $00
         ld      C                   A
@@ -16774,18 +16774,18 @@ boss_freeBird_process:                                                          
 	
         ld      HL                  $0200
         ld      C                   $00
-@_3     ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    C
+@_3     ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    C
         ld      HL                  $FE00
         ld      A                   [$.LEVEL_SOLIDITY]
         cp      $03
         jr      nz	@_4
 	
         ld      HL                  $FE80
-@_4     ld      [IX`mob+%mob.Xspeed+0]      L
-        ld      [IX`mob+%mob.Xspeed+1]      H
-        ld      [IX`mob+%mob.Xdirection]    $FF
+@_4     ld      [IX`mob+Mob.Xspeed+0]      L
+        ld      [IX`mob+Mob.Xspeed+1]      H
+        ld      [IX`mob+Mob.Xdirection]    $FF
         ld      BC                  @_7629
         ld      A                   [$.LEVEL_SOLIDITY]
         and     A
@@ -16799,8 +16799,8 @@ boss_freeBird_process:                                                          
 @_5     ld      DE                  @_7638
         call    animateMob
         
-@_7612  ld      L                   [IX`mob+%mob.X+0]
-        ld      H                   [IX`mob+%mob.X+1]
+@_7612  ld      L                   [IX`mob+Mob.X+0]
+        ld      H                   [IX`mob+Mob.X+1]
         ld      DE                  $0010
         add     HL                  DE
         ld      DE                  [$.CAMERA_X]
@@ -16808,7 +16808,7 @@ boss_freeBird_process:                                                          
         sbc     HL                  DE
         ret     nc
 	
-        ld      [IX`mob+%mob.type]  $FF                     	;remove object?
+        ld      [IX`mob+Mob.type]  $FF                     	;remove object?
         ret
 
 	%byte
@@ -16846,10 +16846,10 @@ boss_freeRabbit_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        res     5	[IX`mob+%mob.flags]     		;mob adheres to the floor
+        res     5	[IX`mob+Mob.flags]     		;mob adheres to the floor
 	
-        ld      [IX`mob+%mob.width]     12
-        ld      [IX`mob+%mob.height]    32
+        ld      [IX`mob+Mob.width]     12
+        ld      [IX`mob+Mob.height]    32
         
 	ld      HL	@_7760
         ld      A       [$.LEVEL_SOLIDITY]
@@ -16865,18 +16865,18 @@ boss_freeRabbit_process:                                                        
         jr      z	@_1
 	
         ld      HL	@_77b1
-@_1     ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
-        bit     7   [IX`mob+%mob.flags]
+@_1     ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
+        bit     7   [IX`mob+Mob.flags]
         jr      z	@_4
         
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]      A`zero
-        ld      [IX`mob+%mob.Yspeed+1]      $01
-        ld      [IX`mob+%mob.Ydirection]    A`zero
-        ld      [IX`mob+%mob.Xspeed+0]      A`zero
-        ld      [IX`mob+%mob.Xspeed+1]      A`zero
-        ld      [IX`mob+%mob.Xdirection]    A`zero
+        ld      [IX`mob+Mob.Yspeed+0]      A`zero
+        ld      [IX`mob+Mob.Yspeed+1]      $01
+        ld      [IX`mob+Mob.Ydirection]    A`zero
+        ld      [IX`mob+Mob.Xspeed+0]      A`zero
+        ld      [IX`mob+Mob.Xspeed+1]      A`zero
+        ld      [IX`mob+Mob.Xdirection]    A`zero
         
         ld      HL	@_7752
         ld      A 	[$.LEVEL_SOLIDITY]
@@ -16893,10 +16893,10 @@ boss_freeRabbit_process:                                                        
         jr      z	@_2
 	
         ld      HL	@_77a3
-@_2     ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+@_2     ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $08
         ret     c
 	
@@ -16906,12 +16906,12 @@ boss_freeRabbit_process:                                                        
         jr      z	@_3
 	
         ld      HL	$FFFE
-@_3     ld      [IX`mob+%mob.Yspeed+0]      $00
-        ld      [IX`mob+%mob.Yspeed+1]      L
-        ld      [IX`mob+%mob.Ydirection]    H
-@_4     ld      L 	[IX`mob+%mob.Yspeed+0]
-        ld      H 	[IX`mob+%mob.Yspeed+1]
-        ld      A 	[IX`mob+%mob.Ydirection]
+@_3     ld      [IX`mob+Mob.Yspeed+0]      $00
+        ld      [IX`mob+Mob.Yspeed+1]      L
+        ld      [IX`mob+Mob.Ydirection]    H
+@_4     ld      L 	[IX`mob+Mob.Yspeed+0]
+        ld      H 	[IX`mob+Mob.Yspeed+1]
+        ld      A 	[IX`mob+Mob.Ydirection]
         ld      DE	$0028
         add     HL	DE
         adc     A 	$00
@@ -16924,13 +16924,13 @@ boss_freeRabbit_process:                                                        
 	
         ld      HL	$0200
         ld      C       $00
-@_5     ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    C
-        ld      [IX`mob+%mob.Xspeed+0]      $80
-        ld      [IX`mob+%mob.Xspeed+1]      $FE
-        ld      [IX`mob+%mob.Xdirection]    $FF
-        ld      [IX`mob+%mob.unknown11]     $00
+@_5     ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    C
+        ld      [IX`mob+Mob.Xspeed+0]      $80
+        ld      [IX`mob+Mob.Xspeed+1]      $FE
+        ld      [IX`mob+Mob.Xdirection]    $FF
+        ld      [IX`mob+Mob.unknown11]     $00
         jp      mob_boss_freeBird._7612
         
 	%byte
@@ -16986,7 +16986,7 @@ _77be:                                                                          
         call    detectCollisionWithSonic
         ret     c
         
-        bit     0 [IY`vars+%vars.scrollRingFlags]
+        bit     0 [IY`vars+Vars.scrollRingFlags]
         ret     nz
         ld      A       [$.SONIC.flags]
         rrca    
@@ -17036,12 +17036,12 @@ _77be:                                                                          
 @_2     ld      HL      [$.D216]
         ld      DE      @_7922
         add     HL      DE
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      z       @_3
         ld      DE      $0012
         add     HL      DE
-@_3     ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+@_3     ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         
         ld      HL      $.D2ED
         ld      [HL]    $18
@@ -17052,23 +17052,23 @@ _77be:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         
 @_4     xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         
         ld      DE      $0024
         ld      HL      [$.D216]
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      z       @_5
         ld      DE      $0036
 @_5     add     HL      DE
         ld      DE      @_7922
         add     HL      DE
-        ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+        ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         ld      HL      $.D2ED+1                                ;lo-addr of $.D2ED
         ld      A       [HL]
         cp      $0A
@@ -17085,15 +17085,15 @@ _77be:                                                                          
 @_6     ld      A       [$.D2ED+1]                              ;lo-addr of $.D2ED
         cp      $3A
         jr      nc      @_7
-        ld      L       [IX`mob+%mob.Ysubpixel]
-        ld      H       [IX`mob+%mob.Y+0]
-        ld      A       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Ysubpixel]
+        ld      H       [IX`mob+Mob.Y+0]
+        ld      A       [IX`mob+Mob.Y+1]
         ld      DE      $0020
         add     HL      DE
         adc     A       $00
-        ld      [IX`mob+%mob.Ysubpixel] L
-        ld      [IX`mob+%mob.Y+0]       H
-        ld      [IX`mob+%mob.Y+1]       A
+        ld      [IX`mob+Mob.Ysubpixel] L
+        ld      [IX`mob+Mob.Y+0]       H
+        ld      [IX`mob+Mob.Y+1]       A
 @_7     ld      HL      $.D2ED+1                                ;lo-addr of $.D2ED
         ld      A       [HL]
         cp      $5A
@@ -17110,23 +17110,23 @@ _77be:                                                                          
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         
-        res     0       [IY`vars+%vars.flags0]
+        res     0       [IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         
-@_9     ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $03
-        ld      [IX`mob+%mob.Xdirection]        $00
-        ld      [IX`mob+%mob.Yspeed+0]          $60
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_7922
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_7922
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_9     ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $03
+        ld      [IX`mob+Mob.Xdirection]        $00
+        ld      [IX`mob+Mob.Yspeed+0]          $60
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_7922
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_7922
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      [$.CAMERA_X]
         inc     D
         and     A
@@ -17134,21 +17134,21 @@ _77be:                                                                          
         ret     c
         
         ;unlocks the screen?
-        ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+        ld      [IX`mob+Mob.type]      $FF                     ;remove mob?
         ld      HL                      $2000                   ;8192 -- max width of a level in pixels?
         ld      [$.LEVEL_RIGHT]         HL
         ld      HL                      $0000
         ld      [$.CAMERA_X_GOTO]       HL
         
-        set     5       [IY`vars+%vars.flags0]
-        set     0       [IY`vars+%vars.flags2]
-        res     1       [IY`vars+%vars.flags2]
+        set     5       [IY`vars+Vars.flags0]
+        set     0       [IY`vars+Vars.flags2]
+        res     1       [IY`vars+Vars.flags2]
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $0B
         jr      nz      @_10
         
-        set     1       [IY`vars+%vars.flags9]
+        set     1       [IY`vars+Vars.flags9]
         
 @_10    ;UNKNOWN
         ld      HL      $DA28
@@ -17215,24 +17215,24 @@ _79fa:                                                                          
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      A       [IX`mob+%mob.Xspeed+0]
-        or      [IX`mob+%mob.Xspeed+1]
+        ld      A       [IX`mob+Mob.Xspeed+0]
+        or      [IX`mob+Mob.Xspeed+1]
         ret     z
         ld      A       [$.FRAMECOUNT]
         bit     0       A
         ret     nz
         and     $02
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]       HL
         ld      HL      $FFF8
         ld      DE      $0010
         ld      C       $04
         
-        bit     7       [IX`mob+%mob.Xdirection]
+        bit     7       [IX`mob+Mob.Xdirection]
         jr      z       @_1
         
         ld      HL              $0028
@@ -17265,34 +17265,34 @@ _7a3a:                                                                          
         ld      H               $00
         ld      [$.TEMP3]       HL
         pop     HL
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $0A                     ;explosion
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.type]      $0A                     ;explosion
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
         ld      HL      [$.TEMP1]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
         ld      HL      [$.TEMP3]
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]               L
-        ld      [IX`mob+%mob.Y+1]               H
-        ld      [IX`mob+%mob.unknown11]         A`zero
-        ld      [IX`mob+%mob.unknown16]         A`zero
-        ld      [IX`mob+%mob.unknown17]         A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Y+0]               L
+        ld      [IX`mob+Mob.Y+1]               H
+        ld      [IX`mob+Mob.unknown11]         A`zero
+        ld      [IX`mob+Mob.unknown16]         A`zero
+        ld      [IX`mob+Mob.unknown17]         A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         
         pop     IX
         
@@ -17308,15 +17308,15 @@ meta_trip_process:                                                              
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	64
-        ld      [IX`mob+%mob.height]	64
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	64
+        ld      [IX`mob+Mob.height]	64
         ld      HL      $0000
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         ret     c
 	
-        bit     6	[IY`vars+%vars.flags6]
+        bit     6	[IY`vars+Vars.flags6]
         ret     nz
 	
         ld      A	[$.SONIC.flags]
@@ -17333,8 +17333,8 @@ meta_trip_process:                                                              
         ld      [$.SONIC.Xspeed+1]	HL
         ld      HL      $.SONIC.flags
         res     1	[HL]
-        set     6	[IY`vars+%vars.flags6]
-        ld      [IY`vars+%vars.joypad]	$FF
+        set     6	[IY`vars+Vars.flags6]
+        ld      [IY`vars+Vars.joypad]	$FF
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -17348,19 +17348,19 @@ flower_process:                                                                 
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      [IX`mob+%mob.unknown11]	$32
-        ld      [IX`mob+%mob.unknown12]	$00
-        set     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown11]	$32
+        ld      [IX`mob+Mob.unknown12]	$00
+        set     0	[IX`mob+Mob.flags]
 @_1     ld      BC      $0000
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.D2AB]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      A	[$.FRAMECOUNT]
         rrca    
         jr      nc	@_2
@@ -17369,7 +17369,7 @@ flower_process:                                                                 
         add     HL      DE
         inc     BC
 @_2     ld      [$.D2AD]	HL
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         add     A	A
         add     A	A
         ld      E	A
@@ -17394,17 +17394,17 @@ flower_process:                                                                 
         rrca    
         ret     c
 	
-        dec     [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
         ret     nz
 	
         ld      A	[HL]
-        ld      [IX`mob+%mob.unknown11]	A	
-        inc     [IX`mob+%mob.unknown12]
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.unknown11]	A	
+        inc     [IX`mob+Mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $04
         ret     c
 	
-        ld      [IX`mob+%mob.unknown12]	$00
+        ld      [IX`mob+Mob.unknown12]	$00
         ret
 	
 	%byte
@@ -17418,13 +17418,13 @@ meta_blink_process:													;$7B95
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        set     0	[IY`vars+%vars.flags9]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        set     0	[IY`vars+Vars.flags9]
         ld      A	[$.FRAMECOUNT]
         and     %00000001
         jp      z	@_1
 	
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         ld      C	A
         add     A	A
         add     A	C
@@ -17437,47 +17437,47 @@ meta_blink_process:													;$7B95
         ld      D	[HL]
         inc     HL
         ld      A	[HL]
-        ld      [IX`mob+%mob.spriteLayout+0]	E
-        ld      [IX`mob+%mob.spriteLayout+1]	D
+        ld      [IX`mob+Mob.spriteLayout+0]	E
+        ld      [IX`mob+Mob.spriteLayout+1]	D
         ld      [$.D302]	A
         jr      @_2
         
-@_1     ld      [IX`mob+%mob.spriteLayout+0]	A
-        ld      [IX`mob+%mob.spriteLayout+1]	A
-@_2     ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+@_1     ld      [IX`mob+Mob.spriteLayout+0]	A
+        ld      [IX`mob+Mob.spriteLayout+1]	A
+@_2     ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $0020
         add     HL      DE
         adc     A	$00
-        ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	A
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	A
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      [$.CAMERA_Y]
         inc     H
         xor     A`zero
         sbc     HL      DE
         jr      nc	@_3
 	
-        ld      [IX`mob+%mob.type]	$FF      		;remove object?
-        res     0	[IY`vars+%vars.flags9]
+        ld      [IX`mob+Mob.type]	$FF      		;remove object?
+        res     0	[IY`vars+Vars.flags9]
         ret
         
-@_3     ld      [IX`mob+%mob.Xspeed+0]		A
-        ld      [IX`mob+%mob.Xspeed+1]		A
-        ld      [IX`mob+%mob.Xdirection]	A
-        dec     [IX`mob+%mob.unknown11]
+@_3     ld      [IX`mob+Mob.Xspeed+0]		A
+        ld      [IX`mob+Mob.Xspeed+1]		A
+        ld      [IX`mob+Mob.Xdirection]	A
+        dec     [IX`mob+Mob.unknown11]
         ret     nz
 	
-        ld      [IX`mob+%mob.unknown11]	$06
-        inc     [IX`mob+%mob.unknown12]
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.unknown11]	$06
+        inc     [IX`mob+Mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $06
         ret     c
 	
-        ld      [IX`mob+%mob.unknown12]	$00
+        ld      [IX`mob+Mob.unknown12]	$00
         ret
 
 	%word	%byte
@@ -17504,7 +17504,7 @@ _7c41:                                                                          
 ;       DE              ;e.g. $7DE1
 ;       BC              ;e.g. $7DDC
         ;---------------------------------------------------------------------------------------------------------------
-        ld      L       [IX`mob+%mob.unknown17]
+        ld      L       [IX`mob+Mob.unknown17]
 
 @_1     ld      H       $00
         add     HL      BC
@@ -17512,7 +17512,7 @@ _7c41:                                                                          
         cp      $FF
         jr      nz      @_2
         ld      L       $00
-        ld      [IX`mob+%mob.unknown17] L
+        ld      [IX`mob+Mob.unknown17] L
         jp      @_1
         
 @_2     inc     HL
@@ -17527,17 +17527,17 @@ _7c41:                                                                          
         add     HL      HL
         add     HL      BC
         add     HL      DE
-        ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+        ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         pop     HL
-        inc     [IX`mob+%mob.unknown16]
+        inc     [IX`mob+Mob.unknown16]
         ld      A       [HL]
-        cp      [IX`mob+%mob.unknown16]
+        cp      [IX`mob+Mob.unknown16]
         ret     nc
         
-        ld      [IX`mob+%mob.unknown16] $00
-        inc     [IX`mob+%mob.unknown17]
-        inc     [IX`mob+%mob.unknown17]
+        ld      [IX`mob+Mob.unknown16] $00
+        inc     [IX`mob+Mob.unknown17]
+        inc     [IX`mob+Mob.unknown17]
         ret
 	;
 	
@@ -17551,7 +17551,7 @@ findEmptyMob:                                                                   
 ;       HL              : address of the empty mob slot selected
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL      $.MOBS
-        ld      DE      %mob.size
+        ld      DE      Mob.size
         ld      B       31                                      ;number of mob slots, less Sonic?
         
 @loop   ld      A       [HL]
@@ -17599,7 +17599,7 @@ _7ca6:                                                                          
         sbc     HL      DE
         ret     nz
 	
-        res     5 [IY`vars+%vars.flags0]
+        res     5 [IY`vars+Vars.flags0]
         ret
 	;
 
@@ -17608,11 +17608,11 @@ _LABEL_7CC1_12:                                                                 
 ;params IX`mob          : Address of the current mob being processed
 ;       D               : bit 7 sets A to $FF instead of 0 -- direction?
         ;---------------------------------------------------------------------------------------------------------------
-        bit     6       [IY`vars+%vars.flags6]
+        bit     6       [IY`vars+Vars.flags6]
         ret     nz
         
-        ld      L       [IX`mob+%mob.Ysubpixel]
-        ld      H       [IX`mob+%mob.Y+0]
+        ld      L       [IX`mob+Mob.Ysubpixel]
+        ld      H       [IX`mob+Mob.Y+0]
         
         xor     A`zero                                          ;set A to 0
         
@@ -17621,7 +17621,7 @@ _LABEL_7CC1_12:                                                                 
 	
         dec     A
 @_1     add     HL      DE
-        adc     A       [IX`mob+%mob.Y+1]
+        adc     A       [IX`mob+Mob.Y+1]
         ld      L       H
         ld      H       A
         add     HL      BC
@@ -17647,51 +17647,51 @@ badnick_chopper_process:                                                        
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;mob does not collide with the floor
-        set     5       [IX`mob+%mob.flags]
+        set     5       [IX`mob+Mob.flags]
         
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
-        ld      [IX`mob+%mob.width]     8
-        ld      [IX`mob+%mob.height]    12
+        ld      [IX`mob+Mob.width]     8
+        ld      [IX`mob+Mob.height]    12
         
-        ld      A       [IX`mob+%mob.unknown14]
+        ld      A       [IX`mob+Mob.unknown14]
         and     A
         jr      z	@_1
         
-        dec     [IX`mob+%mob.unknown14]
+        dec     [IX`mob+Mob.unknown14]
         
         ;remove mob from screen (no sprite layout)
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_1     bit     0       [IX`mobs+%mob.flags]
+@_1     bit     0       [IX`mobs+Mob.flags]
         jr      nz	@_3
         
-        bit     1       [IX`mobs+%mob.flags]
+        bit     1       [IX`mobs+Mob.flags]
         jr      nz	@_2
         
-        ld      L                   [IX`mob+%mob.Y+0]
-        ld      H                   [IX`mob+%mob.Y+1]
+        ld      L                   [IX`mob+Mob.Y+0]
+        ld      H                   [IX`mob+Mob.Y+1]
         ld      DE                  $FFF4
         add     HL                  DE
         ld      [IX`mob+$12]            L
-        ld      [IX`mob+%mob.unknown13] H
-        ld      L                   [IX`mob+%mob.X+0]
-        ld      H                   [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown13] H
+        ld      L                   [IX`mob+Mob.X+0]
+        ld      H                   [IX`mob+Mob.X+1]
         ld      DE                  $0008
         add     HL                  DE
-        ld      [IX`mob+%mob.X+0]   L
-        ld      [IX`mob+%mob.X+1]   H
-        set     1       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.X+0]   L
+        ld      [IX`mob+Mob.X+1]   H
+        set     1       [IX`mob+Mob.flags]
         
-@_2     ld      [IX`mob+%mob.Yspeed+0]      $00
-        ld      [IX`mob+%mob.Yspeed+1]      $FC
-        ld      [IX`mob+%mob.Ydirection]    $FF
-        set     0       [IX`mob+%mob.flags]
+@_2     ld      [IX`mob+Mob.Yspeed+0]      $00
+        ld      [IX`mob+Mob.Yspeed+1]      $FC
+        ld      [IX`mob+Mob.Ydirection]    $FF
+        set     0       [IX`mob+Mob.flags]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -17699,12 +17699,12 @@ badnick_chopper_process:                                                        
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-        ld      [IX`mob+%mob.unknown11] $03
+        ld      [IX`mob+Mob.unknown11] $03
         jr      @_5
         
-@_3     ld      L       [IX`mob+%mob.Yspeed+0]
-        ld      H       [IX`mob+%mob.Yspeed+1]
-        ld      A       [IX`mob+%mob.Ydirection]
+@_3     ld      L       [IX`mob+Mob.Yspeed+0]
+        ld      H       [IX`mob+Mob.Yspeed+1]
+        ld      A       [IX`mob+Mob.Ydirection]
         ld      DE      $0010
         add     HL      DE
         adc     A       $00
@@ -17718,35 +17718,35 @@ badnick_chopper_process:                                                        
         jr      nc	@_4
 	
         ld      DE      $0400
-@_4     ld      [IX`mob+%mob.Yspeed+0]      E
-        ld      [IX`mob+%mob.Yspeed+1]      D
-        ld      [IX`mob+%mob.Ydirection]    A
+@_4     ld      [IX`mob+Mob.Yspeed+0]      E
+        ld      [IX`mob+Mob.Yspeed+1]      D
+        ld      [IX`mob+Mob.Ydirection]    A
         ld      E       [IX`mob+$12]
-        ld      D       [IX`mob+%mob.unknown13]
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      D       [IX`mob+Mob.unknown13]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         xor     A
         sbc     HL      DE
         jr      c	@_5
 	
-        ld      [IX`mob+%mob.Ysubpixel]     A
-        ld      [IX`mob+%mob.Y+0]           E
-        ld      [IX`mob+%mob.Y+1]           D
-        ld      [IX`mob+%mob.Yspeed+0]      A
-        ld      [IX`mob+%mob.Yspeed+1]      A
-        ld      [IX`mob+%mob.Ydirection]    A
-        ld      [IX`mob+%mob.unknown14]     $1E
-        res     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.Ysubpixel]     A
+        ld      [IX`mob+Mob.Y+0]           E
+        ld      [IX`mob+Mob.Y+1]           D
+        ld      [IX`mob+Mob.Yspeed+0]      A
+        ld      [IX`mob+Mob.Yspeed+1]      A
+        ld      [IX`mob+Mob.Ydirection]    A
+        ld      [IX`mob+Mob.unknown14]     $1E
+        res     0       [IX`mob+Mob.flags]
 @_5     ld      DE                  @_7de1
         ld      BC                  @_7ddc
         call    animateMob
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         and     A
         jr      z	@_6
         
-        dec     [IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.spriteLayout+0]    (LO @_7df7)
-        ld      [IX`mob+%mob.spriteLayout+1]    (HI @_7df7)
+        dec     [IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]    (LO @_7df7)
+        ld      [IX`mob+Mob.spriteLayout+1]    (HI @_7df7)
         
 @_6     ld      HL              $0204
         ld      [$.TEMP6]       HL
@@ -17779,29 +17779,29 @@ mob_platform_fallVert:                                                          
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
         
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_LEFT]    HL
         ld      HL                              $0058
         ld      [$.SCROLLZONE_OVERRIDE_RIGHT]   HL
         
-        ld      [IX`mob+%mob.width]             $0C
-        ld      [IX`mob+%mob.height]            $10
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_7e89
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_7e89
-        bit     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.width]             $0C
+        ld      [IX`mob+Mob.height]            $10
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_7e89
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_7e89
+        bit     0       [IX`mob+Mob.flags]
         jr      nz      @_7e3c
-        ld      A       [IX`mob+%mob.Y+0]
-        ld      [IX`mob+%mob.unknown12] A
-        ld      A       [IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.unknown13] A
-        ld      [IX`mob+%mob.unknown14] $C0
-        set     0       [IX`mob+%mob.flags]
-@_7e3c  ld      [IX`mob+%mob.Yspeed+0]  $80
+        ld      A       [IX`mob+Mob.Y+0]
+        ld      [IX`mob+Mob.unknown12] A
+        ld      A       [IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.unknown13] A
+        ld      [IX`mob+Mob.unknown14] $C0
+        set     0       [IX`mob+Mob.flags]
+@_7e3c  ld      [IX`mob+Mob.Yspeed+0]  $80
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         
         ld      A       [$.SONIC.Ydirection]
         and     A
@@ -17813,24 +17813,24 @@ mob_platform_fallVert:                                                          
         jr      c       @_1
         
         ld      BC       $0010
-        ld      E       [IX`mob+%mob.Yspeed+0]
-        ld      D       [IX`mob+%mob.Yspeed+1]
+        ld      E       [IX`mob+Mob.Yspeed+0]
+        ld      D       [IX`mob+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
 @_1     ld      A       [$.FRAMECOUNT]
         and     $03
         ret     nz
-        inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
-        cp      [IX`mob+%mob.unknown14]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
+        cp      [IX`mob+Mob.unknown14]
         ret     c
         
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
-        ld      A       [IX`mob+%mob.unknown12]
-        ld      [IX`mob+%mob.Y+0]       A
-        ld      A       [IX`mob+%mob.unknown13]
-        ld      [IX`mob+%mob.Y+1]       A
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
+        ld      A       [IX`mob+Mob.unknown12]
+        ld      [IX`mob+Mob.Y+0]       A
+        ld      A       [IX`mob+Mob.unknown13]
+        ld      [IX`mob+Mob.Y+1]       A
         ret
 
         ;sprite layout
@@ -17847,25 +17847,25 @@ mob_platform_fallHoriz:                                                         
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               ;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               ;mob does not collide with the floor
         
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_LEFT]    HL
         ld      HL                              $0058
         ld      [$.SCROLLZONE_OVERRIDE_RIGHT]   HL
         
-        ld      [IX`mob+%mob.width]     $1A
-        ld      [IX`mob+%mob.height]    $10
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @layout
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @layout
-        bit     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.width]     $1A
+        ld      [IX`mob+Mob.height]    $10
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @layout
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @layout
+        bit     0       [IX`mob+Mob.flags]
         jp      nz      mob_platform_fallVert._7e3c
-        ld      A	[IX`mob+%mob.Y+0]
-        ld      [IX`mob+%mob.unknown12] A
-        ld      A	[IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.unknown13] A
-        ld      [IX`mob+%mob.unknown14] $C6
-        set     0       [IX`mob+%mob.flags]
+        ld      A	[IX`mob+Mob.Y+0]
+        ld      [IX`mob+Mob.unknown12] A
+        ld      A	[IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.unknown13] A
+        ld      [IX`mob+Mob.unknown14] $C6
+        set     0       [IX`mob+Mob.flags]
         jp      mob_platform_fallVert._7e3c
         
         ;sprite layout
@@ -17881,28 +17881,28 @@ mob_platform_roll:                                                              
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]     $0A
-        ld      [IX`mob+%mob.height]    $10
-        bit     0       [IX`mob+%mob.flags]
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]     $0A
+        ld      [IX`mob+Mob.height]    $10
+        bit     0       [IX`mob+Mob.flags]
         jr      nz      @_1
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFE8
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
-        set     0       [IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.Yspeed+0]  $40
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
+        set     0       [IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.Yspeed+0]  $40
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $14
         jr      c       @_2
-        ld      [IX`mob+%mob.Yspeed+0]          $C0
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $C0
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
         
 @_2     ld      A	[$.SONIC.Ydirection]
         and     A
@@ -17913,8 +17913,8 @@ mob_platform_roll:                                                              
         call    detectCollisionWithSonic
         jp      c       mob_platform_roll_continue._8003
         ld      BC      $0010
-        ld      E       [IX`mob+%mob.Yspeed+0]
-        ld      D       [IX`mob+%mob.Yspeed+1]
+        ld      E       [IX`mob+Mob.Yspeed+0]
+        ld      D       [IX`mob+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
         ld      HL      [$.SONIC.Xspeed]
         ld      A       L
@@ -17949,13 +17949,13 @@ mob_platform_roll:                                                              
         sra     D
         rr      E
         rra     
-@_5     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
-        add     A	[IX`mob+%mob.Xsubpixel]
+@_5     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
+        add     A	[IX`mob+Mob.Xsubpixel]
         adc     HL      DE
-        ld      [IX`mob+%mob.Xsubpixel] A
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
+        ld      [IX`mob+Mob.Xsubpixel] A
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
         ld      [$.SONIC.Xsubpixel]     A
         ld      DE      $FFFC
         add     HL      DE
@@ -17970,16 +17970,16 @@ mob_platform_roll:                                                              
         cpl     
         ld      D       A
         inc     DE
-@_6     ld      L       [IX`mob+%mob.unknown12]
-        ld      H       [IX`mob+%mob.unknown13]
+@_6     ld      L       [IX`mob+Mob.unknown12]
+        ld      H       [IX`mob+Mob.unknown13]
         add     HL      DE
         ld      A       H
         cp      $09
         jr      c       @_7
         sub     $09
         ld      H       A
-@_7     ld      [IX`mob+%mob.unknown12] L
-        ld      [IX`mob+%mob.unknown13] H
+@_7     ld      [IX`mob+Mob.unknown12] L
+        ld      [IX`mob+Mob.unknown13] H
         ld      E       A
         ld      D       $00
         ld      HL      mob_platform_roll_continue._8019
@@ -17987,8 +17987,8 @@ mob_platform_roll:                                                              
         ld      E       [HL]
         ld      HL      mob_platform_roll_continue._8022
         add     HL      DE
-        ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+        ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         jr      mob_platform_roll_continue._800b
 	;
 	
@@ -17997,14 +17997,14 @@ mob_platform_roll:                                                              
 mob_platform_roll_continue:                                                                                     ;$8003
 ;=======================================================================================================================
         ;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
-@_8003  ld      [IX`mob+%mob.spriteLayout+0]    LO @_8022
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_8022
-@_800b  inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+@_8003  ld      [IX`mob+Mob.spriteLayout+0]    LO @_8022
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_8022
+@_800b  inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $28
         ret     c
         
-        ld      [IX`mob+%mob.unknown11] $00
+        ld      [IX`mob+Mob.unknown11] $00
         ret
 
         %byte
@@ -18029,10 +18029,10 @@ boss_jungle_process:                                                            
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	32
-        ld      [IX`mob+%mob.height]	28
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	32
+        ld      [IX`mob+Mob.height]	28
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
         ld      HL      [$.SONIC.Y]
@@ -18078,74 +18078,74 @@ boss_jungle_process:                                                            
         ld      HL      $0048
         ld      [$.CAMERA_Y_GOTO]	HL
         
-        set     0	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
         
 @_1     call    _7ca6
-        bit     0	[IX`mob+%mob.unknown11]
+        bit     0	[IX`mob+Mob.unknown11]
         jr      nz	@_2
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_81f4
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_81f4
-        ld      [IX`mob+%mob.Yspeed+0]		$80
-        ld      [IX`mob+%mob.Yspeed+1]		$00
-        ld      [IX`mob+%mob.Ydirection]	$00
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_81f4
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_81f4
+        ld      [IX`mob+Mob.Yspeed+0]		$80
+        ld      [IX`mob+Mob.Yspeed+1]		$00
+        ld      [IX`mob+Mob.Ydirection]	$00
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0058
         xor     A`zero
         sbc     HL      DE
         ret     c
 	
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
-        set     0	[IX`mob+%mob.unknown11]
-@_2     ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
+        set     0	[IX`mob+Mob.unknown11]
+@_2     ld      A	[IX`mob+Mob.unknown12]
         and     A
         jp      nz	@_4
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
-        bit     1	[IX`mob+%mob.unknown11]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
+        bit     1	[IX`mob+Mob.unknown11]
         jr      nz	@_3
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_81f4
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_81f4
-        res     1	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.Xspeed+0]		$00
-        ld      [IX`mob+%mob.Xspeed+1]		$FF
-        ld      [IX`mob+%mob.Xdirection]	$FF
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_81f4
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_81f4
+        res     1	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.Xspeed+0]		$00
+        ld      [IX`mob+Mob.Xspeed+1]		$FF
+        ld      [IX`mob+Mob.Xdirection]	$FF
         ld      DE      $021C
         and     A
         sbc     HL      DE
         jp      nc	@_8
 	
-        ld      [IX`mob+%mob.unknown12]	$67
+        ld      [IX`mob+Mob.unknown12]	$67
         jp      @_8
         
-@_3     ld      [IX`mob+%mob.spriteLayout+0]	LO @_8206
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8206
-        set     1	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.Xspeed+0]		$00
-        ld      [IX`mob+%mob.Xspeed+1]		$01
-        ld      [IX`mob+%mob.Xdirection]	$00
+@_3     ld      [IX`mob+Mob.spriteLayout+0]	LO @_8206
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_8206
+        set     1	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.Xspeed+0]		$00
+        ld      [IX`mob+Mob.Xspeed+1]		$01
+        ld      [IX`mob+Mob.Xdirection]	$00
         ld      DE      $02AA
         and     A
         sbc     HL      DE
         jp      c	@_8
 	
-        ld      [IX`mob+%mob.unknown12]	$67
+        ld      [IX`mob+Mob.unknown12]	$67
         jp      @_8
         
 @_4     xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         ld      HL      $0001
-        dec     [IX`mob+%mob.unknown12]
+        dec     [IX`mob+Mob.unknown12]
         jr      z	@_5
 	
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $40
         jr      nc	@_6
 	
@@ -18157,14 +18157,14 @@ boss_jungle_process:                                                            
         jr      z	@_7
 	
 @_5     ld      HL      $0000
-@_6     ld      [IX`mob+%mob.Yspeed+0]		$00
-        ld      [IX`mob+%mob.Yspeed+1]		L
-        ld      [IX`mob+%mob.Ydirection]	H
+@_6     ld      [IX`mob+Mob.Yspeed+0]		$00
+        ld      [IX`mob+Mob.Yspeed+1]		L
+        ld      [IX`mob+Mob.Ydirection]	H
         jr      @_8
         
-@_7     ld      A	[IX`mob+%mob.unknown11]
+@_7     ld      A	[IX`mob+Mob.unknown11]
         xor     $02
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         ld      A	[$.D2EC]
         cp      $08
         jr      nc	@_8
@@ -18172,38 +18172,38 @@ boss_jungle_process:                                                            
         call    \\findEmptyMob
         ret     c
 	
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
-        ld      [IX`mob+%mob.type]	$2B              	;unknown object
+        ld      [IX`mob+Mob.type]	$2B              	;unknown object
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.Xsubpixel]	A`zero
+        ld      [IX`mob+Mob.Xsubpixel]	A`zero
         ld      HL      $000B
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.Ysubpixel]	A`zero
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.Ysubpixel]	A`zero
         ld      HL      $0030
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]		L
-        ld      [IX`mob+%mob.Y+1]		H
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
-        ld      [IX`mob+%mob.unknown11]		A`zero
-        ld      [IX`mob+%mob.unknown16]		A`zero
-        ld      [IX`mob+%mob.unknown17]		A`zero
+        ld      [IX`mob+Mob.Y+0]		L
+        ld      [IX`mob+Mob.Y+1]		H
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
+        ld      [IX`mob+Mob.unknown11]		A`zero
+        ld      [IX`mob+Mob.unknown16]		A`zero
+        ld      [IX`mob+Mob.unknown17]		A`zero
         call    \\math\_LABEL_625_57
         and     $3F
         add     A	$64
-        ld      [IX`mob+%mob.unknown12]	A
+        ld      [IX`mob+Mob.unknown12]	A
         pop     IX
 @_8     ld      HL      $005A
         ld      [$.D216]	HL
@@ -18226,17 +18226,17 @@ unknown_8218_process:													;$8218
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        res     5	[IX`mob+%mob.flags]               	;mob adheres to the floor
-        ld      [IX`mob+%mob.width]	12
-        ld      [IX`mob+%mob.height]	16
+        res     5	[IX`mob+Mob.flags]               	;mob adheres to the floor
+        ld      [IX`mob+Mob.width]	12
+        ld      [IX`mob+Mob.height]	16
         ld      HL      	$0202
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      L	[IX`mob+%mob.Xspeed+0]
-        ld      H	[IX`mob+%mob.Xspeed+1]
-        ld      A	[IX`mob+%mob.Xdirection]
+        ld      L	[IX`mob+Mob.Xspeed+0]
+        ld      H	[IX`mob+Mob.Xspeed+1]
+        ld      A	[IX`mob+Mob.Xdirection]
         ld      DE      $0002
         ld      C	$00
         and     A
@@ -18246,12 +18246,12 @@ unknown_8218_process:													;$8218
         ld      DE      $FFFE
 @_1     add     HL      DE
         adc     A	C
-        ld      [IX`mob+%mob.Xspeed+0]		L
-        ld      [IX`mob+%mob.Xspeed+1]		H
-        ld      [IX`mob+%mob.Xdirection]	A	
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+        ld      [IX`mob+Mob.Xspeed+0]		L
+        ld      [IX`mob+Mob.Xspeed+1]		H
+        ld      [IX`mob+Mob.Xdirection]	A	
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $0020
         add     HL      DE
         adc     A	$00
@@ -18262,15 +18262,15 @@ unknown_8218_process:													;$8218
 	
         ld      HL      $0300
         ld      C	$00
-@_2     ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
+@_2     ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
         ld      A	[$.FRAMECOUNT]
         and     %00000001
-        add     A	[IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown11]	A	
-        ld      A	[IX`mob+%mob.unknown11]
-        cp      [IX`mob+%mob.unknown12]
+        add     A	[IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown11]	A	
+        ld      A	[IX`mob+Mob.unknown11]
+        cp      [IX`mob+Mob.unknown12]
         jr      nc	@_3
 	
         ld      BC      @_82c1
@@ -18283,7 +18283,7 @@ unknown_8218_process:													;$8218
         and     %00000001
         ret     z
 	
-        ld      [IX`mob+%mob.unknown16]	$00
+        ld      [IX`mob+Mob.unknown16]	$00
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -18292,20 +18292,20 @@ unknown_8218_process:													;$8218
 	.ENDIF
         
 @_4     xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         
         ld      BC      @_82c6
         ld      DE      _a3bb
         call    animateMob
         
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         add     A	$12
-        cp      [IX`mob+%mob.unknown11]
+        cp      [IX`mob+Mob.unknown11]
         ret     nc
         
-        ld      [IX`mob+%mob.type]	$FF              	;remove object?
+        ld      [IX`mob+Mob.type]	$FF              	;remove object?
         ret
 	
 	%byte
@@ -18326,15 +18326,15 @@ badnick_yadrin_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     16
-        ld      [IX`mob+%mob.height]    15
+        ld      [IX`mob+Mob.width]     16
+        ld      [IX`mob+Mob.height]    15
         ld      HL                  $0408
         ld      [$.TEMP6]           HL
         call    \\detectCollisionWithSonic
         call    nc  hitPlayer._35fd
 	
-        ld      [IX`mob+%mob.width]     20
-        ld      [IX`mob+%mob.height]    32
+        ld      [IX`mob+Mob.width]     20
+        ld      [IX`mob+Mob.height]    32
         ld      HL                  $1006
         ld      [$.TEMP6]           HL
         call    \\detectCollisionWithSonic
@@ -18342,30 +18342,30 @@ badnick_yadrin_process:                                                         
         ld      [$.TEMP1]           HL
         call    nc  hitPlayer
 	
-        ld      L                   [IX`mob+%mob.Yspeed+0]
-        ld      H                   [IX`mob+%mob.Yspeed+1]
-        ld      A                   [IX`mob+%mob.Ydirection]
+        ld      L                   [IX`mob+Mob.Yspeed+0]
+        ld      H                   [IX`mob+Mob.Yspeed+1]
+        ld      A                   [IX`mob+Mob.Ydirection]
         ld      DE                  $0020
         add     HL                  DE
         adc     A                   $00
-        ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    A
-        ld      A                   [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    A
+        ld      A                   [IX`mob+Mob.unknown11]
         cp      $50
         jr      c	@_1
 	
-        ld      [IX`mob+%mob.Xspeed+0]      $40
-        ld      [IX`mob+%mob.Xspeed+1]      $00
-        ld      [IX`mob+%mob.Xdirection]    $00
+        ld      [IX`mob+Mob.Xspeed+0]      $40
+        ld      [IX`mob+Mob.Xspeed+1]      $00
+        ld      [IX`mob+Mob.Xdirection]    $00
         ld      DE                  @_837e
         ld      BC                  @_8379
         call    animateMob
         jp      @_2
         
-@_1     ld      [IX`mob+%mob.Xspeed+0]      $C0
-        ld      [IX`mob+%mob.Xspeed+1]      $FF
-        ld      [IX`mob+%mob.Xdirection]    $FF
+@_1     ld      [IX`mob+Mob.Xspeed+0]      $C0
+        ld      [IX`mob+Mob.Xspeed+1]      $FF
+        ld      [IX`mob+Mob.Xdirection]    $FF
         ld      DE                  @_837e
         ld      BC                  @_8374
         call    animateMob
@@ -18373,12 +18373,12 @@ badnick_yadrin_process:                                                         
         and     %00000111
         ret     nz
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $A0
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11] $00
+        ld      [IX`mob+Mob.unknown11] $00
         ret
         
 	%byte
@@ -18407,46 +18407,46 @@ platform_bridge_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	14
-        ld      [IX`mob+%mob.height]	8
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	14
+        ld      [IX`mob+Mob.height]	8
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_2
         
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
         ld      L`zero		A`zero
         ld      H`zero		A`zero
         ld      [$.TEMP1]	HL`zero
         
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_1
         
         call    \\math\_LABEL_625_57
         and     %00011111
         inc     A
-        ld      [IX`mob+%mob.unknown11]	A
-        set     1	[IX`mob+%mob.flags]
-@_1     dec     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown11]	A
+        set     1	[IX`mob+Mob.flags]
+@_1     dec     [IX`mob+Mob.unknown11]
         jp      nz	@_4
 	
-        ld      [IX`mob+%mob.unknown11]	$01
+        ld      [IX`mob+Mob.unknown11]	$01
         ld      A	[$.D2AB+1]
         and     $80
         jp      z	@_4
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.D2AB]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $000e
         add     HL      DE
         ld      [$.D2AD]	HL
         ld      HL      @_848e
         ld      [$.D2AF]	HL
-        set     0	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
         ld      A	$20
 	
 	;(we can compile with, or without, audio)
@@ -18454,11 +18454,11 @@ platform_bridge_process:                                                        
 		rst     \\sound\rst_playSFX
 	.ENDIF
 	
-@_2     ld      [IX`mob+%mob.spriteLayout+0]	LO @_8481
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8481
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+@_2     ld      [IX`mob+Mob.spriteLayout+0]	LO @_8481
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_8481
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $0020
         add     HL      DE
         adc     A	$00
@@ -18468,19 +18468,19 @@ platform_bridge_process:                                                        
         jr      c	@_3
 	
         ld      H	$04
-@_3     ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
+@_3     ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
         ld      [$.TEMP1]	HL
         ld      DE      [$.CAMERA_Y]
         inc     D
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         and     A
         sbc     HL      DE
         jr      c	@_4
 	
-        ld      [IX`mob+%mob.type]	$FF      		;remove object?
+        ld      [IX`mob+Mob.type]	$FF      		;remove object?
         ret
         
 @_4     ld      HL      	$0402
@@ -18509,13 +18509,13 @@ mob_boss_bridge:                                                                
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]     30
-        ld      [IX`mob+%mob.height]    28
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]     30
+        ld      [IX`mob+Mob.height]    28
         call    _7ca6
-        ld      [IX`mob+%mob.spriteLayout+0]    LO _865a
-        ld      [IX`mob+%mob.spriteLayout+1]    HI _865a
-        bit     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO _865a
+        ld      [IX`mob+Mob.spriteLayout+1]    HI _865a
+        bit     0       [IX`mob+Mob.flags]
         jr      nz      @_1
         
         ld      HL      $03A0
@@ -18540,8 +18540,8 @@ mob_boss_bridge:                                                                
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        set     0       [IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown11]
+        set     0       [IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      nz      @_2
 	
@@ -18554,57 +18554,57 @@ mob_boss_bridge:                                                                
         ld      HL      _8632
         add     HL      DE
         ld      A	[HL]
-        ld      [IX`mob+%mob.X+0]       A
+        ld      [IX`mob+Mob.X+0]       A
         inc     HL
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.X+1]       A
+        ld      [IX`mob+Mob.X+1]       A
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.Y+0]       A
+        ld      [IX`mob+Mob.Y+0]       A
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.Y+1]       A
-        inc     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Y+1]       A
+        inc     [IX`mob+Mob.unknown11]
         jp      @_6
         
 @_2     dec     A
         jr      nz      @_3
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
         ld      HL      $0380
-        ld      E       [IX`mob+%mob.Y+0]
-        ld      D       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.Y+0]
+        ld      D       [IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         jp      c       @_6
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown12] A`zero
+        inc     [IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown12] A`zero
         jp      @_6
         
 @_3     dec     A
         jr      nz      @_5
         
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
-        inc     [IX`mob+%mob.unknown12]
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
+        inc     [IX`mob+Mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $64
         jp      nz      @_6
 	
-        inc     [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
         ld      A	[$.D2EC]
         cp      $08
         jr      nc      @_6
 	
         ld      HL      [$.SONIC.X]
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         ld      HL      _863a
@@ -18620,12 +18620,12 @@ mob_boss_bridge:                                                                
         ld      B       [HL]
         inc     HL
         push    HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.TEMP1]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         add     HL      BC
         ld      [$.TEMP3]	HL
         pop     HL
@@ -18659,17 +18659,17 @@ mob_boss_bridge:                                                                
 	
         jp      @_6
         
-@_5     ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $00
-        ld      [IX`mob+%mob.Ydirection]        $00
+@_5     ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $00
+        ld      [IX`mob+Mob.Ydirection]        $00
         ld      HL      $03C0
-        ld      E       [IX`mob+%mob.Y+0]
-        ld      D       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.Y+0]
+        ld      D       [IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         jr      nc      @_6
 	
-        ld      [IX`mob+%mob.unknown11] A`zero
+        ld      [IX`mob+Mob.unknown11] A`zero
         
 @_6     ld      HL      $00A2
         ld      [$.D216]	HL
@@ -18692,39 +18692,39 @@ _85d1:                                                                          
         push    HL
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $0D                     ;unknown mob
+        ld      [IX`mob+Mob.type]      $0D                     ;unknown mob
         ld      HL      [$.TEMP1]
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
         ld      HL      [$.TEMP3]
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.unknown13] C
-        ld      [IX`mob+%mob.unknown14] A`zero
-        ld      [IX`mob+%mob.unknown15] A`zero
-        ld      [IX`mob+%mob.unknown16] A`zero
-        ld      [IX`mob+%mob.unknown17] A`zero
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.unknown13] C
+        ld      [IX`mob+Mob.unknown14] A`zero
+        ld      [IX`mob+Mob.unknown15] A`zero
+        ld      [IX`mob+Mob.unknown16] A`zero
+        ld      [IX`mob+Mob.unknown17] A`zero
         ld      HL      [$.TEMP4]
         xor     A`zero
         bit     7       H
         jr      z       @_1
 	
         dec     A
-@_1     ld      [IX`mob+%mob.Xspeed+0]          L
-        ld      [IX`mob+%mob.Xspeed+1]          H
-        ld      [IX`mob+%mob.Xdirection]        A
+@_1     ld      [IX`mob+Mob.Xspeed+0]          L
+        ld      [IX`mob+Mob.Xspeed+1]          H
+        ld      [IX`mob+Mob.Xdirection]        A
         ld      HL      [$.TEMP6]
         xor     A
         bit     7       H
         jr      z       @_2
 	
         dec     A
-@_2     ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
+@_2     ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
         pop     IX
         ret
 	;
@@ -18759,23 +18759,23 @@ platform_balance_process:                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      [IX`mob+%mob.unknown11]	$1C
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown11]	$1C
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $FFF0
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      L	[IX`mob+%mob.unknown14]
-        ld      H	[IX`mob+%mob.unknown15]
-        ld      A	[IX`mob+%mob.unknown16]
-        ld      E	[IX`mob+%mob.unknown12]
-        ld      D	[IX`mob+%mob.unknown13]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      L	[IX`mob+Mob.unknown14]
+        ld      H	[IX`mob+Mob.unknown15]
+        ld      A	[IX`mob+Mob.unknown16]
+        ld      E	[IX`mob+Mob.unknown12]
+        ld      D	[IX`mob+Mob.unknown13]
         ld      C	$00
         bit     7	D
         jr      z	@_2
@@ -18783,26 +18783,26 @@ platform_balance_process:                                                       
         dec     C
 @_2     add     HL      DE
         adc     A	C
-        ld      [IX`mob+%mob.unknown14]	L
-        ld      [IX`mob+%mob.unknown15]	H
-        ld      [IX`mob+%mob.unknown16]	A
+        ld      [IX`mob+Mob.unknown14]	L
+        ld      [IX`mob+Mob.unknown15]	H
+        ld      [IX`mob+Mob.unknown16]	A
         ld      C	H
         ld      B	A
         ld      HL      $0038
         add     HL      DE
-        ld      [IX`mob+%mob.unknown12]	L
-        ld      [IX`mob+%mob.unknown13]	H
+        ld      [IX`mob+Mob.unknown12]	L
+        ld      [IX`mob+Mob.unknown13]	H
         bit     7	H
         jr      nz	@_7
 	
         rlca    
         jr      c	@_7
 	
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_6
 	
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      z	@_4
 	
         ld      A	L
@@ -18830,11 +18830,11 @@ platform_balance_process:                                                       
         
 @_4     ld      A	$1C
         sub     C
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         jr      z	@_5
         jr      nc	@_7
 	
-@_5     bit     1	[IX`mob+%mob.flags]
+@_5     bit     1	[IX`mob+Mob.flags]
         jr      z	@_6
 	
 	;(we can compile with, or without, audio)
@@ -18844,21 +18844,21 @@ platform_balance_process:                                                       
 	.ENDIF
 	
 @_6     xor     A`zero
-        ld      [IX`mob+%mob.unknown11]	A`zero
-        ld      [IX`mob+%mob.unknown12]	A`zero
-        ld      [IX`mob+%mob.unknown13]	A`zero
-        ld      [IX`mob+%mob.unknown14]	A`zero
-        ld      [IX`mob+%mob.unknown15]	$1C
-        ld      [IX`mob+%mob.unknown16]	A`zero
-@_7     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown11]	A`zero
+        ld      [IX`mob+Mob.unknown12]	A`zero
+        ld      [IX`mob+Mob.unknown13]	A`zero
+        ld      [IX`mob+Mob.unknown14]	A`zero
+        ld      [IX`mob+Mob.unknown15]	$1C
+        ld      [IX`mob+Mob.unknown16]	A`zero
+@_7     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      $0000
         ld      [$.TEMP4]	HL
-        ld      L	[IX`mob+%mob.unknown11]
+        ld      L	[IX`mob+Mob.unknown11]
         ld      DE      $0010
         add     HL      DE
         ld      [$.TEMP6]	HL
@@ -18867,7 +18867,7 @@ platform_balance_process:                                                       
         ld      HL      $0028
         ld      [$.TEMP4]	HL
         ld      A	$1C
-        sub     [IX`mob+%mob.unknown11]
+        sub     [IX`mob+Mob.unknown11]
         ld      L	A
         ld      H	$00
         ld      DE      $0010
@@ -18877,19 +18877,19 @@ platform_balance_process:                                                       
         call    @_881a
         ld      HL      $002c
         ld      [$.TEMP4]	HL
-        ld      L	[IX`mob+%mob.unknown15]
-        ld      H	[IX`mob+%mob.unknown16]
+        ld      L	[IX`mob+Mob.unknown15]
+        ld      H	[IX`mob+Mob.unknown16]
         ld      [$.TEMP6]	HL
         ld      HL      @_8834
         call    @_881a
-        res     1	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.width]	$14
+        res     1	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.width]	$14
         ld      A		$02
         ld      [$.TEMP6]	A
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         ld      C	A
         add     A	$08
-        ld      [IX`mob+%mob.height]	A
+        ld      [IX`mob+Mob.height]	A
         ld      A		C
         add     A		$04
         ld      [$.TEMP7]	A
@@ -18900,28 +18900,28 @@ platform_balance_process:                                                       
         and     A
         ret     m
         
-        ld      [IX`mob+%mob.width]	$3C
+        ld      [IX`mob+Mob.width]	$3C
         ld      A	$2A
         ld      [$.TEMP6]	A
         ld      A	$1C
-        sub     [IX`mob+%mob.unknown11]
+        sub     [IX`mob+Mob.unknown11]
         add     A	$08
-        ld      [IX`mob+%mob.height]	A
+        ld      [IX`mob+Mob.height]	A
         ld      A	$1C
-        sub     [IX`mob+%mob.unknown11]
+        sub     [IX`mob+Mob.unknown11]
         add     A	$04
         ld      [$.TEMP7]	A
         call    \\detectCollisionWithSonic
         jr      nc	@_9
         ret
         
-@_8     set     1	[IX`mob+%mob.flags]
+@_8     set     1	[IX`mob+Mob.flags]
         
         ld      A	[$.SONIC.Ydirection]
         and     A
         ret     m
         
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $1C
         jr      z	@_9
         ld      HL      [$.SONIC.Yspeed]
@@ -18932,21 +18932,21 @@ platform_balance_process:                                                       
         cpl     
         ld      H	A
         inc     HL
-        ld      [IX`mob+%mob.unknown12]	L
-        ld      [IX`mob+%mob.unknown13]	H
+        ld      [IX`mob+Mob.unknown12]	L
+        ld      [IX`mob+Mob.unknown13]	H
         ld      A	[$.SONIC.Yspeed+1]
-        add     A	[IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown11]	A
+        add     A	[IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown11]	A
         cp      $1C
         jr      c	@_10
 	
-        ld      [IX`mob+%mob.unknown11]	$1C
+        ld      [IX`mob+Mob.unknown11]	$1C
 @_9     ld      A	[$.D2E8]
         ld      HL      [$.D2E6]
         ld      [$.SONIC.Yspeed]	HL
         ld      [$.SONIC.Ydirection]	A
-@_10    ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+@_10    ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      BC      $0010
         add     HL      BC
         ld      A	[$.TEMP7]
@@ -18989,17 +18989,17 @@ badnick_jaws_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5   [IX`mob+%mob.flags]                     ;mob does not collide with the floor
-        ld      A                   [IX`mob+%mob.unknown11]
+        set     5   [IX`mob+Mob.flags]                     ;mob does not collide with the floor
+        ld      A                   [IX`mob+Mob.unknown11]
         cp      $80
         jr      nc	@_1
 	
-        ld      [IX`mob+%mob.Xspeed+0]      $20
-        ld      [IX`mob+%mob.Xspeed+1]      $00
-        ld      [IX`mob+%mob.Xdirection]    $00
+        ld      [IX`mob+Mob.Xspeed+0]      $20
+        ld      [IX`mob+Mob.Xspeed+1]      $00
+        ld      [IX`mob+Mob.Xdirection]    $00
         
-        ld      [IX`mob+%mob.width]         20
-        ld      [IX`mob+%mob.height]        12
+        ld      [IX`mob+Mob.width]         20
+        ld      [IX`mob+Mob.height]        12
         
         ld      HL                  $0A02
         ld      [$.TEMP6]           HL
@@ -19014,12 +19014,12 @@ badnick_jaws_process:                                                           
         call    animateMob
         jr      @_2
         
-@_1     ld      [IX`mob+%mob.Xspeed+0]      $E0
-        ld      [IX`mob+%mob.Xspeed+1]      $FF
-        ld      [IX`mob+%mob.Xdirection]    $FF
+@_1     ld      [IX`mob+Mob.Xspeed+0]      $E0
+        ld      [IX`mob+Mob.Xspeed+1]      $FF
+        ld      [IX`mob+Mob.Xdirection]    $FF
         
-        ld      [IX`mob+%mob.width]         12
-        ld      [IX`mob+%mob.height]        12
+        ld      [IX`mob+Mob.width]         12
+        ld      [IX`mob+Mob.height]        12
         
         ld      HL                  $0202
         ld      [$.TEMP6]           HL
@@ -19037,7 +19037,7 @@ badnick_jaws_process:                                                           
         and     $07
         ret     nz
         
-        inc     [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
         call    \\math\_LABEL_625_57
         and     $1E
         call    z   	\\_91eb
@@ -19070,26 +19070,26 @@ trap_spikeball_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	8
-        ld      [IX`mob+%mob.height]	12
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	8
+        ld      [IX`mob+Mob.height]	12
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.unknown12]	L
-        ld      [IX`mob+%mob.unknown13]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.unknown12]	L
+        ld      [IX`mob+Mob.unknown13]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.unknown14]	L
-        ld      [IX`mob+%mob.unknown15]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      L	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown14]	L
+        ld      [IX`mob+Mob.unknown15]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      L	[IX`mob+Mob.unknown11]
         ld      H	$00
         add     HL      HL
         ld      DE      @_898e
@@ -19107,29 +19107,29 @@ trap_spikeball_process:                                                         
         jr      z	@_3
 	
         dec     D
-@_3     ld      L	[IX`mob+%mob.unknown12]
-        ld      H	[IX`mob+%mob.unknown13]
+@_3     ld      L	[IX`mob+Mob.unknown12]
+        ld      H	[IX`mob+Mob.unknown13]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.unknown14]
-        ld      H	[IX`mob+%mob.unknown15]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.unknown14]
+        ld      H	[IX`mob+Mob.unknown15]
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         ld      HL      $0204
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8987
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8987
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_8987
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_8987
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $B4
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11]	$00
+        ld      [IX`mob+Mob.unknown11]	$00
         ret
 	
 	%byte
@@ -19327,22 +19327,22 @@ trap_spear_process:                                                             
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $000C
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      $0000
         ld      [$.TEMP4]	HL
@@ -19412,15 +19412,15 @@ trap_spear_process:                                                             
 @_6     pop     BC
         djnz    @loop
         
-        ld      [IX`mob+%mob.spriteLayout+0]	B
-        ld      [IX`mob+%mob.spriteLayout+1]	B
+        ld      [IX`mob+Mob.spriteLayout+0]	B
+        ld      [IX`mob+Mob.spriteLayout+1]	B
         ld      D		[HL]
         ld      E		$04
         ld      [$.TEMP6]	DE
         inc     HL
         ld      A	[HL]
-        ld      [IX`mob+%mob.width]	$01
-        ld      [IX`mob+%mob.height]	A	
+        ld      [IX`mob+Mob.width]	$01
+        ld      [IX`mob+Mob.height]	A	
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
@@ -19452,31 +19452,31 @@ trap_fireball_process:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        res     5	[IX`mob+%mob.flags]               	;mob adheres to the floor
+        res     5	[IX`mob+Mob.flags]               	;mob adheres to the floor
 								;(it doesn't move, so this is odd)
-        ld      [IX`mob+%mob.width]	4
-        ld      [IX`mob+%mob.height]	10
-        bit     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.width]	4
+        ld      [IX`mob+Mob.height]	10
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $000A
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.unknown12]	L
-        ld      [IX`mob+%mob.unknown13]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.unknown12]	L
+        ld      [IX`mob+Mob.unknown13]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        ld      [IX`mob+%mob.unknown14]	L
-        ld      [IX`mob+%mob.unknown15]	H
-        ld      [IX`mob+%mob.unknown11]	$96
-        set     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        ld      [IX`mob+Mob.unknown14]	L
+        ld      [IX`mob+Mob.unknown15]	H
+        ld      [IX`mob+Mob.unknown11]	$96
+        set     0	[IX`mob+Mob.flags]
         ld      BC      $0000
         ld      DE      $0000
         call    \\getFloorLayoutRAMAddressForMob
@@ -19484,20 +19484,20 @@ trap_fireball_process:                                                          
         cp      $52
         jr      z	@_1
 	
-        set     1	[IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown11]
+        set     1	[IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_4
 	
-        dec     [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
         jr      z	@_3
         
 @_2     xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -19509,28 +19509,28 @@ trap_fireball_process:                                                          
 	.ENDIF
 		
 @_4     xor     A`zero
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_5
 	
-        ld      [IX`mob+%mob.Xspeed+0]		$00
-        ld      [IX`mob+%mob.Xspeed+1]		$FF
-        ld      [IX`mob+%mob.Xdirection]	$FF
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8d39
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8d39
+        ld      [IX`mob+Mob.Xspeed+0]		$00
+        ld      [IX`mob+Mob.Xspeed+1]		$FF
+        ld      [IX`mob+Mob.Xdirection]	$FF
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_8d39
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_8d39
         jr      @_6
         
-@_5     ld      [IX`mob+%mob.Xspeed+0]		A
-        ld      [IX`mob+%mob.Xspeed+1]		$01
-        ld      [IX`mob+%mob.Xdirection]	A	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8d41
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8d41
-@_6     ld      [IX`mob+%mob.Yspeed+0]		A
-        ld      [IX`mob+%mob.Yspeed+1]		A
-        ld      [IX`mob+%mob.Ydirection]	A	
-        bit     6	[IX`mob+%mob.flags]
+@_5     ld      [IX`mob+Mob.Xspeed+0]		A
+        ld      [IX`mob+Mob.Xspeed+1]		$01
+        ld      [IX`mob+Mob.Xdirection]	A	
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_8d41
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_8d41
+@_6     ld      [IX`mob+Mob.Yspeed+0]		A
+        ld      [IX`mob+Mob.Yspeed+1]		A
+        ld      [IX`mob+Mob.Ydirection]	A	
+        bit     6	[IX`mob+Mob.flags]
         jr      nz	@_7
 	
-        bit     7	[IX`mob+%mob.flags]
+        bit     7	[IX`mob+Mob.flags]
         jr      nz	@_7
 	
         ld      HL      $0402
@@ -19538,8 +19538,8 @@ trap_fireball_process:                                                          
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         ld      HL      [$.CAMERA_X]
         ld      BC      $FFF0
         add     HL      BC
@@ -19554,8 +19554,8 @@ trap_fireball_process:                                                          
         sbc     HL      DE
         jr      c	@_7
 	
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      [$.CAMERA_Y]
         ld      BC      $FFF0
         add     HL      BC
@@ -19572,15 +19572,15 @@ trap_fireball_process:                                                          
 	
         ret
         
-@_7     ld      L	[IX`mob+%mob.unknown12]
-        ld      H	[IX`mob+%mob.unknown13]
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.unknown14]
-        ld      H	[IX`mob+%mob.unknown15]
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        ld      [IX`mob+%mob.unknown11]	$96
+@_7     ld      L	[IX`mob+Mob.unknown12]
+        ld      H	[IX`mob+Mob.unknown13]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.unknown14]
+        ld      H	[IX`mob+Mob.unknown15]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        ld      [IX`mob+Mob.unknown11]	$96
         jp      @_2
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -19597,8 +19597,8 @@ meta_water_process:                                                             
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      A	[IX`mob+%mob.unknown11]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      A	[IX`mob+Mob.unknown11]
         ld      E	A
         ld      D	$00
         ld      HL      @_8e36
@@ -19610,25 +19610,25 @@ meta_water_process:                                                             
 	
         dec     A
         dec     D
-@_1     ld      L	[IX`mob+%mob.Ysubpixel]
-        ld      H	[IX`mob+%mob.Y+0]
+@_1     ld      L	[IX`mob+Mob.Ysubpixel]
+        ld      H	[IX`mob+Mob.Y+0]
         add     HL      DE
-        adc     A	[IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.Ysubpixel]	L
-        ld      [IX`mob+%mob.Y+0]	H
-        ld      [IX`mob+%mob.Y+1]	A
+        adc     A	[IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.Ysubpixel]	L
+        ld      [IX`mob+Mob.Y+0]	H
+        ld      [IX`mob+Mob.Y+1]	A
         ld      L	H
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      A	[$.FRAMECOUNT]
         and     $0F
         jr      nz	@_2
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $20
         jr      c	@_2
 	
-        ld      [IX`mob+%mob.unknown11]	$00
+        ld      [IX`mob+Mob.unknown11]	$00
 @_2     ld      [$.D2DC]	HL
         ld      DE      [$.CAMERA_Y]
         and     A
@@ -19663,7 +19663,7 @@ meta_water_process:                                                             
         ld      [$.TEMP1]	HL
         ld      HL      [$.CAMERA_Y]
         ld      [$.TEMP3]	HL
-        ld      A	[IY`vars+%vars.spriteUpdateCount]
+        ld      A	[IY`vars+Vars.spriteUpdateCount]
         ld      HL      [$.SPRITETABLE_ADDR]
         push    AF
         push    HL
@@ -19704,7 +19704,7 @@ meta_water_process:                                                             
         pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]	HL
-        ld      [IY`vars+%vars.spriteUpdateCount]	A
+        ld      [IY`vars+Vars.spriteUpdateCount]	A
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -19720,8 +19720,8 @@ powerUps_bubbles_process:                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      A	[IX`mob+%mob.unknown12]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      A	[IX`mob+Mob.unknown12]
         and     %01111111					;=$7F
         jr      nz	@_1
 	
@@ -19734,13 +19734,13 @@ powerUps_bubbles_process:                                                       
         bit     0	[HL]
         call    nz	\\_91eb
 	
-@_1     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+@_1     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         add     A	A
         ld      E	A
         ld      D	$00
@@ -19753,17 +19753,17 @@ powerUps_bubbles_process:                                                       
         ld      [$.TEMP6]	DE
         ld      A	$0C
         call    \\_3581
-        inc     [IX`mob+%mob.unknown12]
+        inc     [IX`mob+Mob.unknown12]
         ld      A	[$.FRAMECOUNT]
         and     %00000111
         ret     nz
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $06
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11]	$00
+        ld      [IX`mob+Mob.unknown11]	$00
         ret
         
 	%byte
@@ -19777,11 +19777,11 @@ _8eca:                                                                          
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]
+        set     5       [IX`mob+Mob.flags]
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
+        ld      A	[IX`mob+Mob.unknown11]
         and     $0F
         jr      nz      @_2
 	
@@ -19794,14 +19794,14 @@ _8eca:                                                                          
 	
         ld      BC      $FFE0
         ld      D       $FF
-@_1     ld      [IX`mob+%mob.Xspeed+0]          C
-        ld      [IX`mob+%mob.Xspeed+1]          B
-        ld      [IX`mob+%mob.Xdirection]        D
-@_2     ld      [IX`mob+%mob.Yspeed+0]          $A0
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_1     ld      [IX`mob+Mob.Xspeed+0]          C
+        ld      [IX`mob+Mob.Xspeed+1]          B
+        ld      [IX`mob+Mob.Xdirection]        D
+@_2     ld      [IX`mob+Mob.Yspeed+0]          $A0
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
         ex      DE      HL
         ld      HL      [$.CAMERA_X]
@@ -19823,8 +19823,8 @@ _8eca:                                                                          
         sbc     HL      DE
         jr      c       @_4
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ex      DE      HL
         ld      HL      [$.D2DC]
@@ -19846,13 +19846,13 @@ _8eca:                                                                          
         sbc     HL      DE
         jr      nc      @_5
 	
-@_4     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+@_4     ld      [IX`mob+Mob.type]      $FF                     ;remove mob?
 @_5     ld      HL      $0000
         ld      [$.TEMP4]	HL
         ld      [$.TEMP6]	HL
         ld      A       $0C
         call    _3581
-        inc     [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
         ret
 	;
 	
@@ -19867,8 +19867,8 @@ badnick_burrobot_process:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
-        ld      [IX`mob+%mob.width]     12
-        ld      [IX`mob+%mob.height]    32
+        ld      [IX`mob+Mob.width]     12
+        ld      [IX`mob+Mob.height]    32
         
         ;check for collision with Sonic. use a 2px offset on the sprite
         ;TODO: need a means of dynamically generating this 16-bit number from mob specification
@@ -19882,9 +19882,9 @@ badnick_burrobot_process:                                                       
         ld      [$.TEMP1]           HL`explosionOffset
         call    nc      hitPlayer
         
-        ld      L                   [IX`mob+%mob.Yspeed+0]
-        ld      H                   [IX`mob+%mob.Yspeed+1]
-        ld      A                   [IX`mob+%mob.Ydirection]
+        ld      L                   [IX`mob+Mob.Yspeed+0]
+        ld      H                   [IX`mob+Mob.Yspeed+1]
+        ld      A                   [IX`mob+Mob.Ydirection]
         ld      DE                  $0010
         add     HL                  DE
         adc     A                   $00
@@ -19898,16 +19898,16 @@ badnick_burrobot_process:                                                       
         ld      HL                  $0300
         ld      C                   $00
         
-@_1     ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    C
+@_1     ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    C
         
-        bit     0       [IX`mob+%mob.flags]
+        bit     0       [IX`mob+Mob.flags]
         jp      nz	@_4
         
         ld      DE                  $FFD0
-        ld      L                   [IX`mob+%mob.X+0]
-        ld      H                   [IX`mob+%mob.X+1]
+        ld      L                   [IX`mob+Mob.X+0]
+        ld      H                   [IX`mob+Mob.X+1]
         add     HL                  DE
         ld      DE                  [$.SONIC.X]
         and     A
@@ -19915,53 +19915,53 @@ badnick_burrobot_process:                                                       
         jr      nc	@_2
 	
         ld      BC                  $0030
-        ld      L                   [IX`mob+%mob.X+0]
-        ld      H                   [IX`mob+%mob.X+1]
+        ld      L                   [IX`mob+Mob.X+0]
+        ld      H                   [IX`mob+Mob.X+1]
         add     HL                  BC
         and     A
         sbc     HL                  DE
         jr      c	@_2
-        set     0       [IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.Yspeed+0]      $80
-        ld      [IX`mob+%mob.Yspeed+1]      $FD
-        ld      [IX`mob+%mob.Ydirection]    $FF
-@_2     ld      L                   [IX`mob+%mob.X+0]
-        ld      H                   [IX`mob+%mob.X+1]
+        set     0       [IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.Yspeed+0]      $80
+        ld      [IX`mob+Mob.Yspeed+1]      $FD
+        ld      [IX`mob+Mob.Ydirection]    $FF
+@_2     ld      L                   [IX`mob+Mob.X+0]
+        ld      H                   [IX`mob+Mob.X+1]
         ld      DE                  [$.SONIC.X]
         and     A
         sbc     HL                  DE
         jr      c	@_3
 	
-        ld      [IX`mob+%mob.Xspeed+0]      $C0
-        ld      [IX`mob+%mob.Xspeed+1]      $FF
-        ld      [IX`mob+%mob.Xdirection]    $FF
+        ld      [IX`mob+Mob.Xspeed+0]      $C0
+        ld      [IX`mob+Mob.Xspeed+1]      $FF
+        ld      [IX`mob+Mob.Xdirection]    $FF
         ld      DE                  @_9059
         ld      BC                  @_904a
         call    animateMob
-        set     1       [IX`mob+%mob.flags]
+        set     1       [IX`mob+Mob.flags]
         ret
         
-@_3     ld      [IX`mob+%mob.Xspeed+0]      $40
-        ld      [IX`mob+%mob.Xspeed+1]      $00
-        ld      [IX`mob+%mob.Xdirection]    $00
+@_3     ld      [IX`mob+Mob.Xspeed+0]      $40
+        ld      [IX`mob+Mob.Xspeed+1]      $00
+        ld      [IX`mob+Mob.Xdirection]    $00
         ld      DE      @_9059
         ld      BC      @_9045
         call    animateMob
-        res     1       [IX`mob+%mob.flags]
+        res     1       [IX`mob+Mob.flags]
         ret
         
 @_4     ld      BC      @_9054
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      nz	@_5
 	
         ld      BC      @_904f
 @_5     ld      DE      @_9059
         call    animateMob
         
-        bit     7       [IX`mob+%mob.flags]
+        bit     7       [IX`mob+Mob.flags]
         ret     z
         
-        res     0       [IX`mob+%mob.flags]
+        res     0       [IX`mob+Mob.flags]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -20005,27 +20005,27 @@ platform_float_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	30
-        ld      [IX`mob+%mob.height]	28
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_91de
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_91de
-        bit     1	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	30
+        ld      [IX`mob+Mob.height]	28
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_91de
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_91de
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
-        ld      [IX`mob+%mob.unknown11]	L
-        ld      [IX`mob+%mob.unknown12]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
+        ld      [IX`mob+Mob.unknown11]	L
+        ld      [IX`mob+Mob.unknown12]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $FFFF
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        ld      [IX`mob+%mob.unknown13]	L
-        ld      [IX`mob+%mob.unknown14]	H
-        set     1	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        ld      [IX`mob+Mob.unknown13]	L
+        ld      [IX`mob+Mob.unknown14]	H
+        set     1	[IX`mob+Mob.flags]
 @_1     ld      BC      $0010
         ld      DE      $0020
         call    \\getFloorLayoutRAMAddressForMob
@@ -20050,12 +20050,12 @@ platform_float_process:                                                         
         cp      $1E
         jr      z	@_2
 	
-        bit     0	[IX`mob+%mob.flags]
+        bit     0	[IX`mob+Mob.flags]
         jr      z	@_3
 	
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $FFF8
         add     HL      DE
         adc     A	$FF
@@ -20067,11 +20067,11 @@ platform_float_process:                                                         
 	
         ld      HL      $FF00
         ld      C	$FF
-@_2     ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
-@_3     ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+@_2     ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
+@_3     ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         ld      HL      [$.CAMERA_X]
         ld      BC      $FFE0
         add     HL      BC
@@ -20085,8 +20085,8 @@ platform_float_process:                                                         
         sbc     HL      DE
         jr      c	@_4
 	
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      [$.CAMERA_Y]
         ld      BC      $FFE0
         add     HL      BC
@@ -20101,22 +20101,22 @@ platform_float_process:                                                         
         sbc     HL      DE
         jr      nc	@_5
 	
-@_4     ld      L	[IX`mob+%mob.unknown11]
-        ld      H	[IX`mob+%mob.unknown12]
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.unknown13]
-        ld      H	[IX`mob+%mob.unknown14]
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+@_4     ld      L	[IX`mob+Mob.unknown11]
+        ld      H	[IX`mob+Mob.unknown12]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.unknown13]
+        ld      H	[IX`mob+Mob.unknown14]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.Xsubpixel]		A`zero
-        ld      [IX`mob+%mob.Ysubpixel]		A`zero
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
-        res     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.Xsubpixel]		A`zero
+        ld      [IX`mob+Mob.Ysubpixel]		A`zero
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
+        res     0	[IX`mob+Mob.flags]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -20126,7 +20126,7 @@ platform_float_process:                                                         
         call    \\detectCollisionWithSonic
         ret     c
 	
-        set     0	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
         ld      A	[$.SONIC.Yspeed+1]
         and     A
         jp      p	@_6
@@ -20135,8 +20135,8 @@ platform_float_process:                                                         
         cp      $02
         ret     nc
         
-@_6     ld      E	[IX`mob+%mob.Yspeed+0]
-        ld      D	[IX`mob+%mob.Yspeed+1]
+@_6     ld      E	[IX`mob+Mob.Yspeed+0]
+        ld      D	[IX`mob+Mob.Yspeed+1]
         ld      BC      $0010
         call    _LABEL_7CC1_12
         ret
@@ -20158,7 +20158,7 @@ _91eb:                                                                          
         ret     c
         
         ld      C       $42
-        ld      A	[IX`mob+%mob.type]
+        ld      A	[IX`mob+Mob.type]
         cp      $41
         jr      nz      @_1
 	
@@ -20172,38 +20172,38 @@ _91eb:                                                                          
         ld      C       [HL]
         pop     HL
 @_1     ld      A       C
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
-        ld      [IX`mob+%mob.type]      A
+        ld      [IX`mob+Mob.type]      A
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
         call    \\math\_LABEL_625_57
         and     $0F
         ld      L       A
         ld      H       $00
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      [IX`mob+%mob.Ysubpixel] $00
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      [IX`mob+Mob.Ysubpixel] $00
         call    \\math\_LABEL_625_57
         and     $0F
         ld      L       A
         xor     A`zero
         ld      H       A`zero
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]               L
-        ld      [IX`mob+%mob.Y+1]               H
-        ld      [IX`mob+%mob.unknown11]         A`zero
-        ld      [IX`mob+%mob.unknown12]         A`zero
-        ld      [IX`mob+%mob.flags]             A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Y+0]               L
+        ld      [IX`mob+Mob.Y+1]               H
+        ld      [IX`mob+Mob.unknown11]         A`zero
+        ld      [IX`mob+Mob.unknown12]         A`zero
+        ld      [IX`mob+Mob.flags]             A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
         pop     IX
         ret
 
@@ -20214,20 +20214,20 @@ mob_boss_labyrinth:                                                             
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	 [IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.width]     32
-        ld      [IX`mob+%mob.height]    28
+        set     5	 [IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.width]     32
+        ld      [IX`mob+Mob.height]    28
         call    _7ca6
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_9493
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_9493
-        bit     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_9493
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_9493
+        bit     0       [IX`mob+Mob.flags]
         jr      nz      @_1
         
         ld      HL      $02d0
         ld      DE      $0290
         call    _7c8c
         
-        set     1       [IY`vars+%vars.flags9]
+        set     1       [IY`vars+Vars.flags9]
         
         ;UNKNOWN
         ld      HL      $E508
@@ -20247,12 +20247,12 @@ mob_boss_labyrinth:                                                             
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        set     0       [IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown11]
+        set     0       [IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      nz      @_2
 	
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         add     A       A
         add     A       A
         ld      E       A
@@ -20260,18 +20260,18 @@ mob_boss_labyrinth:                                                             
         ld      HL      @_947b
         add     HL      DE
         ld      A	[HL]
-        ld      [IX`mob+%mob.X+0]       A
+        ld      [IX`mob+Mob.X+0]       A
         inc     HL
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.X+1]       A
+        ld      [IX`mob+Mob.X+1]       A
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.Y+0]       A
+        ld      [IX`mob+Mob.Y+0]       A
         ld      A	[HL]
         inc     HL
-        ld      [IX`mob+%mob.Y+1]       A
-        inc     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Y+1]       A
+        inc     [IX`mob+Mob.unknown11]
         jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -20279,20 +20279,20 @@ mob_boss_labyrinth:                                                             
 @_2     dec     A
         jr      nz      @_5
 	
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         and     A
         jr      nz      @_3
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
         jp      @_4
         
-@_3     ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $00
-        ld      [IX`mob+%mob.Ydirection]        $00
+@_3     ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $00
+        ld      [IX`mob+Mob.Ydirection]        $00
 @_4     ld      HL      @_9487
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         add     A       A
         ld      E       A
         ld      D       $00
@@ -20301,14 +20301,14 @@ mob_boss_labyrinth:                                                             
         inc     HL
         ld      H       [HL]
         ld      L       A
-        ld      E       [IX`mob+%mob.Y+0]
-        ld      D       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.Y+0]
+        ld      D       [IX`mob+Mob.Y+1]
         and     A
         sbc     HL      DE
         jp      nz      @_
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown12],$00
+        inc     [IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown12],$00
         jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -20317,26 +20317,26 @@ mob_boss_labyrinth:                                                             
         jp      nz      @_6
 	
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
-        inc     [IX`mob+%mob.unknown12]
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
+        inc     [IX`mob+Mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $64
         jp      nz      @_
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        inc     [IX`mob+Mob.unknown11]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $000F
         add     HL      DE
         ld      [$.TEMP1]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      BC      $0022
         add     HL      BC
         ld      [$.TEMP3]	HL
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         and     A
         jp      z       @_9432
         ld      A	[$.D2EC]
@@ -20351,42 +20351,42 @@ mob_boss_labyrinth:                                                             
         pop     IX
         
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $2F                     ;unknown mob
+        ld      [IX`mob+Mob.type]      $2F                     ;unknown mob
         ld      HL      [$.TEMP1]
-        ld      [IX`mob+%mob.Xsubpixel]     A`zero
-        ld      [IX`mob+%mob.X+0]           L
-        ld      [IX`mob+%mob.X+1]           H
+        ld      [IX`mob+Mob.Xsubpixel]     A`zero
+        ld      [IX`mob+Mob.X+0]           L
+        ld      [IX`mob+Mob.X+1]           H
         ld      HL      [$.TEMP3]
-        ld      [IX`mob+%mob.Ysubpixel]     A`zero
-        ld      [IX`mob+%mob.Y+0]           L
-        ld      [IX`mob+%mob.Y+1]           H
-        ld      [IX`mob+%mob.flags]         A`zero
-        ld      [IX`mob+%mob.Xspeed+0]      A`zero
-        ld      [IX`mob+%mob.Xspeed+1]      A`zero
-        ld      [IX`mob+%mob.Xdirection]    A`zero
-        ld      [IX`mob+%mob.Yspeed+0]      A`zero
-        ld      [IX`mob+%mob.Yspeed+1]      A`zero
-        ld      [IX`mob+%mob.Ydirection]    A`zero
+        ld      [IX`mob+Mob.Ysubpixel]     A`zero
+        ld      [IX`mob+Mob.Y+0]           L
+        ld      [IX`mob+Mob.Y+1]           H
+        ld      [IX`mob+Mob.flags]         A`zero
+        ld      [IX`mob+Mob.Xspeed+0]      A`zero
+        ld      [IX`mob+Mob.Xspeed+1]      A`zero
+        ld      [IX`mob+Mob.Xdirection]    A`zero
+        ld      [IX`mob+Mob.Yspeed+0]      A`zero
+        ld      [IX`mob+Mob.Yspeed+1]      A`zero
+        ld      [IX`mob+Mob.Ydirection]    A`zero
         
         pop     IX
         jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_6     ld      A	[IX`mob+%mob.unknown13]
+@_6     ld      A	[IX`mob+Mob.unknown13]
         and     A
         jr      nz      @_7
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $00
-        ld      [IX`mob+%mob.Ydirection]        $00
+        ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $00
+        ld      [IX`mob+Mob.Ydirection]        $00
         jp      @_8
         
-@_7     ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $FF
-        ld      [IX`mob+%mob.Ydirection]        $FF
+@_7     ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $FF
+        ld      [IX`mob+Mob.Ydirection]        $FF
 @_8     ld      HL      $948D
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         add     A       A
         ld      E       A
         ld      D       $00
@@ -20395,19 +20395,19 @@ mob_boss_labyrinth:                                                             
         inc     HL
         ld      H       [HL]
         ld      L       A
-        ld      E       [IX`mob+%mob.Y+0]
-        ld      D       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.Y+0]
+        ld      D       [IX`mob+Mob.Y+1]
         xor     A`zero
         sbc     HL      DE
         jr      nz      @_
 	
-        ld      [IX`mob+%mob.unknown11] A`zero
-        inc     [IX`mob+%mob.unknown13]
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      [IX`mob+Mob.unknown11] A`zero
+        inc     [IX`mob+Mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         cp      $03
         jr      c       @_
 	
-        ld      [IX`mob+%mob.unknown13] $00
+        ld      [IX`mob+Mob.unknown13] $00
         
 @_      ld      HL              $00A2
         ld      [$.D216]	HL
@@ -20416,14 +20416,14 @@ mob_boss_labyrinth:                                                             
         cp      $08
         ret     nc
 	
-        bit     7       [IX`mob+%mob.Ydirection]
+        bit     7       [IX`mob+Mob.Ydirection]
         ret     z
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL              $0010
         ld      [$.TEMP4]	HL
@@ -20436,13 +20436,13 @@ mob_boss_labyrinth:                                                             
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_9432  ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_9432  ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $0004
         add     HL      DE
         ld      [$.TEMP1]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFFA
         add     HL      DE
         ld      [$.TEMP3]	HL
@@ -20452,8 +20452,8 @@ mob_boss_labyrinth:                                                             
         ld      [$.TEMP6]	HL
         ld      C       $04
         call    _85d1
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $0020
         add     HL      DE
         ld      [$.TEMP1]	HL
@@ -20488,58 +20488,58 @@ unknown_94a5_process:													;$94A5
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	8
-        ld      [IX`mob+%mob.height]	10
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	8
+        ld      [IX`mob+Mob.height]	10
         ld      HL      	$0404
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
         ld      HL      [$.SONIC.X]
         ld      DE      $000C
         add     HL      DE
         ex      DE      HL
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      BC      $0008
         add     HL      BC
         and     A
         sbc     HL      DE
         jr      nc	@_1
 	
-        set     2	[IX`mob+%mob.flags]
-@_1     bit     0	[IX`mob+%mob.flags]
+        set     2	[IX`mob+Mob.flags]
+@_1     bit     0	[IX`mob+Mob.flags]
         jr      nz	@_3
 	
-        ld      [IX`mob+%mob.Yspeed+0]		$40
-        ld      [IX`mob+%mob.Yspeed+1]		$00
-        ld      [IX`mob+%mob.Ydirection]	$00
+        ld      [IX`mob+Mob.Yspeed+0]		$40
+        ld      [IX`mob+Mob.Yspeed+1]		$00
+        ld      [IX`mob+Mob.Ydirection]	$00
         ld      HL      @_9698
-        bit     2	[IX`mob+%mob.flags]
+        bit     2	[IX`mob+Mob.flags]
         jr      z	@_2
 	
         ld      HL      @_9688
-@_2     ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
+@_2     ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
         ld      HL      [$.SONIC.Y]
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         and     A
         sbc     HL      DE
         ret     nc
 	
-        set     0	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_3     ld      C	[IX`mob+%mob.X+0]
-        ld      B	[IX`mob+%mob.X+1]
+@_3     ld      C	[IX`mob+Mob.X+0]
+        ld      B	[IX`mob+Mob.X+1]
         ld      HL      $FFF0
         add     HL      BC
         ld      DE      [$.CAMERA_X]
@@ -20554,8 +20554,8 @@ unknown_94a5_process:													;$94A5
         sbc     HL      DE
         jr      nc	@_4
 	
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         ld      HL      $FFF0
         add     HL      BC
         ld      DE      [$.CAMERA_Y]
@@ -20569,18 +20569,18 @@ unknown_94a5_process:													;$94A5
         sbc     HL      BC
         jr      nc	@_5
 	
-@_4     ld      [IX`mob+%mob.type]	$FF              	;remove object
+@_4     ld      [IX`mob+Mob.type]	$FF              	;remove object
 @_5     xor     A`zero
         ld      HL      $0002
-        bit     2	[IX`mob+%mob.flags]
+        bit     2	[IX`mob+Mob.flags]
         jr      nz	@_6
 	
         dec     A
         ld      HL      $FFFE
-@_6     ld      E	[IX`mob+%mob.Xspeed+0]
-        ld      D	[IX`mob+%mob.Xspeed+1]
+@_6     ld      E	[IX`mob+Mob.Xspeed+0]
+        ld      D	[IX`mob+Mob.Xspeed+1]
         add     HL      DE
-        adc     A	[IX`mob+%mob.Xdirection]
+        adc     A	[IX`mob+Mob.Xdirection]
         ld      C	A
         ld      A	H
         ld      DE      $0100
@@ -20600,22 +20600,22 @@ unknown_94a5_process:													;$94A5
         jr      z	@_8
 	
         ex      DE      HL
-@_8     ld      [IX`mob+%mob.Xspeed+0]		L
-        ld      [IX`mob+%mob.Xspeed+1]		H
-        ld      [IX`mob+%mob.Xdirection]	C
+@_8     ld      [IX`mob+Mob.Xspeed+0]		L
+        ld      [IX`mob+Mob.Xspeed+1]		H
+        ld      [IX`mob+Mob.Xdirection]	C
         ld      HL      [$.SONIC.Y]
         ld      DE      $0010
         add     HL      DE
         ex      DE      HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      BC      $0008
         add     HL      BC
         and     A
         sbc     HL      DE
         ld      A	$FF
         ld      HL      $FFFE
-        bit     7	[IX`mob+%mob.Ydirection]
+        bit     7	[IX`mob+Mob.Ydirection]
         jr      nz	@_9
 	
         ld      HL      $FFFC
@@ -20623,14 +20623,14 @@ unknown_94a5_process:													;$94A5
 
         inc     A
         ld      HL      $0002
-        bit     7	[IX`mob+%mob.Ydirection]
+        bit     7	[IX`mob+Mob.Ydirection]
         jr      z	@_10
 	
         ld      HL      $0004
-@_10    ld      E	[IX`mob+%mob.Yspeed+0]
-        ld      D	[IX`mob+%mob.Yspeed+1]
+@_10    ld      E	[IX`mob+Mob.Yspeed+0]
+        ld      D	[IX`mob+Mob.Yspeed+1]
         add     HL      DE
-        adc     A	[IX`mob+%mob.Ydirection]
+        adc     A	[IX`mob+Mob.Ydirection]
         ld      C	A
         ld      A	H
         ld      DE      $0100
@@ -20649,17 +20649,17 @@ unknown_94a5_process:													;$94A5
         jr      z	@_12
 	
         ex      DE      HL
-@_12    ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
+@_12    ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
         ld      HL      @_9688
-        bit     7	[IX`mob+%mob.Xdirection]
+        bit     7	[IX`mob+Mob.Xdirection]
         jr      z	@_13
 	
         ld      HL      @_9698
 @_13    push    HL
-        ld      L	[IX`mob+%mob.Xspeed+0]
-        ld      H	[IX`mob+%mob.Xspeed+1]
+        ld      L	[IX`mob+Mob.Xspeed+0]
+        ld      H	[IX`mob+Mob.Xspeed+1]
         bit     7	H
         jr      z	@_14
 	
@@ -20670,30 +20670,30 @@ unknown_94a5_process:													;$94A5
         cpl     
         ld      H	A
         inc     HL
-@_14    ld      E	[IX`mob+%mob.unknown11]
-        ld      D	[IX`mob+%mob.unknown12]
+@_14    ld      E	[IX`mob+Mob.unknown11]
+        ld      D	[IX`mob+Mob.unknown12]
         add     HL      DE
-        ld      [IX`mob+%mob.unknown11]	L
-        ld      [IX`mob+%mob.unknown12]	H
+        ld      [IX`mob+Mob.unknown11]	L
+        ld      [IX`mob+Mob.unknown12]	H
         ld      A	H
         and     $08
         ld      E	A
         ld      D	$00
         pop     HL
         add     HL      DE
-        ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $FFF9
-        bit     7	[IX`mob+%mob.Xdirection]
+        bit     7	[IX`mob+Mob.Xdirection]
         jr      z	@_15
 	
         ld      DE      $000F
 @_15    add     HL      DE
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      A	[$.FRAMECOUNT]
         and     $0F
@@ -20706,23 +20706,23 @@ unknown_94a5_process:													;$94A5
         push    HL
         pop     IX
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.type]	$2A              	;unknown object
+        ld      [IX`mob+Mob.type]	$2A              	;unknown object
         ld      HL      [$.TEMP1]
-        ld      [IX`mob+%mob.Xsubpixel]	A`zero
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
+        ld      [IX`mob+Mob.Xsubpixel]	A`zero
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
         ld      HL      [$.TEMP3]
-        ld      [IX`mob+%mob.Ysubpixel]	A`zero
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        ld      [IX`mob+%mob.unknown11]	A`zero
-        ld      [IX`mob+%mob.unknown12]	A`zero
-        ld      [IX`mob+%mob.Xspeed+0]	A`zero
-        ld      [IX`mob+%mob.Xspeed+1]	A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
-        ld      [IX`mob+%mob.Yspeed+0]	A`zero
-        ld      [IX`mob+%mob.Yspeed+1]	A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
+        ld      [IX`mob+Mob.Ysubpixel]	A`zero
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        ld      [IX`mob+Mob.unknown11]	A`zero
+        ld      [IX`mob+Mob.unknown12]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]	A`zero
+        ld      [IX`mob+Mob.Xspeed+1]	A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Yspeed+0]	A`zero
+        ld      [IX`mob+Mob.Yspeed+1]	A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
         pop     IX
         ret
 	
@@ -20741,38 +20741,38 @@ unknown_96a8_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      L`zero	A`zero
         ld      H`zero	A`zero
         ld      [$.TEMP4]	HL`zero
         ld      [$.TEMP6]	HL`zero
-        ld      E	[IX`mob+%mob.unknown12]
+        ld      E	[IX`mob+Mob.unknown12]
         ld      D	$00
         ld      HL      @_96f5
         add     HL      DE
         ld      A	[HL]
         call    \\_3581
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $0C
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11]	$00
-        inc     [IX`mob+%mob.unknown12]
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.unknown11]	$00
+        inc     [IX`mob+Mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $03
         ret     c
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove object?
+        ld      [IX`mob+Mob.type]	$FF              	;remove object?
         ret
 
 	%byte
@@ -20783,11 +20783,11 @@ unknown_96f8_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        ld      A	[IY`vars+%vars.spriteUpdateCount]
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        ld      A	[IY`vars+Vars.spriteUpdateCount]
         ld      HL      [$.SPRITETABLE_ADDR]
         push    AF
         push    HL
@@ -20800,16 +20800,16 @@ unknown_96f8_process:                                                           
         ld      HL      $.SPRITETABLE
         add     HL      DE
         ld      [$.SPRITETABLE_ADDR]	HL
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      $0000
         ld      [$.TEMP4]	HL
         ld      [$.TEMP6]	HL
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         and     A
         jr      z	@_1
 	
@@ -20835,23 +20835,23 @@ unknown_96f8_process:                                                           
 @_3     pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]	HL
-        ld      [IY`vars+%vars.spriteUpdateCount]	A
-        ld      [IX`mob+%mob.width]	$0A
-        ld      [IX`mob+%mob.height]	$0C
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      [IY`vars+Vars.spriteUpdateCount]	A
+        ld      [IX`mob+Mob.width]	$0A
+        ld      [IX`mob+Mob.height]	$0C
+        ld      A	[IX`mob+Mob.unknown12]
         and     A
         jr      z	@_4
 	
         ld      C	$00
         ld      B	C
         ld      D	C
-        ld      [IX`mob+%mob.Yspeed+0]		C
-        ld      [IX`mob+%mob.Yspeed+1]		C
-        ld      [IX`mob+%mob.Ydirection]	C
-        dec     [IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.Yspeed+0]		C
+        ld      [IX`mob+Mob.Yspeed+1]		C
+        ld      [IX`mob+Mob.Ydirection]	C
+        dec     [IX`mob+Mob.unknown12]
         jp      nz	@_6
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove object
+        ld      [IX`mob+Mob.type]	$FF              	;remove object
         jp      @_6
         
 @_4     ld      HL      	$0206
@@ -20860,8 +20860,8 @@ unknown_96f8_process:                                                           
         jr      c	@_5
 	
         ld      BC      [$.SONIC.Y]
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      $FFF8
         add     HL      DE
         and     A
@@ -20874,7 +20874,7 @@ unknown_96f8_process:                                                           
         sbc     HL      BC
         jr      c	@_5
 	
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         and     A
         jr      nz	@_5
 	
@@ -20885,10 +20885,10 @@ unknown_96f8_process:                                                           
         ld      [$.SONIC.Ydirection]	A`zero
         ld      [$.D28E]		A`zero
         ld      [$.D29B]		HL`zero
-        set     2	[IY`vars+%vars.unknown0]
+        set     2	[IY`vars+Vars.unknown0]
         ld      A	$20
         ld      [$.D2FB]	A	
-        ld      [IX`mob+%mob.unknown12]	$10
+        ld      [IX`mob+Mob.unknown12]	$10
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -20896,10 +20896,10 @@ unknown_96f8_process:                                                           
 		rst     \\sound\rst_playSFX
 	.ENDIF
 	
-@_5     ld      [IX`mob+%mob.Yspeed+0]		$98
-        ld      [IX`mob+%mob.Yspeed+1]		$FF
-        ld      [IX`mob+%mob.Ydirection]	$FF
-        ld      A	[IX`mob+%mob.unknown11]
+@_5     ld      [IX`mob+Mob.Yspeed+0]		$98
+        ld      [IX`mob+Mob.Yspeed+1]		$FF
+        ld      [IX`mob+Mob.Ydirection]	$FF
+        ld      A	[IX`mob+Mob.unknown11]
         and     $0F
         jr      nz	@_7
 	
@@ -20912,11 +20912,11 @@ unknown_96f8_process:                                                           
 	
         ld      BC      $FFE0
         ld      D	$FF
-@_6     ld      [IX`mob+%mob.Xspeed+0]		C
-        ld      [IX`mob+%mob.Xspeed+1]		B
-        ld      [IX`mob+%mob.Xdirection]	D
-@_7     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+@_6     ld      [IX`mob+Mob.Xspeed+0]		C
+        ld      [IX`mob+Mob.Xspeed+1]		B
+        ld      [IX`mob+Mob.Xdirection]	D
+@_7     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ex      DE      HL
         ld      HL      [$.CAMERA_X]
         ld      BC      $0008
@@ -20937,8 +20937,8 @@ unknown_96f8_process:                                                           
         sbc     HL      DE
         jr      c	@_9
 	
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ex      DE      HL
         ld      HL      [$.D2DC]
         and     A
@@ -20959,8 +20959,8 @@ unknown_96f8_process:                                                           
         sbc     HL      DE
         jr      nc	@_10
 	
-@_9     ld      [IX`mob+%mob.type]	$FF              	;remove object
-@_10    inc     [IX`mob+%mob.unknown11]
+@_9     ld      [IX`mob+Mob.type]	$FF              	;remove object
+@_10    inc     [IX`mob+Mob.unknown11]
         ret
 	;
 
@@ -20968,34 +20968,34 @@ platform_flipper_process:                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]             	;mob does not collide with the floor
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9a7e
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9a7e
-        bit     5	[IY`vars+%vars.joypad]
+        set     5	[IX`mob+Mob.flags]             	;mob does not collide with the floor
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_9a7e
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_9a7e
+        bit     5	[IY`vars+Vars.joypad]
         jr      nz	@_1
 	
-        ld      A	[IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.unknown12]	A
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.unknown12]	A
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $05
         jr      nc	@_2
 	
-        inc     [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
         jp      @_2
         
-@_1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_2
 	
-        dec     [IX`mob+%mob.unknown11]
-@_2     ld      A	[IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
+@_2     ld      A	[IX`mob+Mob.unknown11]
         cp      $01
         jr      nc	@_3
 	
         ld      HL      $140C
         ld      [$.TEMP6]	HL
-        ld      [IX`mob+%mob.width]	$1E
-        ld      [IX`mob+%mob.height]	$16
+        ld      [IX`mob+Mob.width]	$1E
+        ld      [IX`mob+Mob.height]	$16
         call    \\detectCollisionWithSonic
         ret     c
 	
@@ -21018,12 +21018,12 @@ platform_flipper_process:                                                       
         
 @_3     cp      $04
         jp      nc	@_4
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9a90
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9a90
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_9a90
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_9a90
         ld      HL      	$080f
         ld      [$.TEMP6]	HL
-        ld      [IX`mob+%mob.width]	$1E
-        ld      [IX`mob+%mob.height]	$16
+        ld      [IX`mob+Mob.width]	$1E
+        ld      [IX`mob+Mob.height]	$16
         call    \\detectCollisionWithSonic
         ret     c
 	
@@ -21031,8 +21031,8 @@ platform_flipper_process:                                                       
         call    @_9aaf
         ret     nc
 	
-        ld      A	[IX`mob+%mob.unknown12]
-        cp      [IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown12]
+        cp      [IX`mob+Mob.unknown11]
         ret     nc
 	
         ld      A	[$.SONIC.X]
@@ -21086,12 +21086,12 @@ platform_flipper_process:                                                       
         ld      [$.SONIC.Xdirection]	A	
         ret
         
-@_4     ld      [IX`mob+%mob.spriteLayout+0]	LO @_9aa2
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9aa2
+@_4     ld      [IX`mob+Mob.spriteLayout+0]	LO @_9aa2
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_9aa2
         ld      HL      $021A
         ld      [$.TEMP6]	HL
-        ld      [IX`mob+%mob.width]	$1E
-        ld      [IX`mob+%mob.height]	$16
+        ld      [IX`mob+Mob.width]	$1E
+        ld      [IX`mob+Mob.height]	$16
         call    \\detectCollisionWithSonic
         ret     c
 	
@@ -21158,8 +21158,8 @@ platform_flipper_process:                                                       
         jr      z	@_5
 	
         dec     B
-@_5     ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+@_5     ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         add     HL      BC
         ld      [$.SONIC.Y]	HL
         ld      A	[$.SONIC.Yspeed+1]
@@ -21194,27 +21194,27 @@ platform_bumper_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	$1C
-        ld      [IX`mob+%mob.height]	$06
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9b6e
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9b6e
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	$1C
+        ld      [IX`mob+Mob.height]	$06
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_9b6e
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_9b6e
         ld      HL      $0001
-        ld      A	[IX`mob+%mob.unknown12]
+        ld      A	[IX`mob+Mob.unknown12]
         cp      $60
         jr      nc	@_1
 	
         ld      HL      $FFFF
-@_1     ld      [IX`mob+%mob.Xspeed+0]		$00
-        ld      [IX`mob+%mob.Xspeed+1]		L
-        ld      [IX`mob+%mob.Xdirection]	H
+@_1     ld      [IX`mob+Mob.Xspeed+0]		$00
+        ld      [IX`mob+Mob.Xspeed+1]		L
+        ld      [IX`mob+Mob.Xdirection]	H
         inc     A
         cp      $C0
         jr      c	@_2
 	
         xor     A`zero
-@_2     ld      [IX`mob+%mob.unknown12]	A`zero
-        ld      A	[IX`mob+%mob.unknown11]
+@_2     ld      [IX`mob+Mob.unknown12]	A`zero
+        ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      nz	@_3
 	
@@ -21242,7 +21242,7 @@ platform_bumper_process:                                                        
         adc     A	$00
         ld      [$.SONIC.Yspeed]	HL
         ld      [$.SONIC.Ydirection]	A
-        ld      [IX`mob+%mob.unknown11]	$08
+        ld      [IX`mob+Mob.unknown11]	$08
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -21251,7 +21251,7 @@ platform_bumper_process:                                                        
 	.ENDIF
         ret
         
-@_3     dec     [IX`mob+%mob.unknown11]
+@_3     dec     [IX`mob+Mob.unknown11]
         ret
         
         ;sprite layout
@@ -21264,16 +21264,16 @@ unknown_9b75_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	30
-        ld      [IX`mob+%mob.height]	96
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	30
+        ld      [IX`mob+Mob.height]	96
         ld      HL      	$0000
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         jr      c	@_2
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      A	L
         add     A	A
         rl      H
@@ -21282,8 +21282,8 @@ unknown_9b75_process:                                                           
         add     A	A
         rl      H
         ld      E	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      A	L
         add     A	A
         rl      H
@@ -21309,7 +21309,7 @@ unknown_9b75_process:                                                           
         ld      [$.D2D3]	A	
         ld      A	$01
         ld      [$.D289]	A	
-        set     4	[IY`vars+%vars.flags6]
+        set     4	[IY`vars+Vars.flags6]
         jp      @_2
         
 @_1     inc     HL
@@ -21317,8 +21317,8 @@ unknown_9b75_process:                                                           
         djnz    @loop
         
 @_2     xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
         ret
 	
 	%byte
@@ -21330,20 +21330,20 @@ unknown_9be8_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.Xspeed+0]		$80
-        ld      [IX`mob+%mob.Xspeed+1]		$01
-        ld      [IX`mob+%mob.Xdirection]	$00
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9c69
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9c69
+        ld      [IX`mob+Mob.Xspeed+0]		$80
+        ld      [IX`mob+Mob.Xspeed+1]		$01
+        ld      [IX`mob+Mob.Xdirection]	$00
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_9c69
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_9c69
         
-@_9bfc  set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+@_9bfc  set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      A	[IX`mob+%mob.X+0]
-        ld      [IX`mob+%mob.unknown11]	A
-        ld      A	[IX`mob+%mob.X+1]
-        ld      [IX`mob+%mob.unknown12]	A
+        ld      A	[IX`mob+Mob.X+0]
+        ld      [IX`mob+Mob.unknown11]	A
+        ld      A	[IX`mob+Mob.X+1]
+        ld      [IX`mob+Mob.unknown12]	A
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -21351,10 +21351,10 @@ unknown_9be8_process:                                                           
 		rst     \\sound\rst_playSFX
 	.ENDIF
 		
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.width]	$06
-        ld      [IX`mob+%mob.height]	$08
-        ld      A	[IX`mob+%mob.unknown13]
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.width]	$06
+        ld      [IX`mob+Mob.height]	$08
+        ld      A	[IX`mob+Mob.unknown13]
         cp      $64
         jr      nc	@_2
 	
@@ -21363,8 +21363,8 @@ unknown_9be8_process:                                                           
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-@_2     inc     [IX`mob+%mob.unknown13]
-        ld      A	[IX`mob+%mob.unknown13]
+@_2     inc     [IX`mob+Mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         cp      $64
         ret     c
 	
@@ -21372,12 +21372,12 @@ unknown_9be8_process:                                                           
         jr      c	@_3
 	
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.Xsubpixel]	A`zero
-        ld      [IX`mob+%mob.unknown13]	A`zero
-        ld      A	[IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.X+0]	A
-        ld      A	[IX`mob+%mob.unknown12]
-        ld      [IX`mob+%mob.X+1]	A
+        ld      [IX`mob+Mob.Xsubpixel]	A`zero
+        ld      [IX`mob+Mob.unknown13]	A`zero
+        ld      A	[IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.X+0]	A
+        ld      A	[IX`mob+Mob.unknown12]
+        ld      [IX`mob+Mob.X+1]	A
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -21387,11 +21387,11 @@ unknown_9be8_process:                                                           
         ret
         
 @_3     xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         ret
 
         ;sprite layout
@@ -21406,11 +21406,11 @@ _9c70:                                                                          
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.Xspeed+0]          $80
-        ld      [IX`mob+%mob.Xspeed+1]          $FE
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_9c87
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_9c87
+        ld      [IX`mob+Mob.Xspeed+0]          $80
+        ld      [IX`mob+Mob.Xspeed+1]          $FE
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_9c87
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_9c87
         jp      \unknown.9be8\process._9bfc
 
         ;sprite layout
@@ -21424,34 +21424,34 @@ mob_trap_flameThrower:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
-        bit     0       [IX`mob+%mob.flags]
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
+        bit     0       [IX`mob+Mob.flags]
         jr      nz      @_1
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $000C
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $0012
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
         call    \\math\_LABEL_625_57
-        ld      [IX`mob+%mob.unknown11] A
-        set     0       [IX`mob+%mob.flags]
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown11] A
+        set     0       [IX`mob+Mob.flags]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      $0000
         ld      [$.TEMP4]	HL
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         srl     A
         srl     A
         srl     A
@@ -21464,8 +21464,8 @@ mob_trap_flameThrower:                                                          
         ld      HL      _9d6a
         add     HL      BC
         ld      A	[HL]
-        ld      [IX`mob+%mob.height]    A
-        ld      [IX`mob+%mob.width]     $06
+        ld      [IX`mob+Mob.height]    A
+        ld      [IX`mob+Mob.width]     $06
         ld      HL      _9d4a
         add     HL      DE
         ld      A	[HL]
@@ -21474,7 +21474,7 @@ mob_trap_flameThrower:                                                          
         ld      L       A
         or      H
         jr      z       @_2
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         add     A       A
         add     A       A
         add     A       A
@@ -21497,7 +21497,7 @@ mob_trap_flameThrower:                                                          
         pop     BC
         djnz    @loop
         
-        ld      A	[IX`mob+%mob.height]
+        ld      A	[IX`mob+Mob.height]
         and     A
         jr      z       @_2
 	
@@ -21506,11 +21506,11 @@ mob_trap_flameThrower:                                                          
         call    detectCollisionWithSonic
         call    nc      hitPlayer._35fd
 	
-@_2     inc     [IX`mob+%mob.unknown11]
+@_2     inc     [IX`mob+Mob.unknown11]
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $70
         ret     nz
         
@@ -21550,9 +21550,9 @@ mob_door_left:                                                                  
         ;door - one way left (Scrap Brain)
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               ;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               ;mob does not collide with the floor
         call    _9ed4
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $28
         jr      nc      @_2
 	
@@ -21567,8 +21567,8 @@ mob_door_left:                                                                  
         jp      m       @_1
 	
         ld      DE      $FFEC
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
         xor     A`zero
@@ -21576,8 +21576,8 @@ mob_door_left:                                                                  
         ld      H`zero  A`zero
         ld      [$.SONIC.Xspeed]	HL`zero
         ld      [$.SONIC.Xdirection]    A`zero
-@_2     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_2     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $FFC8
         add     HL      DE
         ld      DE      [$.SONIC.X]
@@ -21585,14 +21585,14 @@ mob_door_left:                                                                  
         sbc     HL      DE
         jr      nc      @_3
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         jr      c       @_3
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFE0
         add     HL      DE
         ld      DE      [$.SONIC.Y]
@@ -21600,8 +21600,8 @@ mob_door_left:                                                                  
         sbc     HL      DE
         jr      nc      @_3
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      BC      $0050
         add     HL      BC
         and     A
@@ -21613,17 +21613,17 @@ mob_door_left:                                                                  
         
 @_3     call    _9ec4
 @_4     ld      DE      _9f2b
-@_9e7e  ld      A	[IX`mob+%mob.unknown11]
+@_9e7e  ld      A	[IX`mob+Mob.unknown11]
         and     $0F
         ld      C       A
         ld      B       $00
-        ld      L       [IX`mob+%mob.unknown12]
-        ld      H       [IX`mob+%mob.unknown13]
+        ld      L       [IX`mob+Mob.unknown12]
+        ld      H       [IX`mob+Mob.unknown13]
         and     A
         sbc     HL      BC
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
+        ld      A	[IX`mob+Mob.unknown11]
         srl     A
         srl     A
         srl     A
@@ -21639,8 +21639,8 @@ mob_door_left:                                                                  
         ld      B       $00
         ex      DE      HL
         add     HL      BC
-        ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+        ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         ret
 	;
 
@@ -21648,11 +21648,11 @@ _9eb4:                                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $30
         ret     nc
         inc     A
-        ld      [IX`mob+%mob.unknown11] A
+        ld      [IX`mob+Mob.unknown11] A
         dec     A
         ret     nz
         
@@ -21669,12 +21669,12 @@ _9ec4:                                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         and     A
         ret     z
 	
         dec     A
-        ld      [IX`mob+%mob.unknown11] A
+        ld      [IX`mob+Mob.unknown11] A
         cp      $2F
         ret     nz
         
@@ -21690,8 +21690,8 @@ _9ed4:                                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     4
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.width]     4
+        ld      A	[IX`mob+Mob.unknown11]
         srl     A
         srl     A
         srl     A
@@ -21704,8 +21704,8 @@ _9ed4:                                                                          
         add     A       A
         add     A       A
         add     A       A
-        ld      [IX`mob+%mob.height]    A
-        bit     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.height]    A
+        bit     0       [IX`mob+Mob.flags]
         ret     nz
 	
         ld      BC      $0000
@@ -21717,17 +21717,17 @@ _9ed4:                                                                          
         jr      z       @_1
 	
         ld      DE      $0004
-        set     1       [IX`mob+%mob.flags]
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        set     1       [IX`mob+Mob.flags]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      A	[IX`mob+%mob.Y+0]
-        ld      [IX`mob+%mob.unknown12] A
-        ld      A	[IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.unknown13] A
-        set     0       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      A	[IX`mob+Mob.Y+0]
+        ld      [IX`mob+Mob.unknown12] A
+        ld      A	[IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.unknown13] A
+        set     0       [IX`mob+Mob.flags]
         ret
 	;
 
@@ -21756,9 +21756,9 @@ mob_door_right:                                                                 
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $28
         jr      nc      @_2
 	
@@ -21773,8 +21773,8 @@ mob_door_right:                                                                 
         jp      m       @_1
 	
         ld      DE      $FFEC
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
         
@@ -21783,8 +21783,8 @@ mob_door_right:                                                                 
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-@_2     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_2     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $FFF0
         add     HL      DE
         ld      DE      [$.SONIC.X]
@@ -21792,16 +21792,16 @@ mob_door_right:                                                                 
         sbc     HL      DE
         jr      nc      @_3
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      BC      $0024
         add     HL      BC
         and     A
         sbc     HL      DE
         jr      c       @_3
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $ffe0
         add     HL      DE
         ld      DE      [$.SONIC.Y]
@@ -21809,8 +21809,8 @@ mob_door_right:                                                                 
         sbc     HL      DE
         jr      nc      @_3
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      BC      $0050
         add     HL      BC
         and     A
@@ -21844,10 +21844,10 @@ mob_door:                                                                       
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
+        set     5       [IX`mob+Mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
         
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $28
         jr      nc      @_2
         
@@ -21862,8 +21862,8 @@ mob_door:                                                                       
         jp      m       @_1
 	
         ld      DE      $FFEC
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]     HL
         
@@ -21872,8 +21872,8 @@ mob_door:                                                                       
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-@_2     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_2     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $FFC8
         add     HL      DE
         ld      DE      [$.SONIC.X]
@@ -21881,16 +21881,16 @@ mob_door:                                                                       
         sbc     HL      DE
         jr      nc      @_3
         
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      BC      $0024
         add     HL      BC
         and     A
         sbc     HL      DE
         jr      c       @_3
         
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFE0
         add     HL      DE
         ld      DE      [$.SONIC.Y]
@@ -21898,8 +21898,8 @@ mob_door:                                                                       
         sbc     HL      DE
         jr      nc      @_3
         
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      BC      $0050
         add     HL      BC
         and     A
@@ -21936,26 +21936,26 @@ trap_electric_process:                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	$30
-        ld      [IX`mob+%mob.height]	$10
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	$30
+        ld      [IX`mob+Mob.height]	$10
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $0018
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0010
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         cp      $64
         jr      c	@_3
         jr      nz	@_2
@@ -21980,19 +21980,19 @@ trap_electric_process:                                                          
         jr      nc	@_4
 	
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
         jp      @_5
         
 @_4     ld      DE      @_a173
         ld      BC      @_a16e
         call    _7c41
-@_5     inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+@_5     inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $A0
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11]	$00
+        ld      [IX`mob+Mob.unknown11]	$00
         ret
 
 @_a167  %byte                                                                        				;$A167
@@ -22019,8 +22019,8 @@ badnick_ballhog_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     10
-        ld      [IX`mob+%mob.height]    32
+        ld      [IX`mob+Mob.width]     10
+        ld      [IX`mob+Mob.height]    32
         
         ld      HL              $0803
         ld      [$.TEMP6]	HL
@@ -22030,11 +22030,11 @@ badnick_ballhog_process:                                                        
         ld      [$.TEMP1]	HL
         call    nc      hitPlayer
         
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $01
-        ld      [IX`mob+%mob.Ydirection]        $00
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $01
+        ld      [IX`mob+Mob.Ydirection]        $00
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $000A
         add     HL      DE
         ex      DE      HL
@@ -22046,98 +22046,98 @@ badnick_ballhog_process:                                                        
         jr      nc      @_3
 	
         ld      BC      @_a2d2
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $EB
         jr      c       @_2
         jr      nz      @_1
 	
-        ld      [IX`mob+%mob.unknown16] $00
+        ld      [IX`mob+Mob.unknown16] $00
 @_1     ld      BC      @_a2d7
 @_2     ld      DE      @_a2da
         call    _7c41
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $ED
         jp      nz      @_6
         
         call    \\findEmptyMob
         jp      c       @_6
         
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $1C                     ;ball from the Ball Hog
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       E
-        ld      [IX`mob+%mob.X+1]       D
+        ld      [IX`mob+Mob.type]      $1C                     ;ball from the Ball Hog
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       E
+        ld      [IX`mob+Mob.X+1]       D
         ld      HL      $0006
         add     HL      BC
-        ld      [IX`mob+%mob.Ysubpixel]         A`zero
-        ld      [IX`mob+%mob.Y+0]               L
-        ld      [IX`mob+%mob.Y+1]               H
-        ld      [IX`mob+%mob.unknown11]         A`zero
-        ld      [IX`mob+%mob.unknown16]         A`zero
-        ld      [IX`mob+%mob.unknown17]         A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          $FF
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          $01
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Ysubpixel]         A`zero
+        ld      [IX`mob+Mob.Y+0]               L
+        ld      [IX`mob+Mob.Y+1]               H
+        ld      [IX`mob+Mob.unknown11]         A`zero
+        ld      [IX`mob+Mob.unknown16]         A`zero
+        ld      [IX`mob+Mob.unknown17]         A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          $FF
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          $01
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         pop     IX
         jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_3     ld      BC      @_a2d2
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $EB
         jr      c       @_5
         jr      nz      @_4
 	
-        ld      [IX`mob+%mob.unknown16] $00
+        ld      [IX`mob+Mob.unknown16] $00
 @_4     ld      BC      @_a2d7
 @_5     ld      DE      @_a30b
         call    _7c41
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $ED
         jr      nz      @_6
         
         call    \\findEmptyMob
         jp      c       @_6
         
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    IX
         push    HL
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $1C                     ;ball from the Ball Hog
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       E
-        ld      [IX`mob+%mob.X+1]       D
+        ld      [IX`mob+Mob.type]      $1C                     ;ball from the Ball Hog
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       E
+        ld      [IX`mob+Mob.X+1]       D
         ld      HL      $0006
         add     HL      BC
-        ld      [IX`mob+%mob.Ysubpixel]         A`zero
-        ld      [IX`mob+%mob.Y+0]               L
-        ld      [IX`mob+%mob.Y+1]               H
-        ld      [IX`mob+%mob.unknown11]         A`zero
-        ld      [IX`mob+%mob.unknown16]         A`zero
-        ld      [IX`mob+%mob.unknown17]         A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          $01
-        ld      [IX`mob+%mob.Xdirection]        A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          $01
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Ysubpixel]         A`zero
+        ld      [IX`mob+Mob.Y+0]               L
+        ld      [IX`mob+Mob.Y+1]               H
+        ld      [IX`mob+Mob.unknown11]         A`zero
+        ld      [IX`mob+Mob.unknown16]         A`zero
+        ld      [IX`mob+Mob.unknown17]         A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          $01
+        ld      [IX`mob+Mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          $01
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         pop     IX
-@_6     inc     [IX`mob+%mob.unknown11]
+@_6     inc     [IX`mob+Mob.unknown11]
         ret
         
 @_a2d2  %byte                                                                                                   ;$A2D2
@@ -22180,30 +22180,30 @@ unknown_a33c_process:                                                           
         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        res     5  	[IX`mob+%mob.flags]               	;mob adheres to the floor
-        ld      [IX`mob+%mob.width]     $0A
-        ld      [IX`mob+%mob.height]    $0F
+        res     5  	[IX`mob+Mob.flags]               	;mob adheres to the floor
+        ld      [IX`mob+Mob.width]     $0A
+        ld      [IX`mob+Mob.height]    $0F
         ld      HL      $0101
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         call    nc hitPlayer._35fd
         
-        bit     7  	[IX`mob+%mob.flags]
+        bit     7  	[IX`mob+Mob.flags]
         jr      z	@_1
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $FD
-        ld      [IX`mob+%mob.Ydirection]        $FF
-@_1     ld      L       [IX`mob+%mob.Yspeed+0]
-        ld      H       [IX`mob+%mob.Yspeed+1]
-        ld      A       [IX`mob+%mob.Ydirection]
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $FD
+        ld      [IX`mob+Mob.Ydirection]        $FF
+@_1     ld      L       [IX`mob+Mob.Yspeed+0]
+        ld      H       [IX`mob+Mob.Yspeed+1]
+        ld      A       [IX`mob+Mob.Ydirection]
         ld      DE      $001F
         add     HL      DE
         adc     A       $00
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $82
         jr      nc	@_2
 	
@@ -22213,7 +22213,7 @@ unknown_a33c_process:                                                           
         jp      @_4
         
 @_2     jr      nz	@_3
-        ld      [IX`mob+%mob.unknown16] $00
+        ld      [IX`mob+Mob.unknown16] $00
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -22224,12 +22224,12 @@ unknown_a33c_process:                                                           
 @_3     ld      BC      @_a3b4
         ld      DE      @_a3bb
         call    _7c41
-@_4     inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+@_4     inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $A5
         ret     c
         
-        ld      [IX`mob+%mob.type]	$FF      		;remove mob?
+        ld      [IX`mob+Mob.type]	$FF      		;remove mob?
         ret
         
 @_a3b1  %byte                                                                                			;$A3B1
@@ -22260,20 +22260,20 @@ door_switch_process:                                                            
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     $0A
-        ld      [IX`mob+%mob.height]    $11
+        ld      [IX`mob+Mob.width]     $0A
+        ld      [IX`mob+Mob.height]    $11
         
-        bit     0  	[IX`mob+%mob.flags]
+        bit     0  	[IX`mob+Mob.flags]
         jr      nz	@_1
         
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
         
-        set     0  	[IX`mob+%mob.flags]
+        set     0  	[IX`mob+Mob.flags]
         
 @_1     ld      HL      $0001
         ld      [$.TEMP6]       HL
@@ -22284,23 +22284,23 @@ door_switch_process:                                                            
         and     A
         jp      m	@_3
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a48b
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a48b
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_a48b
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_a48b
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $03
         jr      nz	@_2
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a49b
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a49b
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_a49b
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_a49b
         
 @_2     ld      BC      $0006
         ld      DE      $0000
         call    _LABEL_7CC1_12
         
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      nz	@_4
 	
-        set     1  [IX`mob+%mob.flags]
+        set     1  [IX`mob+Mob.flags]
         ld      HL      $.D317
         call    \\levels.load\getLevelBitFlag
         ld      A       [HL]
@@ -22317,20 +22317,20 @@ door_switch_process:                                                            
         
         ;-------------------------------------------------------------------------------------------
         
-@_3     res     1  	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a493
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a493
+@_3     res     1  	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_a493
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_a493
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $03
         jr      nz	@_4
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a4a3	;TODO: invalid address??
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a4a3
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_a4a3	;TODO: invalid address??
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_a4a3
         
 @_4     xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          $02
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          $02
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         ret
         
         ;sprite layout
@@ -22355,10 +22355,10 @@ door_switching_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5  	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5  	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         call    _9ed4
         
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $28
         jr      nc	@_2
         
@@ -22373,8 +22373,8 @@ door_switching_process:                                                         
         jp      m	@_1
 	
         ld      DE      $FFEC
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]     HL
         
@@ -22387,7 +22387,7 @@ door_switching_process:                                                         
         
 @_2     ld      HL      $.D317
         call    \\levels.load\getLevelBitFlag
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      z	@_3
         ld      A	[HL]
         and     c
@@ -22398,22 +22398,22 @@ door_switching_process:                                                         
         and     C
         jr      z	@_5
 	
-@_4     ld      A	[IX`mob+%mob.unknown11]
+@_4     ld      A	[IX`mob+Mob.unknown11]
         cp      $30
         jr      nc	@_6
 	
         inc     A
         inc     A
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         jr      @_6
         
-@_5     ld      A	[IX`mob+%mob.unknown11]
+@_5     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_6
 	
         dec     A
         dec     A
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
 @_6     ld      DE      @_a51a
         jp      mob_door_left._9e7e
         
@@ -22437,8 +22437,8 @@ badnick_caterkiller_process:                                                    
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     6
-        ld      [IX`mob+%mob.height]    16
+        ld      [IX`mob+Mob.width]     6
+        ld      [IX`mob+Mob.height]    16
         
         ld      A       [$.FRAMECOUNT]
         and     %00000001
@@ -22446,20 +22446,20 @@ badnick_caterkiller_process:                                                    
         
         ld      HL      @_a6b9
         
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      z	@_1
         
         ld      HL      @_a769
-@_1     ld      E       [IX`mob+%mob.unknown11]
+@_1     ld      E       [IX`mob+Mob.unknown11]
         sla     E
         ld      D       $00
         add     HL      DE
         ld      C       [HL]
         inc     HL
         ld      B       [HL]
-        ld      L       [IX`mob+%mob.Xsubpixel]
-        ld      H       [IX`mob+%mob.X+0]
-        ld      A       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.Xsubpixel]
+        ld      H       [IX`mob+Mob.X+0]
+        ld      A       [IX`mob+Mob.X+1]
         add     HL      BC
         bit     7       B
         jr      z	@_2
@@ -22468,36 +22468,36 @@ badnick_caterkiller_process:                                                    
         jr      @_3
         
 @_2     adc     A       $00
-@_3     ld      [IX`mob+%mob.Xsubpixel] L
-        ld      [IX`mob+%mob.X+0]       H
-        ld      [IX`mob+%mob.X+1]       A
+@_3     ld      [IX`mob+Mob.Xsubpixel] L
+        ld      [IX`mob+Mob.X+0]       H
+        ld      [IX`mob+Mob.X+1]       A
         ld      HL      @_a6e5
         add     HL      DE
         ld      E       [HL]
         inc     HL
         ld      D       [HL]
-        ld      L       [IX`mob+%mob.unknown12]
-        ld      H       [IX`mob+%mob.unknown13]
+        ld      L       [IX`mob+Mob.unknown12]
+        ld      H       [IX`mob+Mob.unknown13]
         add     HL      DE
-        ld      [IX`mob+%mob.unknown12] L
-        ld      [IX`mob+%mob.unknown13] H
+        ld      [IX`mob+Mob.unknown12] L
+        ld      [IX`mob+Mob.unknown13] H
         ld      C       $00
         bit     7       H
         jr      z	@_4
         
         ld      C       $FF
-@_4     ld      [IX`mob+%mob.unknown14] C
-@_5     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_4     ld      [IX`mob+Mob.unknown14] C
+@_5     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]       HL
-        bit     1       [IX`mob+%mob.flags]
+        bit     1       [IX`mob+Mob.flags]
         jr      nz	@_7
 	
         ld      HL      @_a711
-        ld      E       [IX`mob+%mob.unknown11]
+        ld      E       [IX`mob+Mob.unknown11]
         ld      D       $00
         add     HL      DE
         
@@ -22513,7 +22513,7 @@ badnick_caterkiller_process:                                                    
         ld      A       $26
         call    @_a6a2
         
-        ld      [IX`mob+%mob.width]     $06
+        ld      [IX`mob+Mob.width]     $06
         ld      HL              $0802
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -22524,7 +22524,7 @@ badnick_caterkiller_process:                                                    
         call    hitPlayer
         jr      @_9
         
-@_6     ld      [IX`mob+%mob.width]     $16
+@_6     ld      [IX`mob+Mob.width]     $16
         ld      HL              $0806
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -22532,7 +22532,7 @@ badnick_caterkiller_process:                                                    
         jr      @_9
         
 @_7     ld      HL      @_a795
-        ld      E       [IX`mob+%mob.unknown11]
+        ld      E       [IX`mob+Mob.unknown11]
         ld      D       $00
         add     HL      DE
         
@@ -22548,7 +22548,7 @@ badnick_caterkiller_process:                                                    
         ld      A       $28
         call    @_a6a2
         
-        ld      [IX`mob+%mob.width]     $10
+        ld      [IX`mob+Mob.width]     $10
         ld      HL              $0401
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -22557,7 +22557,7 @@ badnick_caterkiller_process:                                                    
         call    hitPlayer._35fd
         jr      @_9
         
-@_8     ld      [IX`mob+%mob.width]     $16
+@_8     ld      [IX`mob+Mob.width]     $16
         ld      HL              $0410
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -22565,26 +22565,26 @@ badnick_caterkiller_process:                                                    
         ld      [$.TEMP1]       HL
         call    nc      hitPlayer
         
-@_9     ld      [IX`mob+%mob.Yspeed+1]  $01
+@_9     ld      [IX`mob+Mob.Yspeed+1]  $01
         ld      A       [$.FRAMECOUNT]
         and     %00000001
         ret     nz
 	
-        inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $16
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11] $00
-        inc     [IX`mob+%mob.unknown15]
-        ld      A       [IX`mob+%mob.unknown15]
+        ld      [IX`mob+Mob.unknown11] $00
+        inc     [IX`mob+Mob.unknown15]
+        ld      A       [IX`mob+Mob.unknown15]
         cp      $14
         ret     c
 	
-        ld      [IX`mob+%mob.unknown15] $00
-        ld      A       [IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown15] $00
+        ld      A       [IX`mob+Mob.flags]
         xor     $02
-        ld      [IX`mob+%mob.flags]     A
+        ld      [IX`mob+Mob.flags]     A
         ret
         
         ;===============================================================================================================
@@ -22594,8 +22594,8 @@ badnick_caterkiller_process:                                                    
         ld      E               [HL]
         ld      D               $00
         ld      [$.TEMP4]       DE
-        ld      L               [IX`mob+%mob.unknown13]
-        ld      H               [IX`mob+%mob.unknown14]
+        ld      L               [IX`mob+Mob.unknown13]
+        ld      H               [IX`mob+Mob.unknown14]
         ld      [$.TEMP6]       HL
         call    \\_3581
         pop     HL
@@ -22654,9 +22654,9 @@ boss_scrapbrain_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     $1E
-        ld      [IX`mob+%mob.height]    $2F
-        bit     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.width]     $1E
+        ld      [IX`mob+Mob.height]    $2F
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
         
         ld      HL              $0340
@@ -22689,8 +22689,8 @@ boss_scrapbrain_process:                                                        
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        set     0	[IX`mob+%mob.flags]
-@_1     bit     1	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
+@_1     bit     1	[IX`mob+Mob.flags]
         jr      nz	@_4
         
         ld      HL              [$.CAMERA_X]
@@ -22699,8 +22699,8 @@ boss_scrapbrain_process:                                                        
         ld      BC      @_a9b7
         call    _7c41
         
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      [$.SONIC.X]
         xor     A`zero
         sbc     HL      DE
@@ -22715,11 +22715,11 @@ boss_scrapbrain_process:                                                        
 	
 @_2     ld      BC      $FF80
 @_3     inc     B
-        ld      [IX`mob+%mob.Xspeed+0]          C
-        ld      [IX`mob+%mob.Xspeed+1]          B
-        ld      [IX`mob+%mob.Xdirection]        A
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.Xspeed+0]          C
+        ld      [IX`mob+Mob.Xspeed+1]          B
+        ld      [IX`mob+Mob.Xdirection]        A
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $05A0
         xor     A`zero
         sbc     HL      DE
@@ -22727,48 +22727,48 @@ boss_scrapbrain_process:                                                        
 	
         ld      L       A
         ld      H       A
-        ld      [IX`mob+%mob.Xspeed+0]  A
-        ld      [IX`mob+%mob.Xspeed+1]  A
+        ld      [IX`mob+Mob.Xspeed+0]  A
+        ld      [IX`mob+Mob.Xspeed+1]  A
         ld      [$.SONIC.Xspeed]        HL
         ld      [$.SONIC.Xdirection]    A
-        set     1 	[IX`mob+%mob.flags]
+        set     1 	[IX`mob+Mob.flags]
         jp      @_9
         
-@_4     bit     2  	[IX`mob+%mob.flags]
+@_4     bit     2  	[IX`mob+Mob.flags]
         jr      nz	@_5
         
         ld      HL      $0530
         ld      DE      $0220
         call    _7c8c
         
-        ld      [IY`vars+%vars.joypad]  $FF
+        ld      [IY`vars+Vars.joypad]  $FF
         ld      HL      $05A0
-        ld      [IX`mob+%mob.Xsubpixel]         $00
-        ld      [IX`mob+%mob.X+0]               L
-        ld      [IX`mob+%mob.X+1]               H
-        ld      [IX`mob+%mob.spriteLayout+0]    LO \boss.running\_baf9
-        ld      [IX`mob+%mob.spriteLayout+1]    HI \boss.running\_baf9
-        inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Xsubpixel]         $00
+        ld      [IX`mob+Mob.X+0]               L
+        ld      [IX`mob+Mob.X+1]               H
+        ld      [IX`mob+Mob.spriteLayout+0]    LO \boss.running\_baf9
+        ld      [IX`mob+Mob.spriteLayout+1]    HI \boss.running\_baf9
+        inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $C0
         jp      c	@_9
 	
-        set     2  [IX`mob+%mob.flags]
+        set     2  [IX`mob+Mob.flags]
         jp      @_9
         
-@_5     bit     3  [IX`mob+%mob.flags]
+@_5     bit     3  [IX`mob+Mob.flags]
         jr      nz	@_6
 	
-        ld      [IY`vars+%vars.joypad]	$FF
+        ld      [IY`vars+Vars.joypad]	$FF
         xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
-        dec     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
+        dec     [IX`mob+Mob.unknown11]
         jp      nz	@_9
-        set     3  	[IX`mob+%mob.flags]
+        set     3  	[IX`mob+Mob.flags]
         jp      @_9
         
-@_6     bit     4  	[IX`mob+%mob.flags]               	;mob underwater?
+@_6     bit     4  	[IX`mob+Mob.flags]               	;mob underwater?
         jr      nz	@_8
 	
         ld      DE      [$.SONIC.X]
@@ -22782,7 +22782,7 @@ boss_scrapbrain_process:                                                        
         sbc     HL      DE
         jr      c	@_9
 	
-        or      [IX`mob+%mob.unknown11]
+        or      [IX`mob+Mob.unknown11]
         jr      nz	@_7
 	
         ld      HL      [$.SONIC.Y]
@@ -22800,8 +22800,8 @@ boss_scrapbrain_process:                                                        
         ld      HL              $05A0
         ld      [$.SONIC.X]     HL
         
-        ld      [IY`vars+%vars.joypad]       $FF
-        ld      E       [IX`mob+%mob.unknown11]
+        ld      [IY`vars+Vars.joypad]       $FF
+        ld      E       [IX`mob+Mob.unknown11]
         ld      D       $00
         ld      HL      $028E
         xor     A`zero                          		;set A to 0
@@ -22812,15 +22812,15 @@ boss_scrapbrain_process:                                                        
         ld      HL      [$.D2E6]
         ld      [$.SONIC.Yspeed]        HL
         ld      [$.SONIC.Ydirection]    A
-        inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $C0
         jr      nz	@_9
 	
         ld      HL      [$.CAMERA_X]
         inc     H
         ld      [$.SONIC.X]     HL
-        set     4 	[IX`mob+%mob.flags]               	;set mob underwater
+        set     4 	[IX`mob+Mob.flags]               	;set mob underwater
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -22830,23 +22830,23 @@ boss_scrapbrain_process:                                                        
         
         ld      A               $A0
         ld      [$.D289]        A
-        set     1 [IY`vars+%vars.flags6]
+        set     1 [IY`vars+Vars.flags6]
         ret
         
-@_8     ld      A       [IX`mob+%mob.unknown11]
+@_8     ld      A       [IX`mob+Mob.unknown11]
         and     A
         jr      z	@_9
 	
-        dec     [IX`mob+%mob.unknown11]
-@_9     ld      E       [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
+@_9     ld      E       [IX`mob+Mob.unknown11]
         ld      D       $00
         ld      HL      $0280
         xor     A`zero
         sbc     HL      DE
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
-        ld      E       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
+        ld      E       [IX`mob+Mob.unknown11]
         ld      D       $00
         ld      HL      $02AF
         and     A
@@ -22861,7 +22861,7 @@ boss_scrapbrain_process:                                                        
         sbc     HL      BC
         ld      BC      @_a9c0               			;address of sprite layout
         call    \\gfx.sprites\processSpriteLayout
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         and     %00011111
         cp      $0F
         ret     nz
@@ -22887,8 +22887,8 @@ meta_clouds_process:                                                            
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5 	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      A       [IY`vars+%vars.spriteUpdateCount]
+        set     5 	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      A       [IY`vars+Vars.spriteUpdateCount]
         ld      HL      [$.SPRITETABLE_ADDR]
         push    AF
         push    HL
@@ -22904,9 +22904,9 @@ meta_clouds_process:                                                            
         ld      A       [$.D2A3]
         ld      C       A
         ld      DE      [$.D2A1]
-        ld      L       [IX`mob+%mob.Ysubpixel]
-        ld      H       [IX`mob+%mob.Y+0]
-        ld      A       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Ysubpixel]
+        ld      H       [IX`mob+Mob.Y+0]
+        ld      A       [IX`mob+Mob.Y+1]
         add     HL      DE
         adc     A       C
         ld      L       H
@@ -22915,8 +22915,8 @@ meta_clouds_process:                                                            
         and     A
         sbc     HL      BC
         ex      DE      HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      BC      [$.CAMERA_X]
         and     A
         sbc     HL      BC
@@ -22930,13 +22930,13 @@ meta_clouds_process:                                                            
 @_1     pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]                    HL
-        ld      [IY`vars+%vars.spriteUpdateCount]       A
+        ld      [IY`vars+Vars.spriteUpdateCount]       A
         ld      HL      [$.CAMERA_X]
         ld      DE      $FFE0
         add     HL      DE
         ex      DE      HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         jr      nc	@_2
@@ -22950,13 +22950,13 @@ meta_clouds_process:                                                            
         ld      DE      $01B4
         add     HL      DE
         add     HL      BC
-        ld      [IX`mob+%mob.X+0]               L
-        ld      [IX`mob+%mob.X+1]               H
-@_2     ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $FD
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    $00
-        ld      [IX`mob+%mob.spriteLayout+1]    $00
+        ld      [IX`mob+Mob.X+0]               L
+        ld      [IX`mob+Mob.X+1]               H
+@_2     ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $FD
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.spriteLayout+0]    $00
+        ld      [IX`mob+Mob.spriteLayout+1]    $00
         ret
         
         ;sprite layout
@@ -22969,32 +22969,32 @@ trap_propeller_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	$05
-        ld      [IX`mob+%mob.height]	$14
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	$05
+        ld      [IX`mob+Mob.height]	$14
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $000f
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $FFFA
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
-        ld      E	[IX`mob+%mob.unknown11]
+        ld      E	[IX`mob+Mob.unknown11]
         ld      D	$00
         ld      HL      @_ab01
         add     HL      DE
@@ -23028,16 +23028,16 @@ trap_propeller_process:                                                         
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	$00
-        ld      [IX`mob+%mob.spriteLayout+1]	$00
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]	$00
+        ld      [IX`mob+Mob.spriteLayout+1]	$00
+        ld      A	[IX`mob+Mob.unknown11]
         inc     A
         inc     A
         cp      $08
-        ld      [IX`mob+%mob.unknown11]	A	
+        ld      [IX`mob+Mob.unknown11]	A	
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11],$00
+        ld      [IX`mob+Mob.unknown11],$00
         ret
         
 @_ab01  %byte                                                                       				;$AB01
@@ -23049,14 +23049,14 @@ mob_badnick_bomb:                                                               
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width],$0c
-        ld      [IX`mob+%mob.height],$10
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.width],$0c
+        ld      [IX`mob+Mob.height],$10
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $64
         jr      nc      @_1
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $FFC8
         add     HL      DE
         ex      DE      HL
@@ -23065,8 +23065,8 @@ mob_badnick_bomb:                                                               
         sbc     HL      DE
         jr      c       @_1
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $002C
         add     HL      DE
         ex      DE      HL
@@ -23075,26 +23075,26 @@ mob_badnick_bomb:                                                               
         sbc     HL      DE
         jr      nc      @_1
 	
-        ld      [IX`mob+%mob.unknown11]         $64
-@_1     ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown11]         $64
+@_1     ld      A       [IX`mob+Mob.unknown11]
         cp      $1E
         jr      nc      @_2
 	
-        ld      [IX`mob+%mob.Xspeed+0]          $F8
-        ld      [IX`mob+%mob.Xspeed+1]          $FF
-        ld      [IX`mob+%mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.Xspeed+0]          $F8
+        ld      [IX`mob+Mob.Xspeed+1]          $FF
+        ld      [IX`mob+Mob.Xdirection]        $FF
         ld      DE      _ad0b
         ld      BC      _acf1
         call    _7c41
         jp      @_7
         
-@_2     ld      A       [IX`mob+%mob.unknown11]
+@_2     ld      A       [IX`mob+Mob.unknown11]
         cp      $64
         jp      c       @_4
 	
-        ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $00
-        ld      [IX`mob+%mob.Xdirection]        $00
+        ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $00
+        ld      [IX`mob+Mob.Xdirection]        $00
         cp      $66
         jr      nc      @_3
 	
@@ -23103,8 +23103,8 @@ mob_badnick_bomb:                                                               
         call    _7c41
         jp      @_7
         
-@_3     ld      [IX`mob+%mob.spriteLayout+0]    LO _ad53
-        ld      [IX`mob+%mob.spriteLayout+1]    HI _ad53
+@_3     ld      [IX`mob+Mob.spriteLayout+0]    LO _ad53
+        ld      [IX`mob+Mob.spriteLayout+1]    HI _ad53
         cp      $67
         jp      nz      @_7
 	
@@ -23153,7 +23153,7 @@ mob_badnick_bomb:                                                               
         ld      BC      $0008
         call    _ac96
         
-        ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+        ld      [IX`mob+Mob.type]      $FF                     ;remove mob?
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -23169,36 +23169,36 @@ mob_badnick_bomb:                                                               
         jr      nc      @_5
 	
         xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
         ld      DE      _ad0b
         ld      BC      _acf6
         call    _7c41
         jr      @_7
         
-@_5     ld      A       [IX`mob+%mob.unknown11]
+@_5     ld      A       [IX`mob+Mob.unknown11]
         cp      $41
         jr      nc      @_6
 	
-        ld      [IX`mob+%mob.Xspeed+0]          $08
-        ld      [IX`mob+%mob.Xspeed+1]          $00
-        ld      [IX`mob+%mob.Xdirection]        $00
+        ld      [IX`mob+Mob.Xspeed+0]          $08
+        ld      [IX`mob+Mob.Xspeed+1]          $00
+        ld      [IX`mob+Mob.Xdirection]        $00
         ld      DE      _ad0b
         ld      BC      _acf9
         call    _7c41
         jr      @_7
         
-@_6     ld      [IX`mob+%mob.Xspeed+0]          $00
-        ld      [IX`mob+%mob.Xspeed+1]          $00
-        ld      [IX`mob+%mob.Xdirection]        $00
+@_6     ld      [IX`mob+Mob.Xspeed+0]          $00
+        ld      [IX`mob+Mob.Xspeed+1]          $00
+        ld      [IX`mob+Mob.Xdirection]        $00
         ld      DE      _ad0b
         ld      BC      _acfe
         call    _7c41
         
-@_7     ld      [IX`mob+%mob.Yspeed+0]          $80
-        ld      [IX`mob+%mob.Yspeed+1]          $00
-        ld      [IX`mob+%mob.Ydirection]        $00
+@_7     ld      [IX`mob+Mob.Yspeed+0]          $80
+        ld      [IX`mob+Mob.Yspeed+1]          $00
+        ld      [IX`mob+Mob.Ydirection]        $00
 @_8     ld      HL              $0202
         ld      [$.TEMP6]       HL
         call    detectCollisionWithSonic
@@ -23208,12 +23208,12 @@ mob_badnick_bomb:                                                               
         and     $3F
         ret     nz
         
-        inc     [IX`mob+%mob.unknown11]
-        ld      A       [IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      $46
         ret     nz
         
-        ld      [IX`mob+%mob.unknown11] $00
+        ld      [IX`mob+Mob.unknown11] $00
         ret
 	;
 
@@ -23225,40 +23225,40 @@ _ac96:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         push    IX
         push    HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         add     HL      DE
         ex      DE      HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         add     HL      BC
         ld      C       L
         ld      B       H
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $0D                     ;unknown mob
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       E
-        ld      [IX`mob+%mob.X+1]       D
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
-        ld      [IX`mob+%mob.Y+0]       C
-        ld      [IX`mob+%mob.Y+1]       B
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.unknown13] $24
-        ld      [IX`mob+%mob.unknown14] A`zero
-        ld      [IX`mob+%mob.unknown15] A`zero
-        ld      [IX`mob+%mob.unknown16] A`zero
-        ld      [IX`mob+%mob.unknown17] A`zero
-        ld      [IX`mob+%mob.Xspeed+0]  A`zero
+        ld      [IX`mob+Mob.type]      $0D                     ;unknown mob
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       E
+        ld      [IX`mob+Mob.X+1]       D
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.Y+0]       C
+        ld      [IX`mob+Mob.Y+1]       B
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.unknown13] $24
+        ld      [IX`mob+Mob.unknown14] A`zero
+        ld      [IX`mob+Mob.unknown15] A`zero
+        ld      [IX`mob+Mob.unknown16] A`zero
+        ld      [IX`mob+Mob.unknown17] A`zero
+        ld      [IX`mob+Mob.Xspeed+0]  A`zero
         
         ld      HL      [$.TEMP4]
-        ld      [IX`mob+%mob.Xspeed+1]          L
-        ld      [IX`mob+%mob.Xdirection]        H
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          L
+        ld      [IX`mob+Mob.Xdirection]        H
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
         
         ld      HL      [$.TEMP6]
-        ld      [IX`mob+%mob.Yspeed+1]          L
-        ld      [IX`mob+%mob.Ydirection]        H
+        ld      [IX`mob+Mob.Yspeed+1]          L
+        ld      [IX`mob+Mob.Ydirection]        H
         
         pop     IX
         ret
@@ -23328,20 +23328,20 @@ trap_cannon_process:                                                            
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $FFFC
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
         call    \\math\_LABEL_625_57
-        ld      [IX`mob+%mob.unknown11]	A	
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown11]	A	
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         cp      $64
         jr      nz	@_2
 	
@@ -23349,24 +23349,24 @@ trap_cannon_process:                                                            
         jr      c	@_2
 	
         push    IX
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         push    HL
         pop     IX
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.type]	$34              	;unknown object
-        ld      [IX`mob+%mob.Xsubpixel]	A`zero
+        ld      [IX`mob+Mob.type]	$34              	;unknown object
+        ld      [IX`mob+Mob.Xsubpixel]	A`zero
         ld      HL      $0004
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.Ysubpixel]	A`zero
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.Ysubpixel]	A`zero
         ld      HL      $0010
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         pop     IX
 	
 	;(we can compile with, or without, audio)
@@ -23375,23 +23375,23 @@ trap_cannon_process:                                                            
 		rst     \\sound\rst_playSFX
 	.ENDIF
 		
-        ld      [IX`mob+%mob.unknown12]	$18
-        ld      [IX`mob+%mob.unknown16]	$00
-        ld      [IX`mob+%mob.unknown17]	$00
-@_2     ld      A	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.unknown12]	$18
+        ld      [IX`mob+Mob.unknown16]	$00
+        ld      [IX`mob+Mob.unknown17]	$00
+@_2     ld      A	[IX`mob+Mob.unknown12]
         and     A
         jr      z	@_3
 	
         ld      DE      @_ae04
         ld      BC      @_adfd
         call    animateMob
-        dec     [IX`mob+%mob.unknown12]
-        inc     [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown12]
+        inc     [IX`mob+Mob.unknown11]
         ret
         
-@_3     ld      [IX`mob+%mob.spriteLayout+0]	A	
-        ld      [IX`mob+%mob.spriteLayout+1]	A	
-        inc     [IX`mob+%mob.unknown11]
+@_3     ld      [IX`mob+Mob.spriteLayout+0]	A	
+        ld      [IX`mob+Mob.spriteLayout+1]	A	
+        inc     [IX`mob+Mob.unknown11]
         ret
         
 @_adfd  %byte                                                                        				;$ADFD
@@ -23415,33 +23415,33 @@ trap_cannonball_process:                                                        
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.width]	12
-        ld      [IX`mob+%mob.height]	12
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.width]	12
+        ld      [IX`mob+Mob.height]	12
         ld      HL      [$.CAMERA_X]
         ld      DE      $0110
         add     HL      DE
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         jr      nc	@_1
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove object?
+        ld      [IX`mob+Mob.type]	$FF              	;remove object?
 @_1     ld      HL      $0202
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
         xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		$80
-        ld      [IX`mob+%mob.Xspeed+1]		$02
-        ld      [IX`mob+%mob.Xdirection]	A`zero
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_ae81
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_ae81
+        ld      [IX`mob+Mob.Xspeed+0]		$80
+        ld      [IX`mob+Mob.Xspeed+1]		$02
+        ld      [IX`mob+Mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_ae81
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_ae81
         ret
         
 	;sprite layout
@@ -23454,51 +23454,51 @@ badnick_unidos_process:                                                         
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5 [IX`mob+%mob.flags]               		;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5 [IX`mob+Mob.flags]               		;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
-        ld      [IX`mob+%mob.unknown11] $00
-        ld      [IX`mob+%mob.unknown12] $2A
-        ld      [IX`mob+%mob.unknown13] $52
-        ld      [IX`mob+%mob.unknown14] $7C
-        set     0 [IX`mob+%mob.flags]
-@_1     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown11] $00
+        ld      [IX`mob+Mob.unknown12] $2A
+        ld      [IX`mob+Mob.unknown13] $52
+        ld      [IX`mob+Mob.unknown14] $7C
+        set     0 [IX`mob+Mob.flags]
+@_1     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      [$.SONIC.X]
         and     A
         sbc     HL      DE
         jr      c	@_2
 	
-        ld      [IX`mob+%mob.Xspeed+0]          $F8
-        ld      [IX`mob+%mob.Xspeed+1]          $FF
-        ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b0d5
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_b0d5
+        ld      [IX`mob+Mob.Xspeed+0]          $F8
+        ld      [IX`mob+Mob.Xspeed+1]          $FF
+        ld      [IX`mob+Mob.Xdirection]        $FF
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_b0d5
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_b0d5
         
         ;set speed + direction of shot?
         ld      HL              $FF80
         ld      [$.D216]        HL
         call    @_af98
         
-        ld      [IX`mob+%mob.unknown16] $01
+        ld      [IX`mob+Mob.unknown16] $01
         jr      @_3
         
         ;---------------------------------------------------------------------------------------------------------------
         
-@_2     ld      [IX`mob+%mob.Xspeed+0]          $08
-        ld      [IX`mob+%mob.Xspeed+1]          $00
-        ld      [IX`mob+%mob.Xdirection]        $00
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b0e7
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_b0e7
+@_2     ld      [IX`mob+Mob.Xspeed+0]          $08
+        ld      [IX`mob+Mob.Xspeed+1]          $00
+        ld      [IX`mob+Mob.Xdirection]        $00
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_b0e7
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_b0e7
         
         ;set speed + direction of shot?
         ld      HL              $0080
         ld      [$.D216]        HL
         call    @_af98
         
-        ld      [IX`mob+%mob.unknown16] $FF
-@_3     ld      [IX`mob+%mob.width]     $1C
-        ld      [IX`mob+%mob.height]    $1C
+        ld      [IX`mob+Mob.unknown16] $FF
+@_3     ld      [IX`mob+Mob.width]     $1C
+        ld      [IX`mob+Mob.height]    $1C
         ld      HL              $1212
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -23506,11 +23506,11 @@ badnick_unidos_process:                                                         
         ld      [$.TEMP1]       HL
         call    nc hitPlayer
 	
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]       HL
         push    IX
         pop     HL
@@ -23543,14 +23543,14 @@ badnick_unidos_process:                                                         
         inc     A
         ld      [$.TEMP6]       A
         add     A               $04
-        ld      [IX`mob+%mob.width]     A
+        ld      [IX`mob+Mob.width]     A
         inc     HL
         ld      A       [HL]
         inc     A
         inc     A
         ld      [$.TEMP7]       A
         add     A               $04
-        ld      [IX`mob+%mob.height]    A
+        ld      [IX`mob+Mob.height]    A
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
@@ -23560,7 +23560,7 @@ badnick_unidos_process:                                                         
         cp      $FE
         jr      z	@_6
 	
-        add     A       [IX`mob+%mob.unknown16]
+        add     A       [IX`mob+Mob.unknown16]
         cp      $FF
         jr      nz	@_5
 	
@@ -23581,16 +23581,16 @@ badnick_unidos_process:                                                         
         ld      A       [$.FRAMECOUNT]
         and     %00000111
         ret     z
-        ld      A       [IX`mob+%mob.unknown15]
+        ld      A       [IX`mob+Mob.unknown15]
         cp      $C8
         ret     nc
-        inc     [IX`mob+%mob.unknown15]
+        inc     [IX`mob+Mob.unknown15]
         ret
         
         ;===============================================================================================================
 
 @_af98                                                                                  			;$AF98
-        ld      A       [IX`mob+%mob.unknown15]
+        ld      A       [IX`mob+Mob.unknown15]
         cp      $C8
         ret     nz
 	
@@ -23598,8 +23598,8 @@ badnick_unidos_process:                                                         
         cp      $03
         ret     nz
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFD0
         add     HL      DE
         ld      DE      [$.SONIC.Y]
@@ -23607,8 +23607,8 @@ badnick_unidos_process:                                                         
         sbc     HL      DE
         ret     nc
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      BC      $002C
         add     HL      BC
         and     A
@@ -23642,37 +23642,37 @@ badnick_unidos_process:                                                         
         ret     c
         
         push    IX
-        ld      E       [IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
-        ld      C       [IX`mob+%mob.Y+0]
-        ld      B       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
+        ld      C       [IX`mob+Mob.Y+0]
+        ld      B       [IX`mob+Mob.Y+1]
         push    HL
         pop     IX
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.type]      $36              	;unknown mob
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.type]      $36              	;unknown mob
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
         ld      HL      $0012
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]       L
-        ld      [IX`mob+%mob.X+1]       H
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       L
+        ld      [IX`mob+Mob.X+1]       H
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
         ld      HL      $001E
         add     HL      BC
-        ld      [IX`mob+%mob.Y+0]       L
-        ld      [IX`mob+%mob.Y+1]       H
+        ld      [IX`mob+Mob.Y+0]       L
+        ld      [IX`mob+Mob.Y+1]       H
         ld      HL      [$.D216]
-        ld      [IX`mob+%mob.Xspeed+0]  L
-        ld      [IX`mob+%mob.Xspeed+1]  H
+        ld      [IX`mob+Mob.Xspeed+0]  L
+        ld      [IX`mob+Mob.Xspeed+1]  H
         xor     A`zero
         bit     7	H
         jr      z	@_1
 	
         ld      A       $FF
-@_1     ld      [IX`mob+%mob.Xdirection]        A
+@_1     ld      [IX`mob+Mob.Xdirection]        A
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          A`zero
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.Yspeed+0]          A`zero
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
         pop     IX
         ret
 
@@ -23705,18 +23705,18 @@ unknown_b0f4_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5 	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        ld      [IX`mob+%mob.spriteLayout+0]	$00
-        ld      [IX`mob+%mob.spriteLayout+1]	$00
-        ld      [IX`mob+%mob.width]	$04
-        ld      [IX`mob+%mob.height]	$0A
+        set     5 	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        ld      [IX`mob+Mob.spriteLayout+0]	$00
+        ld      [IX`mob+Mob.spriteLayout+1]	$00
+        ld      [IX`mob+Mob.width]	$04
+        ld      [IX`mob+Mob.height]	$0A
         ld      HL              $0602
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         call    nc 	hitPlayer._35fd
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
         ex      DE      HL
         ld      HL      [$.CAMERA_X]
@@ -23733,8 +23733,8 @@ unknown_b0f4_process:                                                           
         sbc     HL      DE
         jr      c	@_1
 	
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]       HL
         ex      DE      HL
         ld      HL      [$.CAMERA_Y]
@@ -23758,7 +23758,7 @@ unknown_b0f4_process:                                                           
         call    \\_3581
         ret
         
-@_1     ld      [IX`mob+%mob.type]      $FF      		;remove mob?
+@_1     ld      [IX`mob+Mob.type]      $FF      		;remove mob?
         ret
 	;
 	
@@ -23766,23 +23766,23 @@ trap_turretRotating_process:                                                    
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
         call    \\math\_LABEL_625_57
         and     %00000111
-        ld      [IX`mob+%mob.unknown11]	A
-        set     0 	[IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.spriteLayout+0]	$00
-        ld      [IX`mob+%mob.spriteLayout+1]    $00
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      [IX`mob+Mob.unknown11]	A
+        set     0 	[IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.spriteLayout+0]	$00
+        ld      [IX`mob+Mob.spriteLayout+1]    $00
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         add     A       A
         add     A       A
         add     A       A
@@ -23825,17 +23825,17 @@ trap_turretRotating_process:                                                    
         and     $3F
         jr      nz	@_5
 	
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         inc     A
         and     %00000111
-        ld      [IX`mob+%mob.unknown11] A
-@_5     inc     [IX`mob+%mob.unknown12]
-        ld      A       [IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.unknown11] A
+@_5     inc     [IX`mob+Mob.unknown12]
+        ld      A       [IX`mob+Mob.unknown12]
         cp      $1A
         ret     nz
 	
-        ld      [IX`mob+%mob.unknown12] $00
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.unknown12] $00
+        ld      A       [IX`mob+Mob.unknown11]
         add     A       A
         ld      E       A
         add     A       A
@@ -23887,39 +23887,39 @@ platform_flyingRight_process:                                                   
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
         
-        ld      A	[IX`mob+%mob.Ysubpixel]
-        ld      [IX`mob+%mob.unknown12]	A
+        ld      A	[IX`mob+Mob.Ysubpixel]
+        ld      [IX`mob+Mob.unknown12]	A
         
-        ld      A	[IX`mob+%mob.Y+0]
-        ld      [IX`mob+%mob.unknown13] A
+        ld      A	[IX`mob+Mob.Y+0]
+        ld      [IX`mob+Mob.unknown13] A
         
-        ld      A	[IX`mob+%mob.Y+1]
-        ld      [IX`mob+%mob.unknown14] A
+        ld      A	[IX`mob+Mob.Y+1]
+        ld      [IX`mob+Mob.unknown14] A
         
-        set     0	[IX`mob+%mob.flags]
+        set     0	[IX`mob+Mob.flags]
         
 @_1     ld      A       [$.D2A3]
         ld      C       A
         ld      DE      [$.D2A1]
-        ld      L       [IX`mob+%mob.unknown12]
-        ld      H       [IX`mob+%mob.unknown13]
-        ld      A       [IX`mob+%mob.unknown14]
+        ld      L       [IX`mob+Mob.unknown12]
+        ld      H       [IX`mob+Mob.unknown13]
+        ld      A       [IX`mob+Mob.unknown14]
         add     HL      DE
         adc     A       C
-        ld      [IX`mob+%mob.Ysubpixel] L
-        ld      [IX`mob+%mob.Y+0]       H
-        ld      [IX`mob+%mob.Y+1]       A
+        ld      [IX`mob+Mob.Ysubpixel] L
+        ld      [IX`mob+Mob.Y+0]       H
+        ld      [IX`mob+Mob.Y+1]       A
         
         ld      A       [$.SONIC.Ydirection]
         and     A
         jp      m	@_2
         
-        ld      [IX`mob+%mob.width]     $1E
-        ld      [IX`mob+%mob.height]    $10
+        ld      [IX`mob+Mob.width]     $1E
+        ld      [IX`mob+Mob.height]    $10
         ld      HL              $0A02
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -23933,30 +23933,30 @@ platform_flyingRight_process:                                                   
         ld      BC              $0010
         ld      DE              $0000
         call    _LABEL_7CC1_12
-        ld      L       [IX`mob+%mob.Xsubpixel]
-        ld      H       [IX`mob+%mob.X+0]
-        ld      A       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.Xsubpixel]
+        ld      H       [IX`mob+Mob.X+0]
+        ld      A       [IX`mob+Mob.X+1]
         ld      DE      $0080
         add     HL      DE
         adc     A       $00
-        ld      [IX`mob+%mob.Xsubpixel] L
-        ld      [IX`mob+%mob.X+0]       H
-        ld      [IX`mob+%mob.X+1]       A
+        ld      [IX`mob+Mob.Xsubpixel] L
+        ld      [IX`mob+Mob.X+0]       H
+        ld      [IX`mob+Mob.X+1]       A
         ld      HL      [$.SONIC.Xsubpixel]
         ld      A       [$.SONIC.X+1]
         add     HL      DE
         adc     A       $00
         ld      [$.SONIC.Xsubpixel]     HL
         ld      [$.SONIC.X+1]           A
-@_2     ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+@_2     ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      [$.TEMP1]       HL
-        ld      L               [IX`mob+%mob.Y+0]
-        ld      H               [IX`mob+%mob.Y+1]
+        ld      L               [IX`mob+Mob.Y+0]
+        ld      H               [IX`mob+Mob.Y+1]
         ld      [$.TEMP3]       HL
         ld      HL              $FFF8
         ld      [$.TEMP4]       HL
-        ld      E               [IX`mob+%mob.unknown11]
+        ld      E               [IX`mob+Mob.unknown11]
         ld      D               $00
         ld      HL              @_b388
         add     HL              DE
@@ -23978,15 +23978,15 @@ platform_flyingRight_process:                                                   
 @_3     pop     BC
         djnz    @loop
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b37b
-        ld      [IX`mob+%mob.spriteLayout+1]   	HI @_b37b
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_b37b
+        ld      [IX`mob+Mob.spriteLayout+1]   	HI @_b37b
+        ld      A       [IX`mob+Mob.unknown11]
         add     A       $04
-        ld      [IX`mob+%mob.unknown11] A
+        ld      [IX`mob+Mob.unknown11] A
         cp      $10
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11] $00
+        ld      [IX`mob+Mob.unknown11] $00
         ret
 
         ;sprite layout
@@ -24003,36 +24003,36 @@ trap_spikewall_process:													;$B398
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
-        ld      [IX`mob+%mob.unknown11]	L
-        ld      [IX`mob+%mob.unknown12]	H
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      [IX`mob+%mob.width]	12
-        ld      [IX`mob+%mob.height]	46
-        ld      [IX`mob+%mob.spriteLayout+0]	LO @_b45b
-        ld      [IX`mob+%mob.spriteLayout+1]	HI @_b45b
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
+        ld      [IX`mob+Mob.unknown11]	L
+        ld      [IX`mob+Mob.unknown12]	H
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      [IX`mob+Mob.width]	12
+        ld      [IX`mob+Mob.height]	46
+        ld      [IX`mob+Mob.spriteLayout+0]	LO @_b45b
+        ld      [IX`mob+Mob.spriteLayout+1]	HI @_b45b
         ld      HL      	$0202
         ld      [$.TEMP6]	HL
 
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      L	[IX`mob+%mob.Xsubpixel]
-        ld      H	[IX`mob+%mob.X+0]
-        ld      A	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.Xsubpixel]
+        ld      H	[IX`mob+Mob.X+0]
+        ld      A	[IX`mob+Mob.X+1]
         ld      DE      $0080
         add     HL      DE
         adc     A	$00
         ld      L	H
         ld      H	A
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      [$.TEMP3]	HL
         ld      HL      	$0000
         ld      [$.TEMP4]	HL
@@ -24044,17 +24044,17 @@ trap_spikewall_process:													;$B398
         ld      [$.TEMP4]	HL
         ld      A	$18
         call    \\_3581
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $0580
         xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         sbc     HL      DE
         ret     nc
-        ld      C	[IX`mob+%mob.Y+0]
-        ld      B	[IX`mob+%mob.Y+1]
+        ld      C	[IX`mob+Mob.Y+0]
+        ld      B	[IX`mob+Mob.Y+1]
         ld      HL      $0040
         add     HL      BC
         ld      DE      [$.CAMERA_Y]
@@ -24062,10 +24062,10 @@ trap_spikewall_process:													;$B398
         sbc     HL      DE
         jr      nc	@_2
 	
-        ld      A	[IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.X+0]	A	
-        ld      A	[IX`mob+%mob.unknown12]
-        ld      [IX`mob+%mob.X+1]	A	
+        ld      A	[IX`mob+Mob.unknown11]
+        ld      [IX`mob+Mob.X+0]	A	
+        ld      A	[IX`mob+Mob.unknown12]
+        ld      [IX`mob+Mob.X+1]	A	
 @_2     ld      DE      [$.SONIC.Y]
         ld      HL      $FFE0
         add     HL      BC
@@ -24079,9 +24079,9 @@ trap_spikewall_process:													;$B398
         sbc     HL      DE
         ret     c
 	
-        ld      [IX`mob+%mob.Xspeed+0]		$80
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		$80
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
         ret
         
         ;sprite layout
@@ -24095,8 +24095,8 @@ trap_turretFixed_process:													;$B46D
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     0	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
         
         ld      BC	$0000
@@ -24108,18 +24108,18 @@ trap_turretFixed_process:													;$B46D
         cp      $04
         ret     nc
         
-        ld      [IX`mob+%mob.unknown11]	A
-        set     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown11]	A
+        set     0	[IX`mob+Mob.flags]
         
-@_1     inc     [IX`mob+%mobs.unknown12]
-        ld      A	[IX`mob+%mobs.unknown12]
+@_1     inc     [IX`mob+Mobs.unknown12]
+        ld      A	[IX`mob+Mobs.unknown12]
         bit     6 	A
         ret     nz
 	
         and     $0F
         ret     nz
 	
-        ld      A 	[IX`mob+%mob.unknown11]
+        ld      A 	[IX`mob+Mob.unknown11]
         add     A 	A
         ld      E 	A
         add     A 	A
@@ -24148,8 +24148,8 @@ trap_turretFixed_process:													;$B46D
         ld      B       [HL]
         inc     HL
         exx     
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D       [IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D       [IX`mob+Mob.X+1]
         ld      HL      [$.SONIC.X]
         and     A
         sbc     HL      DE
@@ -24160,8 +24160,8 @@ trap_turretFixed_process:													;$B46D
 	
         inc     HL
         exx     
-        ld      E       [IX`mob+%mob.Y+0]
-        ld      D       [IX`mob+%mob.Y+1]
+        ld      E       [IX`mob+Mob.Y+0]
+        ld      D       [IX`mob+Mob.Y+1]
         ld      HL      [$.SONIC.Y]
         and     A
         sbc     HL      DE
@@ -24184,24 +24184,24 @@ platform_flyingUpDown_process:                                                  
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]                   	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]                   	;mob does not collide with the floor
         ld      HL	_b37b
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $01
         jr      nz	@_1
 	
         ld      HL	@_b5b5
-@_1     ld      [IX`mob+%mob.spriteLayout+0]    L
-        ld      [IX`mob+%mob.spriteLayout+1]    H
+@_1     ld      [IX`mob+Mob.spriteLayout+0]    L
+        ld      [IX`mob+Mob.spriteLayout+1]    H
         ld      A               $50
         ld      [$.D216]	A
         call    @_b53b
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $A0
         ret     c
 	
-        ld      [IX`mob+%mob.unknown11]         $00
+        ld      [IX`mob+Mob.unknown11]         $00
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
@@ -24210,20 +24210,20 @@ platform_flyingUpDown_process:                                                  
         ld      L       A
         ld      DE      $0010
         ld      C       $00
-        ld      A       [IX`mob+%mob.unknown11]
+        ld      A       [IX`mob+Mob.unknown11]
         cp      L
         jr      c	@_2
 	
         dec     C
         ld      DE	$FFF0
-@_2     ld      L 	[IX`mbob+%mob.Yspeed+0]
-        ld      H 	[IX`mob+%mob.Yspeed+1]
-        ld      A 	[IX`mob+%mob.Ydirection]
+@_2     ld      L 	[IX`mbob+Mob.Yspeed+0]
+        ld      H 	[IX`mob+Mob.Yspeed+1]
+        ld      A 	[IX`mob+Mob.Ydirection]
         add     HL	DE
         adc     A 	C
-        ld      [IX`mob+%mob.Yspeed+0]          L
-        ld      [IX`mob+%mob.Yspeed+1]          H
-        ld      [IX`mob+%mob.Ydirection]        A
+        ld      [IX`mob+Mob.Yspeed+0]          L
+        ld      [IX`mob+Mob.Yspeed+1]          H
+        ld      [IX`mob+Mob.Ydirection]        A
         ld      A       H
         and     A
         jp      p	@_3
@@ -24239,31 +24239,31 @@ platform_flyingUpDown_process:                                                  
         cp      $02
         jr      c	@_4
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $FE
-        ld      [IX`mob+%mob.Ydirection]        $FF
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $FE
+        ld      [IX`mob+Mob.Ydirection]        $FF
         jr      @_4
         
 @_3     cp      $02
         jr      c	@_4
 	
-        ld      [IX`mob+%mob.Yspeed+0]          $00
-        ld      [IX`mob+%mob.Yspeed+1]          $02
-        ld      [IX`mob+%mob.Ydirection]        $00
+        ld      [IX`mob+Mob.Yspeed+0]          $00
+        ld      [IX`mob+Mob.Yspeed+1]          $02
+        ld      [IX`mob+Mob.Ydirection]        $00
         
 @_4     ld      A	[$.SONIC.Ydirection]
         and     A
         ret     m
         
-        ld      [IX`mob+%mob.width]             $1E
-        ld      [IX`mob+%mob.height]            $1C
+        ld      [IX`mob+Mob.width]             $1E
+        ld      [IX`mob+Mob.height]            $1C
         ld      HL              $0802
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         ret     c
         
-        ld      E	[IX`mob+%mob.Yspeed+0]
-        ld      D       [IX`mob+%mob.Yspeed+1]
+        ld      E	[IX`mob+Mob.Yspeed+0]
+        ld      D       [IX`mob+Mob.Yspeed+1]
         ld      BC      $0010
         call    _LABEL_7CC1_12
         
@@ -24286,47 +24286,47 @@ _b5c2:                                                                          
         ret     c
         
         push    IX  HL
-        ld      L               [IX`mob+%mob.X+0]
-        ld      H               [IX`mob+%mob.X+1]
+        ld      L               [IX`mob+Mob.X+0]
+        ld      H               [IX`mob+Mob.X+1]
         add     HL              DE
         ex      DE              HL
-        ld      L               [IX`mob+%mob.Y+0]
-        ld      H               [IX`mob+%mob.Y+1]
+        ld      L               [IX`mob+Mob.Y+0]
+        ld      H               [IX`mob+Mob.Y+1]
         add     HL              BC
         ld      C               L
         ld      B               H
         pop     IX
         xor     A`zero                                          ;set A to 0
-        ld      [IX`mob+%mob.type]      $0D                     ;unknown mob?
-        ld      [IX`mob+%mob.Xsubpixel] A`zero
-        ld      [IX`mob+%mob.X+0]       E
-        ld      [IX`mob+%mob.X+1]       D
-        ld      [IX`mob+%mob.Ysubpixel] A`zero
-        ld      [IX`mob+%mob.Y+0]       C
-        ld      [IX`mob+%mob.Y+1]       B
-        ld      [IX`mob+%mob.unknown11] A`zero
-        ld      [IX`mob+%mob.unknown13] A`zero
-        ld      [IX`mob+%mob.unknown14] A`zero
-        ld      [IX`mob+%mob.unknown15] A`zero
-        ld      [IX`mob+%mob.unknown16] A`zero
-        ld      [IX`mob+%mob.unknown17] A`zero
+        ld      [IX`mob+Mob.type]      $0D                     ;unknown mob?
+        ld      [IX`mob+Mob.Xsubpixel] A`zero
+        ld      [IX`mob+Mob.X+0]       E
+        ld      [IX`mob+Mob.X+1]       D
+        ld      [IX`mob+Mob.Ysubpixel] A`zero
+        ld      [IX`mob+Mob.Y+0]       C
+        ld      [IX`mob+Mob.Y+1]       B
+        ld      [IX`mob+Mob.unknown11] A`zero
+        ld      [IX`mob+Mob.unknown13] A`zero
+        ld      [IX`mob+Mob.unknown14] A`zero
+        ld      [IX`mob+Mob.unknown15] A`zero
+        ld      [IX`mob+Mob.unknown16] A`zero
+        ld      [IX`mob+Mob.unknown17] A`zero
         ld      HL              [$.TEMP4]
         bit     7       H
         jr      z       @_1
 	
         ld      A                       $FF
-@_1     ld      [IX`mob+%mob.Xspeed+0]      L
-        ld      [IX`mob+%mob.Xspeed+1]      H
-        ld      [IX`mob+%mob.Xdirection]    A
+@_1     ld      [IX`mob+Mob.Xspeed+0]      L
+        ld      [IX`mob+Mob.Xspeed+1]      H
+        ld      [IX`mob+Mob.Xdirection]    A
         xor     A`zero
         ld      HL              [$.TEMP6]
         bit     7       H
         jr      z       @_2
 	
         ld      A               $FF
-@_2     ld      [IX`mob+%mob.Yspeed+0]      L
-        ld      [IX`mob+%mob.Yspeed+1]      H
-        ld      [IX`mob+%mob.Ydirection]    A
+@_2     ld      [IX`mob+Mob.Yspeed+0]      L
+        ld      [IX`mob+Mob.Yspeed+1]      H
+        ld      [IX`mob+Mob.Ydirection]    A
         pop     IX
 	
 	;(we can compile with, or without, audio)
@@ -24341,37 +24341,37 @@ boss_skybase_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        ld      [IX`mob+%mob.width]     30
-        ld      [IX`mob+%mob.height]    47
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        bit     2	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.width]     30
+        ld      [IX`mob+Mob.height]    47
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        bit     2	[IX`mob+Mob.flags]
         jp      nz	@_b821
 	
         call    _7ca6
         call    @_b7e6
-        bit     0	[IX`mob+%mob.flags]
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
         
         ld      HL      $0350
         ld      DE      $0120
         call    _7c8c
         
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H	[IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H	[IX`mob+Mob.X+1]
         ld      DE      $0008
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.unknown11]	L
-        ld      [IX`mob+%mob.unknown12]	H
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.unknown11]	L
+        ld      [IX`mob+Mob.unknown12]	H
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         ld      DE      $0010
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
-        ld      [IX`mob+%mob.unknown13]	L
-        ld      [IX`mob+%mob.unknown14]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
+        ld      [IX`mob+Mob.unknown13]	L
+        ld      [IX`mob+Mob.unknown14]	H
         xor     A`zero
         ld      [$.D2EC]	A`zero
         
@@ -24381,9 +24381,9 @@ boss_skybase_process:                                                           
 		rst     \\sound\rst_playMusic
 	.ENDIF
         
-        set     4	[IY`vars+%vars.unknown0]
-        set     0	[IX`mob+%mob.flags]
-@_1     ld      A	[IX`mob+%mob.unknown15]
+        set     4	[IY`vars+Vars.unknown0]
+        set     0	[IX`mob+Mob.flags]
+@_1     ld      A	[IX`mob+Mob.unknown15]
         and     A
         jp      nz	@_4
 	
@@ -24392,47 +24392,47 @@ boss_skybase_process:                                                           
         and     %00000111
         jp      nz	@_8
 	
-        ld      A	[IX`mob+%mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $1C
         jr      nc	@_2
 	
-        inc     [IX`mob+%mob.unknown17]
-        ld      A	[IX`mob+%mob.unknown17]
+        inc     [IX`mob+Mob.unknown17]
+        ld      A	[IX`mob+Mob.unknown17]
         cp      $02
         jp      c	@_3
 	
-@_2     ld      [IX`mob+%mob.unknown17]	$00
-@_3     inc     [IX`mob+%mob.unknown16]
-        ld      A	[IX`mob+%mob.unknown16]
+@_2     ld      [IX`mob+Mob.unknown17]	$00
+@_3     inc     [IX`mob+Mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $28
         jp      c	@_8
 	
-        ld      [IX`mob+%mob.unknown16]	$00
-        inc     [IX`mob+%mob.unknown15]
+        ld      [IX`mob+Mob.unknown16]	$00
+        inc     [IX`mob+Mob.unknown15]
         jp      @_8
         
 @_4     dec     A
         jr      nz	@_5
 	
-        ld      [IX`mob+%mob.Yspeed+0]		$40
-        ld      [IX`mob+%mob.Yspeed+1]		$FE
-        ld      [IX`mob+%mob.Ydirection]	$FF
-        inc     [IX`mob+%mob.unknown15]
-        ld      L	[IX`mob+%mob.unknown11]
-        ld      H	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.Yspeed+0]		$40
+        ld      [IX`mob+Mob.Yspeed+1]		$FE
+        ld      [IX`mob+Mob.Ydirection]	$FF
+        inc     [IX`mob+Mob.unknown15]
+        ld      L	[IX`mob+Mob.unknown11]
+        ld      H	[IX`mob+Mob.unknown12]
         ld      DE      $0004
         add     HL      DE
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.spriteLayout+0]	LO _bb1d
-        ld      [IX`mob+%mob.spriteLayout+1]	HI _bb1d
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.spriteLayout+0]	LO _bb1d
+        ld      [IX`mob+Mob.spriteLayout+1]	HI _bb1d
         jp      @_8
         
 @_5     dec     A
         jp      nz	@_7
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $000E
         add     HL      DE
         adc     A	$00
@@ -24444,55 +24444,55 @@ boss_skybase_process:                                                           
         jr      c	@_6
 	
         ld      HL      $0200
-@_6     ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
-        ld      [IX`mob+%mob.spriteLayout+0]	LO _bb1d
-        ld      [IX`mob+%mob.spriteLayout+1]	HI _bb1d
-        ld      L	[IX`mob+%mob.Y+0]
-        ld      H	[IX`mob+%mob.Y+1]
+@_6     ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
+        ld      [IX`mob+Mob.spriteLayout+0]	LO _bb1d
+        ld      [IX`mob+Mob.spriteLayout+1]	HI _bb1d
+        ld      L	[IX`mob+Mob.Y+0]
+        ld      H	[IX`mob+Mob.Y+1]
         dec     HL
-        ld      E	[IX`mob+%mob.unknown13]
-        ld      D	[IX`mob+%mob.unknown14]
+        ld      E	[IX`mob+Mob.unknown13]
+        ld      D	[IX`mob+Mob.unknown14]
         and     A
         sbc     HL      DE
         jr      c	@_8
 	
-        ld      [IX`mob+%mob.Y+0]	E
-        ld      [IX`mob+%mob.Y+1]	D
+        ld      [IX`mob+Mob.Y+0]	E
+        ld      [IX`mob+Mob.Y+1]	D
         xor     A`zero
-        ld      [IX`mob+%mob.unknown16]		A`zero
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
-        inc     [IX`mob+%mob.unknown15]
+        ld      [IX`mob+Mob.unknown16]		A`zero
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
+        inc     [IX`mob+Mob.unknown15]
         jp      @_8
         
 @_7     dec     A
         jp      nz	@_8
-        ld      L	[IX`mob+%mob.unknown11]
-        ld      H	[IX`mob+%mob.unknown12]
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      A	[IX`mob+%mob.unknown16]
+        ld      L	[IX`mob+Mob.unknown11]
+        ld      H	[IX`mob+Mob.unknown12]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      A	[IX`mob+Mob.unknown16]
         and     A
         call    z	@_b9d5
 	
-        ld      [IX`mob+%mob.unknown17]	$02
-        set     1	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown17]	$02
+        set     1	[IX`mob+Mob.flags]
         call    @_b99f
-        inc     [IX`mob+%mob.unknown16]
-        ld      A	[IX`mob+%mob.unknown16]
+        inc     [IX`mob+Mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $12
         jr      c	@_8
 	
-        res     1	[IX`mob+%mob.flags]
+        res     1	[IX`mob+Mob.flags]
         xor     A`zero
-        ld      [IX`mob+%mob.unknown15]	A`zero
-        ld      [IX`mob+%mob.unknown16]	A`zero
+        ld      [IX`mob+Mob.unknown15]	A`zero
+        ld      [IX`mob+Mob.unknown16]	A`zero
         
 @_8     ld      HL      $ba31
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      z	@_9
 	
         ld      HL      @_ba3b
@@ -24521,11 +24521,11 @@ boss_skybase_process:                                                           
         ret     c
 	
         xor     A`zero
-        ld      [IX`mob+%mob.unknown11]	A`zero
-        ld      [IX`mob+%mob.unknown16]	A`zero
-        ld      [IX`mob+%mob.unknown17]	A`zero
-        set     2	[IX`mob+%mob.flags]
-        res     4	[IY`vars+%vars.unknown0]
+        ld      [IX`mob+Mob.unknown11]	A`zero
+        ld      [IX`mob+Mob.unknown16]	A`zero
+        ld      [IX`mob+Mob.unknown17]	A`zero
+        set     2	[IX`mob+Mob.flags]
+        res     4	[IY`vars+Vars.unknown0]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -24541,7 +24541,7 @@ boss_skybase_process:                                                           
 @_b7e6  ld      A	[$.D2B1]										;$B7E6
         and     A
         ret     nz
-        bit     0	[IY`vars+%vars.scrollRingFlags]
+        bit     0	[IY`vars+Vars.scrollRingFlags]
         ret     nz
         ld      A	[$.SONIC.flags]
         rrca    
@@ -24579,11 +24579,11 @@ boss_skybase_process:                                                           
 
         ;---------------------------------------------------------------------------------------------------------------
 
-@_b821  bit     3	[IX`mob+%mob.flags]									;$B821
+@_b821  bit     3	[IX`mob+Mob.flags]									;$B821
         jp      nz	@_20
 	
-        res     5	[IX`mob+%mob.flags]               	;make mob adhere to the floor
-        ld      A	[IX`mob+%mob.unknown11]
+        res     5	[IX`mob+Mob.flags]               	;make mob adhere to the floor
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $0F
         jr      nc	@_11
 	
@@ -24607,20 +24607,20 @@ boss_skybase_process:                                                           
         inc     HL
         ld      [$.D2AD]	DE
         ld      [$.D2AF]	HL
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $0F
         jr      nz	@_11
 	
-        set     5	[IY`vars+%vars.flags0]
-        res     1	[IY`vars+%vars.flags2]
+        set     5	[IY`vars+Vars.flags0]
+        res     1	[IY`vars+Vars.flags2]
         
         ;something to do with scrolling
         ld      HL      $0550
         ld      [$.LEVEL_RIGHT]	HL
         
-@_11    ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+@_11    ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         ld      HL      $05E0
         xor     A`zero
         sbc     HL      DE
@@ -24645,23 +24645,23 @@ boss_skybase_process:                                                           
 	
 @_13    ld      BC      $FF80
 @_14    inc     B
-@_15    ld      [IX`mob+%mob.Xspeed+0]		C
-        ld      [IX`mob+%mob.Xspeed+1]		B
-        ld      [IX`mob+%mob.Xdirection]	A
-        ld      A	[IX`mob+%mob.unknown17]
+@_15    ld      [IX`mob+Mob.Xspeed+0]		C
+        ld      [IX`mob+Mob.Xspeed+1]		B
+        ld      [IX`mob+Mob.Xdirection]	A
+        ld      A	[IX`mob+Mob.unknown17]
         cp      $06
         jr      nz	@_16
 	
-        ld      A	[IX`mob+%mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         dec     A
         jr      nz	@_16
 	
-        bit     7	[IX`mob+%mob.flags]
+        bit     7	[IX`mob+Mob.flags]
         jr      z	@_16
 	
-        ld      [IX`mob+%mob.Yspeed+0]		$00
-        ld      [IX`mob+%mob.Yspeed+1]		$FF
-        ld      [IX`mob+%mob.Ydirection]	$FF
+        ld      [IX`mob+Mob.Yspeed+0]		$00
+        ld      [IX`mob+Mob.Yspeed+1]		$FF
+        ld      [IX`mob+Mob.Ydirection]	$FF
 @_16    ld      DE      $0017
         ld      BC      $0036
         call    \\getFloorLayoutRAMAddressForMob
@@ -24674,12 +24674,12 @@ boss_skybase_process:                                                           
         and     A
         jr      z	@_17
 	
-        bit     7	[IX`mob+%mob.flags]
+        bit     7	[IX`mob+Mob.flags]
         jr      z	@_17
 	
-        ld      [IX`mob+%mob.Yspeed+0]		$80
-        ld      [IX`mob+%mob.Yspeed+1]		$FD
-        ld      [IX`mob+%mob.Ydirection]	$FF
+        ld      [IX`mob+Mob.Yspeed+0]		$80
+        ld      [IX`mob+Mob.Yspeed+1]		$FD
+        ld      [IX`mob+Mob.Ydirection]	$FF
 @_17    ld      DE      $0000
         ld      BC      $0008
         call    \\getFloorLayoutRAMAddressForMob
@@ -24687,30 +24687,30 @@ boss_skybase_process:                                                           
         cp      $49
         jr      nz	@_18
 	
-        bit     7	[IX`mob+%mob.flags]
+        bit     7	[IX`mob+Mob.flags]
         jr      z	@_18
 	
         xor     A`zero
-        ld      [IX`mob+%mob.unknown16]		A`zero
-        ld      [IX`mob+%mob.unknown17]		A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
-        ld      [IX`mob+%mob.unknown11]		$E0
-        ld      [IX`mob+%mob.unknown12]		$05
-        ld      [IX`mob+%mob.unknown13]		$60
-        ld      [IX`mob+%mob.unknown14]		$01
+        ld      [IX`mob+Mob.unknown16]		A`zero
+        ld      [IX`mob+Mob.unknown17]		A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.unknown11]		$E0
+        ld      [IX`mob+Mob.unknown12]		$05
+        ld      [IX`mob+Mob.unknown13]		$60
+        ld      [IX`mob+Mob.unknown14]		$01
         
         ld      HL      $0550
         ld      DE      $0120
         call    _7c8c
         
-        set     3	[IX`mob+%mob.flags]
+        set     3	[IX`mob+Mob.flags]
         jp      @_20
         
-@_18    ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+@_18    ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         ld      DE      $000E
         add     HL      DE
         adc     A	$00
@@ -24722,17 +24722,17 @@ boss_skybase_process:                                                           
         jr      c	@_19
 	
         ld      HL      $0200
-@_19    ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	C
+@_19    ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	C
         ld      BC      @_ba28
         ld      DE      \boss.running\_baf9
         call    _7c41
         ret
         
-@_20    ld      [IY`vars+%vars.joypad]		$FF
+@_20    ld      [IY`vars+Vars.joypad]		$FF
         call    @_b99f
-        ld      A	[IX`mob+%mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $30
         jr      nc	@_22
 	
@@ -24741,34 +24741,34 @@ boss_skybase_process:                                                           
         and     %00000111
         jr      nz	@_21
 	
-        ld      A	[IX`mob+%mob.unknown17]
+        ld      A	[IX`mob+Mob.unknown17]
         inc     A
         and     %00000001
-        ld      [IX`mob+%mob.unknown17]	A
-        inc     [IX`mob+%mob.unknown16]
+        ld      [IX`mob+Mob.unknown17]	A
+        inc     [IX`mob+Mob.unknown16]
 @_21    ld      A	C
         cp      $2C
         ret     c
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO _bb77
-        ld      [IX`mob+%mob.spriteLayout+1]	HI _bb77
+        ld      [IX`mob+Mob.spriteLayout+0]	LO _bb77
+        ld      [IX`mob+Mob.spriteLayout+1]	HI _bb77
         ret
         
 @_22    xor     A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        inc     [IX`mob+%mob.unknown16]
-        ld      A	[IX`mob+%mob.unknown16]
+        ld      [IX`mob+Mob.spriteLayout+0]	A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]	A`zero
+        inc     [IX`mob+Mob.unknown16]
+        ld      A	[IX`mob+Mob.unknown16]
         cp      $70
         ret     c
 	
-        ld      [IX`mob+%mob.type]	$FF              	;remove mob?
+        ld      [IX`mob+Mob.type]	$FF              	;remove mob?
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
 
 @_b99f  ld      HL      @_ba1c											;$B99F
-        ld      A	[IX`mob+%mob.unknown17]
+        ld      A	[IX`mob+Mob.unknown17]
         add     A	A
         add     A	A
         ld      E	A
@@ -24783,23 +24783,23 @@ boss_skybase_process:                                                           
         inc     HL
         ld      H	[HL]
         ld      L	A
-        ld      [IX`mob+%mob.spriteLayout+0]	L
-        ld      [IX`mob+%mob.spriteLayout+1]	H
-        ld      L	[IX`mob+%mob.unknown11]
-        ld      H	[IX`mob+%mob.unknown12]
+        ld      [IX`mob+Mob.spriteLayout+0]	L
+        ld      [IX`mob+Mob.spriteLayout+1]	H
+        ld      L	[IX`mob+Mob.unknown11]
+        ld      H	[IX`mob+Mob.unknown12]
         add     HL      BC
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      L	[IX`mob+%mob.unknown13]
-        ld      H	[IX`mob+%mob.unknown14]
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      L	[IX`mob+Mob.unknown13]
+        ld      H	[IX`mob+Mob.unknown14]
         add     HL      DE
-        ld      [IX`mob+%mob.Y+0]	L
-        ld      [IX`mob+%mob.Y+1]	H
+        ld      [IX`mob+Mob.Y+0]	L
+        ld      [IX`mob+Mob.Y+1]	H
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
 
-@_b9d5  bit     5	[IY`vars+%vars.unknown0]								;$B9D5
+@_b9d5  bit     5	[IY`vars+Vars.unknown0]								;$B9D5
         ret     nz
         
         call    \\findEmptyMob
@@ -24810,23 +24810,23 @@ boss_skybase_process:                                                           
         pop     IX
         
         xor     A`zero                          		;set A to 0
-        ld      [IX`mob+%mob.type]	$47              	;unknown mob
-        ld      [IX`mob+%mob.Xsubpixel],A`zero
+        ld      [IX`mob+Mob.type]	$47              	;unknown mob
+        ld      [IX`mob+Mob.Xsubpixel],A`zero
         ld      HL      $0420
-        ld      [IX`mob+%mob.X+0]	L
-        ld      [IX`mob+%mob.X+1]	H
-        ld      [IX`mob+%mob.Ysubpixel]	A`zero
+        ld      [IX`mob+Mob.X+0]	L
+        ld      [IX`mob+Mob.X+1]	H
+        ld      [IX`mob+Mob.Ysubpixel]	A`zero
         ld      HL      $012F
-        ld      [IX`mob+%mob.Y+0]		L
-        ld      [IX`mob+%mob.Y+1]		H
-        ld      [IX`mob+%mob.unknown11]		A`zero
-        ld      [IX`mob+%mob.flags]		A`zero
-        ld      [IX`mob+%mob.Xspeed+0]		A`zero
-        ld      [IX`mob+%mob.Xspeed+1]		A`zero
-        ld      [IX`mob+%mob.Xdirection]	A`zero
-        ld      [IX`mob+%mob.Yspeed+0]		A`zero
-        ld      [IX`mob+%mob.Yspeed+1]		A`zero
-        ld      [IX`mob+%mob.Ydirection]	A`zero
+        ld      [IX`mob+Mob.Y+0]		L
+        ld      [IX`mob+Mob.Y+1]		H
+        ld      [IX`mob+Mob.unknown11]		A`zero
+        ld      [IX`mob+Mob.flags]		A`zero
+        ld      [IX`mob+Mob.Xspeed+0]		A`zero
+        ld      [IX`mob+Mob.Xspeed+1]		A`zero
+        ld      [IX`mob+Mob.Xdirection]	A`zero
+        ld      [IX`mob+Mob.Yspeed+0]		A`zero
+        ld      [IX`mob+Mob.Yspeed+1]		A`zero
+        ld      [IX`mob+Mob.Ydirection]	A`zero
         
         pop     IX
         ret
@@ -24903,12 +24903,12 @@ boss_electricBeam_process:                                                      
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         
         ld      HL                              $0008
         ld      [$.SCROLLZONE_OVERRIDE_TOP]     HL
         
-        bit     0	[IX`mob+%mob.flags]
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_1
 
         ;UNKNOWN
@@ -24917,11 +24917,11 @@ boss_electricBeam_process:                                                      
         ld      A	$0C
         call    \\gfx\decompressArt
 
-        ld      [IX`mob+%mob.unknown12]	$01
-        set     0	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown12]	$01
+        set     0	[IX`mob+Mob.flags]
 @_1     ld      HL      $0390
         ld      [$.TEMP1]	HL
-        ld      L	[IX`mob+%mob.unknown11]
+        ld      L	[IX`mob+Mob.unknown11]
         ld      H	$00
         ld      [$.TEMP4]	HL
         ld      L	H
@@ -24929,16 +24929,16 @@ boss_electricBeam_process:                                                      
         ld      DE      $011A
         ld      HL      @_bcdd
         call    @_bca5
-        ld      E	[IX`mob+%mob.unknown11]
+        ld      E	[IX`mob+Mob.unknown11]
         ld      D	$00
         ld      [$.TEMP4]	DE
         ld      DE      $01D2
         ld      HL      @_bcdd
         call    @_bca5
-        bit     4	[IY`vars+%vars.unknown0]
+        bit     4	[IY`vars+Vars.unknown0]
         ret     z
 	
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      z	@_2
 	
         ld      A	[$.FRAMECOUNT]
@@ -24966,7 +24966,7 @@ boss_electricBeam_process:                                                      
         djnz    @loop
         
         ld      HL      $0390
-        ld      C	[IX`mob+%mob.unknown11]
+        ld      C	[IX`mob+Mob.unknown11]
         ld      B	$00
         add     HL      BC
         ld      C	L
@@ -24984,19 +24984,19 @@ boss_electricBeam_process:                                                      
         sbc     HL      BC
         jr      c	@_2
 	
-        bit     0	[IY`vars+%vars.scrollRingFlags]
+        bit     0	[IY`vars+Vars.scrollRingFlags]
         call    z	hitPlayer._35fd
         
 @_2     ld      A	[$.D2EC]
         cp      $06
         jr      nc	@_5
 	
-        bit     1	[IX`mob+%mob.flags]
+        bit     1	[IX`mob+Mob.flags]
         jr      nz	@_3
 	
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         inc     A
-        ld      [IX`mob+%mob.unknown11]	A
+        ld      [IX`mob+Mob.unknown11]	A
         cp      $80
         ret     c
 	
@@ -25005,7 +25005,7 @@ boss_electricBeam_process:                                                      
         and     %00000001
         ret     nz
 	
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
         ret
         
 @_3     ld      A	[$.FRAMECOUNT]
@@ -25018,33 +25018,33 @@ boss_electricBeam_process:                                                      
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-@_4     dec     [IX`mob+%mob.unknown11]
+@_4     dec     [IX`mob+Mob.unknown11]
         ret     nz
 	
-        ld      [IX`mob+%mob.unknown11]	$00
-        res     1	[IX`mob+%mob.flags]
+        ld      [IX`mob+Mob.unknown11]	$00
+        res     1	[IX`mob+Mob.flags]
         ret
         
 @_5     ld      HL      [$.SONIC.X]
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      DE
         jr      nc	@_6
 	
-        ld      A	[IX`mob+%mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_7
 	
-        dec     [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
         jr      @_7
         
-@_6     ld      A	[IX`mob+%mob.unknown11]
+@_6     ld      A	[IX`mob+Mob.unknown11]
         cp      $80
         jr      nc	@_7
 	
-        inc     [IX`mob+%mob.unknown11]
-@_7     res     1	[IX`mob+%mob.flags]
+        inc     [IX`mob+Mob.unknown11]
+@_7     res     1	[IX`mob+Mob.flags]
         ld      A	[$.FRAMECOUNT]
         ld      C	A
         and     $40
@@ -25054,7 +25054,7 @@ boss_electricBeam_process:                                                      
         cp      $06
         ret     z
 	
-        set     1	[IX`mob+%mob.flags]
+        set     1	[IX`mob+Mob.flags]
         ld      A	C
         and     %00011111
         ret     nz
@@ -25102,24 +25102,24 @@ unknown_bcdf_process:                                                           
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
-        set     5	[IY`vars+%vars.unknown0]
+        set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
+        set     5	[IY`vars+Vars.unknown0]
         ld      HL      $0202
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         jr      c	@_1
 	
-        bit     0	[IY`vars+%vars.scrollRingFlags]
+        bit     0	[IY`vars+Vars.scrollRingFlags]
         call    z	hitPlayer._35fd
 	
         jp      @_8
         
-@_1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         cp      $C8
         jp      c	@_6
 	
-        ld      E	[IX`mob+%mob.X+0]
-        ld      D	[IX`mob+%mob.X+1]
+        ld      E	[IX`mob+Mob.X+0]
+        ld      D	[IX`mob+Mob.X+1]
         ld      HL      [$.CAMERA_X]
         ld      BC      $FFF4
         add     HL      BC
@@ -25136,9 +25136,9 @@ unknown_bcdf_process:                                                           
         ld      HL      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        ld      L	[IX`mob+%mob.Xspeed+0]
-        ld      H	[IX`mob+%mob.Xspeed+1]
-        ld      A	[IX`mob+%mob.Xdirection]
+        ld      L	[IX`mob+Mob.Xspeed+0]
+        ld      H	[IX`mob+Mob.Xspeed+1]
+        ld      A	[IX`mob+Mob.Xdirection]
         jr      nc	@_2
 	
         ld      C	$FF
@@ -25157,11 +25157,11 @@ unknown_bcdf_process:                                                           
         ld      DE      $0018
 @_3     add     HL      DE
         adc     A	C
-        ld      [IX`mob+%mob.Xspeed+0]		L
-        ld      [IX`mob+%mob.Xspeed+1]		H
-        ld      [IX`mob+%mob.Xdirection]	A	
-        ld      E	[IX`mob+%mob.Y+0]
-        ld      D	[IX`mob+%mob.Y+1]
+        ld      [IX`mob+Mob.Xspeed+0]		L
+        ld      [IX`mob+Mob.Xspeed+1]		H
+        ld      [IX`mob+Mob.Xdirection]	A	
+        ld      E	[IX`mob+Mob.Y+0]
+        ld      D	[IX`mob+Mob.Y+1]
         ld      HL      [$.CAMERA_Y]
         ld      BC      $FFF4
         add     HL      BC
@@ -25179,9 +25179,9 @@ unknown_bcdf_process:                                                           
         ld      HL      [$.SONIC.Y]
         and     A
         sbc     HL      DE
-        ld      L	[IX`mob+%mob.Yspeed+0]
-        ld      H	[IX`mob+%mob.Yspeed+1]
-        ld      A	[IX`mob+%mob.Ydirection]
+        ld      L	[IX`mob+Mob.Yspeed+0]
+        ld      H	[IX`mob+Mob.Yspeed+1]
+        ld      A	[IX`mob+Mob.Ydirection]
         jr      nc	@_4
 	
         ld      C	$FF
@@ -25200,19 +25200,19 @@ unknown_bcdf_process:                                                           
         ld      DE      $0005
 @_5     add     HL      DE
         adc     A	C
-        ld      [IX`mob+%mob.Yspeed+0]		L
-        ld      [IX`mob+%mob.Yspeed+1]		H
-        ld      [IX`mob+%mob.Ydirection]	A	
+        ld      [IX`mob+Mob.Yspeed+0]		L
+        ld      [IX`mob+Mob.Yspeed+1]		H
+        ld      [IX`mob+Mob.Ydirection]	A	
         jr      @_7
-@_6     inc     [IX`mob+%mob.unknown11]
+@_6     inc     [IX`mob+Mob.unknown11]
 @_7     ld      BC      @_bdc7
         ld      DE      @_bdce
         call    _7c41
-        bit     4	[IY`vars+%vars.unknown0]
+        bit     4	[IY`vars+Vars.unknown0]
         ret     nz
 	
-@_8     ld      [IX`mob+%mob.type]	$FF      		;remove object?
-        res     5	[IY`vars+%vars.unknown0]
+@_8     ld      [IX`mob+Mob.type]	$FF      		;remove object?
+        res     5	[IY`vars+Vars.unknown0]
         ret
 	
 	%byte
@@ -25236,12 +25236,12 @@ cutscene_final_process:                                                         
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;mob does not collide with the floor
-        set     5	[IX`mob+%mob.flags]
+        set     5	[IX`mob+Mob.flags]
         
         ;clear joypad input
-        ld      [IY`vars+%vars.joypad]	$FF
+        ld      [IY`vars+Vars.joypad]	$FF
         
-        bit     1   	[IX`mob+%mob.flags]
+        bit     1   	[IX`mob+Mob.flags]
         jr      nz	@_1
         ld      HL	\bossPalette
         ld      A       %00000010
@@ -25255,8 +25255,8 @@ cutscene_final_process:                                                         
         ld      [$.SONIC.Y]     HL
         
         ld      [IX`mob+$12]    $FF
-        set     6	[IY`vars+%vars.timeLightningFlags]      ;lock the screen - no scrolling
-        set     1	[IX`mob+%mob.flags]
+        set     6	[IY`vars+Vars.timeLightningFlags]      ;lock the screen - no scrolling
+        set     1	[IX`mob+Mob.flags]
 @_1     ld      A	[$.FRAMECOUNT]
         rrca    
         jr      c	@_2
@@ -25268,19 +25268,19 @@ cutscene_final_process:                                                         
         dec     [IX`mob+$12]
         jr      nz	@_2
 	
-        ld      L	[IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L	[IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      DE      $003C
         add     HL      DE
         ld      [$.SONIC.X]	HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $FFC0
         add     HL      DE
         ld      [$.SONIC.Y]     HL
         xor     A`zero                                      	;set A to 0
         ld      [$.SONIC]       A`zero
-        set     6	[IY+%vars.unknown0]
+        set     6	[IY+Vars.unknown0]
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -25288,32 +25288,32 @@ cutscene_final_process:                                                         
 		rst     \\sound\rst_playSFX
 	.ENDIF
         
-@_2     ld      [IX`mob+%mob.width]     32
-        ld      [IX`mob+%mob.height]    28
+@_2     ld      [IX`mob+Mob.width]     32
+        ld      [IX`mob+Mob.height]    28
         xor     A`zero
-        ld      [IX`mob+%mob.Xspeed+0]      A`zero
-        ld      [IX`mob+%mob.Xspeed+1]      $01
-        ld      [IX`mob+%mob.Xdirection]    A`zero
-        ld      [IX`mob+%mob.Yspeed+0]      A`zero
-        ld      [IX`mob+%mob.Yspeed+1]      A`zero
-        ld      [IX`mob+%mob.Ydirection]    A`zero
-        bit     6	[IY`vars+%vars.timeLightningFlags]
+        ld      [IX`mob+Mob.Xspeed+0]      A`zero
+        ld      [IX`mob+Mob.Xspeed+1]      $01
+        ld      [IX`mob+Mob.Xdirection]    A`zero
+        ld      [IX`mob+Mob.Yspeed+0]      A`zero
+        ld      [IX`mob+Mob.Yspeed+1]      A`zero
+        ld      [IX`mob+Mob.Ydirection]    A`zero
+        bit     6	[IY`vars+Vars.timeLightningFlags]
         jr      z	@_3
 	
         ld      DE	[$.CAMERA_X]
         ld      HL	$0040
         add     HL	DE
-        ld      C 	[IX`mob+%mob.X+0]
-        ld      B 	[IX`mob+%mob.X+1]
+        ld      C 	[IX`mob+Mob.X+0]
+        ld      B 	[IX`mob+Mob.X+1]
         and     A
         sbc     HL      BC
         jr      nc	@_3
 	
         inc     DE
         ld      [$.CAMERA_X]	DE
-@_3     ld      [IX`mob+%mob.spriteLayout+0]	LO @_bf21
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_bf21
-        bit     0	[IX`mob+%mob.flags]
+@_3     ld      [IX`mob+Mob.spriteLayout+0]	LO @_bf21
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_bf21
+        bit     0	[IX`mob+Mob.flags]
         jr      nz	@_4
 	
         ld      HL		$1008
@@ -25335,9 +25335,9 @@ cutscene_final_process:                                                         
         adc     A       $00
         ld      [$.SONIC.Yspeed]    	HL
         ld      [$.SONIC.Ydirection]    A
-        res     6	[IY`vars+%vars.timeLightningFlags]
-        set     0	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown11]	$01
+        res     6	[IY`vars+Vars.timeLightningFlags]
+        set     0	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown11]	$01
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -25346,22 +25346,22 @@ cutscene_final_process:                                                         
 	.ENDIF
         
 @_4     call    _79fa
-        bit     0	[IX`mob+%mob.flags]
+        bit     0	[IX`mob+Mob.flags]
         ret     z
         
         xor     A`zero
-        ld      [IX`mob+%mob.Yspeed+0]          $40
-        ld      [IX`mob+%mob.Yspeed+1]          A`zero
-        ld      [IX`mob+%mob.Ydirection]        A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    LO @_bf33
-        ld      [IX`mob+%mob.spriteLayout+1]    HI @_bf33
-        dec     [IX`mob+%mob.unknown11]
+        ld      [IX`mob+Mob.Yspeed+0]          $40
+        ld      [IX`mob+Mob.Yspeed+1]          A`zero
+        ld      [IX`mob+Mob.Ydirection]        A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    LO @_bf33
+        ld      [IX`mob+Mob.spriteLayout+1]    HI @_bf33
+        dec     [IX`mob+Mob.unknown11]
         ret     nz
         
         call    _7a3a
-        ld      [IX`mob+%mob.unknown11] $18
-        inc     [IX`mob+%mob.unknown13]
-        ld      A	[IX`mob+%mob.unknown13]
+        ld      [IX`mob+Mob.unknown11] $18
+        inc     [IX`mob+Mob.unknown13]
+        ld      A	[IX`mob+Mob.unknown13]
         cp      $0A
         ret     c
 	
@@ -25369,7 +25369,7 @@ cutscene_final_process:                                                         
         cp      $06
         jr      c	@_5
 	
-        set     7	[IY`vars+%vars.unknown0]
+        set     7	[IY`vars+Vars.unknown0]
         ret
         
 @_5     ld      A	[$.D289]
@@ -25378,7 +25378,7 @@ cutscene_final_process:                                                         
 	
         ld      A		$20
         ld      [$.D289]        A
-        set     2	[IY`vars+%vars.unknown_0D]
+        set     2	[IY`vars+Vars.unknown_0D]
         ret
 
 	%byte
@@ -25399,61 +25399,61 @@ cutscene_emeralds_process:                                                      
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        set     5   [IX`mob+%mob.flags]                     	;mob does not collide with the floor
+        set     5   [IX`mob+Mob.flags]                     	;mob does not collide with the floor
         
         ;load the emerald image into VRAM,
         ;not more than one power-up can be on screen at a time
         ld      HL                  $5400                   	;$15400 - emerald image
         call    \loadPowerUpIcon
         
-        bit     0   	[IX`mob+%mob.flags]
+        bit     0   	[IX`mob+Mob.flags]
         jr      nz	@_1
         
         xor     A`zero                                      	;set A to 0
-        ld      [IX`mob+%mob.spriteLayout+0]    A`zero
-        ld      [IX`mob+%mob.spriteLayout+1]    A`zero
-        ld      [IX`mob+%mob.Xspeed+0]          A`zero
-        ld      [IX`mob+%mob.Xspeed+1]          A`zero
-        ld      [IX`mob+%mob.Xdirection]        A`zero
+        ld      [IX`mob+Mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+Mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+Mob.Xspeed+0]          A`zero
+        ld      [IX`mob+Mob.Xspeed+1]          A`zero
+        ld      [IX`mob+Mob.Xdirection]        A`zero
         
-        inc     [IX`mob+%mob.unknown11]
-        ld      A	[IX`mob+%mob.unknown11]
+        inc     [IX`mob+Mob.unknown11]
+        ld      A	[IX`mob+Mob.unknown11]
         cp      $50
         ret     c
 	
-        set     0	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.unknown11]	$64
+        set     0	[IX`mob+Mob.flags]
+        ld      [IX`mob+Mob.unknown11]	$64
         ret
         
-@_1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+Mob.unknown11]
         and     A
         jr      z	@_2
 	
-        dec     [IX`mob+%mob.unknown11]
+        dec     [IX`mob+Mob.unknown11]
         jr      @_3
         
-@_2     ld      [IX`mob+%mob.Yspeed+0]      $80
-        ld      [IX`mob+%mob.Yspeed+1]      $FF
-        ld      [IX`mob+%mob.Ydirection]    $FF
+@_2     ld      [IX`mob+Mob.Yspeed+0]      $80
+        ld      [IX`mob+Mob.Yspeed+1]      $FF
+        ld      [IX`mob+Mob.Ydirection]    $FF
 @_3     ld      HL	@_bff1
         ld      A       [$.FRAMECOUNT]
         rrca    
         jr      nc	@_4
 	
-        ld      A	[IY`vars+%vars.spriteUpdateCount]
+        ld      A	[IY`vars+Vars.spriteUpdateCount]
         ld      HL      [$.SPRITETABLE_ADDR]
         push    AF
         push    HL
         ld      HL      $.SPRITETABLE
         ld      [$.SPRITETABLE_ADDR]    HL
-        ld      L       [IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      L       [IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      [$.CAMERA_Y]
         and     A
         sbc     HL      DE
         ex      DE      HL
-        ld      L       [IX`mob+%mob.X+0]
-        ld      H       [IX`mob+%mob.X+1]
+        ld      L       [IX`mob+Mob.X+0]
+        ld      H       [IX`mob+Mob.X+1]
         ld      BC      [$.CAMERA_X]
         and     A
         sbc     HL      BC
@@ -25462,9 +25462,9 @@ cutscene_emeralds_process:                                                      
         pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]    HL
-        ld      [IY`vars+%vars.spriteUpdateCount]   A
-@_4     ld      L	[IX`mob+%mob.Y+0]
-        ld      H       [IX`mob+%mob.Y+1]
+        ld      [IY`vars+Vars.spriteUpdateCount]   A
+@_4     ld      L	[IX`mob+Mob.Y+0]
+        ld      H       [IX`mob+Mob.Y+1]
         ld      DE      $0020
         add     HL      DE
         ld      DE      [$.CAMERA_Y]
@@ -25474,7 +25474,7 @@ cutscene_emeralds_process:                                                      
 	
         ld      A		$01
         ld      [$.D289]	A
-        set     2	[IY`vars+%vars.unknown_0D]
+        set     2	[IY`vars+Vars.unknown_0D]
         ret
 
 	;sprite layout
@@ -25536,94 +25536,95 @@ playSFX:
 	*/
 
 
-%track
+.STRUCT	Track
 ;=======================================================================================================================
-@channelFrequencyPSG            	%byte                   ;+$00
+	channelFrequencyPSG            	DB                   	;+$00
 /*      To set a frequency on the PSG a data byte is written to the sound port with bit 7 set and bits 6 & 5
         forming the sound channel number 0-3. this variable holds the bit mask for the track's particular
         channel to set the frequency (see ;PSGchannelBits` for the particulars)
 	*/
 
-@channelVolumePSG               	%byte                   ;+$01
+	channelVolumePSG               	DB                   	;+$01
 /*      To set the volume of a channel, a data byte is written to the sound port with bits 7 & 4 set and bits
         6 & 5 forming the sound channel number 0-3. bits 0-3 form the volume level where 1111 is silence
         and 0000 is maximum. This variable holds the bit mask for the track's particular channel to set the
         volume (see ;initPSGValues` for examples)
 	*/
 
-@tickStep                       	%word                   ;+$02
-@fadeTicks                      	%word                   ;+$04
-@noteFrequencey                 	%word                   ;+$06 - can't find direct reference
-@detune                         	%word                   ;+$08
-@modulationFreq                 	%word                   ;+$0A
-@envelopeLevel                  	%byte                   ;+$0C
-@ADSRstate                      	%byte                   ;+$0D
-@attackRate                     	%byte                   ;+$0E
-@decay1Rate                     	%byte                   ;+$0F
-@decay1Level                    	%byte                   ;+$10
-@decay2Rate                     	%byte                   ;+$11
-@decay2Level                    	%byte                   ;+$12
-@sustainRate                    	%byte                   ;+$13
-@initModulationDelay            	%byte                   ;+$14
-@initModulationStepDelay        	%byte                   ;+$15
-@initModulationStepCount        	%byte                   ;+$16
-@initModulationFreqDelta        	%word                   ;+$17
-@modulationDelay                	%byte                   ;+$19
-@modulationStepDelay            	%byte                   ;+$1A
-@modulationStepCount            	%byte                   ;+$1B
-@modulationFreqDelta            	%word                   ;+$1C
-@effectiveVolume                	%byte                   ;+$1E
-@octave                         	%byte                   ;+$1F
-@loopAddress                    	%word                   ;+$20
-@masterLoopAddress              	%word                   ;+$22
-@defaultNoteLength              	%byte                   ;+$24
-@noiseMode                      	%byte                   ;+$25
-@tempoDivider                   	%word                   ;+$26
-@flags                          	%byte                   ;+$28
-@baseAddress                    	%word                   ;+$29
-@id                             	%byte                   ;+$2B
-@channelVolume                  	%byte                   ;+$2C
+	tickStep                       	DW                   	;+$02
+	fadeTicks                      	DW                   	;+$04
+	noteFrequencey                 	DW                   	;+$06 - can't find direct reference
+	detune                         	DW                   	;+$08
+	modulationFreq                 	DW                   	;+$0A
+	envelopeLevel                  	DB                   	;+$0C
+	ADSRstate                      	DB                   	;+$0D
+	attackRate                     	DB                   	;+$0E
+	decay1Rate                     	DB                   	;+$0F
+	decay1Level                    	DB                   	;+$10
+	decay2Rate                     	DB                   	;+$11
+	decay2Level                    	DB                   	;+$12
+	sustainRate                    	DB                   	;+$13
+	initModulationDelay            	DB                   	;+$14
+	initModulationStepDelay        	DB                   	;+$15
+	initModulationStepCount        	DB                   	;+$16
+	initModulationFreqDelta        	DW                   	;+$17
+	modulationDelay                	DB                   	;+$19
+	modulationStepDelay            	DB                   	;+$1A
+	modulationStepCount            	DB                   	;+$1B
+	modulationFreqDelta            	DW                   	;+$1C
+	effectiveVolume                	DB                   	;+$1E
+	octave                         	DB                   	;+$1F
+	loopAddress                    	DW                   	;+$20
+	masterLoopAddress              	DW                   	;+$22
+	defaultNoteLength              	DB                   	;+$24
+	noiseMode                      	DB                   	;+$25
+	tempoDivider                   	DW                   	;+$26
+	flags                          	DB                   	;+$28
+	baseAddress                    	DW                      ;+$29
+	id                             	DB                      ;+$2B
+	channelVolume                  	DB                      ;+$2C
+.ENDS
 
 ;define the variables in RAM:
 
 ;(NB: in the original ROM, $DC00-$DC03 go unused)
 ;TODO: Set this to $DC04
 
-$
+.RAMSECTION "audio"			SLOT 3
 ;=======================================================================================================================
-@playbackMode                   	%byte                   ;bit 4 dis/enables fading out
-@overriddenTrack                	%byte                   ;which music track the SFX is overriding
-@SFXpriority                    	%byte                   ;priority level of current SFX
-@noiseMode                      	%byte                   ;high/med/low noise & frequency mode
-@tickMultiplier                 	%word
-@tickDivider1                   	%word  
-@tickDivider2                   	%word  
-@tickDividerSFX                 	%word
-@fadeTicks                      	%word  
-@fadeTicksDecrement             	%word  
+	playbackMode                   	DB                   	;bit 4 dis/enables fading out
+	overriddenTrack                	DB                   	;which music track the SFX is overriding
+	SFXpriority                    	DB                   	;priority level of current SFX
+	noiseMode                      	DB                   	;high/med/low noise & frequency mode
+	tickMultiplier                 	DW
+	tickDivider1                   	DW  
+	tickDivider2                   	DW  
+	tickDividerSFX                 	DW
+	fadeTicks                      	DW  
+	fadeTicksDecrement             	DW  
 	
-@channel0trackPointer           	%word  
-@channel1trackPointer           	%word
-@channel2trackPointer           	%word
-@channel3trackPointer           	%word  
+	channel0trackPointer           	DW  
+	channel1trackPointer           	DW
+	channel2trackPointer           	DW
+	channel3trackPointer           	DW  
 	
-@track0dataPointer              	%word
-@track1dataPointer              	%word
-@track2dataPointer              	%word
-@track3dataPointer              	%word
-@track4dataPointer              	%word
+	track0dataPointer              	DW
+	track1dataPointer              	DW
+	track2dataPointer              	DW
+	track3dataPointer              	DW
+	track4dataPointer              	DW
 
-;the `_loadMusic` routine assumes that the track RAM follows the data pointers above,
-;so just take note in case of rearranging the RAM here
-@track0vars                     	%track
-@track1vars                     	%track
-@track2vars                     	%track
-@track3vars                     	%track
-@track4vars                     	%track
+	;the `_loadMusic` routine assumes that the track RAM follows the data pointers above,
+	;so just take note in case of rearranging the RAM here
+	track0vars                     	INSTANCEOF Track
+	track1vars                     	INSTANCEOF Track
+	track2vars                     	INSTANCEOF Track
+	track3vars                     	INSTANCEOF Track
+	track4vars                     	INSTANCEOF Track
 
-@loopStack                      	%word
+	loopStack                      	DW
+.ENDS
 
-	
 doLoadMusic:
 ;=======================================================================================================================
 ;params HL              : Address of song data to load
@@ -26052,7 +26053,7 @@ doUpdate:
         ld      BC      [$.tickDividerSFX]
         call    doUpdateTrack
         ld      [$.track4dataPointer]   DE
-        bit     1   [IX+%track.flags]
+        bit     1   [IX+Track.flags]
         jr      z	@_1
         
         ld      HL      $.channel0trackPointer
@@ -26092,15 +26093,15 @@ doUpdate:
 
 doUpdateTrack:
 ;=======================================================================================================================
-        bit     1   [IX+%track.flags]
+        bit     1   [IX+Track.flags]
         ret     z
         
-        ld      L       [IX+%track.tickStep+0]
-        ld      H       [IX+%track.tickStep+1]
+        ld      L       [IX+Track.tickStep+0]
+        ld      H       [IX+Track.tickStep+1]
         and     A
         sbc     HL      BC
-        ld      [IX+%track.tickStep+0]  L
-        ld      [IX+%track.tickStep+1]  H
+        ld      [IX+Track.tickStep+0]  L
+        ld      [IX+Track.tickStep+1]  H
         jr      z	@trackReadLoop
         jp      nc	doNote.x
         
@@ -26112,7 +26113,7 @@ doUpdateTrack:
         jr      c	doNote
         cp      $7F
         jr      nz	doNoiseNote
-        ld      [IX+%track.effectiveVolume]     $00
+        ld      [IX+Track.effectiveVolume]     $00
         jp      doNote.doNoteLength
 	;
 
@@ -26133,7 +26134,7 @@ doNoiseNote:
         ld      BC      noiseNoteValues
         add     HL      BC
         ld      A       [HL]
-        ld      [IX+%track.noiseMode]   A
+        ld      [IX+Track.noiseMode]   A
         inc     HL
         ldi     
         ldi     
@@ -26154,38 +26155,38 @@ doNote:
         ld      B       $00
         add     HL      BC
         ld      A       [HL]
-        ld      [IX+%track.noteFrequencey]      A
+        ld      [IX+Track.noteFrequencey]      A
         inc     HL
         ld      A       [HL]
-        ld      [IX+%track.noteFrequencey+1]    A
+        ld      [IX+Track.noteFrequencey+1]    A
         ld      A       [DE]
         rrca    
         rrca    
         rrca    
         rrca    
         and     $0F
-        ld      [IX+%track.octave]      A
-        bit     0   [IX+%track.flags]
+        ld      [IX+Track.octave]      A
+        bit     0   [IX+Track.flags]
         jr      nz	doNote.doNoteLength
 
 @resetModValues
-        ld      A       [IX+%track.initModulationDelay]
-        ld      [IX+%track.modulationDelay]     A
-        ld      A       [IX+%track.initModulationDelay+1]
-        ld      [IX+%track.modulationDelay+1]   A
-        ld      A       [IX+%track.initModulationStepCount]
+        ld      A       [IX+Track.initModulationDelay]
+        ld      [IX+Track.modulationDelay]     A
+        ld      A       [IX+Track.initModulationDelay+1]
+        ld      [IX+Track.modulationDelay+1]   A
+        ld      A       [IX+Track.initModulationStepCount]
         srl     A
-        ld      [IX+%track.modulationStepCount] A
-        ld      A       [IX+%track.initModulationFreqDelta+0]
-        ld      [IX+%track.modulationFreqDelta+0]       A
-        ld      A       [IX+%track.initModulationFreqDelta+1]
-        ld      [IX+%track.modulationFreqDelta+1]   A
+        ld      [IX+Track.modulationStepCount] A
+        ld      A       [IX+Track.initModulationFreqDelta+0]
+        ld      [IX+Track.modulationFreqDelta+0]       A
+        ld      A       [IX+Track.initModulationFreqDelta+1]
+        ld      [IX+Track.modulationFreqDelta+1]   A
         xor     A
-        ld      [IX+%track.modulationFreq+0]    A
-        ld      [IX+%track.modulationFreq+1]    A
-        ld      [IX+%track.ADSRstate]           A
-        ld      [IX+%track.envelopeLevel]       A
-        ld      [IX+%track.effectiveVolume]     $0F
+        ld      [IX+Track.modulationFreq+0]    A
+        ld      [IX+Track.modulationFreq+1]    A
+        ld      [IX+Track.ADSRstate]           A
+        ld      [IX+Track.envelopeLevel]       A
+        ld      [IX+Track.effectiveVolume]     $0F
         
 @doNoteLength
         inc     DE
@@ -26193,11 +26194,11 @@ doNote:
         inc     DE
         and     A
         jr      nz	@_1
-        ld      A       [IX+%track.defaultNoteLength]
+        ld      A       [IX+Track.defaultNoteLength]
 @_1     push    DE
         ld      C       A
-        ld      L       [IX+%track.tempoDivider+0]
-        ld      H       [IX+%track.tempoDivider+1]
+        ld      L       [IX+Track.tempoDivider+0]
+        ld      H       [IX+Track.tempoDivider+1]
         ld      A       L
         or      H
         jr      nz	@_2
@@ -26205,13 +26206,13 @@ doNote:
 @_2     call    calcTickTime
         pop     DE
         ld      A       L
-        add     A       [IX+%track.tickStep+0]
-        ld      [IX+%track.tickStep+0]  A
+        add     A       [IX+Track.tickStep+0]
+        ld      [IX+Track.tickStep+0]  A
         ld      A       H
-        adc     A       [IX+%track.tickStep+1]
-        ld      [IX+%track.tickStep+1]  A
+        adc     A       [IX+Track.tickStep+1]
+        ld      [IX+Track.tickStep+1]  A
         
-@x      res     0   [IX+%track.flags]
+@x      res     0   [IX+Track.flags]
         ret
 	;
 
@@ -26224,10 +26225,10 @@ noiseNoteValues:
 	
 doProcessTrack:
 ;=======================================================================================================================
-        bit     1   [IX+%track.flags]
+        bit     1   [IX+Track.flags]
         ret     z
         
-        ld      A       [IX+%track.ADSRstate]
+        ld      A       [IX+Track.ADSRstate]
         and     A
         jp      z	ADSRenvelopeAttack
         
@@ -26243,10 +26244,10 @@ doProcessTrack:
 
 doTrackSoundOut:
 ;=======================================================================================================================
-        ld      A       [IX+%track.channelFrequencyPSG]
+        ld      A       [IX+Track.channelFrequencyPSG]
         cp      $E0
         jr      nz	@doModulation
-        ld      C       [IX+%track.noiseMode]
+        ld      C       [IX+Track.noiseMode]
         ld      A       [$.noiseMode]
         cp      C
         jp      z	@sendVolume
@@ -26257,24 +26258,24 @@ doTrackSoundOut:
         jp      @sendVolume
 
 @doModulation
-        ld      E       [IX+%track.modulationFreq+0]
-        ld      D       [IX+%track.modulationFreq+1]
-        ld      A       [IX+%track.modulationDelay]
+        ld      E       [IX+Track.modulationFreq+0]
+        ld      D       [IX+Track.modulationFreq+1]
+        ld      A       [IX+Track.modulationDelay]
         and     A
         jr      z	@_1
-        dec     [IX+%track.modulationDelay]
+        dec     [IX+Track.modulationDelay]
         jp      @sendFrequency
     
-@_1     dec     [IX+%track.modulationStepDelay]
+@_1     dec     [IX+Track.modulationStepDelay]
         jp      nz	@sendFrequency
         ld      A       [IX+$15]
-        ld      [IX+%track.modulationStepDelay] A
-        ld      L       [IX+%track.modulationFreqDelta+0]
-        ld      H       [IX+%track.modulationFreqDelta+1]
-        dec     [IX+%track.modulationStepCount]
+        ld      [IX+Track.modulationStepDelay] A
+        ld      L       [IX+Track.modulationFreqDelta+0]
+        ld      H       [IX+Track.modulationFreqDelta+1]
+        dec     [IX+Track.modulationStepCount]
         jp      nz	@_2
-        ld      A       [IX+%track.initModulationStepCount]
-        ld      [IX+%track.modulationStepCount] A
+        ld      A       [IX+Track.initModulationStepCount]
+        ld      [IX+Track.modulationStepCount] A
         ld      A       L
         cpl     
         ld      L       A
@@ -26282,25 +26283,25 @@ doTrackSoundOut:
         cpl     
         ld      H       A
         inc     HL
-        ld      [IX+%track.modulationFreqDelta+0]       L
-        ld      [IX+%track.modulationFreqDelta+1]       H
+        ld      [IX+Track.modulationFreqDelta+0]       L
+        ld      [IX+Track.modulationFreqDelta+1]       H
         jp      @sendFrequency
     
 @_2     add     HL      DE
-        ld      [IX+%track.modulationFreq+0]    L
-        ld      [IX+%track.modulationFreq+1]    H
+        ld      [IX+Track.modulationFreq+0]    L
+        ld      [IX+Track.modulationFreq+1]    H
         ex      DE      HL
 
         ;---------------------------------------------------------------------------------------------------------------
 
 @sendFrequency
-        ld      L       [IX+%track.noteFrequencey]
-        ld      H       [IX+%track.noteFrequencey+1]
-        ld      C       [IX+%track.detune+0]
-        ld      B       [IX+%track.detune+1]
+        ld      L       [IX+Track.noteFrequencey]
+        ld      H       [IX+Track.noteFrequencey+1]
+        ld      C       [IX+Track.detune+0]
+        ld      B       [IX+Track.detune+1]
         add     HL      BC
         add     HL      DE
-        ld      A       [IX+%track.octave]
+        ld      A       [IX+Track.octave]
         and     A
         jr      z	@_4
         ld      B       A
@@ -26311,7 +26312,7 @@ doTrackSoundOut:
     
 @_4     ld      A       L
         and     %00001111
-        or      [IX+%track.channelFrequencyPSG]
+        or      [IX+Track.channelFrequencyPSG]
         out     [$sms.ports.psg]        A
         ld      A       H
         rlca    
@@ -26330,11 +26331,11 @@ doTrackSoundOut:
         out     [$sms.ports.psg]        A
     
 @sendVolume
-        ld      A       [IX+%track.fadeTicks+1]
+        ld      A       [IX+Track.fadeTicks+1]
         and     A
         jr      z	@_5
         ld      C       A
-        ld      A       [IX+%track.envelopeLevel]
+        ld      A       [IX+Track.envelopeLevel]
         and     A
         jr      z	@_5
         ld      L       A
@@ -26343,24 +26344,24 @@ doTrackSoundOut:
         rl      L
         ld      A       $00
         adc     A       H
-@_5     and     [IX+%track.effectiveVolume]
+@_5     and     [IX+Track.effectiveVolume]
         xor     %00001111
-        or      [IX+%track.channelVolumePSG]
+        or      [IX+Track.channelVolumePSG]
         out     [%sms.ports.psg]        A
         ld      A       [$.playbackMode]
         and     %00001000
         ret     z
-        ld      A       [IX+%track.id]
+        ld      A       [IX+Track.id]
         cp      $04
         ret     z
-        ld      L       [IX+%track.fadeTicks+0]
-        ld      H       [IX+%track.fadeTicks+1]
+        ld      L       [IX+Track.fadeTicks+0]
+        ld      H       [IX+Track.fadeTicks+1]
         ld      BC      [$.fadeTicksDecrement]
         sbc     HL      BC
         jr      nc	@_6
         ld      HL      $0000
-@_6     ld      [IX+%track.fadeTicks+0] L
-        ld      [IX+%track.fadeTicks+1] H
+@_6     ld      [IX+Track.fadeTicks+0] L
+        ld      [IX+Track.fadeTicks+1] H
         ret
 	;
 
@@ -26393,8 +26394,8 @@ doCommand:
 
 cmdFF_stopMusic:
 ;=======================================================================================================================
-        ld      L       [IX+%track.masterLoopAddress+0]
-        ld      H       [IX+%track.masterLoopAddress+1]
+        ld      L       [IX+Track.masterLoopAddress+0]
+        ld      H       [IX+Track.masterLoopAddress+1]
         ld      A       L
         or      H
         jr      z	cmdFE_stopSFX.stopTrack
@@ -26408,9 +26409,9 @@ cmdFE_stopSFX:
         ld      [$.SFXpriority] A
 
 @stopTrack
-        res     1   [IX+%track.flags]
+        res     1   [IX+Track.flags]
         ld      A       %00001111
-        or      [IX+%track.channelVolumePSG]
+        or      [IX+Track.channelVolumePSG]
         out     [%sms.ports.psg]        A
         ret
 	;
@@ -26442,66 +26443,66 @@ commandPointers:
 
 ADSRenvelopeAttack:
 ;=======================================================================================================================
-        ld      A       [IX+%track.attackRate]
-        add     A       [IX+%track.envelopeLevel]
+        ld      A       [IX+Track.attackRate]
+        add     A       [IX+Track.envelopeLevel]
         jp      nc	@_1
         ld      A       $FF
-@_1     ld      [IX+%track.envelopeLevel]       A
+@_1     ld      [IX+Track.envelopeLevel]       A
         jp      nc	doTrackSoundOut
-        inc     [IX+%track.ADSRstate]
+        inc     [IX+Track.ADSRstate]
         jp      doTrackSoundOut
 	;
     
 ADSRenvelopeDecay1:
 ;=======================================================================================================================
-        ld      C       [IX+%track.decay1Level]
-        ld      A       [IX+%track.envelopeLevel]
-        sub     [IX+%track.decay1Rate]
+        ld      C       [IX+Track.decay1Level]
+        ld      A       [IX+Track.envelopeLevel]
+        sub     [IX+Track.decay1Rate]
         jr      c	@_1
-        cp      [IX+%track.decay1Level]
+        cp      [IX+Track.decay1Level]
         jr      c	@_1
         ld      C       A
-@_1     ld      [IX+%track.envelopeLevel]       C
+@_1     ld      [IX+Track.envelopeLevel]       C
         jp      nc	doTrackSoundOut
-        inc     [IX+%track.ADSRstate]
+        inc     [IX+Track.ADSRstate]
         jp      doTrackSoundOut
 	;
 
 ADSRenvelopeDecay2:
 ;=======================================================================================================================
-        ld      C       [IX+%track.decay2Level]
-        ld      A       [IX+%track.envelopeLevel]
-        sub     [IX+%track.decay2Rate]
+        ld      C       [IX+Track.decay2Level]
+        ld      A       [IX+Track.envelopeLevel]
+        sub     [IX+Track.decay2Rate]
         jr      c	@_1
-        cp      [IX+%track.decay2Level]
+        cp      [IX+Track.decay2Level]
         jp      c	@_1
         ld      C       A
-@_1     ld      [IX+%track.envelopeLevel]       C
+@_1     ld      [IX+Track.envelopeLevel]       C
         jp      nc	doTrackSoundOut
-        inc     [IX+%track.ADSRstate]
+        inc     [IX+Track.ADSRstate]
         jp      doTrackSoundOut
 	;
 
 ADSRenvelopeSustain:
 ;=======================================================================================================================
-        ld      A       [IX+%track.envelopeLevel]
-        sub     [IX+%track.sustainRate]
+        ld      A       [IX+Track.envelopeLevel]
+        sub     [IX+Track.sustainRate]
         jp      nc	@_1
         ld      A       $00
-@_1     ld      [IX+%track.envelopeLevel]       A
+@_1     ld      [IX+Track.envelopeLevel]       A
         jp      nc	doTrackSoundOut
-        inc     [IX+%track.ADSRstate]
+        inc     [IX+Track.ADSRstate]
         jp      doTrackSoundOut
 	;
 
 cmd80_tempo:
 ;=======================================================================================================================
         ld      A       [DE]
-        ld      [IX+%track.tempoDivider+0]      A
+        ld      [IX+Track.tempoDivider+0]      A
         ld      [$.tickMultiplier+0]            A
         inc     DE
         ld      A       [DE]
-        ld      [IX+%track.tempoDivider+1]      A
+        ld      [IX+Track.tempoDivider+1]      A
         ld      [$.tickMultiplier+1]    A
         inc     DE
         ld      A       [DE]
@@ -26518,18 +26519,18 @@ cmd80_tempo:
 cmd81_volumeSet:
 ;=======================================================================================================================
         ld      A       [DE]
-        ld      [IX+%track.channelVolume]       A
+        ld      [IX+Track.channelVolume]       A
         inc     DE
-        ld      A       [IX+%track.id]
+        ld      A       [IX+Track.id]
         cp      $04
         jr      z	@_1
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
         
-@_1     ld      A       [IX+%track.channelVolume]
-        ld      [IX+%track.fadeTicks+1] A
-        ld      [IX+%track.fadeTicks+0] $00
+@_1     ld      A       [IX+Track.channelVolume]
+        ld      [IX+Track.fadeTicks+1] A
+        ld      [IX+Track.fadeTicks+0] $00
         jp      doUpdateTrack.trackReadLoop
 	;
     
@@ -26569,10 +26570,10 @@ cmd83_modulation:
 cmd84_detune:
 ;=======================================================================================================================
         ld      A       [DE]
-        ld      [IX+%track.detune+0]    A
+        ld      [IX+Track.detune+0]    A
         inc     DE
         ld      A       [DE]
-        ld      [IX+%track.detune+1]    A
+        ld      [IX+Track.detune+1]    A
         inc     DE
         jp      doUpdateTrack.trackReadLoop
 	;
@@ -26586,20 +26587,20 @@ cmd85_dummy:
 
 cmd86_loopStart:
 ;=======================================================================================================================
-        ld      L       [IX+%track.loopAddress+0]
-        ld      H       [IX+%track.loopAddress+1]
+        ld      L       [IX+Track.loopAddress+0]
+        ld      H       [IX+Track.loopAddress+1]
         ld      [HL]    $00
         ld      BC      $0005
         add     HL      BC
-        ld      [IX+%track.loopAddress+0]       L
-        ld      [IX+%track.loopAddress+1]       H
+        ld      [IX+Track.loopAddress+0]       L
+        ld      [IX+Track.loopAddress+1]       H
         jp      doUpdateTrack.trackReadLoop
 	;
 
 cmd87_loopEnd:
 ;=======================================================================================================================
-        ld      L       [IX+%track.loopAddress+0]
-        ld      H       [IX+%track.loopAddress+1]
+        ld      L       [IX+Track.loopAddress+0]
+        ld      H       [IX+Track.loopAddress+1]
         ld      BC      $FFFB
         add     HL      BC
         ld      A       [HL]
@@ -26620,14 +26621,14 @@ cmd87_loopEnd:
         inc     HL
         ld      H       [HL]
         ld      L       A
-        ld      C       [IX+%track.baseAddress+0]
-        ld      B       [IX+%track.baseAddress+1]
+        ld      C       [IX+Track.baseAddress+0]
+        ld      B       [IX+Track.baseAddress+1]
         add     HL      BC
         ex      DE      HL
         jp      doUpdateTrack.trackReadLoop
     
-@_2     ld      [IX+%track.loopAddress+0]       L
-        ld      [IX+%track.loopAddress+1]       H
+@_2     ld      [IX+Track.loopAddress+0]       L
+        ld      [IX+Track.loopAddress+1]       H
         inc     DE
         inc     DE
         inc     DE
@@ -26636,15 +26637,15 @@ cmd87_loopEnd:
 
 cmd88_masterLoop:
 ;=======================================================================================================================
-        ld      [IX+%track.masterLoopAddress+0] E
-        ld      [IX+%track.masterLoopAddress+1] D
+        ld      [IX+Track.masterLoopAddress+0] E
+        ld      [IX+Track.masterLoopAddress+1] D
         jp      doUpdateTrack.trackReadLoop
 	;
 
 cmd89_noiseMode:
 ;=======================================================================================================================
         ld      A       [DE]
-        ld      [IX+%track.noiseMode]   A
+        ld      [IX+Track.noiseMode]   A
         inc     DE
         jp      doUpdateTrack.trackReadLoop
 	;
@@ -26652,46 +26653,46 @@ cmd89_noiseMode:
 cmd8A_noteLength:
 ;=======================================================================================================================
         ld      A       [DE]
-        ld      [IX+%track.defaultNoteLength]   A
+        ld      [IX+Track.defaultNoteLength]   A
         inc     DE
         jp      doUpdateTrack.trackReadLoop
 	;
 
 cmd8B_volumeUp:
 ;=======================================================================================================================
-        ld      A       [IX+%track.channelVolume]
+        ld      A       [IX+Track.channelVolume]
         inc     A
         cp      $10
         jr      c	@_1
         ld      A       $0F
-@_1     ld      [IX+%track.channelVolume]       A
+@_1     ld      [IX+Track.channelVolume]       A
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
-        ld      A       [IX+%track.channelVolume]
-        ld      [IX+%track.fadeTicks+1] A
+        ld      A       [IX+Track.channelVolume]
+        ld      [IX+Track.fadeTicks+1] A
         jp      doUpdateTrack.trackReadLoop
 	;
 
 cmd8C_volumeDown:
 ;=======================================================================================================================
-        ld      A       [IX+%track.channelVolume]
+        ld      A       [IX+Track.channelVolume]
         dec     A
         cp      $10
         jr      c	@_1
         xor     A
-@_1     ld      [IX+%track.channelVolume]       A
+@_1     ld      [IX+Track.channelVolume]       A
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
-        ld      A       [IX+%track.channelVolume]
-        ld      [IX+%track.fadeTicks+1] A
+        ld      A       [IX+Track.channelVolume]
+        ld      [IX+Track.fadeTicks+1] A
         jp      doUpdateTrack.trackReadLoop
 	;
 
 cmd8D_hold:
 ;=======================================================================================================================
-        set     0   [IX+%track.flags]
+        set     0   [IX+Track.flags]
         jp      doUpdateTrack.trackReadLoop
 	;
 

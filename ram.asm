@@ -1,5 +1,5 @@
 
-.STRUCT	vars
+.STRUCT	Vars
 ;=======================================================================================================================
 /*	the original programmers used the IY register as a short-cut to $D200 to access commonly used variables and
 	flags */
@@ -7,33 +7,33 @@
 	;program flow control / loading flags?
 	flags0                          DB                      ;IY+$00
 	;---------------------------------------------------------------------------------------------------------------
-        ;waitForInterrupt               bool                    ;0 - `waitForInterrupt:` will loop until bit is set
-        ;                               bool                    ;1 - unknown (set at level load)
-        ;                               bool                    ;2 - unused?
-        ;loadPalette                    bool                    ;3 - flag to load palette on IRQ
-        ;                               bool                    ;4 - unused?
-        ;                               bool                    ;5 - unknown -- player control enabled/disabled?
-        ;cameraMoveHoriz                bool                    ;6 - set when the camera has moved left
-        ;cameraMoveVert                 bool                    ;7 - set when the camera has moved up
+		;waitForInterrupt      				;0 - `waitForInterrupt:` will loop until bit is set
+		;                      				;1 - unknown (set at level load)
+		;                      				;2 - unused?
+		;loadPalette           				;3 - flag to load palette on IRQ
+		;                      				;4 - unused?
+		;                      				;5 - unknown -- player control enabled/disabled?
+		;cameraMoveHoriz       				;6 - set when the camera has moved left
+		;cameraMoveVert        				;7 - set when the camera has moved up
 	
 	temp                            DB                    	;IY+$01
 	;this is used only as the comparison byte in `loadFloorLayout:`
 	
 	flags2                          DB                      ;IY+$02
 	;---------------------------------------------------------------------------------------------------------------
-        ;                               bool                    ;0 - unknown
-        ;                               bool                    ;1 - unknown
-        ;                               bool                    ;2 - unknown
+		;                                               ;0 - unknown
+		;                                               ;1 - unknown
+		;                                               ;2 - unknown
 	
 	joypad                          DB                      ;IY+$03
 	;Value of joypad port 1 - the bits are 1 for unpressed and 0 for pressed
 	;---------------------------------------------------------------------------------------------------------------
-        ;pad1up                         bool                    ;0 - joypad 1 up
-        ;pad1down                       bool                    ;1 - joypad 1 down
-        ;pad1left                       bool                    ;2 - joypad 1 left
-        ;pad1right                      bool                    ;3 - joypad 1 right
-        ;pad1A                          bool                    ;4 - joypad button A
-        ;pad1B                          bool                    ;5 - joypad button B
+		;pad1up                                         ;0 - joypad 1 up
+		;pad1down                                       ;1 - joypad 1 down
+		;pad1left                                       ;2 - joypad 1 left
+		;pad1right                                      ;3 - joypad 1 right
+		;pad1A                                          ;4 - joypad button A
+		;pad1B                                          ;5 - joypad button B
 	
 	unused                          DB                    	;IY+$04
 	;This does not appear referenced in any code
@@ -41,51 +41,51 @@
 	scrollRingFlags                 DB                      ;IY+$05
 	;Taken from the level header, this controls screen scrolling and the presence of the "rings" count on the HUD
 	;---------------------------------------------------------------------------------------------------------------
-        ;dead                           bool                    ;0 - death flag
-        ;demo                           bool                    ;1 - demo mode
-        ;rings                          bool                    ;2 - ring count displayed in HUD, visible in the level
-        ;scrollRight                    bool                    ;3 - automatic scrolling to the right
-        ;scrollUp                       bool                    ;4 - automatic scrolling upwards
-        ;scrollSmooth                   bool                    ;5 - smooth scrolling
-        ;scrollWave                     bool                    ;6 - up and down wave scrolling
-        ;noScrollDown                   bool                    ;7 - screen does not scroll down
+		;dead                                           ;0 - death flag
+		;demo                                           ;1 - demo mode
+		;rings                                          ;2 - ring count displayed in HUD, visible in the level
+		;scrollRight                                    ;3 - automatic scrolling to the right
+		;scrollUp                                       ;4 - automatic scrolling upwards
+		;scrollSmooth                                   ;5 - smooth scrolling
+		;scrollWave                                     ;6 - up and down wave scrolling
+		;noScrollDown                                   ;7 - screen does not scroll down
 	
 	flags6                          DB                      ;IY+$06
 	;---------------------------------------------------------------------------------------------------------------
-        ;                               bool                    ;0 - make Sonic upside down! (incomplete functionality)
-        ;                               bool                    ;1 - disable controls
-        ;                               bool                    ;2 - unknown
-        ;                               bool                    ;3 - clock is active when set
-        ;                               bool                    ;4 - unknown
-        ;                               bool                    ;5 - shield active
-        ;                               bool                    ;6 - Sonic is in damage state
-        ;                               bool                    ;7 - level underwater flag (enables water line)
+		;                                               ;0 - make Sonic upside down! (incomplete functionality)
+		;                                               ;1 - disable controls
+		;                                               ;2 - unknown
+		;                                               ;3 - clock is active when set
+		;                                               ;4 - unknown
+		;                                               ;5 - shield active
+		;                                               ;6 - Sonic is in damage state
+		;                                               ;7 - level underwater flag (enables water line)
 	
 	timeLightningFlags              DB                       ;IY+$07
 	;Taken from the level header, this controls the presence of the time on the HUD
 	;and if the lightning effect is in use
 	;---------------------------------------------------------------------------------------------------------------
-        ;                               bool                    ;0 - centres the time in the screen on special stages
-        ;                               bool                    ;1 - enables the lightning effect
-        ;                               bool                    ;2 - unknown
-        ;                               bool                    ;3 - unknown
-        ;                               bool                    ;4 - use boss underwater palette (Labyrinth Act 3)
-        ;                               bool                    ;5 - time is displayed in the HUD
-        ;                               bool                    ;6 - locks the screen, no scrolling
-        ;                               bool                    ;7 - is special stage?
+		;                                               ;0 - centres the time in the screen on special stages
+		;                                               ;1 - enables the lightning effect
+		;                                               ;2 - unknown
+		;                                               ;3 - unknown
+		;                                               ;4 - use boss underwater palette (Labyrinth Act 3)
+		;                                               ;5 - time is displayed in the HUD
+		;                                               ;6 - locks the screen, no scrolling
+		;                                               ;7 - is special stage?
 	
 	unknown0                        DB                      ;IY+$08
 	;Part of the level header -- always "0" for all levels, but unknown function
 	;---------------------------------------------------------------------------------------------------------------
-        ;                               bool                    ;0 - unused
-        ;                               bool                    ;1 - unknown, set at "._4e88"
+		;                                               ;0 - unused
+		;                                               ;1 - unknown, set at "._4e88"
 	
 	flags9                          DB                      ;IY+$09
 	;---------------------------------------------------------------------------------------------------------------
-        ;                               bool                    ;0 - unknown
-        ;                               bool                    ;1 - enables interrupts during `decompressArt`
-        ;                               bool                    ;2 - set when special stage timer reaches zero
-        ;                               bool                    ;3 - unknown -- reset at ":_1719"
+		;                                               ;0 - unknown
+		;                                               ;1 - enables interrupts during `decompressArt`
+		;                                               ;2 - set when special stage timer reaches zero
+		;                                               ;3 - unknown -- reset at ":_1719"
 	
 	spriteUpdateCount               DB                    	;IY+$0A, # sprites requiring updates
 	origScrollRingFlags             DB                    	;IY+$0B, copy made during level loading UNUSED
@@ -93,6 +93,42 @@
 	
 	;currently unknown purpose
 	unknown_0D                      DB                    	;IY+$0D
+.ENDST
+
+.STRUCT Mob							;26 bytes
+;=======================================================================================================================
+/*	The data-structure for a mob (Movable Object Block); the game's interactive objects and enemies.
+	*/     
+	type                           	DB                   	;IX+$00    - the object type index number
+	Xsubpixel                      	DB                   	;IX+$01    - sub-pixel accuracy of X position
+	X                              	DW                   	;IX+$02/03 - in px
+	Ysubpixel                      	DB                   	;IX+$04    - sub-pixel accuracy of Y position
+	Y                              	DW                   	;IX+$05/06 - in px
+	Xspeed                         	DW                   	;IX+$07/08 - in px, signed (i.e. $F??? = left)
+	Xdirection                     	DB                   	;IX+$09    - $FF for left, else $00
+	Yspeed                         	DW                   	;IX+$0A/0B - in px, signed  (i.e. $F??? = up)
+	Ydirection                     	DB                   	;IX+$0C    - $FF for up, else $00
+	width                          	DB                   	;IX+$0D    - in px
+	height                         	DB                   	;IX+$0E    - in px
+	spriteLayout                   	DW                   	;IX+$0F/10 - address to current sprite layout
+	unknown11                      	DB    
+	unknown12                      	DB    
+	unknown13                      	DB    
+	unknown14                      	DB    
+	unknown15                      	DB    
+	unknown16                      	DB    
+	unknown17                      	DB    
+	flags                          	                        ;various mob flags
+		;unknown0              	
+		;unknown1              	
+		;unknown2              	
+		;unknown3              	
+		;underwater            	            		;4 - underwater flag
+		;noCollision           	            		;5 - whether the mob adheres to the floor or not
+		;unknown6              	
+		;unknown7              	
+		;
+	unknown19                      	DB                    	;unused?
 .ENDST
 
 ;name                                   size                    note                                            addr
@@ -116,7 +152,7 @@
 	;throughout the codebase, IY is used as a shorthand to $D200 where many commonly used RAM variables exist.
 	;therefore these use the `[IY`vars+vars.abc]` form of addressing. for the sake of completeness, we'll also
 	;define the absolute location of these variables too, i.e. `VARS.abc`
-	VARS                            INSTANCEOF vars                                                         ;[$D200]
+	VARS                            INSTANCEOF Vars                                                         ;[$D200]
 
 	;these temporary variables are reused throughout, some times for passing extra parameters
 	;to a function and sometimes as extra working space within a function
@@ -415,4 +451,33 @@
 	PALETTE                         DSB 32                                                              	;[$D3BC]
 	
 	D3DE                            DSB 32                	;UNUSED                                       	;[$D3DE]
+
+	;mobs: the 32 mobs in the level begin here:
+
+	;the player is a mob like any other and has reserved parameters in memory
+	SONIC                          	INSTANCEOF Mob								;[$D3FC]
+					;.type                                                                 	;[$D3FC]
+					;.Xsubpixel                                                            	;[$D3FD]
+					;.X                                                                    	;[$D3FE]
+					;.Ysubpixel                                                            	;[$D400]
+					;.Y                                                                    	;[$D401]
+					;.Xspeed                                                               	;[$D403]
+					;.Xdirection                                                           	;[$D405]
+					;.Yspeed                                                               	;[$D406]
+					;.Ydirecton                                                            	;[$D408]
+					;.width                                                                	;[$D409]
+					;.height                                                               	;[$D40A]
+					;.spriteLayout                                                         	;[$D40B]
+					;.unknown11                                                            	;[$D40D]
+					;.unknown12                                                            	;[$D40E]
+					;.unknown13                                                            	;[$D40F]
+					;.unknown14                                                            	;[$D410]
+					;.unknown15                                                            	;[$D411]
+					;.unknown16                                                            	;[$D412]
+					;.unknown17                                                            	;[$D413]
+					;.flags                                                                	;[$D414]
+					;.unknown19                                                            	;[$D415]
+                    
+	;remaining 31 mobs are here
+	MOBS                           	INSTANCEOF Mob 31                                        	;[$D416]-[$D73C]
 .ENDS
