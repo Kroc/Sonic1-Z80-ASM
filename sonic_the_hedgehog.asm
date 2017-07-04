@@ -1,7 +1,7 @@
 ;this is the Sonic 1 Master System dissasembly formatted in my failed assembler syntax,
 ;we shall progressively be converting this back to WLA DX syntax with much, much regex.
 
-START:                                                                                                          ;$0000
+start:                                                                                                          ;$0000
 ;=======================================================================================================================
 @origin $0000
 	;---------------------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ rst_playSFX:                                                                    
         jp      call_playSFX
 	;
 	
-IRQ:                                                                                                            ;$0038
+irq:                                                                                                            ;$0038
 ;=======================================================================================================================
 ```	Every 1/50th (PAL) or 1/60th (NTSC) of a second, an interrupt is generated and control passes here.
         There's only a small amount of space between this routine and the pause handler, so we just jump to the
@@ -182,7 +182,7 @@ interruptHandler:                                                               
         in      A`reset         [%sms.ports.joy.b]              ;read 2nd joypad port which has extra
                                                                 ;bits for lightgun / reset button
         and     %00010000                                       ;check bit 4
-        jp      z       START                                  ;reset!
+        jp      z       start                                  	;reset!
         
         ;---------------------------------------------------------------------------------------------------------------
         
