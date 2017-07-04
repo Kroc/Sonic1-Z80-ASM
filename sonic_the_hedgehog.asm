@@ -10,7 +10,7 @@ start:                                                                          
                                                                 ;$0038 will be called at 50/60Hz
     
 @wait   ;wait for the scanline to reach 176 (no idea why)
-        in      A`scanline      [%sms.ports.scanline]
+        in      A`scanline      [sms.ports.scanline]
         cp      176
         jr      nz	@wait
         
@@ -97,7 +97,7 @@ interruptHandler:                                                               
         push    AF  HL  DE  BC
         
         ;get the status of the VDP (the Master System's GPU)
-        in      A`vdpStatus     [%sms.ports.vdp.control]
+        in      A`vdpStatus     [sms.ports.vdp.control]
         
         bit     7       [IY`vars+Vars.flags6]                  ;check the underwater flag
         jr      z	@_1                                     ;if off, skip ahead
@@ -128,16 +128,16 @@ interruptHandler:                                                               
         ;set the line interrupt to fire at line 10 (top of the screen),
         ;we will then set another interrupt to fire where we want the split to occur
         ld      A`vdpData                       10
-        out     [%sms.ports.vdp.control]        A`vdpData
+        out     [sms.ports.vdp.control]        A`vdpData
         ld      A`vdpControl                    !VDP_REGISTER_10
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         ;enable line interrupt IRQs (bit 5 of VDP register 0)
         ld      A`vdpData [$.VDPREGISTER_0]
         or      %00010000                                       ;set bit 5
-        out     [%sms.ports.vdp.control]        A`vdpData
+        out     [sms.ports.vdp.control]        A`vdpData
         ld      A`vdpControl                    !VDP_REGISTER_0
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         ;initialise the step counter for the water line raster split
         ld      A`counter               3
@@ -166,7 +166,7 @@ interruptHandler:                                                               
 	.IFDEF OPTION_AUDIO
 		;switch in the music engine & data
 		ld	A`bank			\\sound@bank
-		ld      [%sms.mapper.slot1]     A`bank
+		ld      [sms.mapper.slot1]     A`bank
 		ld      [$.SLOT1]               A`bank
 		;process the audio for this frame
 		call    \\sound\update
@@ -179,7 +179,7 @@ interruptHandler:                                                               
         call    \\math\_LABEL_625_57
         
         ;check for the reset button
-        in      A`reset         [%sms.ports.joy.b]              ;read 2nd joypad port which has extra
+        in      A`reset         [sms.ports.joy.b]              ;read 2nd joypad port which has extra
                                                                 ;bits for lightgun / reset button
         and     %00010000                                       ;check bit 4
         jp      z       start                                  	;reset!
@@ -188,7 +188,7 @@ interruptHandler:                                                               
         
         ;return pages 1 & 2 to the banks before we started messing around here
         pop     HL`banks
-        ld      [%sms.mapper.slot1]     HL`banks
+        ld      [sms.mapper.slot1]     HL`banks
         ld      [$.SLOT1]               HL`banks
         
         ;pull everything off the stack so that the code that
@@ -207,22 +207,22 @@ interruptHandler:                                                               
         ;blank the screen (remove bit 6 of VDP register 1)
         ld      A`vdpData       [$.VDPREGISTER_1]               ;get our cache value from RAM
         and     %10111111                                       ;remove bit 6
-        out     [%sms.ports.vdp.control]        A`vdpData       ;write the value,
+        out     [sms.ports.vdp.control]        A`vdpData       ;write the value,
         ld      A`vdpControl                    !VDP_REGISTER_1 ;followed by the register number
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         ;horizontal scroll:
         ld      A`vdpData       [$.VDPSCROLL_HORZ]
         neg                                                     ;I don't understand the reason for this
-        out     [%sms.ports.vdp.control]        A`vdpData
+        out     [sms.ports.vdp.control]        A`vdpData
         ld      A`vdpControl                    !VDP_REGISTER_8
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         ;vertical scroll:
         ld      A`vdpData                       [$.VDPSCROLL_VERT]
-        out     [%sms.ports.vdp.control]        A`vdpData
+        out     [sms.ports.vdp.control]        A`vdpData
         ld      A`vdpControl                    !VDP_REGISTER_9
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         bit     5       [IY`vars+Vars.flags0]                    
         call    nz      \\floors\fillScrollTiles
@@ -233,16 +233,16 @@ interruptHandler:                                                               
         ;turn the screen back on 
         ;(or if it was already blank before this function, leave it blank)
         ld      A`vdpData                       [$.VDPREGISTER_1]
-        out     [%sms.ports.vdp.control]        A`vdpData
+        out     [sms.ports.vdp.control]        A`vdpData
         ld      A`vdpControl                    !VDP_REGISTER_1
-        out     [%sms.ports.vdp.control]        A`vdpControl
+        out     [sms.ports.vdp.control]        A`vdpControl
         
         ;TODO: set these bank numbers according to the data location
         ld      A`bank                  8                       ;Sonic sprites?
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  9
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ;does the Sonic sprite need updating?
@@ -252,7 +252,7 @@ interruptHandler:                                                               
         
         ;TODO: set these bank numbers according to the data location
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
         ld      [$sms.mapper.slot2]     A`bank
@@ -286,10 +286,10 @@ loadPaletteFromInterrupt:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ;if the level is underwater then skip loading the palette as the palettes
@@ -324,10 +324,10 @@ _LABEL_1A0_18:                                                                  
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ;TODO: set these bank numbers according to the data location
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ;this seems quite pointless but could do with
@@ -411,16 +411,16 @@ doRasterSplit:                                                                  
         dec     A`step
         ld      [$.RASTERSPLIT_STEP]    A`step
         
-        in      A`scanline          [%sms.ports.scanline]
+        in      A`scanline          [sms.ports.scanline]
         ld      C`scanline          A`scanline
         ld      A`split             [$.RASTERSPLIT_LINE]
         sub     C`scanline                                      ;work out the difference
         
         ;set VDP register 10 with the scanline number to interrupt at next
         ;(that is, set the next interrupt to occur at the water line)
-        out     [%sms.ports.vdp.control]        A`scanline
+        out     [sms.ports.vdp.control]        A`scanline
         ld      A`register                      !VDP_REGISTER_10
-        out     [%sms.ports.vdp.control]        A`register
+        out     [sms.ports.vdp.control]        A`register
         
         jp      @_3
         
@@ -438,9 +438,9 @@ doRasterSplit:                                                                  
         
         ;set the VDP to point at the palette
         ld      A                               $00
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               %11000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
         ld      B       16
         ld      HL      underwaterPalette
@@ -455,21 +455,21 @@ doRasterSplit:                                                                  
 
         ;copy the palette into the VDP
 @loop   ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         
         nop
         
         ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         djnz    @loop
         
         ld      A       [$.VDPREGISTER_0]
         and     %11101111                                       ;remove bit 4: disable line interrupts
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               !VDP_REGISTER_0
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
 @_3     pop     BC  DE  HL  AF
         ei
@@ -499,16 +499,16 @@ init:                                                                           
         ;---------------------------------------------------------------------------------------------------------------
         
         ;tell the SMS the cartridge has no RAM and to use ROM banking
-        ld      A                       %10000000               ;%sms.mapper.control.writeProtect@mask
-        ld      [%sms.mapper.control]   A
+        ld      A                       %10000000               ;sms.mapper.control.writeProtect@mask
+        ld      [sms.mapper.control]   A
         ;load banks 0, 1 & 2 of the ROM into the address space
         ;($0000-$BFFF of the address space will be mapped to $0000-$BFFF of this ROM)
         ld      A`bank                  0
-        ld      [%sms.mapper.slot0]     A`bank
+        ld      [sms.mapper.slot0]     A`bank
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         
         ;empty the RAM!
         ld      HL              $.FLOORLAYOUT                   ;starting from $C000,
@@ -530,11 +530,11 @@ init:                                                                           
         ld      [DE]            A                               ;copy to RAM
         inc     HL                                              ;move to the next byte
         inc     DE
-        out     [%sms.ports.vdp.control]        A               ;send the VDP lo-byte
+        out     [sms.ports.vdp.control]        A               ;send the VDP lo-byte
         ld      A               C                               ;Load A with #$8B
         sub     B                                               ;subtract B from A (B is decreasing),
                                                                 ;so A will count from #$80 to #8A
-        out     [%sms.ports.vdp.control]        A               ;send the VDP hi-byte
+        out     [sms.ports.vdp.control]        A               ;send the VDP hi-byte
         djnz    @loop                                           ;loop until B has reached 0
         
         ;move all sprites off the bottom of the screen!
@@ -569,14 +569,14 @@ call_playMusic:													;$02D7
         
         ;switch page 1 (Z80:$4000-$7FFF) to bank 3 ($C000-$FFFF)
         ld      A`bank			\playMusic@bank
-        ld      [%sms.mapper.slot1]	A`bank			;TODO: get slot number from module?
+        ld      [sms.mapper.slot1]	A`bank			;TODO: get slot number from module?
         
         pop     AF`songIndex
         ld      [$.PREVIOUS_MUSIC]      A`songIndex
         call    \playMusic
         
         ld      A`bank                  [$.SLOT1]
-        ld      [%sms.mapper.slot1]	A`bank			;TODO: get slot number from module?
+        ld      [sms.mapper.slot1]	A`bank			;TODO: get slot number from module?
         
         ei                                                      ;enable interrupts
         ret
@@ -592,10 +592,10 @@ call_muteSound:                                                                 
         
         ;switch page 1 (Z80:$4000-$7FFF) to bank 3 (ROM:$0C000-$0FFFF)
         ld      A`bank			\@bank
-        ld      [%sms.mapper.slot1]    	A`bank
+        ld      [sms.mapper.slot1]    	A`bank
         call    \stop
         ld      A`bank                  [$.SLOT1]
-        ld      [%sms.mapper.slot1]    	A`bank
+        ld      [sms.mapper.slot1]    	A`bank
         
         ei                                                      ;enable interrupts
         ret
@@ -612,13 +612,13 @@ call_playSFX:                                                                   
         push    AF`SFXIndex
         
         ld      A`bank			\@bank
-        ld      [%sms.mapper.slot1]    	A`bank
+        ld      [sms.mapper.slot1]    	A`bank
         
         pop     AF`SFXIndex
         call    \playSFX
         
         ld      A`bank                  [$.SLOT1]
-        ld      [%sms.mapper.slot1]    	A`bank
+        ld      [sms.mapper.slot1]    	A`bank
         
         ei
         ret
@@ -699,11 +699,11 @@ updateVDPSprites:                                                               
         ;sprite Y positions:
         
         ;set the VDP address to $3F00 (Sprite Attribute Table, Y-positions)
-        ld      A`yPositionsLO  ?< %sms.vram.sprites.yPositions ;=$3F00
-        out     [%sms.ports.vdp.control]        A`yPositionsLO  ;write the low-byte first
-        ld      A`yPositionsHI  ?> %sms.vram.sprites.yPositions ;=$3F00
+        ld      A`yPositionsLO  ?< sms.vram.sprites.yPositions ;=$3F00
+        out     [sms.ports.vdp.control]        A`yPositionsLO  ;write the low-byte first
+        ld      A`yPositionsHI  ?> sms.vram.sprites.yPositions ;=$3F00
         or      %01000000                                       ;add bit 6 to mark a VRAM address being given
-        out     [%sms.ports.vdp.control]        A`yPositionsHI  ;write the high-byte, with the 'address flag'
+        out     [sms.ports.vdp.control]        A`yPositionsHI  ;write the high-byte, with the 'address flag'
         
         ld      B       [IY`vars+Vars.spriteUpdateCount]
         ld      HL      $.SPRITETABLE+1                         ;Y-position of the first sprite
@@ -715,7 +715,7 @@ updateVDPSprites:                                                               
 
         ;set sprite Y-positions:
 @yLoop  ld      A       [HL]                                    ;get the sprite's Y-position from RAM
-        out     [%sms.ports.vdp.data]   A                       ;set the sprite's Y-position in the hardware
+        out     [sms.ports.vdp.data]   A                       ;set the sprite's Y-position in the hardware
         add     HL      DE                                      ;move to the next sprite
         djnz    @yLoop
         
@@ -737,7 +737,7 @@ updateVDPSprites:                                                               
         
         ;move remaining sprites off screen
 @yOff   ld      A                       !SMS.SCREEN.HEIGHT      ;=224
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         djnz    @yOff
         
         ;sprite X positions / indexes:
@@ -751,17 +751,17 @@ updateVDPSprites:                                                               
         
         ;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
         ld      A       ?< $3F80
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       ?> $3F80
         or      %01000000                                       ;add bit 6 to mark an address is given
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
 @xLoop  ld      A       [HL]                                    ;set the sprite X-position
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     L                                               ;skip Y-position
         inc     L                               
         ld      A       [HL]                                    ;set the sprite index number
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     L
         djnz    @xLoop
 
@@ -783,14 +783,14 @@ unused_0397:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         di      
         ld      A                               E
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               D
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ei      
 
 @loop   ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         
         dec     BC
@@ -812,19 +812,19 @@ unused_03ac:                                                                    
 
         ;set the VDP address using DE
         ld      A                               E
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               D
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
         pop     AF
         ld      DE      [$.SLOT1]
         push    DE
         
-        ld      [%sms.mapper.slot1]     A
+        ld      [sms.mapper.slot1]     A
         ld      [$.SLOT1]               A
         inc     A
-        ld      [%sms.mapper.slot2]     A
+        ld      [sms.mapper.slot2]     A
         ld      [$.SLOT2]               A
         ei
 
@@ -835,7 +835,7 @@ unused_03ac:                                                                    
 @_2     ld      A       [HL]
         cp      E
         jr      z       @_3
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         ld      E       A
         inc     HL
         dec     BC
@@ -853,7 +853,7 @@ unused_03ac:                                                                    
         ld      A       D
         ld      E       [HL]
 
-@_4     out     [%sms.ports.vdp.data]   A
+@_4     out     [sms.ports.vdp.data]   A
         dec     E
         nop     
         nop     
@@ -872,9 +872,9 @@ unused_03ac:                                                                    
         pop     DE`banks
         ld      [$.SLOT1]               DE`banks                ;restore our copy of the bank numbers
         ld      A`banks                 E`banks
-        ld      [%sms.mapper.slot1]     A`banks                 ;restore Slot 1
+        ld      [sms.mapper.slot1]     A`banks                 ;restore Slot 1
         ld      A`banks                 D`banks
-        ld      [%sms.mapper.slot2]     A`banks                 ;restore Slot 2
+        ld      [sms.mapper.slot2]     A`banks                 ;restore Slot 2
                                              
         
         ;enable interrupts and return
@@ -905,11 +905,11 @@ decompressArt:                                                                  
         ;is the HL parameter address below the $40xx range?
         ;-- that is, does the relative address extend into the second page?
         ld      A`dataAddr      H`dataAddr
-        cp      ?> %sms.slot1@size                              ;=$4000
+        cp      ?> sms.slot1@size                              ;=$4000
         jr      c       @_2
         
         ;remove $40xx (e.g. so $562B becomes $162B)
-        sub     ?> %sms.slot1@size                              ;=$4000
+        sub     ?> sms.slot1@size                              ;=$4000
         ld      H`dataAddr      A`dataAddr
         
         ;restore the A parameter (the starting bank number) and increase it so that
@@ -923,12 +923,12 @@ decompressArt:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         
 @_2     ld      A       E                                       ;VDP value byte from the E parameter
-        out     [%sms.ports.vdp.control]        A               ;send to the VDP
+        out     [sms.ports.vdp.control]        A               ;send to the VDP
         
         ld      A       D
         or      %01000000                                       ;add bit 7 (that is, convert A to
                                                                 ;a VDP control register number)
-        out     [%sms.ports.vdp.control]        A               ;send it to the VDP
+        out     [sms.ports.vdp.control]        A               ;send it to the VDP
         
         ;switch banks:
         ;---------------------------------------------------------------------------------------------------------------
@@ -936,7 +936,7 @@ decompressArt:                                                                  
         pop     AF`bank                                         ;restore the A parameter
         
         ;add $4000 to the HL parameter to re-base it for page 1 (Z80:$4000-$7FFF)
-        ld      DE      %sms.slot1                              ;=$4000
+        ld      DE      sms.slot1                              ;=$4000
         add     HL      DE
         
         ;stash the current page 1/2 bank numbers cached in RAM
@@ -944,10 +944,10 @@ decompressArt:                                                                  
         push    DE
         
         ;change pages 1 & 2 (Z80:$4000-$BFFF) to banks A & A+1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         inc     A`bank
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ;read art header:
@@ -1071,22 +1071,22 @@ decompressArt:                                                                  
         
         ;write 1 row of pixels (4 bytes) to the VDP
         ld      A                       [BC']
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     BC'
         nop
         nop
         ld      A                       [BC']
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     BC'
         nop
         nop
         ld      A                       [BC']
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     BC'
         nop
         nop
         ld      A                       [BC']
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     BC'
         
         ;swap BC/DE/HL back again
@@ -1140,22 +1140,22 @@ decompressArt:                                                                  
         
         ;write 1 row of pixels (4 bytes) to the VDP
         ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         nop
         nop
         ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         nop
         nop
         ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         nop
         nop
         ld      A                       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         
         ;decrease the remaining row count
@@ -1172,7 +1172,7 @@ decompressArt:                                                                  
 @_6     ;restore the pages to the original banks at the beginning of the procedure
         pop     DE`banks
         ld      [$.SLOT1]               DE`banks
-        ld      [%sms.mapper.slot1]     DE`banks
+        ld      [sms.mapper.slot1]     DE`banks
         
         ei
         res     1       [IY`vars + Vars.flags9]
@@ -1204,12 +1204,12 @@ decompressScreen:                                                               
         
         ;configure the VDP based on the DE parameter
         ld      A`vdpValue                      E`vdpValue
-        out     [%sms.ports.vdp.control]        A`vdpValue
+        out     [sms.ports.vdp.control]        A`vdpValue
         
         ;add bit 7 (that is, convert A to a VDP control register number)
         ld      A`vdpRegister                   D`vdpRegister
         or      %01000000
-        out     [%sms.ports.vdp.control]       A`vdpRegister
+        out     [sms.ports.vdp.control]       A`vdpRegister
         
         ei                                                      ;enable interrupts
         
@@ -1230,11 +1230,11 @@ decompressScreen:                                                               
         
         ;uncompressed byte:
         ;---------------------------------------------------------------------------------------------------------------
-        out     [%sms.ports.vdp.data]   A                       ;send the tile to the VDP
+        out     [sms.ports.vdp.data]   A                       ;send the tile to the VDP
         ld      E                       A                       ;update the current byte being compared
         ld      A                       [$.TEMP1]               ;get the upper byte for the tiles
                                                                 ;(foreground / background / flip)
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         
         inc     HL                                              ;move to the next byte
         dec     BC                                              ;decrease the remaining bytes to read
@@ -1259,10 +1259,10 @@ decompressScreen:                                                               
         jr      z	@multiSkip
         
         ;repeat the byte
-@_4     out     [%sms.ports.vdp.data]   A
+@_4     out     [sms.ports.vdp.data]   A
         push    AF
         ld      A       [$.TEMP1]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         pop     AF
         dec     E
         jp      nz	@_4
@@ -1282,11 +1282,11 @@ decompressScreen:                                                               
         ;---------------------------------------------------------------------------------------------------------------
 @skip
         ld      E       A
-        in      A       [%sms.ports.vdp.data]
+        in      A       [sms.ports.vdp.data]
         nop
         inc     HL
         dec     BC
-        in      A       [%sms.ports.vdp.data]
+        in      A       [sms.ports.vdp.data]
         
         ld      A       B
         or      C
@@ -1298,10 +1298,10 @@ decompressScreen:                                                               
         ;---------------------------------------------------------------------------------------------------------------
         
 @multiSkip
-        in      A       [%sms.ports.vdp.data]
+        in      A       [sms.ports.vdp.data]
         push    AF
         pop     AF
-        in      A       [%sms.ports.vdp.data]
+        in      A       [sms.ports.vdp.data]
         nop
         dec     E
         jp      nz	@multiSkip
@@ -1350,9 +1350,9 @@ loadPalette:                                                                    
         
 @sendPalette
         ld      A       C                                       ;send palette index number to begin at
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       %11000000                               ;specify palette operation (bits 7 & 6)
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
 	;TODO: this can be unrolled into `outi`s to go faster
 	ld      C       $BE                                     ;send the colours to the palette
@@ -1372,13 +1372,13 @@ clearVRAM:                                                                      
         ;---------------------------------------------------------------------------------------------------------------
         ld      E`value             A`value                     ;temporarily shift the value to E
         ld      A                   L
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                   H
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
 @loop   ld      A`value         E`value                         ;return the value to A
-        out     [%sms.ports.vdp.data]   A`value                 ;send it to the VDP
+        out     [sms.ports.vdp.data]   A`value                 ;send it to the VDP
         
         dec     BC`size
         ld      A`size  B`size
@@ -1393,7 +1393,7 @@ readJoypad:                                                                     
 ;return $.VARS.joypad
         ;---------------------------------------------------------------------------------------------------------------
         
-        in      A`joypad        [%sms.ports.joy.a]              ;read the joypad port
+        in      A`joypad        [sms.ports.joy.a]              ;read the joypad port
         or      %11000000                                       ;mask out bits 7 & 6 -
                                                                 ;these are joypad 2 down / up
         ld      [IY`vars+Vars.joypad]  A                       ;store the joypad value in $D203
@@ -1433,16 +1433,16 @@ print:                                                                          
         ex      DE      HL
         sla     C                                               ;multiply column by 2 (16-bit values)
         add     HL      BC
-        ld      BC      %sms.vram.screen
+        ld      BC      sms.vram.screen
         add     HL      BC
         
         ;set the VDP to point to the screen address calculated
         di
         ld      A       L
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       H
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ei
 
         ;read bytes from memory until hitting $FF
@@ -1450,12 +1450,12 @@ print:                                                                          
         cp      $FF
         ret     z
         
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         push    AF                                              ;kill time?
         pop     AF
         ld      A       [$.TEMP1]                               ;what to use as the tile upper bits
                                                                 ;(front/back, flip &c.)
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         djnz    @loop
         
@@ -1736,10 +1736,10 @@ fillOverscrollCache:                                                            
         di
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
         ld      A`bank                  :blocksS1_BlockMappings@bank
-        ld      [%sms.mapper.slot1]    A`bank
+        ld      [sms.mapper.slot1]    A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  :blocksS1_BlockMappings@bank+1
-        ld      [%sms.mapper.slot2]    A`bank
+        ld      [sms.mapper.slot2]    A`bank
         ld      [$.SLOT2]               A`bank
         ei
         
@@ -2009,7 +2009,7 @@ fillScrollTiles:                                                                
         ;to the top-left corner of the visible portion (the screen)
         
         ;add the VRAM base address to make an absolute address in VRAM
-        ld      HL'     %sms.vram.screen
+        ld      HL'     sms.vram.screen
         add     HL'     BC'                                     ;offset to top of the column needed
         set     6       H'                                      ;add bit 6 as a VDP VRAM address
         
@@ -2042,9 +2042,9 @@ fillScrollTiles:                                                                
         ;that is, the tile beginning in the top-left corner of the screen
 @_2     exx
         ld      A                               L'
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               H'
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
         ;move to the next row
         add     HL'     BC'
@@ -2100,7 +2100,7 @@ fillScrollTiles:                                                                
         srl     A
         add     A       C
         ld      C       A
-        ld      HL      %sms.vram.screen
+        ld      HL      sms.vram.screen
         add     HL      BC
         set     6       H
         ex      DE      HL
@@ -2119,11 +2119,11 @@ fillScrollTiles:                                                                
         and     %11000000
         ld      [$.TEMP1]       A
         ld      A               E
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         and     %00111111
         ld      E       A
         ld      A       D
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      B       $3E
         ld      C       $BE
 
@@ -2138,9 +2138,9 @@ fillScrollTiles:                                                                
         ret
 
 @_8     ld      A                               [$.TEMP1]
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A                               D
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
 @_9     outi
         outi
@@ -2281,17 +2281,17 @@ fillScreenWithFloorLayout:                                                      
         
         ;page in the Block Mappings, these are the 4x4 tile combinations that make up the Floor / Level
         ld      A`bank                  :blocksS1_BlockMappings@bank
-        ld      [%sms.mapper.slot1]    A`bank
+        ld      [sms.mapper.slot1]    A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  :blocksS1_BlockMappings@bank + 1
-        ld      [%sms.mapper.slot2]    A`bank
+        ld      [sms.mapper.slot2]    A`bank
         ld      [$.SLOT2]               A`bank
         
         ld      BC      $0000
         call    getFloorLayoutRAMPosition
         
         ;---------------------------------------------------------------------------------------------------------------
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ;in 192-line mode the screen is 6 blocks tall,
         ;in 224-line mode it's 7 blocks tall
         ld      B       !SMS.SCREEN.HEIGHT.BLOCKS
@@ -2356,52 +2356,52 @@ fillScreenWithFloorLayout:                                                      
         
         ;set the screen name address
 @_3     ld      A                               L
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       H
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         
         exx
         ld      A       C'
         exx
         
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         
         exx
         ld      A       C'
         exx
         
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         
         exx
         ld      A       C'
         exx
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         
         exx
         ld      A       C'
         exx
         
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         ld      A       B
         ld      BC      64
         add     HL      BC
@@ -2500,10 +2500,10 @@ fadeOut:                                                                        
         ;switch in the default set of banks as palette data is primarily in bank 0 & 1, 
         ;though I am not certain about bank 2 (where the majority of the mob code is)
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ld      A       [IY`vars+Vars.spriteUpdateCount]
@@ -2599,14 +2599,14 @@ _aae:                                                                           
         
         ld      HL      [$.LOADPALETTE_TILE]
         ld      DE      $.PALETTE
-        ld      BC      %sms.palettes@size                      ;=32
+        ld      BC      sms.palettes@size                      ;=32
         ldir
         
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ;switch to using the temporary palette on screen
@@ -2710,7 +2710,7 @@ _b50:                                                                           
         ld      HL      $.PALETTE                               ;RAM cache of current palette
         
         ;erase the current palette
-        ld      B       %sms.palettes@size                      ;32 colours
+        ld      B       sms.palettes@size                      ;32 colours
 @loop   ld      [HL]    $00                                     ;set the palette colour to black
         inc     HL
         djnz    @loop
@@ -2727,16 +2727,16 @@ _b60:                                                                           
         
         ld      HL      [$.LOADPALETTE_TILE]
         ld      DE      $.PALETTE
-        ld      BC      %sms.palettes@size                      ;32 colours
+        ld      BC      sms.palettes@size                      ;32 colours
         ldir
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_1     ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         ld      HL      $.PALETTE
@@ -2871,7 +2871,7 @@ loadPowerUpIcon:                                                                
         ;---------------------------------------------------------------------------------------------------------------
         di
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         
         ld      A       [$.FRAMECOUNT]
         and     %00001111
@@ -2887,25 +2887,25 @@ loadPowerUpIcon:                                                                
         
         add     HL      BC
         ld      A       L
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       H
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         
         ld      B       4
 @loop   ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop
         nop
         inc     DE
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         inc     DE
         djnz    @loop
         
         ;return to the previous bank number
         ld      A`bank                  [$.SLOT1]
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ei
         
         ret
@@ -2977,13 +2977,13 @@ _LABEL_C52_106:                                                                 
         
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;map 1 background
         ld      HL      $627E
         ld      BC      $0178
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A               $10
         ld      [$.TEMP1]       A
         call    \decompressScreen
@@ -2991,7 +2991,7 @@ _LABEL_C52_106:                                                                 
         ;map 1 foreground
         ld      HL      $63F6
         ld      BC      $0145
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A               $00
         ld      [$.TEMP1]       A
         call    \decompressScreen
@@ -3031,13 +3031,13 @@ _LABEL_C52_106:                                                                 
         
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;map screen 2 background
         ld      HL      $653B
         ld      BC      $0170
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A               $10
         ld      [$.TEMP1]       A
         call    \decompressScreen
@@ -3045,7 +3045,7 @@ _LABEL_C52_106:                                                                 
         ;map screen 2 foreground
         ld      HL      $66AB
         ld      BC      $0153
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A               $00
         ld      [$.TEMP1]       A
         call    \decompressScreen
@@ -3393,7 +3393,7 @@ _0edd:                                                                          
 	
 map1Palette:                                                                                          		;$0F0E
 ;=======================================================================================================================
-        %sms.palettes
+        sms.palettes
         
         $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
@@ -3401,7 +3401,7 @@ map1Palette:                                                                    
 
 map2Palette:                                                                                          		;$0F2E
 ;=======================================================================================================================
-        %sms.palettes
+        sms.palettes
         
         $25 $01 $06 $0B $04 $18 $2C $35 $2B $10 $2A $14 $15 $1F $00 $3F
         $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $07 $2D $00 $3F
@@ -3847,12 +3847,12 @@ titleScreen:                                                                    
         
         ;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;load the title screen itself
         ld      HL              $6000                           ;ROM:$16000
-        ld      DE              %sms.vram.screen
+        ld      DE              sms.vram.screen
         ld      BC              $012E
         ld      A               $00
         ld      [$.TEMP1]       A
@@ -4008,7 +4008,7 @@ titleScreen:                                                                    
         $46 $48 $FF $FF $FF $FF
 
 @S1_TitleScreen_Palette                                                                                         ;$13E1
-        %sms.palettes
+        sms.palettes
         
         $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
         $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
@@ -4039,13 +4039,13 @@ _1401:                                                                          
         
         ;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;act complete background
         ld      HL      $67FE
         ld      BC      $0032
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A       $00
         ld      [$.TEMP1]       A
         call    \decompressScreen
@@ -4217,13 +4217,13 @@ _155e:                                                                          
         
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A                       5
-        ld      [%sms.mapper.slot1]     A
+        ld      [sms.mapper.slot1]     A
         ld      [$.SLOT1]               A
         
         ;UNKNOWN
         ld      HL      $612E
         ld      BC      $00BB
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         ld      A       [$.CURRENT_LEVEL]
         cp      28                                              ;special stage?
         jr      c       @_1
@@ -4231,7 +4231,7 @@ _155e:                                                                          
         ;UNKNOWN
         ld      HL      $61E9                                   ;$161E9?
         ld      BC      $0095
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
 
 @_1     xor     A`zero
         ld      [$.TEMP1]       A`zero
@@ -5144,7 +5144,7 @@ _1b69:                                                                          
 
 S1_ActComplete_Palette:                                                                                         ;$1B8D
 ;=======================================================================================================================
-        %sms.palettes
+        sms.palettes
         
         $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         $35 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
@@ -5301,7 +5301,7 @@ _LABEL_1CED_131:                                                                
         ;---------------------------------------------------------------------------------------------------------------
         ;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ld      A`level	[$.CURRENT_LEVEL]
@@ -5367,7 +5367,7 @@ _LABEL_1CED_131:                                                                
         
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
         ld      A`bank                  11
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;are rings enabled?
@@ -5393,10 +5393,10 @@ _LABEL_1CED_131:                                                                
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         call    \game\_2e5a
@@ -5423,7 +5423,7 @@ _LABEL_1CED_131:                                                                
         
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
         ld      A                       11
-        ld      [%sms.mapper.slot1]     A
+        ld      [sms.mapper.slot1]     A
         ld      [$.SLOT1]               A
         
         ;are rings enabled?
@@ -5516,10 +5516,10 @@ _LABEL_1CED_131:                                                                
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A`bank			1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank			2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
         call    \game\_2e5a
@@ -5582,7 +5582,7 @@ _1e9e:                                                                          
         ld      [IY`vars+Vars.spriteUpdateCount]	A
         
         ld      A                       11
-        ld      [%sms.mapper.slot1]     A   
+        ld      [sms.mapper.slot1]     A   
         ld      [$.SLOT1]               A
         
         ;are rings enabled?
@@ -5597,7 +5597,7 @@ _1e9e:                                                                          
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
 		ld      A`bank                  \\sound@bank
-		ld      [%sms.mapper.slot1]     A`bank
+		ld      [sms.mapper.slot1]     A`bank
 		ld      [$.SLOT1]               A`bank
 		call    \\sound\unpause
 	.ENDIF
@@ -5669,10 +5669,10 @@ _1f06:                                                                          
         
         di      
         ld      A                       1
-        ld      [%sms.mapper.slot1]     A
+        ld      [sms.mapper.slot1]     A
         ld      [$.SLOT1]               A
         ld      A                       2
-        ld      [%sms.mapper.slot2]     A
+        ld      [sms.mapper.slot2]     A
         ld      [$.SLOT2]               A
         
         ld      E       $00
@@ -5688,9 +5688,9 @@ _1f06:                                                                          
         ld      B       $00
         add     HL      BC
         add     A       E
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       %11000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       [$.D2B1]
         and     %00000001
         ld      A       [HL]
@@ -5698,7 +5698,7 @@ _1f06:                                                                          
         
         ld      A       [$.D2B3]
         
-@_2     out     [%sms.ports.vdp.data]   A
+@_2     out     [sms.ports.vdp.data]   A
         
         ei      
         ret
@@ -5960,7 +5960,7 @@ _2067:                                                                          
 _20b8:                                                                                                          ;$20B8
 ;=======================================================================================================================
         ld      A`bank                  \\sound@bank
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ld      HL      $0028
@@ -6278,18 +6278,18 @@ loadLevel:                                                                      
         ld      H       A
         
         ld      A`bank                  6
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  7
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         jr      @_10
         
 @_9     ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  6
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
 @_10    ei                                                      ;enable interrupts
@@ -6382,10 +6382,10 @@ loadLevel:                                                                      
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di      
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         ei      
         
@@ -6444,10 +6444,10 @@ loadLevel:                                                                      
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di      
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]     A`bank
+        ld      [sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         ei      
         
@@ -6479,7 +6479,7 @@ loadLevel:                                                                      
         
         ;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         call    \\mobs\loadMobList
         
@@ -6864,13 +6864,13 @@ _LABEL_258B_133:                                                                
         
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;map 3 screen (end of game)
         ld      HL      $6830
         ld      BC      $0179
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         xor     A`zero
         ld      [$.TEMP1]       A`zero
         call    \decompressScreen
@@ -6883,7 +6883,7 @@ _LABEL_258B_133:                                                                
         call    \\interrupt\waitForInterrupt
         
         ld      A`bank                  1
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A	[$.D27F]
         cp      $06
@@ -6973,13 +6973,13 @@ _LABEL_258B_133:                                                                
         ld      [IY`vars+Vars.spriteUpdateCount]       $00
         
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;UNKNOWN
         ld      HL      $69A9
         ld      BC      $0145
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         xor     A`zero
         ld      [$.TEMP1]       A`zero
         call    \decompressScreen
@@ -7014,13 +7014,13 @@ _LABEL_258B_133:                                                                
         call    \\gfx\decompressArt
         
         ld      A`bank                  5
-        ld      [%sms.mapper.slot1]     A`bank
+        ld      [sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         
         ;credits screen
         ld      HL      $6C61
         ld      BC      $0189
-        ld      DE      %sms.vram.screen
+        ld      DE      sms.vram.screen
         xor     A`zero
         ld      [$.TEMP1]       A`zero
         call    \decompressScreen
@@ -7260,24 +7260,24 @@ _2795:                                                                          
         
 @_5     di      
         ld      A       L
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       H
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         push    IX
         pop     IX
-        in      A       [%sms.ports.vdp.data] 
+        in      A       [sms.ports.vdp.data] 
         ld      C       A
         push    IX
         pop     IX
         ld      A       E
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      A       D
         or      $40
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         push    IX
         pop     IX
         ld      A       C
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         push    IX
         pop     IX
         ei      
@@ -7312,7 +7312,7 @@ _2828:                                                                          
 ;=======================================================================================================================
 /* 	Credits screen palette.
 	*/
-	%sms.palettes
+	sms.palettes
         $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
 	;
@@ -9894,13 +9894,13 @@ updateSonicSpriteFrame:                                                         
         
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`low           E`vram                          ;=$80
-        out     [%sms.ports.vdp.control] A`low
+        out     [sms.ports.vdp.control] A`low
         ld      A`hi            D`vram                          ;=$36
         or      %01000000                                       ;set bit 6 to specify a VDP address
-        out     [%sms.ports.vdp.control] A`hi
+        out     [sms.ports.vdp.control] A`hi
         
         xor     A`zero                                          ;set A to 0
-        ld      C       %sms.ports.vdp.data
+        ld      C       sms.ports.vdp.data
         ld      E       24
         
         ;by nature of the way the VDP stores image colours across bit-planes, and that the Sonic sprite only uses
@@ -9909,19 +9909,19 @@ updateSonicSpriteFrame:                                                         
 @_1     outi
         outi
         outi
-        out     [%sms.ports.vdp.data]    A`zero
+        out     [sms.ports.vdp.data]    A`zero
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]    A`zero
+        out     [sms.ports.vdp.data]    A`zero
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]    A`zero
+        out     [sms.ports.vdp.data]    A`zero
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]    A`zero
+        out     [sms.ports.vdp.data]    A`zero
         
         dec     E
         jp      nz	@_1
@@ -9936,10 +9936,10 @@ updateSonicSpriteFrame:                                                         
         add     HL       BC
         
         ld      A       E
-        out     [%sms.ports.vdp.control]       A
+        out     [sms.ports.vdp.control]       A
         ld      A       D
         or      %01000000
-        out     [%sms.ports.vdp.control]       A
+        out     [sms.ports.vdp.control]       A
         
         exx
         push    BC
@@ -9952,22 +9952,22 @@ updateSonicSpriteFrame:                                                         
 @_3     outi
         outi
         outi
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         add     HL       DE
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         add     HL       DE
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         add     HL       DE
         outi
         outi
         outi
-        out     [%sms.ports.vdp.data]  A
+        out     [sms.ports.vdp.data]  A
         add     HL       DE
         exx
         dec     B
@@ -9999,26 +9999,26 @@ animateFloorRing:                                                               
         
         di      
         ld      A       E
-        out     [%sms.ports.vdp.control]	A
+        out     [sms.ports.vdp.control]	A
         ld      A       D
         or      %01000000
-        out     [%sms.ports.vdp.control]        A
+        out     [sms.ports.vdp.control]        A
         ld      B       $20
         
 @loop   ld      A       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop     
         inc     HL
         ld      A       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop     
         inc     HL
         ld      A       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         nop     
         inc     HL
         ld      A       [HL]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     HL
         djnz    @loop
         
@@ -10109,34 +10109,34 @@ _LABEL_38B0_51:                                                                 
         xor     L
         ld      H       A
         add     HL      BC
-        ld      BC      %sms.vram.screen
+        ld      BC      sms.vram.screen
         add     HL      BC
         ld      DE      [$.D2AF]
         ld      B       $02
 
 @loop   ld      A       L
-        out     [%sms.ports.vdp.control]       A
+        out     [sms.ports.vdp.control]       A
         ld      A       H
         or      %01000000
-        out     [%sms.ports.vdp.control]       A
+        out     [sms.ports.vdp.control]       A
         
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         nop
         nop
         ld      A       [DE]
-        out     [%sms.ports.vdp.data]   A
+        out     [sms.ports.vdp.data]   A
         inc     DE
         
         ld      A       B
@@ -11031,7 +11031,7 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         
         ld      A`bank			15
-        ld      [%sms.mapper.slot2]    	A`bank
+        ld      [sms.mapper.slot2]    	A`bank
         ld      [$.SLOT2]               A`bank
         
         ;$3F9ED = 
@@ -11089,7 +11089,7 @@ sonic_process:                                                                  
         
         ;switch back to the regular bank layout (where the mob code is)
         ld      A`bank                  2
-        ld      [%sms.mapper.slot2]	A`bank
+        ld      [sms.mapper.slot2]	A`bank
         ld      [$.SLOT2]               A`bank
         
         ;keep a copy of the callback address and jump to the specific solidity routine for the tile under Sonic
@@ -14647,13 +14647,13 @@ paletteCyclePointers:                                                           
 paletteData:                                                                                                 	;$629E
 ;=======================================================================================================================
 @greenHill                                                      ;Green Hill                                    	`$629E
-        %sms.palettes
+        sms.palettes
         
         $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
         $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
         
 @greenHill_cycles                                               ;Green Hill Cycles x 3                         	`$62BE 
-        %sms.palette
+        sms.palette
         
         $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
         $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3F $3C $3E $0F $00 $3F
@@ -14662,13 +14662,13 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @bridge                                                         ;Bridge                                        	`$62EE
-        %sms.palettes
+        sms.palettes
         
         $38 $01 $06 $0B $2A $3A $0C $19 $3D $24 $38 $3C $3F $1F $00 $3F
         $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
         
 @bridge_cycles                                                  ;Bridge Cycles                                 	`$630E 
-        %sms.palette
+        sms.palette
         
         $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $38 $3C $3F $1F $00 $3F
         $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3F $38 $3C $1F $00 $3F
@@ -14677,13 +14677,13 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @jungle                                                         ;Jungle                                        	`$633E
-        %sms.palettes
+        sms.palettes
         
         $04 $08 $0C $06 $0B $05 $25 $01 $03 $10 $34 $38 $3E $1F $00 $3F
         $04 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
         
 @jungle_cycles                                                  ;Jungle Cycles                                 	`$635E
-        %sms.palette
+        sms.palette
         
         $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $34 $38 $3E $0F $00 $3F
         $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $3E $34 $38 $0F $00 $3F
@@ -14692,14 +14692,14 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @labyrinth                                                      ;Labyrinth                                     	`$638E
-        %sms.palettes
+        sms.palettes
         
         $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
         ;the water line raster split refers directly to this sprite palette:
         $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $15
         
 @labyrinth_cycles                                               ;Labyrinth Cycles                              	`$63AE
-        %sms.palette
+        sms.palette
         
         $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
         $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $09 $04 $1E $0F $00 $3F
@@ -14708,13 +14708,13 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @scrapBrain                                                     ;Scrap Brain                                   	`$63DE
-        %sms.palettes
+        sms.palettes
         
         $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3D $15 $0F $27 $10 $29
         
 @scrapBrain_cycles                                              ;Scrap Brain Cycles                            	`$63FE
-        %sms.palette
+        sms.palette
         
         $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
         $00 $10 $15 $29 $3D $01 $14 $02 $3F $05 $0A $0F $07 $0F $00 $3F
@@ -14724,13 +14724,13 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @skyBaseExt                                                     ;Sky Base 1/2 Exterior                         	`$643E
-        %sms.palettes
+        sms.palettes
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
         $10 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $15 $00
         
 @skyBase_cycles                                                 ;Sky Base 1 Cycles                             	`$645E
-        %sms.palette
+        sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
@@ -14738,7 +14738,7 @@ paletteData:                                                                    
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $39 $3D $3F $3D $24 $00 $38
         
 @skyBase_cycles_Lightning1                                      ;Sky Base 1 Lightning Cycles 1                 	`$649E
-        %sms.palette
+        sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
@@ -14746,7 +14746,7 @@ paletteData:                                                                    
         $10 $10 $20 $34 $30 $10 $11 $25 $2A $39 $3D $3F $3D $24 $00 $38
         
 @skyBase_cycles_Lightning2                                      ;Sky Base 1 Lightning Cycles 2                 	`$64DE
-        %sms.palette
+        sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $2F $3D $39 $3D $3F $24 $00 $38
         $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
@@ -14754,7 +14754,7 @@ paletteData:                                                                    
         $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
         
 @skyBaseExt_cycles                                              ;Sky Base 2                                    	`$651E
-        %sms.palette
+        sms.palette
         
         $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $39 $3D $3F $0F $00 $3F
         $10 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
@@ -14764,26 +14764,26 @@ paletteData:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         
 @specialStage                                                   ;Special Stage                                 	`$655E
-        %sms.palettes
+        sms.palettes
         
         $10 $04 $3B $1B $19 $2D $21 $32 $17 $13 $12 $27 $30 $1F $00 $3F
         $10 $20 $35 $1B $16 $2A $00 $3F $19 $13 $12 $27 $04 $1F $21 $30
         
 @specialStage_cycles                                            ;Special Stage Cycles                          	`$657E
-        %sms.palette
+        sms.palette
         
         $10 $04 $3B $1B $19 $2D $11 $32 $17 $13 $12 $27 $30 $1F $00 $3F
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @skyBaseInt                                                     ;Sky Base 2/3 Interior                         	`$658E
-        %sms.palettes
+        sms.palettes
         
         $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
         
 @skyBaseInt_cycles                                              ;Sky Base 2/3 Interior Cycles                  	`$65AE
-        %sms.palette
+        sms.palette
         
         $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
         $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $28 $14 $39 $0F $00 $3F
@@ -16470,7 +16470,7 @@ boss_greenHill_process:                                                         
 
 bossPalette:                                                                                                 	;$731C
 ;=======================================================================================================================
-        %sms.palette
+        sms.palette
         
         $38 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00 
 	;
@@ -25844,7 +25844,7 @@ doStop:
         
         ;mute all sound channels by sending the right bytes to the sound chip
         ld      B       4
-        ld      C       %sms.ports.psg
+        ld      C       sms.ports.psg
         ld      HL      initPSGValues
         ;TODO: 4x `oti` will be faster. we could even use `out` with static values
         ;      (instead of `initPSGValues` table), so that we no longer need to PUSH/POP BC & HL
@@ -25888,7 +25888,7 @@ doLoadSFX:
         ;(fetch the mask used for that PSG channel)
         ld      A               [$.track4vars.channelVolumePSG]
         or      %00001111                                       ;set volume to "%1111" (mute)
-        out     [%sms.ports.psg]        A                       ;send change to the PSG
+        out     [sms.ports.psg]        A                       ;send change to the PSG
         
         ;SFX header:
         ;---------------------------------------------------------------------------------------------------------------
@@ -26254,7 +26254,7 @@ doTrackSoundOut:
         ld      A               C
         ld      [$.noiseMode]   A
         or      %11100000                                       ;noise channel frequency?
-        out     [%sms.ports.psg]        A
+        out     [sms.ports.psg]        A
         jp      @sendVolume
 
 @doModulation
@@ -26347,7 +26347,7 @@ doTrackSoundOut:
 @_5     and     [IX+Track.effectiveVolume]
         xor     %00001111
         or      [IX+Track.channelVolumePSG]
-        out     [%sms.ports.psg]        A
+        out     [sms.ports.psg]        A
         ld      A       [$.playbackMode]
         and     %00001000
         ret     z
@@ -26412,7 +26412,7 @@ cmdFE_stopSFX:
         res     1   [IX+Track.flags]
         ld      A       %00001111
         or      [IX+Track.channelVolumePSG]
-        out     [%sms.ports.psg]        A
+        out     [sms.ports.psg]        A
         ret
 	;
 
