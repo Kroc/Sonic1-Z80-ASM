@@ -9,10 +9,10 @@ start:                                                                          
         im      1                                               ;set the interrupt mode to 1 --
                                                                 ;$0038 will be called at 50/60Hz
     
-.wait   ;wait for the scanline to reach 176 (no idea why)
+@wait   ;wait for the scanline to reach 176 (no idea why)
         in      A`scanline      [%sms.ports.scanline]
         cp      176
-        jr      nz      .wait
+        jr      nz	@wait
         
         jp      \init\init
 	;
@@ -100,7 +100,7 @@ interruptHandler:                                                               
         in      A`vdpStatus     [%sms.ports.vdp.control]
         
         bit     7       [IY`vars+%vars.flags6]                  ;check the underwater flag
-        jr      z	._1                                     ;if off, skip ahead
+        jr      z	@_1                                     ;if off, skip ahead
         
         ;the raster split is controlled across multiple interrupts, a counter is used to remember at which step
         ;the procedure is at. a value of 0 means that it needs to be initialised, and then it counts down from 3 `;
@@ -115,10 +115,10 @@ interruptHandler:                                                               
         ;check the water line height:
         ld      A`waterline     [$.WATERLINE]
         and     A`waterline
-        jr      z	._1                                     ;if it's zero (above the screen), skip
+        jr      z	@_1                                     ;if it's zero (above the screen), skip
         
         cp      $FF                                             ;or 255 (below the screen),
-        jr      z	._1                                     ;skip
+        jr      z	@_1                                     ;skip
         
         ;copy the water line position into the working space for the raster split. this is to
         ;avoid the water line changing height between the multiple interrupts needed to produce
@@ -144,7 +144,7 @@ interruptHandler:                                                               
         ld      [$.RASTERSPLIT_STEP]    A`counter
         
         ;---------------------------------------------------------------------------------------------------------------
-._1     push    IX  IY
+@_1     push    IX  IY
         
         ;remember the current page 1 & 2 banks
         ld      HL`banks        [$.SLOT1]
@@ -155,7 +155,7 @@ interruptHandler:                                                               
         call    nz      _LABEL_1A0_18                          ;continue to maintain the water-line raster split
         ;and if it is...
         bit     0       [IY`vars+%vars.flags0]
-        call    z       ._LABEL_F7_25
+        call    z       @_LABEL_F7_25
         
         ;interrupts are re-enabled before the interrupt handler is finished so that should the remainder of this
         ;handler take too long, the water-line raster split can still interrupt at the correct scan line.
@@ -174,7 +174,7 @@ interruptHandler:                                                               
 	
         call    readJoypad
         bit     4       [IY`vars+%vars.joypad]                  ;joypad button 1?
-        call    z       .setJoypadButtonB                       ;set joypad button 2 too
+        call    z       @setJoypadButtonB                       ;set joypad button 2 too
         
         call    \\math\_LABEL_625_57
         
@@ -197,12 +197,12 @@ interruptHandler:                                                               
         pop     BC  DE  HL  AF
         ret
 	
-.setJoypadButtonB                                                                                               ;$00F2
+@setJoypadButtonB                                                                                               ;$00F2
         ;===============================================================================================================
         res     5       [IY`vars+%vars.joypad]                  ;set joypad button 2 as on
         ret
 	
-._LABEL_F7_25                                                                                                   ;$00F7
+@_LABEL_F7_25                                                                                                   ;$00F7
         ;===============================================================================================================
         ;blank the screen (remove bit 6 of VDP register 1)
         ld      A`vdpData       [$.VDPREGISTER_1]               ;get our cache value from RAM
@@ -295,7 +295,7 @@ loadPaletteFromInterrupt:                                                       
         ;if the level is underwater then skip loading the palette as the palettes
         ;are handled by the code that does the raster split
         bit     7       [IY`vars+%vars.flags6]                  ;underwater flag
-        jr      nz	._1
+        jr      nz	@_1
         
         ;get the palette loading parameters that were assigned by the main thread
         ;(i.e. `loadPaletteOnInterrupt`)
@@ -309,7 +309,7 @@ loadPaletteFromInterrupt:                                                       
         
         ;when the level is underwater, different logic controls loading the palette
         ;as we have to deal with the water line
-._1     call    loadPaletteFromInterrupt_water
+@_1     call    loadPaletteFromInterrupt_water
         ret
 	;
 	
@@ -333,8 +333,8 @@ _LABEL_1A0_18:                                                                  
         ;this seems quite pointless but could do with
         ;killing a specific amount of time
         ld      B       $00
-.nop    nop
-        djnz    .nop
+@nop    nop
+        djnz    @nop
         
         ;NOTE: fall through the procedure below...
         ;TODO: fix this up
@@ -349,9 +349,9 @@ loadPaletteFromInterrupt_water:                                                 
         ;get the position of the water line on screen
         ld      A`waterline     [$.WATERLINE]
         and     A`waterline
-        jr      z	._2                                     ;is it 0? (above the screen)
+        jr      z	@_2                                     ;is it 0? (above the screen)
         cp      $FF                                             ;or $FF? (below the screen)
-        jr      nz	._2                                     ;...skip ahead
+        jr      nz	@_2                                     ;...skip ahead
         
         ;below water:
         ;---------------------------------------------------------------------------------------------------------------
@@ -364,16 +364,16 @@ loadPaletteFromInterrupt_water:                                                 
         ld      HL`addr         underwaterPalette
         ;underwater boss palette?
         bit     4       [IY`vars+%vars.timeLightningFlags]
-        jr      z       ._1
+        jr      z       @_1
         ld      HL`addr         underwaterPalette_Boss
         
-._1     ld      A`flags         %00000011                       ;"load tile & sprite palettes"
+@_1     ld      A`flags         %00000011                       ;"load tile & sprite palettes"
         call    \\gfx\loadPalette                              ;load the relevant underwater palette
         ret
         
         ;above water:
         ;---------------------------------------------------------------------------------------------------------------
-._2     ld      A                   [$.CYCLEPALETTE_INDEX]
+@_2     ld      A                   [$.CYCLEPALETTE_INDEX]
         add     A                   A                           ;x2
         add     A                   A                           ;x4
         add     A                   A                           ;x8
@@ -400,10 +400,10 @@ doRasterSplit:                                                                  
         
         ;step 1?
         cp      1
-        jr      z	._2
+        jr      z	@_2
         ;step 2?
         cp      2
-        jr      z	._1
+        jr      z	@_1
         
         ;step 3:
         ;---------------------------------------------------------------------------------------------------------------
@@ -422,18 +422,18 @@ doRasterSplit:                                                                  
         ld      A`register                      !VDP_REGISTER_10
         out     [%sms.ports.vdp.control]        A`register
         
-        jp      ._3
+        jp      @_3
         
         ;step 2:
         ;---------------------------------------------------------------------------------------------------------------
-._1     ;we don't do anything on this step
+@_1     ;we don't do anything on this step
         dec     A`step
         ld      [$.RASTERSPLIT_STEP]    A`step
-        jp      ._3
+        jp      @_3
         
         ;step 1:
         ;---------------------------------------------------------------------------------------------------------------
-._2     dec     A`step
+@_2     dec     A`step
         ld      [$.RASTERSPLIT_STEP]    A`step
         
         ;set the VDP to point at the palette
@@ -450,11 +450,11 @@ doRasterSplit:                                                                  
         ;underwater and contains the boss who would normally auto-load their palette
         ;and this would conflict
         bit     4       [IY`vars+%vars.timeLightningFlags]
-        jr      z	.loop
+        jr      z	@loop
         ld      HL      underwaterPalette_Boss
 
         ;copy the palette into the VDP
-.loop   ld      A                       [HL]
+@loop   ld      A                       [HL]
         out     [%sms.ports.vdp.data]   A
         inc     HL
         
@@ -463,7 +463,7 @@ doRasterSplit:                                                                  
         ld      A                       [HL]
         out     [%sms.ports.vdp.data]   A
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
         ld      A       [$.VDPREGISTER_0]
         and     %11101111                                       ;remove bit 4: disable line interrupts
@@ -471,7 +471,7 @@ doRasterSplit:                                                                  
         ld      A                               !VDP_REGISTER_0
         out     [%sms.ports.vdp.control]        A
         
-._3     pop     BC  DE  HL  AF
+@_3     pop     BC  DE  HL  AF
         ei
         ret
 	;
@@ -479,16 +479,16 @@ doRasterSplit:                                                                  
 underwaterPalette:                                                                                           	;$024B
 ;=======================================================================================================================
         byte x 16
-.tile   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-.sprite $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
+@tile   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
 	;
 	
 underwaterPalette_Boss:                                                                                      	;$026B
 ;=======================================================================================================================
 ;TODO: this should be provided by the mob, not the interrupts (i.e. it can be excluded if no underwater used)
         byte x 16
-.tile   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-.sprite $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
+@tile   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
 	;
 
 init:                                                                                                           ;$028B
@@ -526,7 +526,7 @@ init:                                                                           
         ld      B               11
         ld      C               $8B
         
-.loop   ld      A               [HL]                            ;read the low-byte for the VDP
+@loop   ld      A               [HL]                            ;read the low-byte for the VDP
         ld      [DE]            A                               ;copy to RAM
         inc     HL                                              ;move to the next byte
         inc     DE
@@ -535,7 +535,7 @@ init:                                                                           
         sub     B                                               ;subtract B from A (B is decreasing),
                                                                 ;so A will count from #$80 to #8A
         out     [%sms.ports.vdp.control]        A               ;send the VDP hi-byte
-        djnz    .loop                                           ;loop until B has reached 0
+        djnz    @loop                                           ;loop until B has reached 0
         
         ;move all sprites off the bottom of the screen!
         ;(set 64 bytes of VRAM from $3F00 to 224)
@@ -711,22 +711,22 @@ updateVDPSprites:                                                               
         
         ld      A       B
         and     A                                               ;is sprite update count zero?
-        jr      z	._1                                     ;if so skip over setting the Y-positions
+        jr      z	@_1                                     ;if so skip over setting the Y-positions
 
         ;set sprite Y-positions:
-.yLoop  ld      A       [HL]                                    ;get the sprite's Y-position from RAM
+@yLoop  ld      A       [HL]                                    ;get the sprite's Y-position from RAM
         out     [%sms.ports.vdp.data]   A                       ;set the sprite's Y-position in the hardware
         add     HL      DE                                      ;move to the next sprite
-        djnz    .yLoop
+        djnz    @yLoop
         
         ;if the number of sprites to update is >= than the existing number of active
         ;sprites, skip ahead to setting the X-positions and indexes
-._1     ld      A       [$.ACTIVESPRITECOUNT]
+@_1     ld      A       [$.ACTIVESPRITECOUNT]
         ld      B       A
         ld      A       [IY`vars+%vars.spriteUpdateCount]
         ld      C       A
         cp      B                                               ;test spriteUpdateCount - RAM_ACTIVESPRITECOUNT 
-        jr      nc	._2
+        jr      nc	@_2
         
         ;if the number of active sprites is greater than the sprite update count, 
         ;that is - there will be active sprites remaining, calculate the amount
@@ -736,13 +736,13 @@ updateVDPSprites:                                                               
         ld      B       A
         
         ;move remaining sprites off screen
-.yOff   ld      A                       !SMS.SCREEN.HEIGHT      ;=224
+@yOff   ld      A                       !SMS.SCREEN.HEIGHT      ;=224
         out     [%sms.ports.vdp.data]   A
-        djnz    .yOff
+        djnz    @yOff
         
         ;sprite X positions / indexes:
         ;---------------------------------------------------------------------------------------------------------------
-._2     ld      A       C
+@_2     ld      A       C
         and     A
         ret     z
         
@@ -756,14 +756,14 @@ updateVDPSprites:                                                               
         or      %01000000                                       ;add bit 6 to mark an address is given
         out     [%sms.ports.vdp.control]        A
         
-.xLoop  ld      A       [HL]                                    ;set the sprite X-position
+@xLoop  ld      A       [HL]                                    ;set the sprite X-position
         out     [%sms.ports.vdp.data]   A
         inc     L                                               ;skip Y-position
         inc     L                               
         ld      A       [HL]                                    ;set the sprite index number
         out     [%sms.ports.vdp.data]   A
         inc     L
-        djnz    .xLoop
+        djnz    @xLoop
 
         ;set the new number of active sprites
         ld      A       [IY`vars+%vars.spriteUpdateCount]
@@ -789,14 +789,14 @@ unused_0397:                                                                    
         out     [%sms.ports.vdp.control]        A
         ei      
 
-.loop   ld      A                       [HL]
+@loop   ld      A                       [HL]
         out     [%sms.ports.vdp.data]   A
         inc     HL
         
         dec     BC
         ld      A       B
         or      C
-        jp      nz	.loop
+        jp      nz	@loop
         
         ret
 	;
@@ -828,45 +828,45 @@ unused_03ac:                                                                    
         ld      [$.SLOT2]               A
         ei
 
-._1     ld      A       [HL]
+@_1     ld      A       [HL]
         cpl     
         ld      E       A
 
-._2     ld      A       [HL]
+@_2     ld      A       [HL]
         cp      E
-        jr      z       ._3
+        jr      z       @_3
         out     [%sms.ports.vdp.data]   A
         ld      E       A
         inc     HL
         dec     BC
         ld      A       B
         or      C
-        jp      nz      ._2
-        jr      ._5
+        jp      nz      @_2
+        jr      @_5
 
-._3     ld      D       A
+@_3     ld      D       A
         inc     HL
         dec     BC
         ld      A       B
         or      C
-        jr      z       ._5
+        jr      z       @_5
         ld      A       D
         ld      E       [HL]
 
-._4     out     [%sms.ports.vdp.data]   A
+@_4     out     [%sms.ports.vdp.data]   A
         dec     E
         nop     
         nop     
-        jp      nz      ._4
+        jp      nz      @_4
         inc     HL
         dec     BC
         ld      A       B
         or      C
-        jp      nz      ._1
+        jp      nz      @_1
         
         ;disable interrupts so that stuff does not get
         ;changed mid-way through restoring the pages
-._5     di
+@_5     di
         
         ;restore bank numbers
         pop     DE`banks
@@ -895,7 +895,7 @@ decompressArt:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
         
-.calculateBank
+@calculateBank
         ;determine bank number:
         ;---------------------------------------------------------------------------------------------------------------
         push    AF`bank                                         ;put aside the current bank number
@@ -906,7 +906,7 @@ decompressArt:                                                                  
         ;-- that is, does the relative address extend into the second page?
         ld      A`dataAddr      H`dataAddr
         cp      ?> %sms.slot1@size                              ;=$4000
-        jr      c       ._2
+        jr      c       @_2
         
         ;remove $40xx (e.g. so $562B becomes $162B)
         sub     ?> %sms.slot1@size                              ;=$4000
@@ -917,12 +917,12 @@ decompressArt:                                                                  
         ;that instead of paging in, for example, banks 9 & 10, we would get 10 & 11
         pop     AF`bank
         inc     A`bank
-        jp      .calculateBank
+        jp      @calculateBank
         
         ;configure the VDP:
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ld      A       E                                       ;VDP value byte from the E parameter
+@_2     ld      A       E                                       ;VDP value byte from the E parameter
         out     [%sms.ports.vdp.control]        A               ;send to the VDP
         
         ld      A       D
@@ -954,10 +954,10 @@ decompressArt:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         
         bit     1       [IY`vars + %vars.flags9]
-        jr      nz      ._3
+        jr      nz      @_3
         ei
         
-._3     ld      [$.TEMP4]       HL
+@_3     ld      [$.TEMP4]       HL
         
         ;begin reading the compressed art header:
         ;see <info.sonicretro.org/SCHG:Sonic_the_Hedgehog_(8-bit)#Header> for details on the format
@@ -1021,7 +1021,7 @@ decompressArt:                                                                  
         
         ;process row:
         ;---------------------------------------------------------------------------------------------------------------
-.processRow
+@processRow
         ld      HL      [$.TEMP3]                               ;load HL with original row count
                                                                 ;($0400 for sprites, $0800 for tiles)
         xor     A`zero                                          ;set A to 0 (Carry is reset)
@@ -1036,7 +1036,7 @@ decompressArt:                                                                  
                                                                 ;"mod 8" it so it counts 0-7)
         ld      E       A                                       ;load E with this value, making it
                                                                 ;a 16-bit number in DE
-        ld      HL      .rowIndexTable
+        ld      HL      @rowIndexTable
         add     HL      DE                                      ;add the row number to $04F9
         ld      A       [HL]                                    ;get bit mask for the particular row
         
@@ -1057,7 +1057,7 @@ decompressArt:                                                                  
         ld      E       A
         ld      A       [HL]                                    ;read current byte in UniqueRows list
         and     E                                               ;test if the masked bit is set
-        jr      nz      .duplicateRow                           ;if bit is set, it's a duplicate row,
+        jr      nz      @duplicateRow                           ;if bit is set, it's a duplicate row,
                                                                 ;otherwise continue for a unique row
         
         ;unique row:
@@ -1096,10 +1096,10 @@ decompressArt:                                                                  
         dec     BC                                              ;decrease the length counter
         ld      A       B                                       ;combine the high byte,
         or      C                                               ;with the low byte...
-        jp      nz      .processRow                             ;loop back if not zero
-        jp      ._5                                             ;otherwise, skip to finalisation
+        jp      nz      @processRow                             ;loop back if not zero
+        jp      @_5                                             ;otherwise, skip to finalisation
 
-.duplicateRow
+@duplicateRow
         ;duplicate row:
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -1120,7 +1120,7 @@ decompressArt:                                                                  
         ;check if the byte from the duplicate rows list begins with $F, i.e. $Fxxx
         ;this is used as a marker to specify a two-byte number for indices over 256
         cp      $F0
-        jr      c       ._4                                     ;if less than $F0, skip next byte
+        jr      c       @_4                                     ;if less than $F0, skip next byte
         sub     $F0                                             ;strip the $F0, i.e $F3 = $03
         ld      H       A                                       ;set hi-byte for the art data index
         
@@ -1131,7 +1131,7 @@ decompressArt:                                                                  
         
         ;multiply the duplicate row's index number to the art data by 4
         ;--each row of art data is 4 bytes
-._4     ld      L                   A
+@_4     ld      L                   A
         add     HL                  HL
         add     HL                  HL
         
@@ -1164,12 +1164,12 @@ decompressArt:                                                                  
         ;check if all rows have been done
         ld      A                       B
         or      C
-        jp      nz      .processRow
+        jp      nz      @processRow
 
-._5     bit     1       [IY`vars+%vars.flags9]
-        jr      nz      ._6
+@_5     bit     1       [IY`vars+%vars.flags9]
+        jr      nz      @_6
         di
-._6     ;restore the pages to the original banks at the beginning of the procedure
+@_6     ;restore the pages to the original banks at the beginning of the procedure
         pop     DE`banks
         ld      [$.SLOT1]               DE`banks
         ld      [%sms.mapper.slot1]     DE`banks
@@ -1178,7 +1178,7 @@ decompressArt:                                                                  
         res     1       [IY`vars + %vars.flags9]
         ret
 
-.rowIndexTable
+@rowIndexTable
         byte
 	
 	%00000001
@@ -1213,7 +1213,7 @@ decompressScreen:                                                               
         
         ei                                                      ;enable interrupts
         
-._1     ;the current byte is stored in E to be able to check when two bytes in a row occur
+@_1     ;the current byte is stored in E to be able to check when two bytes in a row occur
         ;(the marker for a compressed byte). it's actually stored inverted so that the first
         ;data byte doesn't trigger an immediate repeat
         
@@ -1221,12 +1221,12 @@ decompressScreen:                                                               
         cpl                                                     ;invert the bits ("NOT")
         ld      E`prevByte      A`prevByte                      ;move this to E
         
-._2     ld      A`nextByte      [HL]                            ;read current byte from screen data
+@_2     ld      A`nextByte      [HL]                            ;read current byte from screen data
         cp      E`prevByte                                      ;is this equal to the previous byte?
-        jr      z	._3                                         ;if yes, decompress the byte
+        jr      z	@_3                                         ;if yes, decompress the byte
         
         cp      $FF                                             ;is this tile $FF?
-        jr      z	.skip
+        jr      z	@skip
         
         ;uncompressed byte:
         ;---------------------------------------------------------------------------------------------------------------
@@ -1240,47 +1240,47 @@ decompressScreen:                                                               
         dec     BC                                              ;decrease the remaining bytes to read
         ld      A       B                                       ;check if remaining bytes is zero
         or      C
-        jp      nz	._2                                         ;if remaining bytes, loop
-        jr      ._6                                             ;otherwise end
+        jp      nz	@_2                                         ;if remaining bytes, loop
+        jr      @_6                                             ;otherwise end
         
         ;decompress byte:
         ;---------------------------------------------------------------------------------------------------------------
-._3     ld      D       A                                       ;put the current data byte into D
+@_3     ld      D       A                                       ;put the current data byte into D
         inc     HL                                              ;move to the next byte
         dec     BC                                              ;decrease the remaining bytes to read
         ld      A       B                                       ;check if remaining bytes is zero
         or      c
-        jr      z	._6                                         ;if no bytes left, finish
+        jr      z	@_6                                         ;if no bytes left, finish
                                                                 ;(couldn't I just put `ret z` here?)
         
         ld      A       D                                       ;return the data byte back to A
         ld      E       [HL]                                    ;get number of times to repeat the byte
         cp      $FF                                             ;is a skip being repeated?
-        jr      z	.multiSkip
+        jr      z	@multiSkip
         
         ;repeat the byte
-._4     out     [%sms.ports.vdp.data]   A
+@_4     out     [%sms.ports.vdp.data]   A
         push    AF
         ld      A       [$.TEMP1]
         out     [%sms.ports.vdp.data]   A
         pop     AF
         dec     E
-        jp      nz	._4
+        jp      nz	@_4
         
-._5     ;move to the next byte in the data
+@_5     ;move to the next byte in the data
         inc     HL
         dec     BC
         
         ;any remaining bytes?
         ld      A       B
         or      C
-        jp      nz	._1                                         ;start checking duplicate bytes again
+        jp      nz	@_1                                         ;start checking duplicate bytes again
         
         ;all bytes processed - we're done!
-._6     ret
+@_6     ret
         
         ;---------------------------------------------------------------------------------------------------------------
-.skip
+@skip
         ld      E       A
         in      A       [%sms.ports.vdp.data]
         nop
@@ -1290,22 +1290,22 @@ decompressScreen:                                                               
         
         ld      A       B
         or      C
-        jp      nz	._2
+        jp      nz	@_2
         
         ei
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.multiSkip
+@multiSkip
         in      A       [%sms.ports.vdp.data]
         push    AF
         pop     AF
         in      A       [%sms.ports.vdp.data]
         nop
         dec     E
-        jp      nz	.multiSkip
-        jp      ._5
+        jp      nz	@multiSkip
+        jp      @_5
 	;
 
 loadPalette:                                                                                                    ;$0566
@@ -1323,12 +1323,12 @@ loadPalette:                                                                    
         ld      C       0                                       ;beginning at palette index 0 (tiles)
         
         bit     0       A                                       ;are we loading a tile palette?
-        jr      z       ._1                                     ;if no, skip ahead to sprite palette
+        jr      z       @_1                                     ;if no, skip ahead to sprite palette
         
         ld      [$.LOADPALETTE_TILE]    HL
-        call    .sendPalette                                    ;send the palette colours to the VDP
+        call    @sendPalette                                    ;send the palette colours to the VDP
         
-._1     pop     AF`flags
+@_1     pop     AF`flags
         
         bit     1       A`flags                                 ;are we loading a sprite palette?
         ret     z                                               ;if no, finish here
@@ -1340,7 +1340,7 @@ loadPalette:                                                                    
         ld      C       16                                      ;beginning at index 16 (sprites)
         
         bit     0       A`flags                                 ;if loading both tile & sprite palette
-        jr      nz      .sendPalette                            ;then stick with what we've set
+        jr      nz      @sendPalette                            ;then stick with what we've set
         
         ;if loading sprite palette only, then ignore the first colour
         ;(I believe this has to do with the screen background colour being set from the sprite palette?)
@@ -1348,7 +1348,7 @@ loadPalette:                                                                    
         ld      B       15                                      ;copy 15 colours
         ld      C       17                                      ;to indexes 17-31, that is, skip no.16
         
-.sendPalette
+@sendPalette
         ld      A       C                                       ;send palette index number to begin at
         out     [%sms.ports.vdp.control]        A
         ld      A       %11000000                               ;specify palette operation (bits 7 & 6)
@@ -1377,13 +1377,13 @@ clearVRAM:                                                                      
         or      %01000000
         out     [%sms.ports.vdp.control]        A
         
-.loop   ld      A`value         E`value                         ;return the value to A
+@loop   ld      A`value         E`value                         ;return the value to A
         out     [%sms.ports.vdp.data]   A`value                 ;send it to the VDP
         
         dec     BC`size
         ld      A`size  B`size
         or      C`size
-        jr      nz      .loop
+        jr      nz      @loop
         ret
 	;
 	
@@ -1446,7 +1446,7 @@ print:                                                                          
         ei
 
         ;read bytes from memory until hitting $FF
-.loop   ld      A       [DE]
+@loop   ld      A       [DE]
         cp      $FF
         ret     z
         
@@ -1457,7 +1457,7 @@ print:                                                                          
                                                                 ;(front/back, flip &c.)
         out     [%sms.ports.vdp.data]   A
         inc     DE
-        djnz    .loop
+        djnz    @loop
         
         ret
 	;
@@ -1515,11 +1515,11 @@ multiply:                                                                       
         ld      L`result        A`zero                          ;set HL as $0000
         ld      H`result        A`zero
         
-.loop   rl      C                                               ;shift the bits in C up one
-        jp      nc      ._1                                     ;skip if it hasn't overflowed yet
+@loop   rl      C                                               ;shift the bits in C up one
+        jp      nc      @_1                                     ;skip if it hasn't overflowed yet
         add     HL      DE                                      ;add the parameter value to the total
-._1     add     HL      HL                                      ;double the current total
-        djnz    .loop
+@_1     add     HL      HL                                      ;double the current total
+        djnz    @loop
         
         ;is there any carry remaining?
         or      C                                               ;check if C is 0
@@ -1542,7 +1542,7 @@ _LABEL_60F_111:                                                                 
         ld      B`bitCounter    16                              ;process 16 bits
         
         ;multiply HL by 2, using a 24-bit result
-.loop   rl      L                                               ;carry is held
+@loop   rl      L                                               ;carry is held
         rl      H                                               ;shift carry into H and hold next carry
         rla                                                     ;if above carries, carry into A
         
@@ -1570,16 +1570,16 @@ _LABEL_60F_111:                                                                 
         
         ;are the upper-most bits (A) still less than the parameter value
         cp      C
-        jp      c       ._1                                     ;if less than 10, skip ahead
+        jp      c       @_1                                     ;if less than 10, skip ahead
         sub     C                                               ;-10
         
-._1     ;multiply DE by 2
+@_1     ;multiply DE by 2
         ccf                                                     ;don't include the carry from previous
         rl      E
         rl      D
         
         ;move on to the next bit
-        djnz    .loop
+        djnz    @loop
         
         ;swap DE and HL:
         ;HL will be the number of 10s (in two's compliment?)
@@ -1631,7 +1631,7 @@ updateVDPscroll:                                                                
         ld      DE              [$.CAMERA_X_PREV]
         and     A`clearCarry                                    ;clear carry flag
         sbc     HL`cameraX      DE                              ;RAM_CAMERA_X_LEFT` > `RAM_CAMERA_X`?
-        jr      c       ._1                                     ;jump if the camera has moved left
+        jr      c       @_1                                     ;jump if the camera has moved left
         
         ;HL will contain the amount the screen has scrolled since the last time this function was called
         
@@ -1640,10 +1640,10 @@ updateVDPscroll:                                                                
         add     A       C
         ld      C       A
         res     6       [IY`vars+%vars.flags0]
-        jp      ._2
+        jp      @_2
         
         ;camera moved left:
-._1     ld      A       L
+@_1     ld      A       L
         add     A       C
         ld      C       A
         set     6       [IY`vars+%vars.flags0]
@@ -1651,40 +1651,40 @@ updateVDPscroll:                                                                
         ;has the camera moved vertically?
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ld      HL`cameraY      [$.CAMERA_Y]
+@_2     ld      HL`cameraY      [$.CAMERA_Y]
         ld      DE              [$.CAMERA_Y_PREV]
         and     A`clearCarry                                    ;clear carry flag
         sbc     HL`cameraY      DE                              ;RAM_CAMERA_Y_UP` > `RAM_CAMERA_Y`?
-        jr      c       ._4                                     ;jump if the camera has moved up
+        jr      c       @_4                                     ;jump if the camera has moved up
         
         ;camera moved down:
         ld      A       L
         add     A       B
         cp      :system.sms@screen.height                      ;if > 224 (bottom of the screen)
-        jr      c       ._3
+        jr      c       @_3
         
         add     A       256 - :system.sms@screen.height        ;add 32 to wrap 224 around 256 back to 0+
         
-._3     ld      B       A
+@_3     ld      B       A
         res     7       [IY`vars+%vars.flags0]
-        jp      ._6
+        jp      @_6
         
         ;camera moved up:
-._4     ld      A       L
+@_4     ld      A       L
         add     A       B
         cp      !SMS.SCREEN.HEIGHT                      	;if > 224 (bottom of the screen)
-        jr      c       ._5
+        jr      c       @_5
         
         sub     A       256 - !SMS.SCREEN.HEIGHT        	;subtract 32 to wrap 0 around 256 back to 224-
         
-._5     ld      B       A
+@_5     ld      B       A
         set     7       [IY`vars+%vars.flags0]
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;update the VDP horizontal / vertical scroll values in the RAM,
         ;the interrupt routine will send the values to the chip
-._6     ld      [$.VDPSCROLL_HORZ]      BC
+@_6     ld      [$.VDPSCROLL_HORZ]      BC
         
         ;get the number of blocks across / down the camera is located:
         ;we multiply the camera position by 8 and take only the high byte (effectively dividing by 256)
@@ -1768,19 +1768,19 @@ fillOverscrollCache:                                                            
         ;---------------------------------------------------------------------------------------------------------------
         ;horizontal scrolling allowed??
         bit     0       [IY`vars+%vars.flags2]
-        jp      z       .vert                                   ;skip to vertical scroll handling
+        jp      z       @vert                                   ;skip to vertical scroll handling
         
         ;has the camera moved left?
         bit     6       [IY`vars+%vars.flags0]
-        jr      nz      .horz
+        jr      nz      @horz
         
         ld      B       $00
         ld      C       $08
-        jp      ._1
+        jp      @_1
 
         ;get the position in the floor layout (in RAM) of the camera:
         
-.horz   ld      A       [$.VDPSCROLL_HORZ]
+@horz   ld      A       [$.VDPSCROLL_HORZ]
         and     %00011111                                       ;MOD 32 (i.e. 0-31 looping)
         add     A       8                                       ;add 8 (ergo, 8-39)
         rrca                                                    ;divide by 2 ...
@@ -1793,19 +1793,19 @@ fillOverscrollCache:                                                            
                                                                 ;-- either $0000 or $0001
         ld      C       A
 
-._1     call    getFloorLayoutRAMPosition
+@_1     call    getFloorLayoutRAMPosition
         
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.VDPSCROLL_HORZ]
         
         ;has the camera moved left?
         bit     6       [IY`vars+%vars.flags0]
-        jr      z       ._2
+        jr      z       @_2
         add     A       8
         
         ;which of the four tiles width in a block is on the left-hand side of the screen
         ;- that is, determine which column within a block the camera is on
-._2     and     %00011111                                       ;MOD 32 (limit to pixels within block)
+@_2     and     %00011111                                       ;MOD 32 (limit to pixels within block)
         srl     A                                               ;divide by 2 ...
         srl     A                                               ;divide by 4 ...
         srl     A                                               ;divide by 8 (determine tile, 0-3)
@@ -1819,7 +1819,7 @@ fillOverscrollCache:                                                            
         ld      DE      [$.LEVEL_FLOORWIDTH]
         
         ld      B       7
-.loopH  ld      A       [HL]                                    ;read block index from the FloorLayout
+@loopH  ld      A       [HL]                                    ;read block index from the FloorLayout
         
         exx
         ld      C'      A
@@ -1875,26 +1875,26 @@ fillOverscrollCache:                                                            
         
         exx
         add     HL      DE
-        djnz    .loopH
+        djnz    @loopH
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.vert   bit     1       [IY`vars+%vars.flags2]
-        jp      z       .exit
+@vert   bit     1       [IY`vars+%vars.flags2]
+        jp      z       @exit
         
         bit     7       [IY`vars+%vars.flags0]                  ;camera moved up?
-        jr      nz      ._3
+        jr      nz      @_3
         
         ld      B       $06
         ld      C       $00
-        jp      ._4
+        jp      @_4
         
-._3     ld      B       $00
+@_3     ld      B       $00
         ld      C       B
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     call    getFloorLayoutRAMPosition
+@_4     call    getFloorLayoutRAMPosition
         ld      A       [$.VDPSCROLL_VERT]
         and     %00011111
         srl     A
@@ -1909,7 +1909,7 @@ fillOverscrollCache:                                                            
         
         ld      B       $09
 
-.loopV  ld      A       [HL]
+@loopV  ld      A       [HL]
         
         exx
         ld      C'      A
@@ -1950,9 +1950,9 @@ fillOverscrollCache:                                                            
         exx
         
         inc     HL
-        djnz    .loopV
+        djnz    @loopV
         
-.exit   ret
+@exit   ret
 	;
 	
 	
@@ -1963,7 +1963,7 @@ fillScrollTiles:                                                                
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         bit     0       [IY`vars+%vars.flags2]
-        jp      z       ._4
+        jp      z       @_4
         
         exx
         push    HL'stack
@@ -1994,11 +1994,11 @@ fillScrollTiles:                                                                
         ld      A`scrollHorz    [$.VDPSCROLL_HORZ]
         
         bit     6       [IY`vars+%vars.flags0]                  ;camera moved left?
-        jr      z       ._1
+        jr      z       @_1
         
         add     A`scrollHorz    8                               ;add 8 pixels (left screen border?)
         
-._1     and     %11111000                                       ;round to the nearest 8 pixels (a tile)
+@_1     and     %11111000                                       ;round to the nearest 8 pixels (a tile)
         
         srl     A                                               ;divide by 2 ...
         srl     A                                               ;divide by 4
@@ -2040,7 +2040,7 @@ fillScrollTiles:                                                                
         
         ;set the VDP address calculated earlier,
         ;that is, the tile beginning in the top-left corner of the screen
-._2     exx
+@_2     exx
         ld      A                               L'
         out     [%sms.ports.vdp.control]        A
         ld      A                               H'
@@ -2050,13 +2050,13 @@ fillScrollTiles:                                                                
         add     HL'     BC'
         ld      A       H'
         cp      D'                                              ;don't go outside the screen table
-        jp      nc      ._10
+        jp      nc      @_10
         
-._3     exx
+@_3     exx
         
         outi                                                    ;send the tile index
         outi                                                    ;send the tile meta
-        jp      nz      ._2
+        jp      nz      @_2
         
         exx
         pop     BC'
@@ -2066,8 +2066,8 @@ fillScrollTiles:                                                                
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     bit     1       [IY`vars+%vars.flags2]
-        jp      z       .exit                                   ;could  optimise to `ret z`?
+@_4     bit     1       [IY`vars+%vars.flags2]
+        jp      z       @exit                                   ;could  optimise to `ret z`?
         
         ld      A       [$.VDPSCROLL_VERT]
         ld      B       $00
@@ -2076,14 +2076,14 @@ fillScrollTiles:                                                                
         srl     A
         
         bit     7       [IY`vars+%vars.flags0]                  ;camera moved up?
-        jr      nz      ._5
+        jr      nz      @_5
         
         add     A       $18
-._5     cp      $1C
-        jr      c       ._6
+@_5     cp      $1C
+        jr      c       @_6
         sub     $1C
         
-._6     add     A       A
+@_6     add     A       A
         add     A       A
         add     A       A
         add     A       A
@@ -2127,32 +2127,32 @@ fillScrollTiles:                                                                
         ld      B       $3E
         ld      C       $BE
 
-._7     bit     6       E
-        jr      nz      ._8
+@_7     bit     6       E
+        jr      nz      @_8
         
         inc     E
         inc     E
         outi
         outi
-        jp      nz      ._7
+        jp      nz      @_7
         ret
 
-._8     ld      A                               [$.TEMP1]
+@_8     ld      A                               [$.TEMP1]
         out     [%sms.ports.vdp.control]        A
         ld      A                               D
         out     [%sms.ports.vdp.control]        A
         
-._9     outi
+@_9     outi
         outi
-        jp      nz      ._9
+        jp      nz      @_9
         
-.exit   ret
+@exit   ret
 
         ;---------------------------------------------------------------------------------------------------------------
         
-._10    sub     E
+@_10    sub     E
         ld      H       A
-        jp      ._3
+        jp      @_3
 	;
 
 getFloorLayoutRAMPosition:                                                                                      ;$08D5
@@ -2165,16 +2165,16 @@ getFloorLayoutRAMPosition:                                                      
         ;ergo have a FloorWidth of $0100, making the low-byte $00
         ld      A       [$.LEVEL_FLOORWIDTH]
         rlca                                                    ;double it (x2)
-        jr      c       .width128                               ;>128?
+        jr      c       @width128                               ;>128?
         rlca                                                    ;double it again (x4)
-        jr      c       .width64                                ;>64?
+        jr      c       @width64                                ;>64?
         rlca                                                    ;double it again (x8)
-        jr      c       .width32                                ;>32?
+        jr      c       @width32                                ;>32?
         rlca                                                    ;double it again (x16)
-        jr      c       .width16                                ;>16?
-        jp      .width256                                       ;otherwise, 256?
+        jr      c       @width16                                ;>16?
+        jp      @width256                                       ;otherwise, 256?
         
-.width128
+@width128
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`yPos  [$.BLOCK_Y]
         add     A       B
@@ -2192,7 +2192,7 @@ getFloorLayoutRAMPosition:                                                      
         add     HL      DE
         ret
         
-.width64
+@width64
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.BLOCK_Y]
         add     A       B
@@ -2212,7 +2212,7 @@ getFloorLayoutRAMPosition:                                                      
         add     HL      DE
         ret
         
-.width32
+@width32
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.BLOCK_Y]
         add     A       B
@@ -2233,7 +2233,7 @@ getFloorLayoutRAMPosition:                                                      
         add     HL      DE
         ret
         
-.width16
+@width16
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.BLOCK_Y]
         add     A       B
@@ -2256,7 +2256,7 @@ getFloorLayoutRAMPosition:                                                      
         add     HL      DE
         ret
         
-.width256
+@width256
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`yPos  [$.BLOCK_Y]
         add     A       B
@@ -2296,10 +2296,10 @@ fillScreenWithFloorLayout:                                                      
         ;in 224-line mode it's 7 blocks tall
         ld      B       !SMS.SCREEN.HEIGHT.BLOCKS
         
-._1     push    BC  HL  DE
+@_1     push    BC  HL  DE
         ld      B       !SMS.SCREEN.WIDTH.BLOCKS
         
-._2     push    BC  HL  DE
+@_2     push    BC  HL  DE
         
         ;get the block index at the current location in the Floor Layout
         ld      A       [HL]
@@ -2355,7 +2355,7 @@ fillScreenWithFloorLayout:                                                      
         ld      B       4                                       ;4 rows of the block mapping
         
         ;set the screen name address
-._3     ld      A                               L
+@_3     ld      A                               L
         out     [%sms.ports.vdp.control]        A
         ld      A       H
         or      %01000000
@@ -2406,7 +2406,7 @@ fillScreenWithFloorLayout:                                                      
         ld      BC      64
         add     HL      BC
         ld      B       A
-        djnz    ._3
+        djnz    @_3
         
         pop     DE
         pop     HL
@@ -2416,7 +2416,7 @@ fillScreenWithFloorLayout:                                                      
         add     HL      BC
         ex      DE      HL
         pop     BC
-        djnz    ._2
+        djnz    @_2
         
         pop     DE
         pop     HL
@@ -2428,7 +2428,7 @@ fillScreenWithFloorLayout:                                                      
         ex      DE      HL
         pop     BC
         dec     B
-        jp      nz      ._1
+        jp      nz      @_1
         
         ei                                                  ;enable interrupts
         ret
@@ -2445,13 +2445,13 @@ loadFloorLayout:                                                                
 
         ;RLE decompress floor layout:
         ;---------------------------------------------------------------------------------------------------------------
-._1     ld      A       [HL`floor]                              ;read first byte of the floor layout
+@_1     ld      A       [HL`floor]                              ;read first byte of the floor layout
         cpl                                                     ;flip it to avoid first byte comparison
         ld      [IY`vars+$01]   A                               ;this is the comparison byte
         
-._2     ld      A       [HL`floor]                              ;read the current byte
+@_2     ld      A       [HL`floor]                              ;read the current byte
         cp      [IY`vars+$01]                                   ;is it the same as the comparison byte?
-        jr      z       ._3                                     ;if so, decompress it
+        jr      z       @_3                                     ;if so, decompress it
         
         ;copy byte as normal:
         ld      [DE]            A                               ;write it to RAM
@@ -2461,12 +2461,12 @@ loadFloorLayout:                                                                
         dec     BC                                              ;count number of remaining bytes
         ld      A       B                                       ;are there remaining bytes?
         or      C
-        jp      nz      ._2                                     ;if so continue
+        jp      nz      @_2                                     ;if so continue
         ret                                                     ;otherwise, finish
         
         ;if the last two bytes of the data are duplicates,
         ;don't try decompress further when there is no more data to be read!
-._3     dec     BC                                              ;reduce count of remaining bytes
+@_3     dec     BC                                              ;reduce count of remaining bytes
         ld      A       B                                       ;are there remaining bytes?
         or      C
         ret     z                                               ;if not, finish
@@ -2476,9 +2476,9 @@ loadFloorLayout:                                                                
         push    BC                                              ;put length of compressed data aside
         ld      B       [HL]                                    ;get the repeat count
         
-._4     ld      [DE]    A                                       ;write value to RAM
+@_4     ld      [DE]    A                                       ;write value to RAM
         inc     DE                                              ;move forward in RAM
-        djnz    ._4                                             ;continue until repeating is complete
+        djnz    @_4                                             ;continue until repeating is complete
         
         pop     BC                                              ;retrieve the data length
         inc     HL                                              ;move forward in the compressed data
@@ -2487,7 +2487,7 @@ loadFloorLayout:                                                                
         dec     BC
         ld      A       B
         or      C
-        jp      nz      ._1
+        jp      nz      @_1
         ret
 	;
 	
@@ -2515,7 +2515,7 @@ fadeOut:                                                                        
         ld      [IY`vars+%vars.spriteUpdateCount]       A
         
         ld      B       4
-._1     push    BC                                              ;put aside the loop counter
+@_1     push    BC                                              ;put aside the loop counter
         
         ;fade out the tile palette one step
         ld      HL      [$.LOADPALETTE_TILE]
@@ -2535,16 +2535,16 @@ fadeOut:                                                                        
         
         ;wait 10 frames
         ld      B       10
-._2     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_2     ld      A       [IY`vars+%vars.spriteUpdateCount]
                 
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
-        djnz    ._2
+        djnz    @_2
 
         pop     BC                                              ;retrieve the loop counter
-        djnz    ._1                                             ;before looping back
+        djnz    @_1                                             ;before looping back
         
         ret
 	;
@@ -2561,23 +2561,23 @@ darkenPalette:                                                                  
         
         ld      A       [HL]                                    ;read the colour
         and     %00000011                                       ;does it have any red component?
-        jr      z       ._1                                     ;if not, skip ahead
+        jr      z       @_1                                     ;if not, skip ahead
         dec     A                                               ;reduce the red brightness by 1
         
-._1     ld      C       A
+@_1     ld      C       A
         ld      A       [HL]
         and     %00001100                                       ;does it have any green component?
-        jr      z       ._2                                     ;if not, skip ahead
+        jr      z       @_2                                     ;if not, skip ahead
         sub     %00000100                                       ;reduce the green brightness by 1
         
-._2     or      C                                               ;merge the green component back in
+@_2     or      C                                               ;merge the green component back in
         ld      C       A                                       ;put aside the current colour code
         ld      A       [HL]                                    ;fetch the original colour code again
         and     %00110000                                       ;does it have any blue component?
-        jr      z       ._3                                     ;if not, skip ahead
+        jr      z       @_3                                     ;if not, skip ahead
         sub     %00010000                                       ;reduce the blue brightness by 1
         
-._3     or      C                                               ;merge the blue component back in
+@_3     or      C                                               ;merge the blue component back in
         ld      [DE]    A                                       ;update the palette colour
         
         ;move to the next palette colour and repeat
@@ -2630,24 +2630,24 @@ _aae:                                                                           
         
         ;wait for 9 more frames
         ld      B       9
-._1     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_1     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
-        djnz    ._1
+        djnz    @_1
         
         ;fade palette
         ;(why is this not just calling `darkenPalette`?)
         
         ld      B       4
-._2     push    BC
+@_2     push    BC
         ld      HL      [$.TEMP6]                               ;restore the HL parameter
         ld      DE      $.PALETTE
         ld      B       32
 
-._3     push    BC
+@_3     push    BC
         
         ld      A       [HL]
         and     %00000011
@@ -2655,18 +2655,18 @@ _aae:                                                                           
         ld      A       [DE]
         and     %00000011
         cp      B
-        jr      z       ._4
+        jr      z       @_4
         dec     A
-._4     ld      C       A
+@_4     ld      C       A
         ld      A       [HL]
         and     %00001100
         ld      B       A
         ld      A       [DE]
         and     %00001100
         cp      B
-        jr      z       ._5
+        jr      z       @_5
         sub     %00000100
-._5     or      C
+@_5     or      C
         ld      C       A
         ld      A       [HL]
         and     %00110000
@@ -2674,14 +2674,14 @@ _aae:                                                                           
         ld      A       [DE]
         and     %00110000
         cp      B
-        jr      z       ._6
+        jr      z       @_6
         sub     %00010000
-._6     or      C
+@_6     or      C
         ld      [DE]    A
         inc     HL
         inc     DE
         pop     BC
-        djnz    ._3
+        djnz    @_3
         
         ld      HL      $.PALETTE
         ld      A       %00000011
@@ -2689,16 +2689,16 @@ _aae:                                                                           
         
         ;wait for 10 frames
         ld      B       10
-._7     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_7     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
-        djnz    ._7
+        djnz    @_7
         
         pop     BC
-        djnz    ._2
+        djnz    @_2
         ret
 	;
 	
@@ -2711,9 +2711,9 @@ _b50:                                                                           
         
         ;erase the current palette
         ld      B       %sms.palettes@size                      ;32 colours
-.loop   ld      [HL]    $00                                     ;set the palette colour to black
+@loop   ld      [HL]    $00                                     ;set the palette colour to black
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
         jp      _b60._1
 	;
@@ -2732,7 +2732,7 @@ _b60:                                                                           
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     ld      A`bank                  1
+@_1     ld      A`bank                  1
         ld      [%sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  2
@@ -2754,40 +2754,40 @@ _b60:                                                                           
         ld      [IY`vars+%vars.spriteUpdateCount]       C
         ld      B       $09
         
-._2     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_2     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
-        djnz    ._2
+        djnz    @_2
         
         ld      B       $04
         
-._3     push    BC
+@_3     push    BC
         ld      HL      [$.TEMP6]
         ld      DE      $.PALETTE
         ld      B       32
         
-._4     push    BC
+@_4     push    BC
         ld      A       [HL]
         and     %00000011
         ld      B       A
         ld      A       [DE]
         and     %00000011
         cp      B
-        jr      nc      ._5
+        jr      nc      @_5
         inc     A
-._5     ld      C       A
+@_5     ld      C       A
         ld      A       [HL]
         and     %00001100
         ld      B       A
         ld      A       [DE]
         and     %00001100
         cp      B
-        jr      nc      ._6
+        jr      nc      @_6
         add     A       $04
-._6     or      C
+@_6     or      C
         ld      C       A
         ld      A       [HL]
         and     %00110000
@@ -2795,30 +2795,30 @@ _b60:                                                                           
         ld      A       [DE]
         and     %00110000
         cp      B
-        jr      nc      ._7
+        jr      nc      @_7
         add     A       $10
-._7     or      C
+@_7     or      C
         ld      [DE]    A
         inc     HL
         inc     DE
         pop     BC
-        djnz    ._4
+        djnz    @_4
         
         ld      HL`addr         $.PALETTE
         ld      A`flags         %00000011
         call    loadPaletteOnInterrupt
         
         ld      B       10
-._8     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_8     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
-        djnz    ._8
+        djnz    @_8
         
         pop     BC
-        djnz    ._3
+        djnz    @_3
         
         ret
 	;
@@ -2851,8 +2851,8 @@ getLevelBitFlag:                                                                
         ld      A       C                                       ;1
         
         ;slide the bit up the byte between 0-7 depending on the level number
-.loop   rlca
-        djnz    .loop
+@loop   rlca
+        djnz    @loop
         ld      C       A                                       ;return via C
         
         ;HL : address to the byte where the bit exists
@@ -2893,7 +2893,7 @@ loadPowerUpIcon:                                                                
         out     [%sms.ports.vdp.control]        A
         
         ld      B       4
-.loop   ld      A       [DE]
+@loop   ld      A       [DE]
         out     [%sms.ports.vdp.data]   A
         nop
         nop
@@ -2901,7 +2901,7 @@ loadPowerUpIcon:                                                                
         ld      A       [DE]
         out     [%sms.ports.vdp.data]  A
         inc     DE
-        djnz    .loop
+        djnz    @loop
         
         ;return to the previous bank number
         ld      A`bank                  [$.SLOT1]
@@ -2933,18 +2933,18 @@ _LABEL_C52_106:                                                                 
         ret     nc
         
         cp      9
-        jr      c       ._1
+        jr      c       @_1
         
         ld      C       $02
         
-._1     ld      A       [$.D216]
+@_1     ld      A       [$.D216]
         cp      C
-        jp      z       ._4
+        jp      z       @_4
         
         ld      A               C
         ld      [$.D216]        A
         dec     A
-        jr      nz      ._2
+        jr      nz      @_2
         
         ;turn the screen off
         ld      A       [$.VDPREGISTER_1]
@@ -2998,11 +2998,11 @@ _LABEL_C52_106:                                                                 
         
         ld      HL      \screens.map\map1Palette
         call    \\gfx\_b50
-        jr      ._3
+        jr      @_3
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ;turn the screen off
+@_2     ;turn the screen off
         ld      A       [$.VDPREGISTER_1]
         and     %10111111                                       ;remove bit 6 of VDP register 1
         ld      [$.VDPREGISTER_1]       A
@@ -3055,14 +3055,14 @@ _LABEL_C52_106:                                                                 
 
         ;play the map screen music:
 	;(we can compile with, or without, audio)
-._3	?( \\sound )
+@_3	?( \\sound )
         	ld      A`music         7
 		rst     \\sound\rst_playMusic
 		;
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     call    _LABEL_E86_110
+@_4     call    _LABEL_E86_110
         ld      A       [$.CURRENT_LEVEL]
         add     A       A
         ld      C       A
@@ -3094,7 +3094,7 @@ _LABEL_C52_106:                                                                 
         ld      [$.TEMP3]       DE
         ld      A       [HL]
         and     A
-        jr      z       ._
+        jr      z       @_
         
         dec     A
         add     A       A
@@ -3109,19 +3109,19 @@ _LABEL_C52_106:                                                                 
         jp      [HL]
 
 ;NOTE: externally jumped to
-._      ld      A               $01
+@_      ld      A               $01
         ld      [$.TEMP1]       A
         ld      BC              $012C
         
-._5     push    BC
+@_5     push    BC
         call    _LABEL_E86_110
         ld      A       [$.TEMP1]
         dec     A
         ld      [$.TEMP1]       A
-        jr      nz      ._8
+        jr      nz      @_8
 	
         ld      HL      [$.TEMP3]
-._6     ld      E       [HL]
+@_6     ld      E       [HL]
         inc     HL
         ld      D       [HL]
         inc     HL
@@ -3133,18 +3133,18 @@ _LABEL_C52_106:                                                                 
         ld      A       [HL]
         inc     HL
         and     A
-        jr      nz      ._7
+        jr      nz      @_7
 	
         ex      DE      HL
-        jp      ._6
+        jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._7     ld      [$.TEMP1],A
+@_7     ld      [$.TEMP1],A
         ld      [$.TEMP3],HL
         ld      [$.TEMP4],DE
         
-._8     ld      HL      [$.TEMP6]
+@_8     ld      HL      [$.TEMP6]
         push    HL
         ld      E,H
         ld      H,$00
@@ -3160,7 +3160,7 @@ _LABEL_C52_106:                                                                 
         ret     z
         
         bit     5       [IY`vars+%vars.joypad]
-        jp      nz      ._5
+        jp      nz      @_5
         ret     nz
         
         scf     
@@ -3179,7 +3179,7 @@ _0dd9:                                                                          
         ld      DE              $003C
         ld      B               $00
         
-._1     call    _LABEL_E86_110
+@_1     call    _LABEL_E86_110
         ld      A       [IY`vars+%vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
@@ -3190,7 +3190,7 @@ _0dd9:                                                                          
         
         pop     BC
         dec     HL
-        djnz    ._1
+        djnz    @_1
         
         ld      HL              $0000
         ld      [$.TEMP1]       HL
@@ -3198,7 +3198,7 @@ _0dd9:                                                                          
         ld      DE              $0058
         ld      B               $80
         
-._2     call    _LABEL_E86_110
+@_2     call    _LABEL_E86_110
         ld      A               [IY`vars+%vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
@@ -3208,7 +3208,7 @@ _0dd9:                                                                          
         call    _0edd
         pop     BC
         inc     HL
-        djnz    ._2
+        djnz    @_2
         
         jp      _LABEL_C52_106._
 	;
@@ -3225,7 +3225,7 @@ _0e24:                                                                          
         ld      DE              $00C0
         ld      B               $78
         
-.loop   call    _LABEL_E86_110
+@loop   call    _LABEL_E86_110
         ld      A       [IY`vars+%vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
@@ -3235,7 +3235,7 @@ _0e24:                                                                          
         call    _0edd
         pop     BC
         dec     DE
-        djnz    .loop
+        djnz    @loop
         
         jp      _LABEL_C52_106._
 	;
@@ -3252,7 +3252,7 @@ _0e4b:                                                                          
         ld      DE              $0000
         ld      B               $30
         
-.loop   call    _LABEL_E86_110
+@loop   call    _LABEL_E86_110
         ld      A       [IY`vars+%vars.joypad]
         cp      $FF
         jp      nz      _LABEL_C52_106._
@@ -3262,7 +3262,7 @@ _0e4b:                                                                          
         call    _0edd
         pop     BC
         inc     DE
-        djnz    .loop
+        djnz    @loop
         
         jp      _LABEL_C52_106._
 	;
@@ -3369,7 +3369,7 @@ _0edd:                                                                          
         
         ld      A       [$.TEMP1]
         cp      [HL]
-        jr      c       ._1
+        jr      c       @_1
         
         inc     HL
         ld      A       [HL]
@@ -3377,7 +3377,7 @@ _0edd:                                                                          
         xor     A`zero
         ld      [$.TEMP1]       A`zero
         
-._1     pop     DE                                              ;Y-position
+@_1     pop     DE                                              ;Y-position
         pop     HL                                              ;X-position
         push    HL
         push    DE
@@ -3783,38 +3783,38 @@ S1_ZoneTitles:                                                                  
 ;=======================================================================================================================
         %word
         
-        .greenHill                                              ;Green Hill Act 1
-        .greenHill                                              ;Green Hill Act 2
-        .greenHill                                              ;Green Hill Act 3
-        .bridge                                                 ;Bridge Act 1
-        .bridge                                                 ;Bridge Act 2
-        .bridge                                                 ;Bridge Act 3
-        .jungle                                                 ;Jungle Act 1
-        .jungle                                                 ;Jungle Act 2
-        .jungle                                                 ;Jungle Act 3
-        .labyrinth                                              ;Labyrinth Act 1
-        .labyrinth                                              ;Labyrinth Act 2
-        .labyrinth                                              ;Labyrinth Act 3
-        .scrapBrain                                             ;Scrap Brain Act 1
-        .scrapBrain                                             ;Scrap Brain Act 2
-        .scrapBrain                                             ;Scrap Brain Act 3
-        .skyBase                                                ;Sky Base Act 1
-        .skyBase                                                ;Sky Base Act 2
-        .skyBase                                                ;Sky Base Act 3
+        @greenHill                                              ;Green Hill Act 1
+        @greenHill                                              ;Green Hill Act 2
+        @greenHill                                              ;Green Hill Act 3
+        @bridge                                                 ;Bridge Act 1
+        @bridge                                                 ;Bridge Act 2
+        @bridge                                                 ;Bridge Act 3
+        @jungle                                                 ;Jungle Act 1
+        @jungle                                                 ;Jungle Act 2
+        @jungle                                                 ;Jungle Act 3
+        @labyrinth                                              ;Labyrinth Act 1
+        @labyrinth                                              ;Labyrinth Act 2
+        @labyrinth                                              ;Labyrinth Act 3
+        @scrapBrain                                             ;Scrap Brain Act 1
+        @scrapBrain                                             ;Scrap Brain Act 2
+        @scrapBrain                                             ;Scrap Brain Act 3
+        @skyBase                                                ;Sky Base Act 1
+        @skyBase                                                ;Sky Base Act 2
+        @skyBase                                                ;Sky Base Act 3
         
         %byte x 15
         
-.greenHill                                                      ;"GREEN HILL"                                  `$122D
+@greenHill                                                      ;"GREEN HILL"                                  `$122D
         $10 $13 $46 $62 $44 $44 $51 $EB $47 $40 $43 $43 $EB $EB $FF
-.bridge                                                         ;"BRIDGE"                                      `$123C
+@bridge                                                         ;"BRIDGE"                                      `$123C
         $10 $13 $35 $62 $40 $37 $46 $44 $EB $EB $EB $EB $EB $EB $FF
-.jungle                                                         ;"JUNGLE"                                      `$124B
+@jungle                                                         ;"JUNGLE"                                      `$124B
         $10 $13 $41 $81 $51 $46 $43 $44 $EB $EB $EB $EB $EB $EB $FF
-.labyrinth                                                      ;"LABYRINTH"                                   `$125A
+@labyrinth                                                      ;"LABYRINTH"                                   `$125A
         $10 $13 $6F $1E $1F $DE $9F $5E $7F $AF $4F $EB $EB $EB $FF
-.scrapBrain                                                     ;"SCRAP BRAIN"                                 `$1269
+@scrapBrain                                                     ;"SCRAP BRAIN"                                 `$1269
         $10 $13 $AE $2E $9F $1E $8F $EB $1F $9F $1E $5E $7F $EB $FF
-.skyBase                                                        ;"SKY BASE"                                    `$1278
+@skyBase                                                        ;"SKY BASE"                                    `$1278
         $10 $13 $AE $6E $DE $EB $1F $1E $AE $3E $EB $EB $EB $EB $FF
 	;
 
@@ -3864,7 +3864,7 @@ titleScreen:                                                                    
         ld      [$.VDPSCROLL_VERT]      A`zero
         
         ;load the palette
-        ld      HL      .S1_TitleScreen_Palette
+        ld      HL      @S1_TitleScreen_Palette
         ld      A       %00000011                               ;flags to load tile & sprite palettes
         call    \\gfx\loadPaletteOnInterrupt
         
@@ -3882,11 +3882,11 @@ titleScreen:                                                                    
         ld      [$.D216]        A`zero                          ;reset the screen counter
         ld      A               $01
         ld      [$.TEMP2]       A
-        ld      HL              ._1372
+        ld      HL              @_1372
         ld      [$.TEMP3]       HL
         
         ;---------------------------------------------------------------------------------------------------------------
-._1     ;switch screen on (set bit 6 of VDP register 1)
+@_1     ;switch screen on (set bit 6 of VDP register 1)
         ld      A       [$.VDPREGISTER_1]
         or      %01000000
         ld      [$.VDPREGISTER_1]       A
@@ -3899,24 +3899,24 @@ titleScreen:                                                                    
         ld      A       [$.D216]                                ;get the screen counter
         inc     A                                               ;add one
         cp      100                                             ;if less than 100,
-        jr      c       ._2                                     ;keep counting,
+        jr      c       @_2                                     ;keep counting,
 	
         xor     A`zero                                          ;otherwise go back to 0
-._2     ld      [$.D216]        A                               ;update screen counter value
+@_2     ld      [$.D216]        A                               ;update screen counter value
         
-        ld      HL       ._1352
+        ld      HL       @_1352
         cp      $40
-        jr      c       ._3
+        jr      c       @_3
 	
-        ld      HL       ._1362
-._3     xor     A`zero                                          ;set A to 0
+        ld      HL       @_1362
+@_3     xor     A`zero                                          ;set A to 0
         ld      [$.TEMP1]       A
         call    \\gfx\print
         
         ld      A       [$.TEMP2]
         dec     A
         ld      [$.TEMP2]       A
-        jr      nz      ._4
+        jr      nz      @_4
         
         ld      HL      [$.TEMP3]
         ld      E       [HL]
@@ -3929,14 +3929,14 @@ titleScreen:                                                                    
         ;when the animation reaches the end,
         ;exit the title screen (begin demo mode)
         and     A
-        jr      z       ._5
+        jr      z       @_5
         
         ld      [$.TEMP2]       A
         ld      [$.TEMP3]       HL
         ld      [$.TEMP4]       DE
         
         ;set the game's main sprite table as the table to use
-._4     ld      HL       $.SPRITETABLE
+@_4     ld      HL       $.SPRITETABLE
         ld      [$.SPRITETABLE_ADDR]    HL
         
         ld      HL       $0080
@@ -3946,12 +3946,12 @@ titleScreen:                                                                    
         
         ;has the button been pressed? if not, repeat
         bit     5       [IY`vars+%vars.joypad]
-        jp      nz      ._1
+        jp      nz      @_1
         
         scf
 	
 	;(we can compile with, or without, audio)
-._5	?( \\sound )
+@_5	?( \\sound )
 		rst     \\sound\rst_muteSound
 		;
         ret
@@ -3960,54 +3960,54 @@ titleScreen:                                                                    
         
         %byte
         
-._1352  ;"PRESS  BUTTON" text                                                                                  	`$1352
+@_1352  ;"PRESS  BUTTON" text                                                                                  	`$1352
         $09 $12
         $E3 $E4 $E5 $E6 $E6 $F1 $F1 $E9 $EB $E7 $E7 $EA $EC $FF
-._1362                                                                                                          ;$1362
+@_1362                                                                                                          ;$1362
         $09 $12
         $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $FF
         
-._1372  ;wagging finger animation data:                                                                        	`$1372
+@_1372  ;wagging finger animation data:                                                                        	`$1372
         %word   %byte
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-        ._13bd  $08
-        ._13cf  $08
-._13b4  ._13bd  $FF                                                                                             ;$13B4
-        ._13bd  $FF
-        ._13b4  $00
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+        @_13bd  $08
+        @_13cf  $08
+@_13b4  @_13bd  $FF                                                                                             ;$13B4
+        @_13bd  $FF
+        @_13b4  $00
         
         %byte x 18
         
-._13bd  ;frame 1 sprite layout                                                                                 	`$13BD
+@_13bd  ;frame 1 sprite layout                                                                                 	`$13BD
         $00 $02 $04 $FF $FF $FF
         $20 $22 $24 $FF $FF $FF
         $40 $42 $44 $FF $FF $FF
         
-._13cf  ;frame 2 sprite layout                                                                                 	`$13CF
+@_13cf  ;frame 2 sprite layout                                                                                 	`$13CF
         $06 $08 $FF $FF $FF $FF
         $26 $28 $FF $FF $FF $FF
         $46 $48 $FF $FF $FF $FF
 
-.S1_TitleScreen_Palette                                                                                         ;$13E1
+@S1_TitleScreen_Palette                                                                                         ;$13E1
         %sms.palettes
         
         $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
@@ -4054,7 +4054,7 @@ _1401:                                                                          
         ld      [$.VDPSCROLL_HORZ]      A`zero
         ld      [$.VDPSCROLL_VERT]      A`zero
         
-        ld      HL      ._14fc
+        ld      HL      @_14fc
         ld      A       %00000011
         call    \\gfx\loadPaletteOnInterrupt
         
@@ -4062,7 +4062,7 @@ _1401:                                                                          
         
         ld      B       $78
         
-._1     ;turn the screen on
+@_1     ;turn the screen on
         ld      A       [$.VDPREGISTER_1]
         or      %01000000                                       ;enable bit 6 on VDP register 1
         ld      [$.VDPREGISTER_1]       A
@@ -4071,14 +4071,14 @@ _1401:                                                                          
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
-        djnz    ._1
+        djnz    @_1
         
         ld      A       [$.D284]
         and     A
-        jr      nz      ._3
+        jr      nz      @_3
         
         ld      BC      $00B4
-._2     push    BC
+@_2     push    BC
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -4090,25 +4090,25 @@ _1401:                                                                          
         ret     z
         
         bit     5       [IY`vars+%vars.joypad]
-        jp      nz      ._2
+        jp      nz      @_2
         
         and     A
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
-._3     ld      HL      ._14de
+@_3     ld      HL      @_14de
         ld      C       $0B
         call    _16d9
-        ld      HL      ._14e6
+        ld      HL      @_14e6
         call    \\gfx\print
-        ld      HL      ._14f1
+        ld      HL      @_14f1
         call    \\gfx\print
         
         ld      A               $09
         ld      [$.D216]        A
         
-._4     ld      B       $3C
-._5     push    BC
+@_4     ld      B       $3C
+@_5     push    BC
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -4129,9 +4129,9 @@ _1401:                                                                          
         
         pop     BC
         bit     5       [IY`vars+%vars.joypad]
-        jr      z       ._6
+        jr      z       @_6
 	
-        djnz    ._5
+        djnz    @_5
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -4145,10 +4145,10 @@ _1401:                                                                          
         ret     z
         
         dec     [HL]
-        jr      ._4
+        jr      @_4
         
         ;get the bit flag for the level
-._6     ld      HL      $.D311
+@_6     ld      HL      $.D311
         call    \\levels.load\getLevelBitFlag
         ld      A       C
         cpl                                                     ;invert the level bits (create a mask)
@@ -4168,14 +4168,14 @@ _1401:                                                                          
         
         %byte
         
-._14de  $0F $80 $81 $FF                                                                                         ;$14DE
+@_14de  $0F $80 $81 $FF                                                                                         ;$14DE
         $10 $90 $91 $FF
-._14e6  ;text                                                                                                  	`$14E6
+@_14e6  ;text                                                                                                  	`$14E6
         $08 $0C $67 $68 $69 $6A $6B $6C $6D $6E $FF
-._14f1  ;text                                                                                                  	`$14F1
+@_14f1  ;text                                                                                                  	`$14F1
         $08 $0D $77 $78 $79 $7A $7B $7C $7D $7E $FF
 
-._14fc  ;this first bit looks like a palette                                                                   	`$14FC
+@_14fc  ;this first bit looks like a palette                                                                   	`$14FC
         $00 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $14 $27 $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
 
@@ -4226,14 +4226,14 @@ _155e:                                                                          
         ld      DE      %sms.vram.screen
         ld      A       [$.CURRENT_LEVEL]
         cp      28                                              ;special stage?
-        jr      c       ._1
+        jr      c       @_1
         
         ;UNKNOWN
         ld      HL      $61E9                                   ;$161E9?
         ld      BC      $0095
         ld      DE      %sms.vram.screen
 
-._1     xor     A`zero
+@_1     xor     A`zero
         ld      [$.TEMP1]       A`zero
         call    \decompressScreen
         
@@ -4245,7 +4245,7 @@ _155e:                                                                          
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      nc      ._3
+        jr      nc      @_3
         
         ld      A                       $15
         ld      [$.LAYOUT_BUFFER]       A
@@ -4261,7 +4261,7 @@ _155e:                                                                          
         add     HL      DE
         ld      B       $04
         
-._2     push    BC
+@_2     push    BC
         push    HL
         ld      DE      $.LAYOUT_BUFFER+1
         ld      A       [DE]
@@ -4278,9 +4278,9 @@ _155e:                                                                          
         pop     BC
         inc     HL
         inc     HL
-        djnz    ._2
+        djnz    @_2
         
-._3     xor     A`zero
+@_3     xor     A`zero
         ld      [$.VDPSCROLL_HORZ]      A`zero
         ld      [$.VDPSCROLL_VERT]      A`zero
         ld      HL      $1B8D
@@ -4288,19 +4288,19 @@ _155e:                                                                          
         call    \\gfx\loadPaletteOnInterrupt
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      c       ._4
+        jr      c       @_4
 	
         ld      HL      $D281
         inc     [HL]
         bit     2       [IY`vars+%vars.flags9]
-        jr      nz      ._4
+        jr      nz      @_4
 	
         ld      HL      $D282
         inc     [HL]
         ld      HL      $.D285
         inc     [HL]
 
-._4     bit     2       [IY`vars+%vars.flags9]
+@_4     bit     2       [IY`vars+%vars.flags9]
         call    nz      _1719
         
         bit     3       [IY`vars+%vars.flags9]
@@ -4310,47 +4310,47 @@ _155e:                                                                          
         ld      DE      $154E
         ld      B       $08
         
-._5     ld      A       [$.TIME_MINUTES]
+@_5     ld      A       [$.TIME_MINUTES]
         cp      [HL]
-        jr      nz      ._6
+        jr      nz      @_6
 	
         inc     HL
         ld      A       [$.TIME_SECONDS]
         cp      [HL]
-        jr      nc      ._8
+        jr      nc      @_8
 	
         inc     HL
-        jr      ._7
-._6     jr      nc      ._8
+        jr      @_7
+@_6     jr      nc      @_8
 
         inc     HL
         inc     HL
-._7     inc     DE
+@_7     inc     DE
         inc     DE
-        djnz    ._5
+        djnz    @_5
         
         ld      DE      $151E
-        jr      ._9
+        jr      @_9
         
-._8     ex      DE      HL
+@_8     ex      DE      HL
         ld      E       [HL]
         inc     HL
         ld      D       [HL]
-._9     ld      HL      $.TEMP4
+@_9     ld      HL      $.TEMP4
         ex      DE      HL
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      c       ._10
+        jr      c       @_10
 	
         ld      HL      _1a14
-._10    ldi     
+@_10    ldi     
         ldi     
         ldi     
         ldi     
         set     1       [IY`vars+%vars.flags0]
         ld      B       $78
         
-._11    push    BC
+@_11    push    BC
         ld      A       [$.VDPREGISTER_1]
         or      $40
         ld      [$.VDPREGISTER_1]       A
@@ -4360,9 +4360,9 @@ _155e:                                                                          
         
         call    _1a18
         pop     BC
-        djnz    ._11
+        djnz    @_11
         
-._12    res     0       [IY`vars+%vars.flags0]
+@_12    res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         call    _1a18
@@ -4374,7 +4374,7 @@ _155e:                                                                          
         inc     A
         ld      [$.D216]        A
         and     $03
-        jr      nz      ._13
+        jr      nz      @_13
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -4382,18 +4382,18 @@ _155e:                                                                          
 		rst     \\sound\rst_playSFX
 		;
 
-._13    ld      HL      [$.TEMP4]
+@_13    ld      HL      [$.TEMP4]
         ld      DE      [$.TEMP6]
         ld      A       [$.RINGS]
         or      H
         or      L
         or      D
         or      E
-        jp      nz      ._12
+        jp      nz      @_12
         
         ld      B       $B4
         
-._14    push    BC
+@_14    push    BC
 
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -4401,10 +4401,10 @@ _155e:                                                                          
         call    _1a18
         pop     BC
         bit     5       [IY`vars+%vars.joypad]
-        jr      z       .exit
-        djnz    ._14
+        jr      z       @exit
+        djnz    @_14
 
-.exit   ret
+@exit   ret
 	;
 
 _16d9:                                                                                                          ;$16D9
@@ -4428,7 +4428,7 @@ _16d9:                                                                          
         xor     A`zero
         ld      [$.TEMP1]       A`zero
         
-.loop   push    BC
+@loop   push    BC
         ld      HL      $.LAYOUT_BUFFER
         call    \\gfx\print
         ld      HL      $.D2C3
@@ -4440,7 +4440,7 @@ _16d9:                                                                          
         inc     [HL]
         inc     [HL]
         pop     BC
-        djnz    .loop
+        djnz    @loop
         
         ret
 	;
@@ -4489,44 +4489,44 @@ _172f:                                                                          
         ld      C       $00
         ld      A       [$.D27F]
         cp      $06
-        jr      c       ._1
+        jr      c       @_1
 	
         ld      C       $05
-._1     ld      A       [$D280]
+@_1     ld      A       [$D280]
         cp      $12
-        jr      c       ._2
+        jr      c       @_2
 	
         ld      A       C
         add     A       $05
         daa     
         ld      C       A
-._2     ld      A       [$D281]
+@_2     ld      A       [$D281]
         cp      $08
-        jr      c       ._3
+        jr      c       @_3
 	
         ld      A       C
         add     A       $05
         daa     
         ld      C       A
-._3     ld      A       [$D282]
+@_3     ld      A       [$D282]
         cp      $08
-        jr      c       ._4
+        jr      c       @_4
 	
         ld      A       C
         add     A       $05
         daa     
         ld      C       A
-._4     ld      A       [$.D283]
+@_4     ld      A       [$.D283]
         and     A
-        jr      nz      ._5
+        jr      nz      @_5
 	
         ld      A       C
         add     A       $0A
         daa     
         ld      C       A
-._5     ld      A       C
+@_5     ld      A       C
         cp      $30
-        jr      nz      ._6
+        jr      nz      @_6
 	
         ld      A       C
         add     A       $0A
@@ -4534,7 +4534,7 @@ _172f:                                                                          
         add     A       $0A
         daa     
         ld      C       A
-._6     ld      HL      $.D2FF
+@_6     ld      HL      $.D2FF
         ld      [HL]    C
         inc     HL
         ld      [HL]    $00
@@ -4561,11 +4561,11 @@ _172f:                                                                          
         ld      BC              $00B4
         call    _1860
         
-._7     ld      BC      $003C
+@_7     ld      BC      $003C
         call    _1860
         ld      A       [$.D27F]
         and     A
-        jr      z       ._8
+        jr      z       @_8
 	
         dec     A
         ld      [$.D27F]        A
@@ -4580,9 +4580,9 @@ _172f:                                                                          
 		rst     \\sound\rst_playSFX
 		;
         
-        jp      ._7
+        jp      @_7
         
-._8     ld      BC      $00B4
+@_8     ld      BC      $00B4
         call    _1860
         ld      A               $01
         ld      [$.D216]        A
@@ -4591,11 +4591,11 @@ _172f:                                                                          
         ld      BC      $00B4
         call    _1860
         
-._9     ld      BC      $001E
+@_9     ld      BC      $001E
         call    _1860
         ld      A       [$.LIVES]
         and     A
-        jr      z       ._10
+        jr      z       @_10
         dec     A
         ld      [$.LIVES]       A
         
@@ -4609,9 +4609,9 @@ _172f:                                                                          
 		rst     \\sound\rst_playSFX
 		;
         
-        jp      ._9
+        jp      @_9
         
-._10    ld      BC      $00B4
+@_10    ld      BC      $00B4
         call    _1860
         ld      A               $02
         ld      [$.D216]        A
@@ -4622,22 +4622,22 @@ _172f:                                                                          
         ld      BC      $00B4
         call    _1860
 
-._11    ld      BC      $001E
+@_11    ld      BC      $001E
         call    _1860
         ld      A       [$.D2FF]
         and     A
-        jr      z       ._13
+        jr      z       @_13
 	
         dec     A
         ld      C       A
         and     $0F
         cp      $0A
-        jr      c       ._12
+        jr      c       @_12
 	
         ld      A       C
         sub     $06
         ld      C       A
-._12    ld      A       C
+@_12    ld      A       C
         ld      [$.D2FF]        A
         
         ld      DE`hundreds     $0000
@@ -4650,9 +4650,9 @@ _172f:                                                                          
 		rst     \\sound\rst_playSFX
 		;
         
-        jp      ._11
+        jp      @_11
         
-._13    ld      BC      $01E0
+@_13    ld      BC      $01E0
         call    _1860
         ret
 	;
@@ -4683,7 +4683,7 @@ _1860:                                                                          
         
         ld      A       [$.D216]
         and     A
-        jr      nz      ._1
+        jr      nz      @_1
         ld      HL      $.D27F
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $01
@@ -4708,10 +4708,10 @@ _1860:                                                                          
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL
         
-        jr      ._3
+        jr      @_3
         
-._1     dec     A
-        jr      nz      ._2
+@_1     dec     A
+        jr      nz      @_2
         call    _1aca
         ld      HL      _19b1
         ld      DE      $.LAYOUT_BUFFER
@@ -4725,9 +4725,9 @@ _1860:                                                                          
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL
         
-        jr      ._3
+        jr      @_3
         
-._2     ld      HL      $.D2FF
+@_2     ld      HL      $.D2FF
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $03
         call    _1b13
@@ -4739,7 +4739,7 @@ _1860:                                                                          
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL
         
-._3     pop     BC
+@_3     pop     BC
         dec     BC
         ld      A       B
         or      C
@@ -4873,23 +4873,23 @@ _19b4:                                                                          
         ld      C       A
         and     %00001111
         cp      $0A
-        jr      c       ._1
+        jr      c       @_1
 	
         ld      A       C
         sub     $06
         ld      C       A
-._1     ld      [HL]    C
+@_1     ld      [HL]    C
         ld      DE      $0100
         ld      C       $00
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      c       ._2
+        jr      c       @_2
 	
         ld      A       [$.D285]
         ld      D       A
         ld      A       [$.D286]
         ld      E       A
-._2     call    \game\increaseScore
+@_2     call    \game\increaseScore
         ret
 	;
 
@@ -4907,24 +4907,24 @@ _19df:                                                                          
         ld      HL      $.TEMP6
         scf
         
-.loop   ld      A       [HL]
+@loop   ld      A       [HL]
         sbc     A       $00
         ld      C       A
         and     $0F
         cp      $0A
-        jr      c       ._1
+        jr      c       @_1
         ld      A       C
         sub     $06
         ld      C       A
-._1     ld      A       C
+@_1     ld      A       C
         cp      $A0
-        jr      c       ._2
+        jr      c       @_2
 	
         sub     $60
-._2     ld      [HL]    A
+@_2     ld      [HL]    A
         ccf     
         dec     HL
-        djnz    .loop
+        djnz    @loop
         
         ld      DE`hundreds     $0100
         ld      C`thousands     $00
@@ -4970,29 +4970,29 @@ _1a18:                                                                          
         ld      B`ypos  128
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      c       ._1
+        jr      c       @_1
 	
         ld      B`ypos  104
-._1     call    \\gfx.sprites\layoutSpritesHorizontal
+@_1     call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      c       ._2
+        jr      c       @_2
 	
         ld      HL      $.D285
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $02
         call    _1b13
         ld      B       $68
-        jr      ._3
+        jr      @_3
         
-._2     ld      HL      $151C
+@_2     ld      HL      $151C
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $02
         call    _1b13
         ld      B`ypos  128
-._3     ld      C`xpos  192
+@_3     ld      C`xpos  192
         ex      DE      HL
         ld      HL      [$.SPRITETABLE_ADDR]
         call    \\gfx.sprites\layoutSpritesHorizontal
@@ -5000,7 +5000,7 @@ _1a18:                                                                          
         call    _1aca
         ld      A       [$.CURRENT_LEVEL]
         cp      $1C
-        jr      nc      ._4
+        jr      nc      @_4
 	
         ld      HL      $.TEMP4
         ld      DE      $.LAYOUT_BUFFER
@@ -5014,7 +5014,7 @@ _1a18:                                                                          
         ld      [$.SPRITETABLE_ADDR]    HL
         ret
         
-._4     ld      HL      $.D284
+@_4     ld      HL      $.D284
         ld      DE      $.LAYOUT_BUFFER
         ld      B       $01
         call    _1b13
@@ -5059,11 +5059,11 @@ _1aca:                                                                          
         ld      B       $9F
         ld      A       [$.CURRENT_LEVEL]
         cp      $13
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      B`ypos  96
         ld      C`xpos  144
-._1     ld      HL      [$.SPRITETABLE_ADDR]
+@_1     ld      HL      [$.SPRITETABLE_ADDR]
         ld      DE      $.LAYOUT_BUFFER
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL
@@ -5074,14 +5074,14 @@ _1b13:                                                                          
 ;=======================================================================================================================
         ld      A       [HL]
         and     $F0
-        jr      nz      ._
+        jr      nz      @_
 	
         ld      A       $FE
         ld      [DE]    A
         inc     DE
         ld      A       [HL]
         and     $0F
-        jr      nz      ._1
+        jr      nz      @_1
 	
         ld      A       $FE
         ld      [DE]    A
@@ -5097,7 +5097,7 @@ _1b13:                                                                          
         ld      HL      $.LAYOUT_BUFFER
         ret
         
-._      ld      A       [HL]
+@_      ld      A       [HL]
         rrca    
         rrca    
         rrca    
@@ -5107,14 +5107,14 @@ _1b13:                                                                          
         add     A       $80
         ld      [DE]    A
         inc     DE
-._1     ld      A       [HL]
+@_1     ld      A       [HL]
         and     $0F
         add     A       A
         add     A       $80
         ld      [DE]    A
         inc     HL
         inc     DE
-        djnz    ._
+        djnz    @_
         ld      A       $FF
         ld      [DE]    A
         ld      HL      $.LAYOUT_BUFFER
@@ -5157,7 +5157,7 @@ _1bad:                                                                          
 ;params IY`vars         : Address of the common variables (used throughout)
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      HL      [$.D2B5]
-        ld      DE      ._1bc6
+        ld      DE      @_1bc6
         add     HL      DE
         ld      A       [HL]
         ld      [IY`vars+%vars.joypad]  A
@@ -5170,7 +5170,7 @@ _1bad:                                                                          
         ld      [$.D2B5]	HL
         ret
         
-._1bc6  ;joystick data? (lines are high by default)                                                            `$1BC6
+@_1bc6  ;joystick data? (lines are high by default)                                                            `$1BC6
         %byte
         
         $F7 $F7 $F7 $F7 $DF $F7 $FF $FF $D7 $F7 $F7 $F7 $FF $DF $F7 $F7
@@ -5194,7 +5194,7 @@ _LABEL_1C49_62:                                                                 
         ei                                                      ;enable interrupts
         
         ;default to 3 lives
-._1     ld      A`lives         3
+@_1     ld      A`lives         3
         ld      [$.LIVES]       A`lives
         
         ;set the number of thousands of pts per extra life
@@ -5231,53 +5231,53 @@ _LABEL_1C49_62:                                                                 
         call    titleScreen
         
         res     1       [IY`vars+%vars.scrollRingFlags]
-        jr      c       ._LABEL_1C9F_104
+        jr      c       @_LABEL_1C9F_104
         
         set     1       [IY`vars+%vars.scrollRingFlags]
         
-._LABEL_1C9F_104
+@_LABEL_1C9F_104
         ;are we on the end sequence?
         ld      A       [$.CURRENT_LEVEL]
         cp      19
-        jr      nc      ._1
+        jr      nc      @_1
         
         res     0       [IY`vars+%vars.flags2]
         res     1       [IY`vars+%vars.flags2]
         call    \\gfx.sprites\hideSprites
         call    _LABEL_C52_106
         bit     1       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._LABEL_1CBD_120
-        jp      c       ._1
+        jr      z       @_LABEL_1CBD_120
+        jp      c       @_1
         
-._LABEL_1CBD_120
+@_LABEL_1CBD_120
         call    \\gfx\fadeOut
         call    \\gfx.sprites\hideSprites
         bit     0       [IY`vars+%vars.scrollRingFlags]
-        jr      nz      ._2
+        jr      nz      @_2
 	
         bit     4       [IY`vars+%vars.flags6]
-        jr      nz      ._3
+        jr      nz      @_3
         
         ;wait at title screen for button press?
-._2     ld      B       $3C
+@_2     ld      B       $3C
         
-.wait   res     0       [IY`vars+%vars.flags0]
+@wait   res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
-        djnz    .wait
+        djnz    @wait
 		
 	;(we can compile with, or without, audio)
 	?( \\sound )
 		rst     \\sound\rst_muteSound
 		;
         
-._3     call    _LABEL_1CED_131
+@_3     call    _LABEL_1CED_131
         and     A
-        jp      z       ._1
+        jp      z       @_1
 	
         dec     A
-        jr      z       ._LABEL_1C9F_104
+        jr      z       @_LABEL_1C9F_104
 	
-        jp      ._LABEL_1CBD_120
+        jp      @_LABEL_1CBD_120
 	;
 	
 fillMemoryWithValue:                                                                                            ;$1CE8
@@ -5307,11 +5307,11 @@ _LABEL_1CED_131:                                                                
         ld      A`level	[$.CURRENT_LEVEL]
         
         bit     4       [IY`vars+%vars.flags6]
-        jr      z       ._1
+        jr      z       @_1
         
         ld      A       [$.D2D3]
 	
-._1     add     A`level	A`level					;double the level number (for an index)
+@_1     add     A`level	A`level					;double the level number (for an index)
         ld      L`level	A`level					;put this into a 16-bit number
         ld      H`level	$00
         
@@ -5352,7 +5352,7 @@ _LABEL_1CED_131:                                                                
         ;loop 16 times...
         ;---------------------------------------------------------------------------------------------------------------
         ld      B       16
-._2     push    BC
+@_2     push    BC
         
         ;wait one frame
         res     0       [IY`vars+%vars.flags0]
@@ -5406,19 +5406,19 @@ _LABEL_1CED_131:                                                                
         set     5       [IY`vars+%vars.flags0]             
         
         pop     BC
-        djnz    ._2
+        djnz    @_2
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;demo mode?
         bit     1       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._1dae
+        jr      z       @_1dae
         
         ld      HL              $0000
         ld      [$.D2B5]        HL
         ld      [IY`vars+%vars.spriteUpdateCount]       H
         
-._1dae  res     0       [IY`vars+%vars.flags0]
+@_1dae  res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
         
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
@@ -5436,20 +5436,20 @@ _LABEL_1CED_131:                                                                
         ;every other frame?
         ld      A       [$.FRAMECOUNT]
         and     %00000001
-        jr      nz      ._3
+        jr      nz      @_3
         
         ld      A       [$.D289]
         and     A
         call    nz      _1fa9
         
-        jr      ._4
+        jr      @_4
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._3     ld      A       [$.D287]
+@_3     ld      A       [$.D287]
         and     A
         jp      nz      _2067
-._1de2                                                          ;jump to here from _2067
+@_1de2                                                          ;jump to here from _2067
         ld      A       [$.D2B1]
         and     A
         call    nz      _1f06
@@ -5458,12 +5458,12 @@ _LABEL_1CED_131:                                                                
         bit     1       [IY`vars+%vars.timeLightningFlags]
         call    nz      _1f49                                  ;if so, handle that
         
-._4     bit     1       [IY`vars+%vars.flags6]
-        call    nz      ._7
+@_4     bit     1       [IY`vars+%vars.flags6]
+        call    nz      @_7
         
         ;are we in demo mode?
         bit     1       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._5                                     ;no, skip ahead
+        jr      z       @_5                                     ;no, skip ahead
         
         bit     5       [IY`vars+%vars.joypad]                  ;is button pressed?
         jp      z       _20b8                                  ;if yes, end demo mode
@@ -5471,7 +5471,7 @@ _LABEL_1CED_131:                                                                
         call    _1bad                                          ;process demo mode?
         
         ;increase the frame counter
-._5     ld      HL      [$.FRAMECOUNT]
+@_5     ld      HL      [$.FRAMECOUNT]
         inc     HL
         ld      [$.FRAMECOUNT]  HL
         
@@ -5506,13 +5506,13 @@ _LABEL_1CED_131:                                                                
         ld      DE      $0003
         ld      A       $E0
         
-._6     ld      [HL]    A
+@_6     ld      [HL]    A
         add     HL      DE
         ld      [HL]    A
         add     HL      DE
         ld      [HL]    A
         add     HL      DE
-        djnz    ._6
+        djnz    @_6
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A`bank			1
@@ -5533,11 +5533,11 @@ _LABEL_1CED_131:                                                                
         bit     3       [IY`vars+%vars.timeLightningFlags]
         call    nz      _1e9e
         
-        jp      ._1dae
+        jp      @_1dae
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._7     ld      [IY`vars+%vars.joypad]  $F7
+@_7     ld      [IY`vars+%vars.joypad]  $F7
         ld      HL      [$.LEVEL_LEFT]
         ld      DE      $0112
         add     HL      DE
@@ -5574,7 +5574,7 @@ _1e9e:                                                                          
 		rst     \\sound\rst_muteSound
 		;
         
-._1     ld      A       [IY`vars+%vars.spriteUpdateCount]
+@_1     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -5592,7 +5592,7 @@ _1e9e:                                                                          
         call    _239c
         ;paused?
         bit     3       [IY`vars+%vars.timeLightningFlags]
-        jr      nz      ._1
+        jr      nz      @_1
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -5679,12 +5679,12 @@ _1f06:                                                                          
         ld      A       [$.D2B1+1]
         ld      HL      [$.LOADPALETTE_TILE]
         and     A
-        jp      p       ._1
+        jp      p       @_1
 	
         and     $7F
         ld      HL      [$.LOADPALETTE_SPRITE]
         ld      E       $10
-._1     ld      C       A
+@_1     ld      C       A
         ld      B       $00
         add     HL      BC
         add     A       E
@@ -5694,11 +5694,11 @@ _1f06:                                                                          
         ld      A       [$.D2B1]
         and     %00000001
         ld      A       [HL]
-        jr      z	._2
+        jr      z	@_2
         
         ld      A       [$.D2B3]
         
-._2     out     [%sms.ports.vdp.data]   A
+@_2     out     [%sms.ports.vdp.data]   A
         
         ei      
         ret
@@ -5712,30 +5712,30 @@ _1f49:                                                                          
         ld      HL      $00AA
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._1
+        jr      nc      @_1
 	
         ld      BC      _1f9d
         ld      E       A`zero
         ld      D       A`zero
-        jp      ._3
+        jp      @_3
         
-._1     ld      BC      _1fa5
+@_1     ld      BC      _1fa5
         ld      HL      $0082
         sbc     HL      DE
-        jr      z       ._2
+        jr      z       @_2
 	
         ld      BC      $1FA1
         ld      HL      $0064
         sbc     HL      DE
-        jr      z       ._3
+        jr      z       @_3
 	
         ld      BC      $1f9d
         ld      A       E
         or      D
-        jr      z       ._3
-        jp      ._4
+        jr      z       @_3
+        jp      @_4
         
-._2     push    BC
+@_2     push    BC
 	
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -5745,7 +5745,7 @@ _1f49:                                                                          
         
         pop     BC
         
-._3     ld      HL      $.CYCLEPALETTE_COUNTER
+@_3     ld      HL      $.CYCLEPALETTE_COUNTER
         ld      A	[BC]
         ld      [HL]    A
         inc     HL
@@ -5763,7 +5763,7 @@ _1f49:                                                                          
         ld      A	[BC]
         ld      H       A
         ld      [$.CYCLEPALETTE_POINTER]        HL
-._4     inc     DE
+@_4     inc     DE
         ld      [$.D2E9]        DE
         ret
 	;
@@ -5794,7 +5794,7 @@ _1fa9:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         dec     A
         ld      [$.D289]        A
-        jr      z       ._1
+        jr      z       @_1
         
         cp      $88
         ret     nz
@@ -5819,15 +5819,15 @@ _1fa9:                                                                          
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     call    \\gfx\fadeOut
+@_1     call    \\gfx\fadeOut
         
         pop     HL
         res     5       [IY`vars+%vars.flags0]
         bit     2       [IY`vars+%vars.unknown_0D]
-        jr      nz      ._4
+        jr      nz      @_4
 	
         bit     4       [IY`vars+%vars.flags6]
-        jr      nz      ._5
+        jr      nz      @_5
 	
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -5842,10 +5842,10 @@ _1fa9:                                                                          
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $1A
-        jr      nc      ._3
+        jr      nc      @_3
         
         bit     0       [IY`vars+%vars.timeLightningFlags]
-        jr      z       ._2
+        jr      z       @_2
         
         ld      HL      $2047
         call    \\gfx\_b60
@@ -5858,18 +5858,18 @@ _1fa9:                                                                          
         call    _LABEL_1CED_131
         pop     AF
         ld      [$.CURRENT_LEVEL]       A
-._2     ld      HL      $.CURRENT_LEVEL                         ;note use of HL here
+@_2     ld      HL      $.CURRENT_LEVEL                         ;note use of HL here
         inc     [HL]
         ld      A       $01
         ret
         
-._3     res     0       [IY`vars+%vars.timeLightningFlags]
+@_3     res     0       [IY`vars+%vars.timeLightningFlags]
         ld      A       $FF
         ret
         
-._4     ld      HL      $.CURRENT_LEVEL                         ;note use of HL here
+@_4     ld      HL      $.CURRENT_LEVEL                         ;note use of HL here
         inc     [HL]
-._5     ld      A       $FF
+@_5     ld      A       $FF
         
         ret
 ;
@@ -6039,23 +6039,23 @@ loadLevel:                                                                      
         ld      HL      $0800
         ld      A       [$.CURRENT_LEVEL]
         cp      9                               
-        jr      c       ._2                                     ;less than level 9? (Labyrinth Act 1)
+        jr      c       @_2                                     ;less than level 9? (Labyrinth Act 1)
 	
         cp      11
-        jr      z       ._1                                     ;if level 11 (Labyrinth Act 3)
-        jr      nc      ._2                                     ;if >= level 11 (Labyrinth Act 3)
+        jr      z       @_1                                     ;if level 11 (Labyrinth Act 3)
+        jr      nc      @_2                                     ;if >= level 11 (Labyrinth Act 3)
         
         ;this must be level 9 or 10 (Labyrinth Act 1/2)
         ld      A       [DE]                 
         and     C                                               ;is the bit for the level set?
-        jr      z       ._2                                     ;if so, skip this next part
+        jr      z       @_2                                     ;if so, skip this next part
 
-._1     ld      A               $FF
+@_1     ld      A               $FF
         ld      [$.WATERLINE]   A
         
         ld      HL       $0020
         
-._2     ld      [$.D2DC]        HL                              ;either $0800 or $0020
+@_2     ld      [$.D2DC]        HL                              ;either $0800 or $0020
         
         ld      HL              $FFFE
         
@@ -6063,22 +6063,22 @@ loadLevel:                                                                      
         ld      HL              $23FF
         
         bit     4       [IY`vars+%vars.flags6]
-        jr      z       ._3
+        jr      z       @_3
         
         bit     0       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._5
+        jr      z       @_5
         
         ld      HL      \screens.temp\_2402
         
         ;set number of collected rings to 0
-._3     xor     A`zero                                          ;set A to 0
+@_3     xor     A`zero                                          ;set A to 0
         ld      [$.RINGS]   A`zero
         
         ;is this a special stage? (level number 28+)
 	;TODO: this should be based on header, not level number
         ld      A       [$.CURRENT_LEVEL]
         sub     28
-        jr      c       ._4                                     ;skip ahead if level < 28
+        jr      c       @_4                                     ;skip ahead if level < 28
         
         ;triple the level number for a lookup table of 3-bytes each entry
         ld      C       A
@@ -6091,11 +6091,11 @@ loadLevel:                                                                      
         
         ;copy 3 bytes from HL (`_2402` for regular levels, `_2405`+ for special stages) to $.D2CE/F/D0
         ;set the level time?
-._4     ld      DE       $.TIME_MINUTES
+@_4     ld      DE       $.TIME_MINUTES
         ld      BC       $0003
         ldir
         
-._5     ;load HUD sprite set
+@_5     ;load HUD sprite set
         ld      HL      $B92E                                   ;=$2F92E
         ld      DE      $3000
         ld      A       9
@@ -6157,7 +6157,7 @@ loadLevel:                                                                      
         pop     HL
         
         and     c                       
-        jr      z       ._6
+        jr      z       @_6
         
         cpl                                                     ;NOT A
         ld      C       A
@@ -6186,17 +6186,17 @@ loadLevel:                                                                      
         
         ;set starting X position:
 	
-._6     ld      [$.D216]        HL             
+@_6     ld      [$.D216]        HL             
         ld      A	        [HL]                            ;get the value at that RAM address      
         
         ;if the value is less than 3, just use 0
         ;(this is so that if the player starting position is at the left of the level,
         ; it doesn't try and place the camera before the level's left edge)
         sub     3
-        jr      nc      ._7
+        jr      nc      @_7
 	
         xor     A`zero                                          ;set A to 0
-._7     ld      [$.BLOCK_X]     A
+@_7     ld      [$.BLOCK_X]     A
         
         ;using the number as the hi-byte, divide by 8 into DE
         ;e.g.
@@ -6225,11 +6225,11 @@ loadLevel:                                                                      
         ld      A	[HL]
         
         sub     3
-        jr      nc      ._8
+        jr      nc      @_8
 	
         xor     A`zero                                          ;set A to 0
         
-._8     ld      [$.BLOCK_Y]     A
+@_8     ld      [$.BLOCK_Y]     A
         ld      E       $00
         rrca    
         rr      E
@@ -6272,7 +6272,7 @@ loadLevel:                                                                      
         ld      A       H                                       ;look at the hi-byte of the FloorLayout
         di                                                      ;disable interrupts
         cp      $40                                             ;is it $40xx or above?
-        jr      c       ._9
+        jr      c       @_9
 	
         sub     $40
         ld      H       A
@@ -6283,16 +6283,16 @@ loadLevel:                                                                      
         ld      A`bank                  7
         ld      [%sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
-        jr      ._10
+        jr      @_10
         
-._9     ld      A`bank                  5
+@_9     ld      A`bank                  5
         ld      [%sms.mapper.slot1]     A`bank
         ld      [$.SLOT1]               A`bank
         ld      A`bank                  6
         ld      [%sms.mapper.slot2]     A`bank
         ld      [$.SLOT2]               A`bank
         
-._10    ei                                                      ;enable interrupts
+@_10    ei                                                      ;enable interrupts
         
         ;load the Floor Layout into RAM
         ld      DE      $4000                                   ;re-base the FloorLayout address to Page 1
@@ -6515,12 +6515,12 @@ loadLevel:                                                                      
         inc     HL
         ld      A	[$.PREVIOUS_MUSIC]                      ;check previously played music
         cp      [HL]
-        jr      z       ._11                                    ;if current music is the same, skip ahead
+        jr      z       @_11                                    ;if current music is the same, skip ahead
         
         ld      A	[HL]                                    ;get the music number from the level header
         and     A                                               ;this won't change the value of A, but it will
                                                                 ;update the flags, so that ...
-        jp      m       ._11                                    ;we can check if the sign is negative,
+        jp      m       @_11                                    ;we can check if the sign is negative,
                                                                 ;that is, A>127
         
         ;remember the current level music to restore it after invincibility &c.
@@ -6533,15 +6533,15 @@ loadLevel:                                                                      
 	;---------------------------------------------------------------------------------------------------------------
 	
         ;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
-._11    ld      B       32
+@_11    ld      B       32
         ld      HL      $.ACTIVEMOBS
         xor     A`zero                                          ;set A to 0
         
-._12    ld      [HL]    A
+@_12    ld      [HL]    A
         inc     HL
         ld      [HL]    A
         inc     HL
-        djnz    ._12
+        djnz    @_12
         
         bit     5       [IY`vars+%vars.origFlags6]
         ret     z
@@ -6581,10 +6581,10 @@ loadMobList:                                                                    
         ld      B`mobCount	A`mobCount			;and set as the loop counter
         
         ;loop over the number of mobs:
-._1     ld      A`mobType	[HL`mobList]			;read the mob type
+@_1     ld      A`mobType	[HL`mobList]			;read the mob type
         inc     HL`mobList					;move on to the X & Y position
         call    loadMobFromList
-        djnz    ._1
+        djnz    @_1
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -6596,9 +6596,9 @@ loadMobList:                                                                    
         
         ;remove the remaining mobs (out of 32)
         ld      B       A
-._2     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+@_2     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
         add     IX      DE
-        djnz    ._2
+        djnz    @_2
         
         ret
 	;
@@ -6674,9 +6674,9 @@ loadMobFromList:												;$235E
         ;erase the next 19 bytes (remainder of mob data structure)
         ld      B'count		19
         xor     A`zero                                          ;set A to 0
-.loop   ld      [HL'mobData]	A`zero
+@loop   ld      [HL'mobData]	A`zero
         inc     HL'mobData
-        djnz    .loop
+        djnz    @loop
         
 	;return to the original parameters
         exx
@@ -6723,11 +6723,11 @@ _239c:                                                                          
         ld      A       [HL]
         inc     A
         cp      $06
-        jr      c       ._1
+        jr      c       @_1
         
         xor     A`zero
         
-._1     ld      [HL]    A
+@_1     ld      [HL]    A
         
         ret
 	;
@@ -6754,10 +6754,10 @@ _23c9:                                                                          
         ld      A       L
         inc     A
         cp      H
-        jr      c       ._1
+        jr      c       @_1
 	
         xor     A`zero
-._1     ld      L       A
+@_1     ld      L       A
         ld      [$.CYCLEPALETTE_INDEX]  HL
         ld      A	[$.CYCLEPALETTE_SPEED]
         ld      [$.CYCLEPALETTE_COUNTER]        A
@@ -6887,11 +6887,11 @@ _LABEL_258B_133:                                                                
         ld      [$.SLOT1]               A`bank
         ld      A	[$.D27F]
         cp      $06
-        jp      c       ._4
+        jp      c       @_4
 	
         ld      B       $3C
         
-._1     push    BC
+@_1     push    BC
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -6903,7 +6903,7 @@ _LABEL_258B_133:                                                                
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]	HL
         pop     BC
-        djnz    ._1
+        djnz    @_1
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -6914,7 +6914,7 @@ _LABEL_258B_133:                                                                
         ld      HL      $241D
         ld      B       $3D
         
-._2     push    BC
+@_2     push    BC
         ld      C       [IY`vars+%vars.spriteUpdateCount]
         
         res     0       [IY`vars+%vars.flags0]
@@ -6929,7 +6929,7 @@ _LABEL_258B_133:                                                                
         ld      [$.SPRITETABLE_ADDR]    DE
         ld      B       $03
         
-._3     push    BC
+@_3     push    BC
         push    HL
         ld      A       $70
         add     A	[HL]
@@ -6963,10 +6963,10 @@ _LABEL_258B_133:                                                                
         ld      [$.SPRITETABLE_ADDR]	HL
         pop     HL
         pop     BC
-        djnz    ._3
+        djnz    @_3
         
         pop     BC
-        djnz    ._2
+        djnz    @_2
         
         ld      HL      _2047
         call    \\gfx\_b60
@@ -6990,7 +6990,7 @@ _LABEL_258B_133:                                                                
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     ld      BC      240
+@_4     ld      BC      240
         call    \waitFrames
         call    _155e                                          ;Act Complete screen?
         
@@ -7069,9 +7069,9 @@ _LABEL_258B_133:                                                                
         ld      HL              \screens.credits\creditsText
         call    _2795
         
-.infiniteLoop
+@infiniteLoop
         ;this could be the game-freeze after the final credits
-        jp      .infiniteLoop
+        jp      @infiniteLoop
 	;
 
 _2718:                                                                                                          ;$2718
@@ -7079,7 +7079,7 @@ _2718:                                                                          
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         push    AF  HL  DE  BC
-._1     push    BC
+@_1     push    BC
         
         res     0       [IY`vars+%vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -7091,16 +7091,16 @@ _2718:                                                                          
         ld      HL      $.D322
         ld      B       $04
         
-._2     push    BC
+@_2     push    BC
         call    _275a
         pop     BC
-        djnz    ._2
+        djnz    @_2
         
         pop     BC
         dec     BC
         ld      A       B
         or      C
-        jr      nz      ._1
+        jr      nz      @_1
         
         pop     BC  DE  HL  AF
         ret
@@ -7148,7 +7148,7 @@ _275a:                                                                          
         
         ld      A       [DE]                                    ;[$2848]
         cp      [HL]
-        jr      nc      ._1
+        jr      nc      @_1
         
         ld      [HL]    $00                                     ;reset the counter
         inc     DE                                              ;move to the next frame of animation
@@ -7164,7 +7164,7 @@ _275a:                                                                          
         inc     HL
         ld      A       [DE]
         cp      $FF
-        jr      nz      ._1
+        jr      nz      @_1
         
         inc     DE
         ld      A       [DE]
@@ -7179,7 +7179,7 @@ _275a:                                                                          
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     inc     HL
+@_1     inc     HL
         inc     DE
         push    HL
         ex      DE      HL
@@ -7210,7 +7210,7 @@ _2795:                                                                          
         inc     DE
         ld      A       $FF
         ld      [DE]    A
-._      ld      A	[HL]
+@_      ld      A	[HL]
         inc     HL
         cp      $FF
         ret     z
@@ -7219,19 +7219,19 @@ _2795:                                                                          
         jr      z       :
 	
         cp      $FC
-        jr      z       ._2
+        jr      z       @_2
 	
         cp      $FD
-        jr      nz      ._1
+        jr      nz      @_1
 	
         ld      C       [HL]
         inc     HL
         ld      B       [HL]
         inc     HL
         call    _2718
-        jr      ._
+        jr      @_
         
-._1     push    HL
+@_1     push    HL
         ld      [$.LAYOUT_BUFFER+2]     A
         ld      BC      $0008
         call    _2718
@@ -7240,25 +7240,25 @@ _2795:                                                                          
         ld      HL      $.LAYOUT_BUFFER
         inc     [HL]
         pop     HL
-        jr      ._
+        jr      @_
         
-._2     ld      B       [HL]
+@_2     ld      B       [HL]
         inc     HL
         push    HL
         
-._3     push    BC
+@_3     push    BC
         ld      BC      $000C
         call    _2718
         ld      DE      $3AA4
         ld      HL      $3AE4
         ld      B       $09
         
-._4     push    BC
+@_4     push    BC
         push    HL
         push    DE
         ld      B       $14
         
-._5     di      
+@_5     di      
         ld      A       L
         out     [%sms.ports.vdp.control]        A
         ld      A       H
@@ -7283,7 +7283,7 @@ _2795:                                                                          
         ei      
         inc     HL
         inc     DE
-        djnz    ._5
+        djnz    @_5
         
         pop     DE
         pop     HL
@@ -7293,12 +7293,12 @@ _2795:                                                                          
         add     HL      BC
         ex      DE      HL
         pop     BC
-        djnz    ._4
+        djnz    @_4
         
         pop     BC
-        djnz    ._3
+        djnz    @_3
         pop     HL
-        jp      ._
+        jp      @_
 	;
 
 _2825:                                                                                                          ;$2825
@@ -7566,177 +7566,177 @@ mobPointers:                                                                    
 /* 	This is the list of mobs defined in the game, with the order of this table providing the mob IDs.
 	*/
 	%pointer
-.sonic
+@sonic
 	\sonic\process						;#00
-.powerUp_ring
+@powerUp_ring
         \powerups.ring\process                         	;#01
-.powerUp_speed
+@powerUp_speed
         \powerups.speed\process                        	;#02
-.powerUp_life           
+@powerUp_life           
         \powerups.life\process                         	;#03
-.powerUp_shield         
+@powerUp_shield         
         \powerups.shield\process                       	;#04
-.powerUp_invincibility
+@powerUp_invincibility
         \powerups.invincibility\process                	;#05: monitor - invincibility
-.powerUp_shield
+@powerUp_shield
         \powerups.emerald\process                      	;#06: chaos emerald
-.boss_endSign       
+@boss_endSign       
         \boss.endSign\process                             	;#07: end sign
-.badnick_crabMeat
+@badnick_crabMeat
         \badnick.crabMeat\process                           	;#08: badnick - crabmeat
-.platform_swinging
+@platform_swinging
         \platform.swinging\process                          	;#09: wooden platform - swinging (Green Hill)
-.explosion  
+@explosion  
         \mobs.explosion\process                                ;#0A: explosion
-.platform   
+@platform   
         \platform.sinking\process                              ;#0B: wooden platform (Green Hill)
-.platform_weight
+@platform_weight
         \platform.weight\process                            	;#0C: wooden platform - falling (Green Hill)
-._6ac1           
+@_6ac1           
         \unknown.6ac1\process					;#0D: UNKNOWN
-.badnick_buzzBomber
+@badnick_buzzBomber
         \badnick.buzzBomber\process                         	;#0E: badnick - buzz bomber
-.platform_leftRight
+@platform_leftRight
         \platform.moving\process                         	;#0F: wooden platform - moving (Green Hill)
-.badnick_motobug
+@badnick_motobug
         \badnick.motobug\process                 		;#10: badnick - motobug
-.badnick_newtron
+@badnick_newtron
         \badnick.newtron\process                            	;#11: badnick - newtron
-.boss_greenHill
+@boss_greenHill
         \boss.greenHill\process                             	;#12: boss (Green Hill)
-._9b75
+@_9b75
         \unknown.9b75\process                                  ;#13: UNKNOWN - bullet?
-._9be8
+@_9be8
         \unknown.9be8\process                                  ;#14: UNKNOWN - fireball right?
-._9c70
+@_9c70
         _9c70                                          	;#15: UNKNOWN - fireball left?
-.trap_flameThrower
+@trap_flameThrower
         mob_trap_flameThrower                          	;#16: flame thrower (Scrap Brain)
-.door_left
+@door_left
         mob_door_left                                  	;#17: door - one way left (Scrap Brain)
-.door_right
+@door_right
         mob_door_right                                 	;#18: door - one way right (Scrap Brain)
-.door_door
+@door_door
         mob_door                                       	;#19: door (Scrap Brain)
-.trap_electric
+@trap_electric
         \trap.electric\process                              	;#1A: electric sphere (Scrap Brain)
-.badnick_ballHog
+@badnick_ballHog
         \badnick.ballhog\process                         	;#1B: badnick - ball hog (Scrap Brain)
-._a33c
+@_a33c
         \unknown.a33c\process                                  ;#1C: UNKNOWN - ball from ball hog?
-.switch
+@switch
         \door.switch\process                                   ;#1D: switch
-.door_switchActivated
+@door_switchActivated
         \door.switching\process                       		;#1E: switch door
-.badnick_caterkiller
+@badnick_caterkiller
         \badnick.caterkiller\process                        	;#1F: badnick - caterkiller
-._96f8
+@_96f8
         \unknown.96f8\process                                  ;#20: UNKNOWN
-.platform_bumper
+@platform_bumper
         \platform.bumper\process                            	;#21: moving bumper (Special Stage)
-.boss_scrapBrain
+@boss_scrapBrain
         \boss.scrapBrain\process                            	;#22: boss (Scrap Brain)
-.boss_freeRabbit
+@boss_freeRabbit
         \boss.freeRabbit\process                            	;#23: free animal - rabbit
-.boss_freeBird
+@boss_freeBird
         \boss.freeBird\process                              	;#24: free animal - bird
-.boss_capsule
+@boss_capsule
         \boss.capsule\process                               	;#25: capsule
-.badnick_chopper
+@badnick_chopper
         \badnick.chopper\process                            	;#26: badnick - chopper
-.platform_fallVert
+@platform_fallVert
         mob_platform_fallVert                          	;#27: log - vertical (Jungle)
-.platform_fallHoriz
+@platform_fallHoriz
         mob_platform_fallHoriz                         	;#28: log - horizontal (Jungle)
-.platform_roll
+@platform_roll
         mob_platform_roll                              	;#29: log - floating (Jungle)
-._96a8
+@_96a8
         \unknown.96a8\process                                  ;#2A: UNKNOW
-._8218
+@_8218
         \unknown.8218\process                                  ;#2B: UNKNOWN
-.boss_jungle
+@boss_jungle
         \boss.jungle\process                                	;#2C: boss (Jungle)
-.badnick_yadrin
+@badnick_yadrin
         \badnick.yadrin\process                             	;#2D: badnick - yadrin (Bridge)
-.platform_bridge
+@platform_bridge
         \platform.bridge\process                            	;#2E: falling bridge (Bridge)
-._94a5
+@_94a5
         \unknown.94a5\process                                  ;#2F: UNKNOWN - wave moving projectile?
-.meta_clouds
+@meta_clouds
         \meta.clouds\process                                	;#30: meta - clouds (Sky Base)
-.trap_propeller
+@trap_propeller
         \trap.propeller\process                             	;#31: propeller (Sky Base)
-.badnick_bomb
+@badnick_bomb
         mob_badnick_bomb                               	;#32: badnick - bomb (Sky Base)
-.trap_cannon
+@trap_cannon
         \trap.cannon\process                                	;#33: cannon (Sky Base)
-.trap_cannonBall
+@trap_cannonBall
         \trap.cannonball\process                            	;#34: cannon ball (Sky Base)
-.badnick_unidos
+@badnick_unidos
         \badnick.unidos\process                             	;#35: badnick - unidos (Sky Base)
-._b0f4
+@_b0f4
         \unknown.b0f4\process                                  ;#36: UNKNOWN - stationary, lethal
-.trap_turretRotating
+@trap_turretRotating
         \trap.turretRotating\process                        	;#37: rotating turret (Sky Base)
-.platform_flyingRight
+@platform_flyingRight
         \platform.flyingRight\process                       	;#38: flying platform (Sky Base)
-._b398
+@_b398
         \trap.spikewall\process                                ;#39: moving spiked wall (Sky Base)
-.trap_turretFixed
+@trap_turretFixed
         \trap.turret_fixed\process                          	;#3A: fixed turret (Sky Base)
-.platform_flyingUpDown
+@platform_flyingUpDown
         \platform.flyingUpDown\process                      	;#3B: flying platform - up/down (Sky Base)
-.badnick_jaws
+@badnick_jaws
         \badnick.jaws\process                               	;#3C: badnick - jaws (Labyrinth)
-.trap_spikeBall
+@trap_spikeBall
         \trap.spikeBall\process                             	;#3D: spike ball (Labyrinth)
-.trap_spear
+@trap_spear
         \trap_spear\process                                 	;#3E: spear (Labyrinth)
-.trap_fireball
+@trap_fireball
         \trap.fireball\process                              	;#3F: fire ball head (Labyrinth)
-.meta_water
+@meta_water
         \meta.water\process                                 	;#40: meta - water line position
-.powerUp_bubbles
+@powerUp_bubbles
         \powerups.bubbles\process                            	;#41: bubbles (Labyrinth)
-._8eca
+@_8eca
         _8eca                                          	;#42: UNKNOWN
-.null
+@null
         \mobs.null\process                                     ;#43: NO-CODE
-.badnick_burrobot
+@badnick_burrobot
         \badnick.burrobot\process                           	;#44: badnick - burrobot
-.platform_float
+@platform_float
         \platform.float\process                             	;#45: platform - float up (Labyrinth)
-.boss_electricBeam
+@boss_electricBeam
         \boss.electricBeam\process                          	;#46: boss - electric beam (Sky Base)
-._bcdf
+@_bcdf
         \unknown.bcdf\process                                  ;#47: UNKNOWN
-.boss_bridge
+@boss_bridge
         mob_boss_bridge                                	;#48: boss (Bridge)
-.boss_labyrinth
+@boss_labyrinth
         mob_boss_labyrinth                             	;#49: boss (Labyrinth)
-.boss_skybase
+@boss_skybase
         \boss.skyBase\process                               	;#4A: boss (Sky Base)
-.meta_trip
+@meta_trip
         \meta.trip\process                                  	;#4B: trip zone (Green Hill)
-.platform_flipper
+@platform_flipper
         \platform.flipper\process                           	;#4C: Flipper (Special Stage)
 .
         $0000                                           	;#4D: RESET!
-.platform_balance
+@platform_balance
         \platform.balance\process                           	;#4E: balance (Bridge)
 .
         $0000                                           	;#4F: RESET!
-.flower
+@flower
         \mobs.flower\process                                   ;#50: flower (Green Hill)
-.powerUp_checkpoint
+@powerUp_checkpoint
         \powerups.checkpoint\process                   	;#51: monitor - checkpoint
-.powerUp_continue
+@powerUp_continue
         \powerups.continue\process                     	;#52: monitor - continue
-.anim_final 
+@anim_final 
         \cutscene.final\process                                ;#53: final animation    
-.anim_emeralds
+@anim_emeralds
         \cutscene.emeralds\process                        	;#54: all emeralds animation
-._7b95
+@_7b95
         \meta.blink\process                                    ;#55: "make sonic blink"
 	;
 	
@@ -7868,10 +7868,10 @@ refresh:													;$2E5A
         
         ld      A`lives [$.LIVES]
         cp      9                                               ;9 lives?
-        jr      c       ._1                                     ;if more than 9 lives,
+        jr      c       @_1                                     ;if more than 9 lives,
         ld      A`lives 9                                       ;we will display as 9 lives
         
-._1     add     A`lives A`lives                                 ;double for the 8x16 sprite lookup                     
+@_1     add     A`lives A`lives                                 ;double for the 8x16 sprite lookup                     
         add     A`lives $80                                     ;numeral sprites begin at index $80
         ld      [$.LAYOUT_BUFFER+3]	A`lives                 ;put number of lives into the buffer
         
@@ -7925,10 +7925,10 @@ refresh:													;$2E5A
         ld      DE      $0070
         ;up-down wave scrolling?
         bit     6       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._2
+        jr      z       @_2
         
         ld      DE      $0080
-._2     ld      A       [HL]
+@_2     ld      A       [HL]
         inc     HL
         or      [HL]
         call    z       updateCamera._311a
@@ -8042,14 +8042,14 @@ displayTime:                                                                    
         ;are we on the special stage?
         ld      A`level             [$.CURRENT_LEVEL]
         cp      28
-        jr      c       ._1
+        jr      c       @_1
         
         ;position the time in the centre of the screen on special stages
         ;TODO: this is inefficient changing the position twice
         ld      C`xpos              112
         ld      B`ypos              56
         
-._1     ld      HL`spriteTable      [$.SPRITETABLE_ADDR]
+@_1     ld      HL`spriteTable      [$.SPRITETABLE_ADDR]
         ld      DE`buffer           $.LAYOUT_BUFFER
         call    \\gfx.sprites\layoutSpritesHorizontal
         ld      [$.SPRITETABLE_ADDR]    HL`spriteTable
@@ -8072,13 +8072,13 @@ mobs_updateCamera:                                                              
         ld      HL`gotoX        [$.CAMERA_X_GOTO]
         ld      A`gotoXLo       L`gotoXLo
         or      H`gotoXHi
-        call    nz      .scrollCameraTo_horizontal
+        call    nz      @scrollCameraTo_horizontal
         
         ;does the camera need to be moved vertically toward a target?
         ld      HL`gotoY        [$.CAMERA_Y_GOTO]
         ld      A`gotoYLo       L`gotoYLo
         or      H`gotoYHi
-        call    nz      .scrollCameraTo_vertical
+        call    nz      @scrollCameraTo_vertical
         
         ;coalesce scroll zones:
         ;---------------------------------------------------------------------------------------------------------------
@@ -8100,9 +8100,9 @@ mobs_updateCamera:                                                              
         and     A`clearCarry                                    ;clear flags, particularly carry
         sbc     HL`scrollZoneOverride   DE`scrollZoneLeft
         ;cause the DE value to head towards equality with HL?
-        call    nz      ._315e
+        call    nz      @_315e
         ;---------------v
-        ;       jr      c	._1
+        ;       jr      c	@_1
         ;       inc     DE
         ;       ret
         ;       
@@ -8115,21 +8115,21 @@ mobs_updateCamera:                                                              
         ld      DE                  [$.SCROLLZONE_RIGHT]		;=136
         and     A`clearCarry                                    ;clear flags, particularly carry
         sbc     HL                      DE
-        call    nz      ._315e
+        call    nz      @_315e
         ld      [$.SCROLLZONE_RIGHT]    DE
         
         ld      HL                  [$.SCROLLZONE_OVERRIDE_TOP]		;=48
         ld      DE                  [$.SCROLLZONE_TOP]			;=96
         and     A`clearCarry                                    ;clear flags, particularly carry
         sbc     HL                      DE
-        call    nz      ._315e
+        call    nz      @_315e
         ld      [$.SCROLLZONE_TOP]      DE
         
         ld      HL                  [$.SCROLLZONE_OVERRIDE_BOTTOM]	;=48
         ld      DE                  [$.SCROLLZONE_BOTTOM]		;=112
         and     A`clearCarry                                    ;clear flags, particularly carry
         sbc     HL                  DE
-        call    nz      ._315e
+        call    nz      @_315e
         ld      [$.SCROLLZONE_BOTTOM]   DE
         
         ;check left-hand scroll zone:
@@ -8154,7 +8154,7 @@ mobs_updateCamera:                                                              
         sbc     HL`scrollZoneX          DE`sonicX
         ;if the player is outside of the left-hand scroll zone, skip forward --
         ;(we'll have to check the right-hand scroll zone next)
-        jr      c       .scrollZoneRight
+        jr      c       @scrollZoneRight
         
         ;limit the camera to a maximum of 8 pixels per frame: if it could go faster,
         ;then more than one columm of scroll tiles would be required
@@ -8164,45 +8164,45 @@ mobs_updateCamera:                                                              
         ;      allowing us to use just `AND H` below to do the zero-check quicker
         ld      A`scrollZoneDistance    H`scrollZoneDistance
         and     A`scrollZoneDistance
-        jr      nz      .limitScrollLeft
+        jr      nz      @limitScrollLeft
         
         ld      A`scrollZoneDistance    L`scrollZoneDistance
         cp      9                                               ;TODO: shouldn't this be 8?
-        jr      c       ._2
+        jr      c       @_2
         
-.limitScrollLeft
+@limitScrollLeft
         ;limit scroll speed to 8
         ld      HL`scrollSpeed  $0008
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;is the camera auto-scrolling to the right?
-._2     bit     3       [IY`vars+%vars.scrollRingFlags]
-        jr      nz      .levelLeftLimit
+@_2     bit     3       [IY`vars+%vars.scrollRingFlags]
+        jr      nz      @levelLeftLimit
         
         ;is camera set to smooth scrolling?
         bit     5       [IY`vars+%vars.scrollRingFlags]
-        jr      z	._3                                     ;if not, skip ahead
+        jr      z	@_3                                     ;if not, skip ahead
         
         ;smooth scrolling: scroll only 1 pixel at a time
         ld      HL`scrollSpeed  $0001
         
-._3     ex      DE`scrollSpeed  HL`blank
+@_3     ex      DE`scrollSpeed  HL`blank
         ;move camera X position
         ld      HL`cameraX      [$.CAMERA_X]
         and     A`clearCarry
         sbc     HL`cameraX      DE`scrollSpeed
         ;skip if moving the camera would under/overflow
-        jr      c       .levelLeftLimit
+        jr      c       @levelLeftLimit
         ;commit the new camera position
         ld      [$.CAMERA_X]        HL
         
         ;TODO: this could be a `jr`
-        jp      .levelLeftLimit
+        jp      @levelLeftLimit
         
         ;check right-hand scroll zone:
         ;---------------------------------------------------------------------------------------------------------------
-.scrollZoneRight
+@scrollZoneRight
         ;       * CameraX       * ScrollZoneX
         ;       .---------------+---------.
         ;       |               |         |
@@ -8220,7 +8220,7 @@ mobs_updateCamera:                                                              
         and     A`clearCarry                                    ;clear the carry flag
         sbc     HL`scrollZoneX          DE`sonicX
         ;if the player is outside of the right-hand scroll zone, skip forward
-        jr      nc      .levelLeftLimit
+        jr      nc      @levelLeftLimit
         
         ;within right-hand scroll zone:
         ;flip all the bits in HL?
@@ -8235,33 +8235,33 @@ mobs_updateCamera:                                                              
         inc     HL
         ld      A                   H
         and     A
-        jr      nz      .limitScrollRight
+        jr      nz      @limitScrollRight
         
         ld      A                   L
         cp      $09
-        jr      c       ._6
+        jr      c       @_6
         
-.limitScrollRight
+@limitScrollRight
         ;limit scroll speed to 8
         ld      HL`scrollSpeed  $0008
         
         ;is the camera auto-scrolling to the right?
-._6     bit     3       [IY`vars+%vars.scrollRingFlags]
+@_6     bit     3       [IY`vars+%vars.scrollRingFlags]
         ;yes? skip ahead
-        jr      nz      .levelLeftLimit
+        jr      nz      @levelLeftLimit
         
         ;is camera set to smooth scrolling?
         bit     5       [IY`vars+%vars.scrollRingFlags]
-        jr      z       .checkOverflow
+        jr      z       @checkOverflow
         
         ;smooth scrolling: scroll only 1 pixel at a time
         ld      HL`scrollSpeed  $0001
         
-.checkOverflow
+@checkOverflow
         ;ensure that the camera position won't under/overflow
         ld      DE`cameraX      [$.CAMERA_X]
         add     HL`scrollSpeed  DE`cameraX
-        jr      c       .levelLeftLimit
+        jr      c       @levelLeftLimit
         
         ld      [$.CAMERA_X]        HL
         
@@ -8269,34 +8269,34 @@ mobs_updateCamera:                                                              
         ;---------------------------------------------------------------------------------------------------------------
         ;note that a Level is a sub-portion of a Floor Layout (more than one Level can be packed on a Floor Layout),
         ;therefore the left-hand edge of the level is not necessarily 0
-.levelLeftLimit
+@levelLeftLimit
         ld      HL`cameraX      [$.CAMERA_X]
         ld      DE`levelLeft    [$.LEVEL_LEFT]
         and     A`clearCarry
         sbc     HL`cameraX      DE`levelLeft
-        jr      nc      .levelRightLimit
+        jr      nc      @levelRightLimit
         
         ;stop the camera at the level boundary
         ld      [$.CAMERA_X]    DE`levelRight
-        jr      .cameraY
+        jr      @cameraY
         
         ;camera cannot go past right edge of level:
         ;---------------------------------------------------------------------------------------------------------------
-.levelRightLimit
+@levelRightLimit
         ld      HL`cameraX      [$.CAMERA_X]
         ld      DE`levelRight   [$.LEVEL_RIGHT]
         and     A`clearCarry
         sbc     HL`cameraX      DE`levelRight
-        jr      c       .cameraY
+        jr      c       @cameraY
         
         ;stop the camera at the level boundary
         ld      [$.CAMERA_X]    DE`levelRight
         
-.cameraY
+@cameraY
         ;---------------------------------------------------------------------------------------------------------------
         ;is the camera waving up and down?
         bit     6       [IY`vars+%vars.scrollRingFlags]
-        call    nz      ._3164
+        call    nz      @_3164
         
         ld      BC`scrollZoneTop        [$.SCROLLZONE_TOP]
         ld      DE`sonicY               [$.SONIC.Y]
@@ -8305,12 +8305,12 @@ mobs_updateCamera:                                                              
         ;is the camera waving up and down?
         bit     6       [IY`vars+%vars.scrollRingFlags]
         ;-- if so, the top scroll zone is set to a fixed value
-        call    nz      .updateCamera_scrollZone_waving         ;=`ld BC $0020`
+        call    nz      @updateCamera_scrollZone_waving         ;=`ld BC $0020`
         
         ;is the camera prevented from scrolling down?
         bit     7       [IY`vars+%vars.scrollRingFlags]
         ;-- if so, the top scroll zone is set to a fixed value
-        call    nz      .updateCamera_scrollZone_noDown         ;=`ld BC $0070`
+        call    nz      @updateCamera_scrollZone_noDown         ;=`ld BC $0070`
         
         ;get the absolute position of the top scroll zone on the Floor Layout
         add     HL`cameraY      BC`scrollZoneTop
@@ -8318,64 +8318,64 @@ mobs_updateCamera:                                                              
         ;is the camera prevented from scrolling down?
         bit     7       [IY`vars+%vars.scrollRingFlags]
         ;-- if so, increase the scroll zone further
-        call    z       .updateCamera_scrollZone_increase
+        call    z       @updateCamera_scrollZone_increase
         
         and     A`clearCarry
         sbc     HL`cameraY      DE`sonicY
-        jr      c       ._13
+        jr      c       @_13
         
         ld      C               $09
         
         ld      A               H
         and     A
-        jr      nz      ._10
+        jr      nz      @_10
         
         ;is the camera waving up and down?
         bit     6       [IY`vars+%vars.scrollRingFlags]
-        call    nz      ._311f
+        call    nz      @_311f
         
         ld      A       L
         cp      C
-        jr      c       ._11
+        jr      c       @_11
         
-._10    dec     C
+@_10    dec     C
         ld      L                   C
         ld      H                   $00
         
         ;is the camera prevented from scrolling down?
-._11    bit     7       [IY`vars+%vars.scrollRingFlags]
-        jr      z       ._12
+@_11    bit     7       [IY`vars+%vars.scrollRingFlags]
+        jr      z       @_12
         
         srl     H
         rr      L
         bit     1       [IY`vars+%vars.unknown0]
-        jr      nz      ._12
+        jr      nz      @_12
         
         ld      HL              $0000
         
-._12    ex      DE              HL
+@_12    ex      DE              HL
         ld      HL`cameraY      [$.CAMERA_Y]
         and     A`clearCarry
         sbc     HL`cameraY      DE
-        jr      c       .levelTopLimit
+        jr      c       @levelTopLimit
         
         ld      [$.CAMERA_Y]    HL
-        jp      .levelTopLimit
+        jp      @levelTopLimit
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._13    ld      BC`scrollZoneBottom     [$.SCROLLZONE_BOTTOM]
+@_13    ld      BC`scrollZoneBottom     [$.SCROLLZONE_BOTTOM]
         ld      HL`cameraY              [$.CAMERA_Y]
         add     HL`cameraY              BC`scrollZoneBottom
         
         ;is the camera prevented from scrolling down?
         bit     7       [IY`vars+%vars.scrollRingFlags]
         ;- if so, increase the scroll zone further
-        call    z       .updateCamera_scrollZone_increase
+        call    z       @updateCamera_scrollZone_increase
         
         and     A`clearCarry
         sbc     HL`cameraY      DE
-        jr      nc      .levelTopLimit
+        jr      nc      @levelTopLimit
         
         ld      A                   L
         cpl     
@@ -8387,54 +8387,54 @@ mobs_updateCamera:                                                              
         ld      C                   $09
         ld      A                   H
         and     A
-        jr      nz      ._14
+        jr      nz      @_14
         
         bit     6       [IY`vars+%vars.scrollRingFlags]         ;up-down wave scrolling?
-        call    nz      ._311f
+        call    nz      @_311f
         ld      A                   L
         cp      C
-        jr      c       ._15
+        jr      c       @_15
         
-._14    dec     C
+@_14    dec     C
         ld      L                   C
         ld      H                   $00
         
-._15    bit     4       [IY`vars+%vars.scrollRingFlags]         ;auto scroll up?
-        jr      nz      .levelTopLimit
+@_15    bit     4       [IY`vars+%vars.scrollRingFlags]         ;auto scroll up?
+        jr      nz      @levelTopLimit
         
         ld      DE`cameraY      [$.CAMERA_Y]
         add     HL              DE
-        jr      c       .levelTopLimit
+        jr      c       @levelTopLimit
         
         ld      [$.CAMERA_Y]    HL
         
         ;camera cannot go past top edge of level:
         ;---------------------------------------------------------------------------------------------------------------
-.levelTopLimit
+@levelTopLimit
         ld      HL`cameraY      [$.CAMERA_Y]
         ld      DE`levelTop     [$.LEVEL_TOP]
         and     A`clearCarry
         sbc     HL`cameraY      DE`levelTop
-        jr      nc      .levelBottomLimit
+        jr      nc      @levelBottomLimit
         ;stop the camera at the level boundary
         ld      [$.CAMERA_Y]    DE`levelTop
         
         ;camera cannot go past bottom edge of level:
         ;---------------------------------------------------------------------------------------------------------------
-.levelBottomLimit
+@levelBottomLimit
         ld      HL`cameraY      [$.CAMERA_Y]
         ld      DE`levelBottom  [$.LEVEL_BOTTOM]
         and     A`clearCarry
         sbc     HL`cameraY      DE`levelBottom
-        jr      c       .ret                                    ;TODO: use `ret c`?
+        jr      c       @ret                                    ;TODO: use `ret c`?
         ;stop the camera at the level boundary
         ld      [$.CAMERA_Y]    DE`levelBottom
         
-.ret    ret
+@ret    ret
         
         ;ancillary functions:
         
-._311a                                                                                                          ;$311A
+@_311a                                                                                                          ;$311A
         ;===============================================================================================================
         ;TODO: this seems very inefficient and should be a macro instead 
         ld      [HL]                D
@@ -8443,20 +8443,20 @@ mobs_updateCamera:                                                              
         inc     HL
         ret
         
-._311f                                                                                                          ;$311F
+@_311f                                                                                                          ;$311F
         ;===============================================================================================================
         ;TODO: this seems very inefficient and should be a macro instead
         ld      C                   $08
         ret
         
-.scrollCameraTo_vertical                                                                                        ;$3122
+@scrollCameraTo_vertical                                                                                        ;$3122
         ;===============================================================================================================
         ;scroll vertically towards the locked camera position
         ld      DE`ypos             [$.LEVEL_TOP]
         and     A
         sbc     HL                  DE`ypos
         ret     z
-        jr      c	.up
+        jr      c	@up
         
         ;scroll downwards
         inc     DE`ypos
@@ -8465,40 +8465,40 @@ mobs_updateCamera:                                                              
         ret
         
         ;scroll upwards
-.up     dec     DE`ypos
+@up     dec     DE`ypos
         ld      [$.LEVEL_TOP]       DE`ypos
         ld      [$.LEVEL_BOTTOM]    DE`ypos
         ret
 
-.scrollCameraTo_horizontal                                                                                      ;$3140
+@scrollCameraTo_horizontal                                                                                      ;$3140
         ;===============================================================================================================
         ;scroll horizontally towards the locked camera position
         ld      DE                  [$.LEVEL_LEFT]
         and     A                                               ;reset carry so it doesn't affect `sbc`
         sbc     HL                  DE
         ret     z                                               ;if HL = DE then return -- no change
-        jr      c	._1a                                        ;is DE > HL?
+        jr      c	@_1a                                        ;is DE > HL?
         
         inc     DE
         ld      [$.LEVEL_LEFT]      DE
         ld      [$.LEVEL_RIGHT]     DE
         ret
         
-._1a    dec     DE
+@_1a    dec     DE
         ld      [$.LEVEL_LEFT]      DE
         ld      [$.LEVEL_RIGHT]     DE
         ret
         
-._315e                                                                                                          ;$315E
+@_315e                                                                                                          ;$315E
         ;===============================================================================================================
-        jr      c       ._1b
+        jr      c       @_1b
         inc     DE
         ret
         
-._1b    dec     DE
+@_1b    dec     DE
         ret
 
-._3164                                                                                                          ;$3164
+@_3164                                                                                                          ;$3164
         ;===============================================================================================================
         ld      HL	[$.D29D]
         ld      DE      [$.TIME]
@@ -8506,18 +8506,18 @@ mobs_updateCamera:                                                              
         ld      BC      $0200
         ld      A       H
         and     A
-        jp      p	._1c
+        jp      p	@_1c
         
         neg
         ld      BC      $FE00
         
-._1c    cp      $02
-        jr      c	._2c
+@_1c    cp      $02
+        jr      c	@_2c
         
         ld      L       C
         ld      H       B
         
-._2c    ld      [$.D29D]	HL
+@_2c    ld      [$.D29D]	HL
         ld      C	L
         ld      B       H
         ld      HL      [$.D25C]                    		;between RAM_CAMERA_X & Y
@@ -8525,9 +8525,9 @@ mobs_updateCamera:                                                              
         add     HL	BC
         ld      E	$00
         bit     7   	B
-        jr      z	._3c
+        jr      z	@_3c
         ld      E       $FF
-._3c    adc     A       E
+@_3c    adc     A       E
         ld      [$.D25C]	HL
         ld      [$.CAMERA_Y+1]	A
         ld      HL	[$.D2A1]
@@ -8538,16 +8538,16 @@ mobs_updateCamera:                                                              
         ld      [$.D2A3]        A
         ld      HL		[$.D2A2]
         bit     7   	H
-        jr      z	._4c
+        jr      z	@_4c
         ld      BC      $FFE0
         and     A
         sbc     HL	BC
-        jr      nc	._4c
+        jr      nc	@_4c
         ld      HL              $0002
         ld      [$.TIME]	HL
         ret
         
-._4c    ld      HL	[$.D2A2]
+@_4c    ld      HL	[$.D2A2]
         ld      BC	$0020
         and     A
         sbc     HL      BC
@@ -8556,22 +8556,22 @@ mobs_updateCamera:                                                              
         ld      [$.TIME]        HL
         ret
         
-.updateCamera_scrollZone_waving                                                                                 ;$31CF
+@updateCamera_scrollZone_waving                                                                                 ;$31CF
         ;===============================================================================================================
         ld      BC`scrollZoneTop        $0020
         ret
         
-.updateCamera_scrollZone_noDown                                                                                 ;$31D3
+@updateCamera_scrollZone_noDown                                                                                 ;$31D3
         ;===============================================================================================================
         ld      BC`scrollZoneTop	$0070
         ret
         
-.unused_31d7                                                                                                    ;$31D7
+@unused_31d7                                                                                                    ;$31D7
         ;===============================================================================================================
         ld      BC`unused		$0070
         ret
         
-.updateCamera_scrollZone_increase                                                                               ;$31DB
+@updateCamera_scrollZone_increase                                                                               ;$31DB
         ;===============================================================================================================
         ;not applicable with up-down wave scrolling
         bit     6	[IY`vars+%vars.scrollRingFlags]
@@ -8625,9 +8625,9 @@ checkMobsOutOfBounds:                                                           
         ;fetch the mob's boundary data:
         ;---------------------------------------------------------------------------------------------------------------
         
-.loop   ld      A`mobID	[DE`mobAddr]                		;get the mob ID (which type it is)
+@loop   ld      A`mobID	[DE`mobAddr]                		;get the mob ID (which type it is)
         cp      $56                                             ;> length of the mob code pointers list?
-        jp      nc	.removeMob                              ;skip this loop
+        jp      nc	@removeMob                              ;skip this loop
         
         ;switch the mob address to IX
         push    DE`mobAddr
@@ -8671,7 +8671,7 @@ checkMobsOutOfBounds:                                                           
         ld      HL'cameraX          [$.CAMERA_X]
         xor     A`zero                                          ;reset carry flag
         sbc     HL'cameraX          BC'leftLimit     
-        jr      nc	.x
+        jr      nc	@x
         
         ;the camera is at the left-most side of the floor,
         ;so don't underflow and believe the camera is at the far-right instead
@@ -8680,10 +8680,10 @@ checkMobsOutOfBounds:                                                           
         xor     A`zero
         
         ;has the mob gone too far left of the camera?
-.x      ld      E'mobXpos           [IX`mob+%mob.X+0]
+@x      ld      E'mobXpos           [IX`mob+%mob.X+0]
         ld      D'mobXpos           [IX`mob+%mob.X+1]
         sbc     HL'leftLimit        DE'mobXpos
-        jp      nc	.removeMobExx                               ;if so, remove it
+        jp      nc	@removeMobExx                               ;if so, remove it
         
         ;the next WORD is how far right of the camera the mob can go before despawning.
         ;note that this value has the width of the screen included
@@ -8693,7 +8693,7 @@ checkMobsOutOfBounds:                                                           
         add     HL'rightLimit       BC'cameraX
         xor     A`zero                                          ;reset carry flag
         sbc     HL'rightLimit       DE'mobXpos                  ;has the mob gone too far right?
-        jp      c	.removeMobExx                               ;if so, remove it
+        jp      c	@removeMobExx                               ;if so, remove it
         
         ;top & bottom bounds:
         ;---------------------------------------------------------------------------------------------------------------
@@ -8703,7 +8703,7 @@ checkMobsOutOfBounds:                                                           
         ld      HL'cameraY          [$.CAMERA_Y]
         ld      BC'topLimit         [$.TEMP3]
         sbc     HL'cameraY          BC'
-        jr      nc	.y 
+        jr      nc	@y 
         
         ;the camera is at the top-most side of the floor, 
         ;so don't underflow and believe the camera is at the bottom instead
@@ -8711,11 +8711,11 @@ checkMobsOutOfBounds:                                                           
         ld      H'cameraY           A`zero
         xor     A`zero
         
-.y      ;has the mob gone too far above the camera?
+@y      ;has the mob gone too far above the camera?
         ld      E'mobYpos           [IX`mob+%mob.Y+0]
         ld      D'mobYpos           [IX`mob+%mob.Y+1]
         sbc     HL'                 DE'mobYpos
-        jp      nc	.removeMobExx                               ;if so, remove it
+        jp      nc	@removeMobExx                               ;if so, remove it
         
         ;the next WORD is how far below the camera the mob can go before despawning.
         ;note that this value has the height of the screen included
@@ -8728,7 +8728,7 @@ checkMobsOutOfBounds:                                                           
         add     HL'bottomLimit      BC'cameraY
         xor     A`zero
         sbc     HL'bottomLimit      DE'mobYpos
-        jp      c	.removeMobExx
+        jp      c	@removeMobExx
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -8748,18 +8748,18 @@ checkMobsOutOfBounds:                                                           
         ex      DE`dataSize         HL`mobAddr
         pop     HL`mobPointer
         
-        djnz    .loop
+        djnz    @loop
         
         ret
         
         ;remove the out-of-bounds mob!
         ;---------------------------------------------------------------------------------------------------------------
         
-.removeMobExx
+@removeMobExx
         ;return to the non-shadow BC/DE/HL values
         exx
         
-.removeMob
+@removeMob
         ;zero out the pointer to the mob in the active mob list
         ld      [HL`mobPointer]     C`zero
         inc     HL`mobPointer
@@ -8776,7 +8776,7 @@ checkMobsOutOfBounds:                                                           
         ;TODO: djnz cannot be used here probably because of >-128 relative jump.
         ;      reorganisation of code might solve this
         dec     B`coutner
-        jp      nz	.loop
+        jp      nz	@loop
         
         ret
 	;
@@ -8793,7 +8793,7 @@ processMobs:													;$392B
         ld      B                   31
         
         ;read the pointer into DE
-.loop   ld      E                   [HL]
+@loop   ld      E                   [HL]
         inc     HL
         ld      D                   [HL]
         inc     HL
@@ -8804,7 +8804,7 @@ processMobs:													;$392B
         call    nz  processMob					;if so process as a mob
         
         ;keep reading memory until either something non-zero is found or we hit $D3BC
-        djnz    .loop
+        djnz    @loop
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -8905,7 +8905,7 @@ postProcessMob:													;$32E2
         
         ;does the mob interact with the floor?
         bit     5       [IX`mob+%mob.flags]
-        jp      nz      ._34e6                                  ;if not skip over collision handling
+        jp      nz      @_34e6                                  ;if not skip over collision handling
         
         ;find the 'nose' of the mob, according to its direction:
         ;---------------------------------------------------------------------------------------------------------------
@@ -8919,21 +8919,21 @@ postProcessMob:													;$32E2
         
         ;moving left or right?
         bit     7       [IX`mob+%mob.Xspeed+1]
-        jr      nz      .facingLeft
+        jr      nz      @facingLeft
         
-.facingRight
+@facingRight
         ;- collision will be checked with the right side of the mob
         ld      C`xOffset           [IX`mob+%mob.width]
         ld      HL`table            Unknown._411E
-        jp      ._2
+        jp      @_2
         
-.facingLeft
+@facingLeft
         ;- collision will be checked with the left side of the mob
         ld      C`xOffset           $00                         ;TODO: B & D are already zero, could use those
         ld      HL`table            Unknown._4020
         
         ;put aside the 'nose' x-position of the mob
-._2     ld      [$.TEMP3]           BC`xOffset
+@_2     ld      [$.TEMP3]           BC`xOffset
         
         ;clear the flag for mob-collision-with-floor
         res     6       [IX`mob+%mob.flags]
@@ -8981,7 +8981,7 @@ postProcessMob:													;$32E2
         
         and     %00111111                                       ;air (or water), and nothing else?
         ;if there's no flags remaining for this Block, no kind of collision can be possible, so skip ahead
-        jp      z       ._7
+        jp      z       @_7
         
         ;TODO: could we not have used B/C instead of [$.TEMP6] here?
         ld      A`solidity          [$.TEMP6]
@@ -9010,19 +9010,19 @@ postProcessMob:													;$32E2
         ;bit 7 implies a solid line, collision is unavoidable
         ld      A`lineSolidity      [HL`table]
         cp      $80
-        jp      z       ._7
+        jp      z       @_7
         
         ;if the line is not solid, a collision may or may not occur depending on the exact position of the mob
         
         ld      E`lineSolidity      A`lineSolidity
         and     A`lineSolidity
-        jp      p       ._3                                     ;skip if bit 7 is unset
+        jp      p       @_3                                     ;skip if bit 7 is unset
         
         ld      D                   $FF
         
         ;here, D is $00 or $FF?
         
-._3     ld      L`xPos              [IX`mob+%mob.X+0]
+@_3     ld      L`xPos              [IX`mob+%mob.X+0]
         ld      H`xPos              [IX`mob+%mob.X+1]
         ;retrieve the 'nose' position of the mob
         ld      BC`xOffset          [$.TEMP3]
@@ -9030,34 +9030,34 @@ postProcessMob:													;$32E2
         
         ;facing left or right?
         bit     7       [IX`mob+%mob.Xdirection]
-        jr      nz      ._4
+        jr      nz      @_4
         
         ;facing left:
         and     A`lineSolidity
-        jp      m       ._5                                     ;skip if bit 7 is set
+        jp      m       @_5                                     ;skip if bit 7 is set
         
         ld      A`xPos              L`xPos
         and     %00011111                                       ;"MOD 32"
         cp      E`lineSolidity
-        jr      nc      ._5
+        jr      nc      @_5
         
-        jp      ._7
+        jp      @_7
         
         ;facing right:
-._4     and     A`lineSolidity
-        jp      m	._5                                         ;skip if bit 7 is set
+@_4     and     A`lineSolidity
+        jp      m	@_5                                         ;skip if bit 7 is set
         
         ld      A`xPos              L`xPos
         and     %00011111                                       ;"MOD 32"
         cp      E`lineSolidity
-        jr      nc	._7
+        jr      nc	@_7
         
         ;collision:
         ;...............................................................................................................
         
         ;set the flag for mob collision with the Floor,
         ;this can simply mean that the mob is standing on the floor rather than "in air"/
-._5     set     6       [IX`mob+%mob.flags]
+@_5     set     6       [IX`mob+%mob.flags]
         
         ;clip xPos to whole counts of 32 -- convert xPos to the left-nearest block
         ;(effectively "INT(xPos / 32) * 32")
@@ -9085,13 +9085,13 @@ postProcessMob:													;$32E2
         ld      B                   D`zero
         
         bit     7   C
-        jr      z	._6
+        jr      z	@_6
         
         ;unused because of the data!?
         dec     A
         dec     B
         
-._6     ld      L                   [IX`mob+%mob.Yspeed+0]
+@_6     ld      L                   [IX`mob+%mob.Yspeed+0]
         ld      H                   [IX`mob+%mob.Yspeed+1]
         add     HL                  BC
         adc     A                   [IX`mob+%mob.Ydirection]
@@ -9103,25 +9103,25 @@ postProcessMob:													;$32E2
         ;...............................................................................................................
         
         ;zero the upper bytes of two sixteen bit words
-._7     ld      B`zero              $00
+@_7     ld      B`zero              $00
         ld      D`zero              B`zero
         
         ;negative speed? i.e. is moving up
         bit     7       [IX`mob+%mob.Yspeed+1]
-        jr      nz      ._8                                     ;skip the next bit if speed is negative
+        jr      nz      @_8                                     ;skip the next bit if speed is negative
         
         ld      C                   [IX`mob+%mob.width]
         srl     C
         ld      E                   [IX`mob+%mob.height]
         ld      HL                  Unknown._448A
-        jp      ._9
+        jp      @_9
         
-._8     ld      C                   [IX`mob+%mob.width]
+@_8     ld      C                   [IX`mob+%mob.width]
         srl     C
         ld      E                   $00
         ld      HL                  Unknown._41EC
         
-._9     ld      [$.TEMP3]           DE
+@_9     ld      [$.TEMP3]           DE
         res     7   [IX`mob+%mob.flags]
         push    BC
         push    HL
@@ -9145,7 +9145,7 @@ postProcessMob:													;$32E2
         pop     HL
         pop     BC
         and     $3F
-        jp      z	._34e6
+        jp      z	@_34e6
         ld      A                   [$.TEMP6]
         add     A                   A
         ld      E                   A
@@ -9163,19 +9163,19 @@ postProcessMob:													;$32E2
         add     HL                  BC
         ld      A                   [HL]
         cp      $80
-        jp      z	._34e6
+        jp      z	@_34e6
         ld      C                   A
         and     A
-        jp      p	._10
+        jp      p	@_10
         ld      B                   $FF
-._10    ld      L                   [IX`mob+%mob.Y+0]
+@_10    ld      L                   [IX`mob+%mob.Y+0]
         ld      H                   [IX`mob+%mob.Y+1]
         ld      DE                  [$.TEMP3]
         add     HL                  DE
         bit     7   [IX`mob+%mob.Ydirection]
-        jr      nz	._11
+        jr      nz	@_11
         and     A
-        jp      m	._12                                        ;skip if bit 7 is set
+        jp      m	@_12                                        ;skip if bit 7 is set
         ld      A                   L
         and     %00011111
         exx     
@@ -9186,12 +9186,12 @@ postProcessMob:													;$32E2
         add     A                   [HL]
         exx     
         cp      C
-        jr      c	._34e6
+        jr      c	@_34e6
         set     7   [IX`mob+%mob.flags]
-        jp      ._12
+        jp      @_12
         
-._11    and     A
-        jp      m	._12                                        ;skip if bit 7 is set
+@_11    and     A
+        jp      m	@_12                                        ;skip if bit 7 is set
         ld      A                   L
         and     %00011111
         exx     
@@ -9202,8 +9202,8 @@ postProcessMob:													;$32E2
         add     A                   [HL]
         exx     
         cp      C
-        jr      nc	._34e6
-._12    ld      A                   L
+        jr      nc	@_34e6
+@_12    ld      A                   L
         and     $E0
         ld      L                   A
         add     HL                  BC
@@ -9223,10 +9223,10 @@ postProcessMob:													;$32E2
         ld      A                   D
         ld      B                   D
         bit     7   C
-        jr      z	._13
+        jr      z	@_13
         dec     A
         dec     B
-._13    ld      L                   [IX`mob+%mob.Xspeed+0]
+@_13    ld      L                   [IX`mob+%mob.Xspeed+0]
         ld      H                   [IX`mob+%mob.Xspeed+1]
         add     HL                  BC
         adc     A                   [IX`mob+%mob.Xdirection]
@@ -9237,7 +9237,7 @@ postProcessMob:													;$32E2
         ;is the mob on-screen?
         ;---------------------------------------------------------------------------------------------------------------
 
-._34e6  ld      L`yPos              [IX`mob+%mob.Y+0]
+@_34e6  ld      L`yPos              [IX`mob+%mob.Y+0]
         ld      H`yPos              [IX`mob+%mob.Y+1]
         ld      BC`cameraY          [$.CAMERA_Y]
         and     A`clearCarry                                    ;clear Carry before subtracting
@@ -9290,7 +9290,7 @@ processSpriteLayout:                                                            
         ld      B`rows  0
         ld      C`rows  3
         
-._1     exx	;-->                                            ;switch to BC/DE/HL shadow values
+@_1     exx	;-->                                            ;switch to BC/DE/HL shadow values
         
         ld      HL'xpos [$.TEMP6]                               ;get the starting X-position
                                                                 ;(original HL parameter)
@@ -9309,15 +9309,15 @@ processSpriteLayout:                                                            
         
         ld      A       D                                       ;check the D parameter
         cp      $FF                                             ;if D is not $FF
-        jr      nz      ._2                                     ;then skip ahead a little
+        jr      nz      @_2                                     ;then skip ahead a little
         
         ld      A       E                                       ;check the E parameter
         cp      $F0                                             ;if it's less than $F0,
-        jr      c       ._5                                     ;then skip ahead
-        jp      ._3
+        jr      c       @_5                                     ;then skip ahead
+        jp      @_3
         
-._2     and     A                                               ;is the sprite byte 0?
-        jr      nz      ._5
+@_2     and     A                                               ;is the sprite byte 0?
+        jr      nz      @_5
         
         ;exit if the row Y-position is below the screen
         ld      A       E
@@ -9326,19 +9326,19 @@ processSpriteLayout:                                                            
         
         ;columns:
         ;---------------------------------------------------------------------------------------------------------------
-._3     ;begin 6 columns of single-width (8px) sprites
+@_3     ;begin 6 columns of single-width (8px) sprites
         ld      B`cols	6
         
-.loop   exx                                                     ;switch to BC/DE/HL shadow values
+@loop   exx                                                     ;switch to BC/DE/HL shadow values
         
         ;has the X-position gone over 255?
         ld      A       H'                                      ;check the H parameter
         and     A                                               ;is it >0? i.e. HL = $0100
-        jr      nz      ._4                                     ;if so skip
+        jr      nz      @_4                                     ;if so skip
         
         ld      A       [BC']                                   ;check the current byte of the layout data
         cp      $FE                                             ;is it >= than $FE?
-        jr      nc      ._4                                     ;if so, skip
+        jr      nc      @_4                                     ;if so, skip
         
         ;get the address of the sprite table entry
         ld      DE'     [$.SPRITETABLE_ADDR]        
@@ -9359,13 +9359,13 @@ processSpriteLayout:                                                            
         inc     [IY`vars+%vars.spriteUpdateCount]
         
         ;move across 8 pixels
-._4     inc     BC'
+@_4     inc     BC'
         ld      DE'     $0008
         add     HL'     DE'
         
         ;return B to the column count and decrement
         exx
-        djnz    .loop
+        djnz    @loop
         
         ;move down 16-pixels
         ld      A       C
@@ -9377,12 +9377,12 @@ processSpriteLayout:                                                            
         ;any rows remaining?
         ld      C       A
         dec     C
-        jr      nz      ._1
+        jr      nz      @_1
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         ;TODO: need to work this out (when D is $FF)
-._5     exx
+@_5     exx
         ex      DE      HL
         ld      HL      $0006
         add     HL      BC
@@ -9397,7 +9397,7 @@ processSpriteLayout:                                                            
         ex      DE      HL
         ld      C       A
         dec     C
-        jr      nz      ._1
+        jr      nz      @_1
         
         ret
 	;
@@ -9432,18 +9432,18 @@ _3581:                                                                          
         
         ld      A       D
         cp      $FF
-        jr      nz	._1
+        jr      nz	@_1
         ld      A       E
         cp      $F0
         ret     c
-        jp      ._2
+        jp      @_2
         
-._1     and     A
+@_1     and     A
         ret     nz
         ld      A       E
         cp      $C0
         ret     nc
-._2     ld      H       C
+@_2     ld      H       C
         ld      BC      [$.SPRITETABLE_ADDR]
         ld      A       L
         ld      [BC]    A
@@ -9475,7 +9475,7 @@ layoutSpritesHorizontal:                                                        
         ret     z                                               ;if so, return
         
         cp      $FE                                             ;special case for $FE command
-        jr      z       .skip                                   ;(skip ahead)
+        jr      z       @skip                                   ;(skip ahead)
         
         ld      [HL`addr]       C`xpos
         inc     L`addr
@@ -9486,7 +9486,7 @@ layoutSpritesHorizontal:                                                        
         
         inc     [IY`vars+%vars.spriteUpdateCount]
         
-.skip   inc     DE`data                                         ;move to the next data byte
+@skip   inc     DE`data                                         ;move to the next data byte
         ;move right 8 pixels
         ld      A`xpos  C`xpos
         add     A`xpos  8                       
@@ -9511,7 +9511,7 @@ hitPlayer:                                                                      
         and     %00000010
         jp      nz	_36be
         
-._35fd                                                                                                          ;$35FD
+@_35fd                                                                                                          ;$35FD
         ;---------------------------------------------------------------------------------------------------------------
         bit     0   [IY`vars+%vars.flags9]
         ret     nz
@@ -9530,7 +9530,7 @@ hitPlayer:                                                                      
         and     A`rings
         jr      nz	dropRings                                  ;if so, drop them
         
-.kill   ;kill the player!                                                                                      `$3618
+@kill   ;kill the player!                                                                                      `$3618
         ;---------------------------------------------------------------------------------------------------------------
         set     0   [IY`vars+%vars.scrollRingFlags]
         
@@ -9575,7 +9575,7 @@ dropRings:                                                                      
         
         ;find an available unused mob-slot
         call    findEmptyMob
-        jr      c	._367e
+        jr      c	@_367e
         
         push    IX, HL
         pop     IX
@@ -9594,29 +9594,29 @@ dropRings:                                                                      
         ld      [IX`mob+%mob.Ydirection],$ff
         pop     IX
         
-._367e  ld      HL      $.SONIC.flags
+@_367e  ld      HL      $.SONIC.flags
         ld      DE      $fffc
         xor     A`zero
         
         bit     4	[HL]
-        jr      z	._1
+        jr      z	@_1
         
         ld      DE      $fffe
-._1     ld      [$.SONIC.Yspeed+0],A
+@_1     ld      [$.SONIC.Yspeed+0],A
         ld      [$.SONIC.Yspeed+1],DE
         bit     1	[HL]
-        jr      z	._2
+        jr      z	@_2
         ld      A,[HL]
         or      $12
         ld      [HL],A
         xor     A`zero
         ld      DE      $0002
-        jr      ._3
+        jr      @_3
         
-._2     res     1	[HL]
+@_2     res     1	[HL]
         xor     A`zero
         ld      DE      $FFFE
-._3     ld      [$.SONIC.Xspeed+0],A
+@_3     ld      [$.SONIC.Xspeed+0],A
         ld      [$.SONIC.Xspeed+1],DE
         res     5	[IY`vars+%vars.flags6]
         set     6	[IY`vars+%vars.flags6]
@@ -9697,20 +9697,20 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;TODO: we could do this check when loading a level and store the exact label to jump-to in RAM
         ld      A`floorWidth    [$.LEVEL_FLOORWIDTH]
         cp      128
-        jr      z	.width128
+        jr      z	@width128
         cp      64
-        jr      z	.width64
+        jr      z	@width64
         cp      32
-        jr      z	.width32
+        jr      z	@width32
         cp      16
-        jr      z	.width16
+        jr      z	@width16
         
-        jp      .width256
+        jp      @width256
         
         ;---------------------------------------------------------------------------------------------------------------
         ;128 block wide level:
         
-.width128
+@width128
         ld      L`mob_ypos      [IX`mob+%mob.Y+0]
         ld      H`mob_ypos      [IX`mob+%mob.Y+1]
         add     HL`mob_ypos     DE`yOffset
@@ -9742,7 +9742,7 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;---------------------------------------------------------------------------------------------------------------
         ;64 block wide level:
         
-.width64
+@width64
         ld      L               [IX`mob+%mob.Y+0]
         ld      H               [IX`mob+%mob.Y+1]
         add     HL              DE
@@ -9772,7 +9772,7 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;---------------------------------------------------------------------------------------------------------------
         ;32 block wide level:
         
-.width32
+@width32
         ld      L               [IX`mob+%mob.Y+0]
         ld      H               [IX`mob+%mob.Y+1]
         add     HL              DE
@@ -9800,7 +9800,7 @@ getFloorLayoutRAMAddressForMob:                                                 
         ;---------------------------------------------------------------------------------------------------------------
         ;16 block wide level:
         
-.width16
+@width16
         ld      L               [IX`mob+%mob.Y+0]
         ld      H               [IX`mob+%mob.Y+1]
         add     HL              DE
@@ -9827,7 +9827,7 @@ getFloorLayoutRAMAddressForMob:                                                 
         add     HL              DE
         ret
         
-.width256
+@width256
         ;---------------------------------------------------------------------------------------------------------------
         ;level is 256 blocks wide:
         
@@ -9890,7 +9890,7 @@ updateSonicSpriteFrame:                                                         
         
         ;I can't find an instance where bit 0 of IY+$06 is set, this may be dead code
         bit     0  [IY`vars+%vars.flags6]
-        jp      nz	._2
+        jp      nz	@_2
         
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`low           E`vram                          ;=$80
@@ -9906,7 +9906,7 @@ updateSonicSpriteFrame:                                                         
         ;by nature of the way the VDP stores image colours across bit-planes, and that the Sonic sprite only uses
         ;palette indexes <8, the fourth byte for a tile row is always 0. this is used as a very simple form of
         ;compression on the Sonic sprites in the ROM as the fourth byte is excluded from the data
-._1     outi
+@_1     outi
         outi
         outi
         out     [%sms.ports.vdp.data]    A`zero
@@ -9924,7 +9924,7 @@ updateSonicSpriteFrame:                                                         
         out     [%sms.ports.vdp.data]    A`zero
         
         dec     E
-        jp      nz	._1
+        jp      nz	@_1
         
         ld      HL       [$.SONIC_CURRENT_FRAME]
         ld      [$.SONIC_PREVIOUS_FRAME]        HL
@@ -9932,7 +9932,7 @@ updateSonicSpriteFrame:                                                         
         
         ;---------------------------------------------------------------------------------------------------------------
         ;adds 285 to the frame address. purpose unknown...
-._2     ld      BC       $011D
+@_2     ld      BC       $011D
         add     HL       BC
         
         ld      A       E
@@ -9949,7 +9949,7 @@ updateSonicSpriteFrame:                                                         
         ld      C       $BE
         xor     A`zero
         
-._3     outi
+@_3     outi
         outi
         outi
         out     [%sms.ports.vdp.data]  A
@@ -9972,7 +9972,7 @@ updateSonicSpriteFrame:                                                         
         exx
         dec     B
         exx
-        jp      nz	._3
+        jp      nz	@_3
         
         exx
         pop     BC
@@ -10005,7 +10005,7 @@ animateFloorRing:                                                               
         out     [%sms.ports.vdp.control]        A
         ld      B       $20
         
-.loop   ld      A       [HL]
+@loop   ld      A       [HL]
         out     [%sms.ports.vdp.data]   A
         nop     
         inc     HL
@@ -10020,7 +10020,7 @@ animateFloorRing:                                                               
         ld      A       [HL]
         out     [%sms.ports.vdp.data]   A
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
         ei      
         ld      HL      [$.RING_CURRENT_FRAME]
@@ -10095,9 +10095,9 @@ _LABEL_38B0_51:                                                                 
         rr      L
         ld      A       L
         cp      $1C
-        jr      c	._1
+        jr      c	@_1
         sub     $1C
-._1     ld      L       A
+@_1     ld      L       A
         ld      H       $00
         ld      B       H
         rrca
@@ -10114,7 +10114,7 @@ _LABEL_38B0_51:                                                                 
         ld      DE      [$.D2AF]
         ld      B       $02
 
-.loop   ld      A       L
+@loop   ld      A       L
         out     [%sms.ports.vdp.control]       A
         ld      A       H
         or      %01000000
@@ -10143,7 +10143,7 @@ _LABEL_38B0_51:                                                                 
         ld      BC      $0040
         add     HL      BC
         ld      B       A
-        djnz    .loop
+        djnz    @loop
         
         ret
 	;
@@ -10250,7 +10250,7 @@ increaseRings:                                                                  
         
         and     %00001111                                       ;look at the last digit $0-$F
         cp      10                                              ;is it above $A? (11-16)
-        jr      c	.is100rings                           
+        jr      c	@is100rings                           
         
         ld      A`rings         C`rings
         add     A`rings         $06                             ;TODO: WHY????
@@ -10258,10 +10258,10 @@ increaseRings:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.is100rings
+@is100rings
         ld      A`rings		C`rings
         cp      $A0
-        jr      c	.pickupRing                                   ;if not yet 100, keep going
+        jr      c	@pickupRing                                   ;if not yet 100, keep going
         
         ;subtract 100 rings
         sub     $A0
@@ -10282,7 +10282,7 @@ increaseRings:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.pickupRing
+@pickupRing
         ;update the ring total
         ld      [$.RINGS]       A`rings
         ;play the pickup-ring sound:
@@ -10369,7 +10369,7 @@ updateTime:                                                                     
         
         ;is the time counting down? (special stages)
         bit     0	[IY`vars+%vars.timeLightningFlags]
-        jr      nz	.countdown
+        jr      nz	@countdown
         
         ;time is counting up:
         ;---------------------------------------------------------------------------------------------------------------
@@ -10379,9 +10379,9 @@ updateTime:                                                                     
         ld      A`frames        [HL`time]                       ;load the current frame-count
         inc     A`frames                                        ;add another frame
         cp      60                                              ;is it 60 or less?
-        jr      c	._1                                           ;if so, keep going
+        jr      c	@_1                                           ;if so, keep going
         xor     A`zero                                          ;otherwise, set frame-count to 0
-._1     ld      [HL`time]       A`frames                        ;update the frame counter
+@_1     ld      [HL`time]       A`frames                        ;update the frame counter
         
         ;increase seconds counter:
         dec     HL`time                                         ;move down to the seconds counter
@@ -10390,9 +10390,9 @@ updateTime:                                                                     
         adc     A`seconds       $00                             ;if frame count hit 60, add a second
         daa                                                     ;adjust up to binary-coded-decimal
         cp      $60                                             ;60 seconds? (BCD)
-        jr      c	._2                                           ;if not, keep going
+        jr      c	@_2                                           ;if not, keep going
         xor     A`zero                                          ;otherwise, set A to 0
-._2     ld      [HL`time]       A`seconds                       ;update the seconds counter
+@_2     ld      [HL`time]       A`seconds                       ;update the seconds counter
         
         ;increase minutes counter:
         dec     HL`time                                         ;move down to the minute counter
@@ -10401,27 +10401,27 @@ updateTime:                                                                     
         adc     A`minutes       $00                             ;if seconds hit 60, add a minute
         daa                                                     ;adjust up to binary-coded-decimal
         cp      $10                                             ;10 minutes?
-        jr      c	._3                                           ;if not, keep going
+        jr      c	@_3                                           ;if not, keep going
         
         push    HL`time                                         ;put the minute counter addr aside
         call    hitPlayer.kill                                 ;go do out-of-time
         pop     HL`time                                         ;go back to the minute counter addr
         xor     A`zero                                          ;reset to 0
         
-._3     ld      [HL`time]       A`minutes                       ;update the minute counter
+@_3     ld      [HL`time]       A`minutes                       ;update the minute counter
         ret                                                     ;exit!
         
         ;time is counting down:
         ;---------------------------------------------------------------------------------------------------------------
-.countdown
+@countdown
         ;wait 60 frames for a second
         ;(TODO: this is a repeat of above, so could be re-organised to share)
         ld      A`frames        [HL`time]                       ;load the current frame-count
         inc     A`frames                                        ;add another frame
         cp      60                                              ;is it 60 or less?
-        jr      c	._5                                           ;if so, keep going
+        jr      c	@_5                                           ;if so, keep going
         xor     A`zero                                          ;otherwise, set frame-count to 0
-._5     ld      [HL`time]       A`frames                        ;update the frame counter
+@_5     ld      [HL`time]       A`frames                        ;update the frame counter
         
         dec     HL`time                                         ;move down to the seconds counter
         ccf                                                     ;flip the carry flag
@@ -10429,9 +10429,9 @@ updateTime:                                                                     
         sbc     A`seconds       $00                             ;if frame count hit 60 remove a second
         daa                                                     ;adjust up to binary-coded-decimal
         cp      $60                                             ;when seconds hit zero, no carry
-        jr      c	._6                                           ;above 0 seconds, keep going
+        jr      c	@_6                                           ;above 0 seconds, keep going
         ld      A`seconds       $59                             ;otherwise, loop around to 59 seconds
-._6     ld      [HL`time]       A`seconds                       ;update the seconds counter
+@_6     ld      [HL`time]       A`seconds                       ;update the seconds counter
         
         dec     HL`time                                         ;move down to the minutes counter
         ccf                                                     ;flip the carry flag
@@ -10439,7 +10439,7 @@ updateTime:                                                                     
         sbc     A`minutes       $00                             ;if seconds hit 0, remove a minute
         daa                                                     ;adjust up to binary-coded-decimal
         cp      $60                                             ;when minutes hit zero, no carry
-        jr      c	._7                                           ;above 0 minutes, keep going
+        jr      c	@_7                                           ;above 0 minutes, keep going
         
         ;set some flags?
         ld      A               $01
@@ -10447,7 +10447,7 @@ updateTime:                                                                     
         set     2	[IY`vars+%vars.flags9]
         
         xor     A`zero
-._7     ld      [HL`time]       A`zero
+@_7     ld      [HL`time]       A`zero
         
         ret
 	;
@@ -10463,9 +10463,9 @@ S1_Solidity_Blocks:                                                             
         ;solidity pointer table
         ;TODO: this should be populated by the tilesets
         %word
-        .greenHill      .bridge         .jungle
-        .labyrinth      .scrapBrain     .skyBaseInterior
-        .specialStage   .skyBaseExterior
+        @greenHill      @bridge         @jungle
+        @labyrinth      @scrapBrain     @skyBaseInterior
+        @specialStage   @skyBaseExterior
         
         %byte
         ;00 = sky
@@ -10493,7 +10493,7 @@ S1_Solidity_Blocks:                                                             
         ;27 = ? (also ground)
         ;14 = edge ground
         
-.greenHill                                                                                                      ;$3A75
+@greenHill                                                                                                      ;$3A75
 ;-----------------------------------------------------------------------------------------------------------------------
         ;TODO: the order of these numbers is determined by the Block Mappings,
         ;      how do we propogate the definition and order?
@@ -10511,7 +10511,7 @@ S1_Solidity_Blocks:                                                             
         $A7 $A7 $A7 $A7 $A7 $00 $00 $00 $00 $90 $9E $80 $80 $80 $80 $80
         $90 $00 $00 $00 $00 $00 $00 $00
         
-.bridge                                                                                                         ;$3B2D
+@bridge                                                                                                         ;$3B2D
 ;-----------------------------------------------------------------------------------------------------------------------       
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $13 $10 $12 $12 $13 $00 $00 $00 $00 $00 $00 $10 $10 $00 $00 $00
@@ -10523,7 +10523,7 @@ S1_Solidity_Blocks:                                                             
         $00 $00 $12 $10 $13 $00 $00 $10 $00 $00 $00 $00 $00 $00 $00 $00
         $13 $16 $16 $12 $00 $00 $00 $00 $10 $2D $2E $00 $00 $00 $00 $00
         
-.jungle                                                                                                         ;$3BBD
+@jungle                                                                                                         ;$3BBD
 ;-----------------------------------------------------------------------------------------------------------------------
         $00 $10 $00 $00 $00 $00 $00 $00 $10 $10 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $10 $10 $10 $10 $10 $10 $10 $16 $16 $16 $16 $27 $16
@@ -10536,7 +10536,7 @@ S1_Solidity_Blocks:                                                             
         $00 $80 $80 $80 $80 $80 $A7 $80 $27 $A7 $A7 $A7 $A7 $A7 $A7 $A7
         $A7 $A7 $80 $80 $10 $10 $96 $96 $16 $16 $16 $16 $00 $00 $00 $00
         
-.labyrinth                                                                                                      ;$35CD
+@labyrinth                                                                                                      ;$35CD
 ;-----------------------------------------------------------------------------------------------------------------------       
         $00 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16
         $16 $16 $16 $16 $16 $16 $16 $16 $00 $00 $00 $00 $00 $00 $80 $27
@@ -10550,7 +10550,7 @@ S1_Solidity_Blocks:                                                             
         $1E $00 $27 $1E $00 $1E $00 $00 $01 $04 $01 $04 $09 $06 $00 $00
         $00 $00 $00 $00 $00 $00 $00 $00 $A8 $00 $00 $00 $00 $00 $00 $00
         
-.scrapBrain                                                                                                     ;$3D0D
+@scrapBrain                                                                                                     ;$3D0D
 ;-----------------------------------------------------------------------------------------------------------------------
         $00 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16 $1E $1E $1E $1A
         $1B $1C $1D $1F $20 $21 $22 $23 $24 $1B $1C $16 $1E $1E $1E $1E
@@ -10565,7 +10565,7 @@ S1_Solidity_Blocks:                                                             
         $27 $1E $27 $9E $9E $16 $16 $00 $00 $1E $16 $1E $1E $90 $90 $90
         $16 $16 $16 $16 $00 $00 $00 $00 $A7 $9E $00
         
-.skyBaseInterior                                                                                                ;$3DC8
+@skyBaseInterior                                                                                                ;$3DC8
 ;-----------------------------------------------------------------------------------------------------------------------
         $00 $10 $16 $16 $10 $10 $10 $10 $10 $00 $00 $16 $16 $1E $00 $00
         $00 $00 $10 $10 $10 $00 $90 $80 $1E $00 $00 $00 $10 $10 $00 $00
@@ -10582,7 +10582,7 @@ S1_Solidity_Blocks:                                                             
         $1E $00 $10 $00 $00 $10 $10 $10 $10 $1E $90 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $9E $1E $00 $00 $00 $00 $00 $00 $00 $00 $00
         
-.specialStage                                                                                                   ;$3EA8
+@specialStage                                                                                                   ;$3EA8
 ;-----------------------------------------------------------------------------------------------------------------------
         $00 $27 $27 $27 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $1E $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
@@ -10593,7 +10593,7 @@ S1_Solidity_Blocks:                                                             
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         
-.skyBaseExterior                                                                                                ;$3F28
+@skyBaseExterior                                                                                                ;$3F28
 ;-----------------------------------------------------------------------------------------------------------------------
         $00 $27 $27 $16 $1E $1E $16 $27 $27 $1E $1E $00 $00 $16 $27 $27
         $16 $1E $1E $16 $16 $16 $16 $01 $02 $04 $03 $1D $1C $1A $1B $01
@@ -10612,7 +10612,7 @@ UnknownCollision:                                                               
         %byte
         
         ;47 entries, according to number of solidity types
-._3FBF  $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 ;$3FBF
+@_3FBF  $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 ;$3FBF
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         
@@ -10620,7 +10620,7 @@ UnknownCollision:                                                               
         $00 $00
         
         ;47 entries, according to number of solidity types
-._3FF0  $00 $08 $08 $08 $08 $06 $06 $06 $06 $06 $06 $03 $03 $03 $03 $03
+@_3FF0  $00 $08 $08 $08 $08 $06 $06 $06 $06 $06 $06 $03 $03 $03 $03 $03
         $03 $08 $03 $03 $03 $03 $03 $03 $00 $00 $00 $00 $00 $00 $00 $00 ;$4000
         $00 $00 $00 $00 $00 $00 $00 $03 $03 $04 $04 $03 $03 $03 $03
         
@@ -10638,36 +10638,36 @@ Unknown:                                                                        
         %word
         
         ;this is a lookup table using block solidity as index
-._4020  ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E                                          ;$4020
-        ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E
-        ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._409E, ._407E
-        ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._40BE, ._407E
-        ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E, ._40DE
-        ._40FE, ._407E, ._407E, ._407E, ._407E, ._407E, ._407E
+@_4020  @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E                                          ;$4020
+        @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
+        @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_409E, @_407E
+        @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_40BE, @_407E
+        @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_40DE
+        @_40FE, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
         
         %byte
         
-._407E  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$407E
+@_407E  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$407E
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000
         
-._409E  %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C                  `$409E
+@_409E  %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C                  `$409E
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100
         
-._40BE  %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C                  `$40BE
+@_40BE  %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C                  `$40BE
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000
         
-._40DE  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$40DE
+@_40DE  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$40DE
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100
         
-._40FE  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$40FE
+@_40FE  %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$40FE
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C
         %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 %00011100 ;=$1C
         %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80
@@ -10676,22 +10676,22 @@ Unknown:                                                                        
         
         %word
         
-._411E  ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._407E                                                 ;$411E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._407E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._417C ._407E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._418C ._407E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._41AC
-        ._41CC ._407E ._407E ._407E ._407E ._407E ._407E
+@_411E  @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E                                                 ;$411E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_417C @_407E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_418C @_407E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_41AC
+        @_41CC @_407E @_407E @_407E @_407E @_407E @_407E
         
         %byte
         
-._417C  $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04                                         ;$417C
+@_417C  $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04                                         ;$417C
         $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04
         
-._418C  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$418C
+@_418C  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$418C
         $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
         
-._41AC  $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04                                         ;$41AC
+@_41AC  $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04                                         ;$41AC
         $80 $80 $80 $80 $80 $80 $80 $80 $04 $04 $04 $04 $04 $04 $04 $04
         
         ;junk data?
@@ -10701,180 +10701,180 @@ Unknown:                                                                        
         
         %word
         
-._41EC  ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._407E                                                 ;$41EC
-        ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._407E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._424A ._407E
-        ._426A ._428A ._42AA ._42CA ._42EA ._430A ._432A ._434A
-        ._436A ._438A ._43AA ._43CA ._43EA ._440A ._442A ._444A
-        ._446A ._407E ._407E ._407E ._407E ._407E ._407E
+@_41EC  @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E                                                 ;$41EC
+        @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_424A @_407E
+        @_426A @_428A @_42AA @_42CA @_42EA @_430A @_432A @_434A
+        @_436A @_438A @_43AA @_43CA @_43EA @_440A @_442A @_444A
+        @_446A @_407E @_407E @_407E @_407E @_407E @_407E
         
         %byte
         
-._424A  $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F                                         ;$424A
+@_424A  $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F                                         ;$424A
         $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F
         
-._426A  $18 $18 $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11                                         ;$426A
+@_426A  $18 $18 $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11                                         ;$426A
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
-._428A  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$428A
+@_428A  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$428A
         $11 $11 $12 $12 $13 $13 $14 $14 $15 $15 $16 $16 $17 $17 $18 $18
         
-._42AA  $0F $0E $0D $0C $0B $0A $09 $08 $07 $06 $05 $04 $03 $02 $01 $00                                         ;$42AA
+@_42AA  $0F $0E $0D $0C $0B $0A $09 $08 $07 $06 $05 $04 $03 $02 $01 $00                                         ;$42AA
         $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
         
-._42CA  $2F $2E $2D $2C $2B $2A $29 $28 $27 $26 $25 $24 $23 $22 $21 $20                                         ;$42CA
+@_42CA  $2F $2E $2D $2C $2B $2A $29 $28 $27 $26 $25 $24 $23 $22 $21 $20                                         ;$42CA
         $1F $1E $1D $1C $1B $1A $19 $18 $17 $16 $15 $14 $13 $12 $11 $10
         
-._42EA  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $1A $1B $1C $1D $1E $1F                                         ;$42EA
+@_42EA  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $1A $1B $1C $1D $1E $1F                                         ;$42EA
         $20 $21 $22 $23 $24 $25 $26 $27 $28 $29 $2A $2B $2C $2D $2E $2F
         
-._430A  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$430A
+@_430A  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$430A
         $00 $01 $02 $03 $04 $05 $06 $07 $08 $09 $0A $0B $0C $0D $0E $0F
         
-._432A  $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F                                         ;$432A
+@_432A  $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F                                         ;$432A
         $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F $0F
         
-._434A  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$434A
+@_434A  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$434A
         $00 $00 $01 $01 $02 $02 $03 $03 $04 $04 $05 $05 $06 $06 $07 $07
         
-._436A  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$436A
+@_436A  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$436A
         $10 $10 $11 $11 $12 $12 $13 $13 $14 $14 $15 $15 $16 $16 $17 $17
         
-._438A  $18 $18 $19 $19 $1A $1A $1B $1B $1C $1C $1D $1D $1E $1E $1F $1F                                         ;$438A
+@_438A  $18 $18 $19 $19 $1A $1A $1B $1B $1C $1C $1D $1D $1E $1E $1F $1F                                         ;$438A
         $20 $20 $21 $21 $22 $22 $23 $23 $24 $24 $25 $25 $26 $26 $27 $27
         
-._43AA  $27 $27 $26 $26 $25 $25 $24 $24 $23 $23 $22 $22 $21 $21 $20 $20                                         ;$43AA
+@_43AA  $27 $27 $26 $26 $25 $25 $24 $24 $23 $23 $22 $22 $21 $21 $20 $20                                         ;$43AA
         $1F $1F $1E $1E $1D $1D $1C $1C $1B $1B $1A $1A $19 $19 $18 $18
         
-._43CA  $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11 $10 $10                                         ;$43CA
+@_43CA  $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11 $10 $10                                         ;$43CA
         $0F $0F $0E $0E $0D $0D $0C $0C $0B $0B $0A $0A $09 $09 $08 $08
         
-._43EA  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$43EA
+@_43EA  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$43EA
         $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
         
-._440A  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$440A
+@_440A  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$440A
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
-._442A  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$442A
+@_442A  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$442A
         $0F $0F $0E $0E $0D $0D $0C $0C $0B $0B $0A $0A $09 $09 $08 $08
         
-._444A  $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F                                         ;$444A
+@_444A  $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F                                         ;$444A
         $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F
         
-._446A  $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17                                         ;$446A
+@_446A  $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17                                         ;$446A
         $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17 $17
         
         ;---------------------------------------------------------------------------------------------------------------
         
         %word
         
-._448A  ._407E ._44E8 ._4508 ._4528 ._4548 ._4568 ._4588 ._45A8                                                 ;$448A
-        ._45C8 ._45E8 ._4608 ._4628 ._4648 ._4668 ._4688 ._46A8
-        ._46C8 ._46E8 ._4708 ._4728 ._4748 ._4768 ._4788 ._47A8
-        ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._407E
-        ._407E ._407E ._407E ._407E ._407E ._407E ._407E ._47C8
-        ._47E8 ._4808 ._4828 ._4848 ._4868 ._4888 ._48A8
+@_448A  @_407E @_44E8 @_4508 @_4528 @_4548 @_4568 @_4588 @_45A8                                                 ;$448A
+        @_45C8 @_45E8 @_4608 @_4628 @_4648 @_4668 @_4688 @_46A8
+        @_46C8 @_46E8 @_4708 @_4728 @_4748 @_4768 @_4788 @_47A8
+        @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_47C8
+        @_47E8 @_4808 @_4828 @_4848 @_4868 @_4888 @_48A8
         
         %byte
         
-._45E8  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $1A $1B $1C $1D $1E $1F                                         ;$45E8
+@_45E8  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $1A $1B $1C $1D $1E $1F                                         ;$45E8
         $20 $21 $22 $23 $24 $25 $26 $27 $28 $29 $2A $2B $2C $2D $2E $2F
         
-._4608  $F0 $F1 $F2 $F3 $F4 $F5 $F6 $F7 $F8 $F9 $FA $FB $FC $FD $FE $FF                                         ;$4608
+@_4608  $F0 $F1 $F2 $F3 $F4 $F5 $F6 $F7 $F8 $F9 $FA $FB $FC $FD $FE $FF                                         ;$4608
         $00 $01 $02 $03 $04 $05 $06 $07 $08 $09 $0A $0B $0C $0D $0E $0F
         
-._4628  $0F $0E $0D $0C $0B $0A $09 $08 $07 $06 $05 $04 $03 $02 $01 $00                                         ;$4628
+@_4628  $0F $0E $0D $0C $0B $0A $09 $08 $07 $06 $05 $04 $03 $02 $01 $00                                         ;$4628
         $FF $FE $FD $FC $FB $FA $F9 $F8 $F7 $F6 $F5 $F4 $F3 $F2 $F1 $F0
         
-._4648  $2F $2E $2D $2C $2B $2A $29 $28 $27 $26 $25 $24 $23 $22 $21 $20                                         ;$4648
+@_4648  $2F $2E $2D $2C $2B $2A $29 $28 $27 $26 $25 $24 $23 $22 $21 $20                                         ;$4648
         $1F $1E $1D $1C $1B $1A $19 $18 $17 $16 $15 $14 $13 $12 $11 $10
         
-._4668  $F8 $F8 $F9 $F9 $FA $FA $FB $FB $FC $FC $FD $FD $FE $FE $FF $FF                                         ;$4668
+@_4668  $F8 $F8 $F9 $F9 $FA $FA $FB $FB $FC $FC $FD $FD $FE $FE $FF $FF                                         ;$4668
         $00 $00 $01 $01 $02 $02 $03 $03 $04 $04 $05 $05 $06 $06 $07 $07
         
-._4688  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$4688
+@_4688  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$4688
         $10 $10 $11 $11 $12 $12 $13 $13 $14 $14 $15 $15 $16 $16 $17 $17
         
-._46A8  $18 $18 $19 $19 $1A $1A $1B $1B $1C $1C $1D $1D $1E $1E $1F $1F                                         ;$46A8
+@_46A8  $18 $18 $19 $19 $1A $1A $1B $1B $1C $1C $1D $1D $1E $1E $1F $1F                                         ;$46A8
         $20 $20 $21 $21 $22 $22 $23 $23 $24 $24 $25 $25 $26 $26 $27 $27
         
-._46C8  $27 $27 $26 $26 $25 $25 $24 $24 $23 $23 $22 $22 $21 $21 $20 $20                                         ;$46C8
+@_46C8  $27 $27 $26 $26 $25 $25 $24 $24 $23 $23 $22 $22 $21 $21 $20 $20                                         ;$46C8
         $1F $1F $1E $1E $1D $1D $1C $1C $1B $1B $1A $1A $19 $19 $18 $18
         
-._46E8  $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11 $10 $10                                         ;$46E8
+@_46E8  $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11 $10 $10                                         ;$46E8
         $0F $0F $0E $0E $0D $0D $0C $0C $0B $0B $0A $0A $09 $09 $08 $08
         
-._4708  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$4708
+@_4708  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$4708
         $FF $FF $FE $FE $FD $FD $FC $FC $FB $FB $FA $FA $F9 $F9 $F8 $F8
         
-._4728  $10 $10 $10 $10 $10 $10 $10 $11 $11 $11 $11 $11 $12 $12 $12 $12                                         ;$4728
+@_4728  $10 $10 $10 $10 $10 $10 $10 $11 $11 $11 $11 $11 $12 $12 $12 $12                                         ;$4728
         $12 $12 $12 $12 $12 $11 $11 $11 $11 $11 $10 $10 $10 $10 $10 $10
         
-._4748  $10 $10 $10 $10 $10 $10 $10 $11 $11 $11 $11 $11 $12 $12 $12 $12                                         ;$4748
+@_4748  $10 $10 $10 $10 $10 $10 $10 $11 $11 $11 $11 $11 $12 $12 $12 $12                                         ;$4748
         $13 $13 $13 $14 $14 $15 $15 $15 $16 $16 $16 $17 $17 $17 $17 $17
         
-._4768  $17 $17 $17 $17 $17 $16 $16 $16 $15 $15 $15 $14 $14 $13 $13 $13                                         ;$4768
+@_4768  $17 $17 $17 $17 $17 $16 $16 $16 $15 $15 $15 $14 $14 $13 $13 $13                                         ;$4768
         $12 $12 $12 $12 $11 $11 $11 $11 $11 $10 $10 $10 $10 $10 $10 $10
         
-._4788  $08 $08 $08 $08 $08 $08 $08 $09 $09 $09 $09 $09 $0A $0A $0A $0A                                         ;$4788
+@_4788  $08 $08 $08 $08 $08 $08 $08 $09 $09 $09 $09 $09 $0A $0A $0A $0A                                         ;$4788
         $0B $0B $0B $0C $0C $0D $0D $0D $0E $0E $0E $0F $0F $0F $0F $0F
         
-._47A8  $0F $0F $0F $0F $0F $0E $0E $0E $0D $0D $0D $0C $0C $0B $0B $0B                                         ;$47A8
+@_47A8  $0F $0F $0F $0F $0F $0E $0E $0E $0D $0D $0D $0C $0C $0B $0B $0B                                         ;$47A8
         $0A $0A $0A $0A $09 $09 $09 $09 $09 $08 $08 $08 $08 $08 $08 $08
         
-._47C8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$47C8
+@_47C8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$47C8
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
-._47E8  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $19 $1A $1A $1A $1B $1B                                         ;$47E8
+@_47E8  $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $19 $1A $1A $1A $1B $1B                                         ;$47E8
         $1B $1B $1B $1A $1A $1A $19 $19 $18 $17 $16 $14 $11 $10 $10 $10
         
-._4808  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$4808
+@_4808  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$4808
         $11 $11 $12 $12 $13 $13 $14 $14 $15 $15 $16 $16 $17 $17 $18 $18
         
-._4828  $18 $18 $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11                                         ;$4828
+@_4828  $18 $18 $17 $17 $16 $16 $15 $15 $14 $14 $13 $13 $12 $12 $11 $11                                         ;$4828
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
-._4848  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$4848
+@_4848  $08 $08 $09 $09 $0A $0A $0B $0B $0C $0C $0D $0D $0E $0E $0F $0F                                         ;$4848
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
-._4868  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$4868
+@_4868  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$4868
         $0F $0F $0E $0E $0D $0D $0C $0C $0B $0B $0A $0A $09 $09 $08 $08
         
-._4888  $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF                                         ;$4888
+@_4888  $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF                                         ;$4888
         $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF
         
-._48A8  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B                                         ;$48A8
+@_48A8  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B                                         ;$48A8
         $0B $0B $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
         
         ;unused?
-._48C8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$48C8
+@_48C8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$48C8
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
         ;unused?
-._48E8  $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08                                         ;$48E8
+@_48E8  $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08                                         ;$48E8
         $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08
         
-._4908  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B                                         ;$4908
+@_4908  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B                                         ;$4908
         $0C $0C $0C $0C $0D $0D $0D $0D $0E $0E $0E $0E $0F $0F $0F $0F
         
         ;unused?
-._4928  $0F $0F $0F $0F $0E $0E $0E $0E $0D $0D $0D $0D $0C $0C $0C $0C                                         ;$4928
+@_4928  $0F $0F $0F $0F $0E $0E $0E $0E $0D $0D $0D $0D $0C $0C $0C $0C                                         ;$4928
         $0B $0B $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
         
         ;unused?
-._4948  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$4948
+@_4948  $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00                                         ;$4948
         $00 $00 $01 $01 $02 $02 $03 $03 $04 $04 $05 $05 $06 $06 $07 $07
         
         ;unused?
-._4968  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0C $0C                                         ;$4968
+@_4968  $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0C $0C                                         ;$4968
         $0C $0C $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
         
         ;unused?
-._4988  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$4988
+@_4988  $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80                                         ;$4988
         $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
         
         ;unused?
-._49A8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$49A8
+@_49A8  $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10                                         ;$49A8
         $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
 	;
 	
@@ -10886,20 +10886,20 @@ sonic_process:                                                                  
         res     1	[IY`vars+%vars.unknown0]
         
         bit     7   	[IX`mob+%mob.flags]
-        call    nz  	._4e88
+        call    nz  	@_4e88
         
         ;flag to update the Sonic sprite frame
         set     7   	[IY`vars+%vars.timeLightningFlags]
         
         ;is Sonic dead?
         bit     0   	[IY`vars+%vars.scrollRingFlags]
-        jp      nz	._543c
+        jp      nz	@_543c
         
         ;reduce this number until it hits 0. appears to only be set when changing
         ;direction from left to right; something to do with acceleration/skidding?
         ld      A       [$.SONIC.unknown16]
         and     A
-        call    nz  	._4ff0
+        call    nz  	@_4ff0
         
         ;configure the flags on Sonic so that he adheres to the ground.
         ;I'm not sure why this is done every frame
@@ -10907,43 +10907,43 @@ sonic_process:                                                                  
         
         ;is Sonic in damage state?
         bit     6   	[IY`vars+%vars.flags6]
-        call    nz  	._510a
+        call    nz  	@_510a
         
         ld      A       [$.D28C]
         and     A
-        call    nz  	._568f
+        call    nz  	@_568f
         
         ;special stage? (time is centred)
         bit     0   	[IY`vars+%vars.timeLightningFlags]
-        call    nz  	._5100
+        call    nz  	@_5100
         
         bit     0   	[IY`vars+%vars.unknown0]
-        call    nz  	._4ff5
+        call    nz  	@_4ff5
         
         ;is Sonic underwater? -- count down oxygen...
         bit     4   	[IX`mob+%mob.flags]                     ;check mob underwater flag
-        call    nz  	.drownTimer
+        call    nz  	@drownTimer
         
         ld      A       [$.D28B]
         and     A
-        call    nz  	._5285
+        call    nz  	@_5285
         
         ld      A       [$.D28A]
         and     A
-        jp      nz	._5117
+        jp      nz	@_5117
         
         bit     6   	[IY`vars+%vars.unknown0]
-        jp      nz	._5193
+        jp      nz	@_5193
         
         bit     7   	[IY`vars+%vars.unknown0]
-        call    nz  	._529c
+        call    nz  	@_529c
         
         ;---------------------------------------------------------------------------------------------------------------
         
         bit     4   	[IX`mob+%mob.flags]                     ;mob underwater?
-        jp      z	._1
+        jp      z	@_1
         
-        ld      HL	._4ddd
+        ld      HL	@_4ddd
         ld      DE	$.TEMP1
         ld      BC	$0009
         ldir    
@@ -10954,19 +10954,19 @@ sonic_process:                                                                  
         ld      [$.D242]        HL
         ld      HL              $0010
         ld      [$.D244]	HL
-        jp      ._5
+        jp      @_5
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     ld      A	[IX`mob+%mob.unknown15]
+@_1     ld      A	[IX`mob+%mob.unknown15]
         and     A
-        jr      nz	._4
+        jr      nz	@_4
         
         ;special stage?
         bit     0   	[IY`vars+%vars.timeLightningFlags]
-        jr      nz	._3
+        jr      nz	@_3
         
-._2     ld      HL	._4dcb
+@_2     ld      HL	@_4dcb
         ld      DE	$.TEMP1
         ld      BC	$0009
         ldir        
@@ -10979,12 +10979,12 @@ sonic_process:                                                                  
         ld      [$.D244]        HL
         ld      HL              [$DC0C]
         ld      [$DC0A]         HL
-        jp      ._5
+        jp      @_5
         
-._3     bit     7   	[IX`mob+%mob.flags]
-        jr      nz	._2
+@_3     bit     7   	[IX`mob+%mob.flags]
+        jr      nz	@_2
         
-        ld      HL      ._4dd4
+        ld      HL      @_4dd4
         ld      DE      $.TEMP1
         ld      BC      $0009
         ldir        
@@ -10997,9 +10997,9 @@ sonic_process:                                                                  
         ld      [$.D244]        HL
         ld      HL              [$DC0C]
         ld      [$DC0A]         HL
-        jp      ._5
+        jp      @_5
         
-._4     ld      HL	._4de6
+@_4     ld      HL	@_4de6
         ld      DE	$.TEMP1
         ld      BC	$0009
         ldir    
@@ -11016,16 +11016,16 @@ sonic_process:                                                                  
             
         ld      A	[$.FRAMECOUNT]
         and     %00000011
-        call    z   ._4fec
+        call    z   @_4fec
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;is up pressed on the joypad?
-._5     bit     1	[IY`vars+%vars.joypad]			;joypad up?
-        call    z	._50c1
+@_5     bit     1	[IY`vars+%vars.joypad]			;joypad up?
+        call    z	@_50c1
         
         bit     1   	[IY`vars+%vars.joypad]			;joypad not up?
-        call    nz  	._50e3
+        call    nz  	@_50e3
         
         ;handle collision with tile underneath Sonic:
         ;---------------------------------------------------------------------------------------------------------------
@@ -11069,14 +11069,14 @@ sonic_process:                                                                  
         ;read the byte of data for the particular block index
         ld      A`data          [HL`data]
         ;if it's higher than the number of solidity types, skip ahead
-        cp      $1C                                             ;=number of entries in ._58e5
-        jr      nc	.callback
+        cp      $1C                                             ;=number of entries in @_58e5
+        jr      nc	@callback
         
         ;double the data byte read and transfer to HL for 16-bit use
         add     A`data	A`data
         ld      L     	A`data
         ld      H     	D`zero
-        ld      DE    	._58e5
+        ld      DE    	@_58e5
         add     HL    	DE
         ;load HL with the address in the lookup table
         ld      A       [HL]
@@ -11085,7 +11085,7 @@ sonic_process:                                                                  
         ld      L       A
         
         ;load DE with the callback address
-        ld      DE`callback         .callback
+        ld      DE`callback         @callback
         
         ;switch back to the regular bank layout (where the mob code is)
         ld      A`bank                  2
@@ -11096,7 +11096,7 @@ sonic_process:                                                                  
         push    DE`callback
         jp      [HL]
         
-.callback
+@callback
         ;has Sonic fallen out of the level?
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL`sonicY	[$.SONIC.Y]
@@ -11116,52 +11116,52 @@ sonic_process:                                                                  
         
         ld      A	[IY`vars+%vars.joypad]      		;check joypad state
         cp      $FF                                             ;is any button being pressed?
-        jr      nz	._7                                     ;skip the idle timer update
+        jr      nz	@_7                                     ;skip the idle timer update
         
         ;is player moving left or right?
         ld      DE	[$.SONIC.Xspeed]            		;get the horizontal speed
         ld      A       E                           		;shift E into A for next instruction
         or      D                                               ;combine E & D
-        jr      nz	._7                                     ;if it's not zero, skip
+        jr      nz	@_7                                     ;if it's not zero, skip
         
         ld      A	[$.SONIC.flags]
         rlca    
-        jr      nc	._7
+        jr      nc	@_7
         
         ld      HL`timer	[$.IDLE_TIME]
         inc     HL`timer
         
         ;update the idle timer
-._7     ld      [$.IDLE_TIME]	HL`timer
+@_7     ld      [$.IDLE_TIME]	HL`timer
         
         ;---------------------------------------------------------------------------------------------------------------
         
         bit     7   	[IY`vars+%vars.flags6]
-        call    nz  	._50e8
+        call    nz  	@_50e8
         
         ld      [IX`mob+%mob.unknown14]	$05
         ld      HL`idleTime	[$.IDLE_TIME]
         ld      DE`idleWait     !IDLE_TIME                  	;idle time until waiting animation
         and     A`zero                                          ;clear the carry flag for below
         sbc     HL`idleTime	DE`idleWait
-        call    nc  	._5105
+        call    nc  	@_5105
         
         ;is up pressed?
         ld      A	[IY`vars+%vars.joypad]
         cp      %11111110
-        call    z   	._4edd
+        call    z   	@_4edd
         
         ;up not pressed?
         bit     0   	[IY`vars+%vars.joypad]
-        call    nz  	._4fd3
+        call    nz  	@_4fd3
         
         bit     0   	[IX`mob+%mob.flags]
-        jp      nz	._532e
+        jp      nz	@_532e
         
         ;ducking or spinning?
         ld      A	[IX`mob+%mob.height]
         cp      $20
-        jr      z	._8
+        jr      z	@_8
         
         ;falling?
         ld      HL		[$.SONIC.Y]
@@ -11169,7 +11169,7 @@ sonic_process:                                                                  
         add     HL      	DE
         ld      [$.SONIC.Y]	HL
         
-._8     ld      [IX`mob+%mob.width]     24
+@_8     ld      [IX`mob+%mob.width]     24
         ld      [IX`mob+%mob.height]    32
         ld      HL	[$.SONIC.Xspeed]
         ld      B 	[IX`mob+%mob.Xdirection]
@@ -11179,20 +11179,20 @@ sonic_process:                                                                  
         
         ;is right pressed?
         bit     3   	[IY`vars+%vars.joypad]
-        jp      z	._4f01
+        jp      z	@_4f01
         
         ;is left pressed?
         bit     2   	[IY`vars+%vars.joypad]
-        jp      z	._4f5c
+        jp      z	@_4f5c
         
         ld      A	H
         or      L
         or      B
-        jr      z	._4b1b
+        jr      z	@_4b1b
         
         ld      [IX`mob+%mob.unknown14] $01
         bit     7	B
-        jr      nz	._9
+        jr      nz	@_9
         
         ld      DE	[$.TEMP4]
         ld      A 	E
@@ -11211,7 +11211,7 @@ sonic_process:                                                                  
         sbc     HL      DE
         pop     DE
         pop     HL
-        jr      c	._4b1b
+        jr      c	@_4b1b
         
         ld      DE      [$.TEMP1]
         ld      A       E
@@ -11224,11 +11224,11 @@ sonic_process:                                                                  
         ld      C       $FF
         ld      A       [$.D216]
         ld      [IX`mob+%mob.unknown14]	A
-        jp      ._4b1b
+        jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._9     ld      DE	[$.TEMP4]
+@_9     ld      DE	[$.TEMP4]
         ld      C 	$00
         
         push    HL
@@ -11245,70 +11245,70 @@ sonic_process:                                                                  
         sbc     HL      DE
         pop     DE
         pop     HL
-        jr      c	._4b1b
+        jr      c	@_4b1b
 	
         ld      DE      [$.TEMP1]
         ld      A       [$.D216]
         ld      [IX`mob+%mob.unknown14] A
-._4b1b
+@_4b1b
         ld      A	B
         and     A
-        jp      m	._10
+        jp      m	@_10
         
         add     HL      DE
         adc     A       C
         ld      C       A
-        jp      p	._11
+        jp      p	@_11
         
         ld      A       [$.SONIC.Xspeed]
         or      [IX`mob+%mob.Xspeed+1]
         or      [IX`mob+%mob.Xdirection]
-        jr      z	._11
+        jr      z	@_11
         
         ld      C       $00
         ld      L       C
         ld      H       C
-        jp      ._11
+        jp      @_11
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._10    add     HL                  DE
+@_10    add     HL                  DE
         adc     A                   C
         ld      C                   A
-        jp      m	._11
+        jp      m	@_11
         ld      C                   $00
         ld      L                   C
         ld      H                   C
-._11    ld      A                   C
+@_11    ld      A                   C
         ld      [$.SONIC.Xspeed]    HL
         ld      [$.SONIC.Xdirection]    A
-._4b49
+@_4b49
         ld      HL      [$.SONIC.Yspeed]
         ld      B       [IX`mob+%mob.Ydirection]
         ld      C       $00
         ld      E       C
         ld      D       C
         bit     7   	[IX`mob+%mob.flags]
-        call    nz  	._50af
+        call    nz  	@_50af
         bit     0   	[IX`mob+%mob.flags]
-        jp      nz	._5407
+        jp      nz	@_5407
         ld      A       [$.D28E]
         and     A
-        jr      nz	._12
+        jr      nz	@_12
         bit     7   	[IX`mob+%mob.flags]
-        jr      z	._13
+        jr      z	@_13
         bit     3   	[IX`mob+%mob.flags]
-        jr      nz	._12
+        jr      nz	@_12
         ;button 2 pressed?
         bit     5   	[IY`vars+%vars.joypad]
-        jr      z	._13
+        jr      z	@_13
         ;button 2 not pressed?
-._12    bit     5   	[IY`vars+%vars.joypad]
-        jr      nz	._14
-._4b7f
+@_12    bit     5   	[IY`vars+%vars.joypad]
+        jr      nz	@_14
+@_4b7f
         ld      A       [$.D28E]
         and     A
-        call    z   ._509d
+        call    z   @_509d
         ld      HL      [$.D242]
         ld      B       $FF
         ld      C       $00
@@ -11318,30 +11318,30 @@ sonic_process:                                                                  
         dec     A
         ld      [$.D28E]	A
         set     2   	[IX`mob+%mob.flags]
-        jp      ._17
+        jp      @_17
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._13    res     3   	[IX`mob+%mob.flags]
-        jp      ._15
+@_13    res     3   	[IX`mob+%mob.flags]
+        jp      @_15
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._14    set     3   	[IX`mob+%mob.flags]
-._15    xor     A`zero
+@_14    set     3   	[IX`mob+%mob.flags]
+@_15    xor     A`zero
         ld      [$.D28E]	A`zero
-._4bac
+@_4bac
         bit     7	H
-        jr      nz	._16
+        jr      nz	@_16
         ld      A       [$.TEMP7]
         cp      H
-        jr      z	._17
-        jr      c	._17
-._16    ld      DE      [$.D244]
+        jr      z	@_17
+        jr      c	@_17
+@_16    ld      DE      [$.D244]
         ld      C       $00
         
-._17    bit     0   	[IY`vars+%vars.flags6]
-        jr      z	._18
+@_17    bit     0   	[IY`vars+%vars.flags6]
+        jr      z	@_18
         
         push    HL
         ld      A	E
@@ -11358,7 +11358,7 @@ sonic_process:                                                                  
         adc     A       $00
         ld      C       A
         pop     HL
-._18    add     HL      DE
+@_18    add     HL      DE
         ld      A       B
         adc     A       C
         ld      [$.SONIC.Yspeed]    	HL
@@ -11379,10 +11379,10 @@ sonic_process:                                                                  
         ld      [$.D2E8]        A
         pop     HL
         bit     2   	[IX`mob+%mob.flags]
-        call    nz  	._5280
+        call    nz  	@_5280
         ld      A       H
         and     A
-        jp      p	._19
+        jp      p	@_19
         ld      A       H
         cpl     
         ld      H       A
@@ -11390,42 +11390,42 @@ sonic_process:                                                                  
         cpl     
         ld      L       A
         inc     HL
-._19    ld      DE      $0100
+@_19    ld      DE      $0100
         ex      DE      HL
         and     A
         sbc     HL      DE
-        jr      nc	._21
+        jr      nc	@_21
         ld      A       [$.SONIC.flags]
         and     $85
-        jr      nz	._21
+        jr      nz	@_21
         bit     7   	[IX`mob+%mob.Ydirection]
-        jr      z	._20
+        jr      z	@_20
         ld      [IX`mob+%mob.unknown14]	$13
-        jr      ._21
-._20    ld      [IX`mob+%mob.unknown14] $01
-._21    ld      BC	$000C
+        jr      @_21
+@_20    ld      [IX`mob+%mob.unknown14] $01
+@_21    ld      BC	$000C
         ld      DE	$0008
         call    \\getFloorLayoutRAMAddressForMob
         ld      A       [HL]
         and     $7F
         cp      $79
-        call    nc  	._4def
-._4c39
+        call    nc  	@_4def
+@_4c39
         ld      A       [$.D28C]
         and     A
-        call    nz  	._51b3
+        call    nz  	@_51b3
         bit     6   	[IY`vars+%vars.flags6]
-        call    nz  	._51bc
+        call    nz  	@_51bc
         bit     2   	[IY`vars+%vars.unknown0]
-        call    nz  	._51dd
+        call    nz  	@_51dd
         ld      A       [$.SONIC.unknown14]
         cp      $0A
-        call    z   	._51f3
+        call    z   	@_51f3
         ld      L       [IX`mob+%mob.unknown14]
         ld      C       L
         ld      H       $00
         add     HL      HL
-        ld      DE      ._5965
+        ld      DE      @_5965
         add     HL      DE
         ld      E       [HL]
         inc     HL
@@ -11433,33 +11433,33 @@ sonic_process:                                                                  
         ld      [$.SONIC.unknown11]	DE
         ld      A	[$.D2DF]
         sub     C
-        call    nz  	._521f
+        call    nz  	@_521f
         ld      A       [$.SONIC.unknown13]
         
-._22    ld      H       $00
+@_22    ld      H       $00
         ld      L       A
         add     HL      DE
         ld      A       [HL]
         and     A
-        jp      p	._23
+        jp      p	@_23
         inc     HL
         ld      A       [HL]
         ld      [$.SONIC.unknown13]	A
-        jp      ._22
+        jp      @_22
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._23    ld      D	A
+@_23    ld      D	A
 	;TODO: what on earth is this? (could be a data ref, and not a ref to this label)
         ld      BC      \\sound\update
         bit     1   	[IX`mob+%mob.flags]
-        jr      z	._24
+        jr      z	@_24
         ld      BC      _7000                      		;immediate $7000 or label?
-._24    bit     5   	[IY`mob+%vars.flags6]
-        call    nz  	._5206
+@_24    bit     5   	[IY`mob+%vars.flags6]
+        call    nz  	@_5206
         ld      A       [$.D302]
         and     A
-        call    nz      ._4e48
+        call    nz      @_4e48
         ld      A       D
         rrca    
         rrca    
@@ -11473,57 +11473,57 @@ sonic_process:                                                                  
         ld      H       A
         add     HL      BC
         ld      [$.SONIC_CURRENT_FRAME]	HL
-        ld      HL	._591d
+        ld      HL	@_591d
         
         bit     0   	[IY`vars+$%vars.flags6]
-        call    nz  	._520f
+        call    nz  	@_520f
         
         ld      A       [$.SONIC.unknown14]
         cp      $13
-        call    z   	._5213
+        call    z   	@_5213
         ld      A       [$.D302]
         and     A
-        call    nz  	._4e4d
+        call    nz  	@_4e4d
         ld      [$.SONIC.spriteLayout]	HL
         ld      C	$10
         ld      A	[$.SONIC.Xspeed+1]
         and     A
-        jp      p	._25
+        jp      p	@_25
         neg     
         ld      C       $F0
-._25    cp      $10
-        jr      c	._26
+@_25    cp      $10
+        jr      c	@_26
         ld      A       C
         ld      [$.SONIC.Xspeed+1]	A
-._26    ld      C	$10
+@_26    ld      C	$10
         ld      A       [$.SONIC.Yspeed+1]
         and     A
-        jp      p	._27
+        jp      p	@_27
         neg     
         ld      C       $F0
-._27    cp      $10
-        jr      c	._28
+@_27    cp      $10
+        jr      c	@_28
         ld      A       C
         ld      [$.SONIC.Yspeed+1]	A
-._28    ld      DE	[$.SONIC.Y]
+@_28    ld      DE	[$.SONIC.Y]
         ld      HL      $0010
         and     A
         sbc     HL      DE
-        jr      c	._29
+        jr      c	@_29
         add     HL      DE
         ld      [$.SONIC.Y]	HL
-._29    bit     7	[IY`vars+%vars.flags6]
-        call    nz  	._5224
+@_29    bit     7	[IY`vars+%vars.flags6]
+        call    nz  	@_5224
         bit     0   	[IY`vars+%vars.unknown0]
-        call    nz  	._4e8d
+        call    nz  	@_4e8d
         ld      A       [$.D2E1]
         and     A
-        call    nz  	._5231
+        call    nz  	@_5231
         ld      A       [$.D321]
         and     A
-        call    nz  	._4e51
+        call    nz  	@_4e51
         bit     1   	[IY`vars+%vars.flags6]
-        jr      nz	._31
+        jr      nz	@_31
         ld      HL      [$.LEVEL_LEFT]
         ld      BC      $0008
         add     HL      BC
@@ -11531,21 +11531,21 @@ sonic_process:                                                                  
         ld      HL      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      nc	._30
+        jr      nc	@_30
         ld      [$.SONIC.X]	DE
         ld      A	[$.SONIC.Xdirection]
         and     A
-        jp      p	._31
+        jp      p	@_31
         
         xor     A`zero                                      	;(set A to zero)
         ld      [$.SONIC.Xspeed+0]	A`zero
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
-        jp      ._31
+        jp      @_31
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._30    ld      HL	[$.LEVEL_RIGHT]
+@_30    ld      HL	[$.LEVEL_RIGHT]
         ld      DE      $00F8                   		;248 -- screen width less 8?
         add     HL	DE
         
@@ -11555,44 +11555,44 @@ sonic_process:                                                                  
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._31
+        jr      c	@_31
         ex      DE      HL
         scf     
         sbc     HL      BC
         ld      [$.SONIC.X]	HL
         ld      A	[$.SONIC.Xdirection]
         and     A
-        jp      m	._31
+        jp      m	@_31
         ld      HL      [$.SONIC.Xspeed+1]
         or      H
         or      L
-        jr      z	._31
+        jr      z	@_31
         
         xor     A`zero                                      	;(set A to 0)
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-._31    ld      A		[$.SONIC.flags]
+@_31    ld      A		[$.SONIC.flags]
         ld      [$.D2B9]	A
         ld      A		[$.SONIC.unknown14]
         ld      [$.D2DF]        A
         ld      D	$01
         ld      C	$30
         cp      $01
-        jr      z	._32
+        jr      z	@_32
         ld      D       $06
         ld      C       $50
         cp      $09
-        jr      z	._32
+        jr      z	@_32
         inc     [IX`mob+%mob.unknown13]
         ret
         
-._32    ld      A       [$.D2E0]
+@_32    ld      A       [$.D2E0]
         ld      B       A
         ld      HL      [$.SONIC.Xspeed]
         bit     7   	H
-        jr      z	._33
+        jr      z	@_33
         ld      A       L
         cpl     
         ld      L       A
@@ -11600,7 +11600,7 @@ sonic_process:                                                                  
         cpl     
         ld      H       A
         inc     HL
-._33    srl     H
+@_33    srl     H
         rr      L
         ld      A       L
         add     A      B
@@ -11621,14 +11621,14 @@ sonic_process:                                                                  
         
         %byte
         
-._4dcb  $10 $00 $30 $00 $08 $00 $00 $08 $02                                                                     ;$4DCB
-._4dd4  $10 $00 $30 $00 $02 $00 $00 $08 $02                                                                     ;$4DD4
-._4ddd  $04 $00 $0C $00 $02 $00 $00 $02 $01                                                                     ;$4DDD
-._4de6  $10 $00 $30 $00 $08 $00 $00 $08 $02                                                                     ;$4DE6
+@_4dcb  $10 $00 $30 $00 $08 $00 $00 $08 $02                                                                     ;$4DCB
+@_4dd4  $10 $00 $30 $00 $02 $00 $00 $08 $02                                                                     ;$4DD4
+@_4ddd  $04 $00 $0C $00 $02 $00 $00 $02 $01                                                                     ;$4DDD
+@_4de6  $10 $00 $30 $00 $08 $00 $00 $08 $02                                                                     ;$4DE6
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4def  ex      DE	HL                                                                          		;$4DEF
+@_4def  ex      DE	HL                                                                          		;$4DEF
         
         ld      HL	[$.SONIC.Y]
         ld      BC	[$.CAMERA_Y]
@@ -11677,7 +11677,7 @@ sonic_process:                                                                  
         ld      [$.D31F]        HL
         ld      A		$06
         ld      [$.D321]	A
-        ld      HL		._595d
+        ld      HL		@_595d
         ld      [$.D2AF]	HL
         
         ;add one ring to the ring count
@@ -11688,18 +11688,18 @@ sonic_process:                                                                  
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4e48  ld      D	A                                                                           		;$4E48
+@_4e48  ld      D	A                                                                           		;$4E48
         ld      BC	_7000                      		;immediate $7000 or label?
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4e4d  ld      HL	$0000                                                                       		;$4E4D
+@_4e4d  ld      HL	$0000                                                                       		;$4E4D
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4e51  dec     A                                                                                               ;$4E51
+@_4e51  dec     A                                                                                               ;$4E51
         ld      [$.D321]	A
         ld      HL              [$.D31D]
         ld      [$.TEMP1]       HL
@@ -11710,7 +11710,7 @@ sonic_process:                                                                  
         ld      HL              $FFFE
         ld      [$.TEMP6]       HL
         cp      $03
-        jr      c	._34
+        jr      c	@_34
 	
         ld      A	$B2
         call    \\_3581
@@ -11718,18 +11718,18 @@ sonic_process:                                                                  
         ld      [$.TEMP4]       HL
         ld      HL              $0002
         ld      [$.TEMP6]       HL
-._34    ld      A	$5A
+@_34    ld      A	$5A
         call    \\_3581
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4e88  set     1	[IY`vars+%vars.unknown0]								;$4E88
+@_4e88  set     1	[IY`vars+%vars.unknown0]								;$4E88
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._4e8d  ld      HL		[$.SONIC.X]                                                                 	;$4E8D
+@_4e8d  ld      HL		[$.SONIC.X]                                                                 	;$4E8D
         ld      [$.TEMP1]       HL
         ld      HL		[$.SONIC.Y]
         ld      [$.TEMP3]       HL
@@ -11737,18 +11737,18 @@ sonic_process:                                                                  
         ld      A       [$.FRAMECOUNT]
         rrca    
         rrca    
-        jr      nc	._35
+        jr      nc	@_35
         ld      HL      $.D2F7
-._35    ld      DE      $.TEMP4
+@_35    ld      DE      $.TEMP4
         ldi     
         ldi     
         ldi     
         ldi     
         rrca    
         ld      A	$94
-        jr      nc	._36
+        jr      nc	@_36
         ld      A       $96
-._36    call    \\_3581
+@_36    call    \\_3581
         ld      A       [$.FRAMECOUNT]
         ld      C       A
         and     %00000111
@@ -11756,9 +11756,9 @@ sonic_process:                                                                  
         ld      B       $02
         ld      HL      $.D2F3
         bit     3   	C
-        jr      z	._37
+        jr      z	@_37
         ld      HL      $.D2F7
-._37    push    HL
+@_37    push    HL
         call    \\math\_LABEL_625_57
         pop     HL
         and     $0F
@@ -11766,13 +11766,13 @@ sonic_process:                                                                  
         inc     HL
         ld      [HL]    $00
         inc     HL
-        djnz    ._37
+        djnz    @_37
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
         
         ;is Sonic moving?
-._4edd  ld      HL`speed	[$.SONIC.Xspeed]                                                            	;$4EDD
+@_4edd  ld      HL`speed	[$.SONIC.Xspeed]                                                            	;$4EDD
         ld      A`speed		H`speed
         or      L`speed
         ret     nz
@@ -11784,22 +11784,22 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.unknown14]	$0C
         ld      DE	[$.D2B7]
         bit     7   	D
-        jr      nz	._38
+        jr      nz	@_38
         
         ld      HL      $002C
         and     A
         sbc     HL      DE
         ret     c
-._38    inc     DE
+@_38    inc     DE
         ld      [$.D2B7]	DE
         
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
         
-._4f01  res     1   	[IX`mob+%mob.flags]									;$4F01
+@_4f01  res     1   	[IX`mob+%mob.flags]									;$4F01
         bit     7   	B
-        jr      nz	._39
+        jr      nz	@_39
         ld      DE	[$.TEMP1]
         ld      C 	$00
         ld      [IX`mob+%mob.unknown14]	$01
@@ -11810,7 +11810,7 @@ sonic_process:                                                                  
         xor     A`zero
         sbc     HL      DE
         exx     
-        jp      c	._4b1b
+        jp      c	@_4b1b
         ld      B   	A
         ld      E   	A
         ld      D   	A
@@ -11818,11 +11818,11 @@ sonic_process:                                                                  
         ld      HL  	[$.D240]
         ld      A   	[$.D216]
         ld      [IX`mob+%mob.unknown14]	A
-        jp      ._4b1b
+        jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._39    set     1	[IX`mob+%mob.flags]
+@_39    set     1	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.unknown14]	$0A
         push    HL
         ld      A	L
@@ -11838,21 +11838,21 @@ sonic_process:                                                                  
         pop     HL
         ld      DE      [$.TEMP3]
         ld      C       $00
-        jp      nc	._4b1b
+        jp      nc	@_4b1b
         res     1   	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.unknown14]	$01
-        jp      ._4b1b
+        jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4f5c                                                                                                          ;$4F5C
+@_4f5c                                                                                                          ;$4F5C
         set     1   	[IX`mob+%mob.flags]
         ld      A       L
         or      H
-        jr      z	._40
+        jr      z	@_40
         bit     7   	B
-        jr      z	._4fa6
-._40    ld      DE      [$.TEMP1]
+        jr      z	@_4fa6
+@_40    ld      DE      [$.TEMP1]
         ld      A       E
         cpl     
         ld      E       A
@@ -11878,7 +11878,7 @@ sonic_process:                                                                  
         sbc     HL'     DE
         exx     
         
-        jp      c	._4b1b
+        jp      c	@_4b1b
         ld      E       A
         ld      D       A
         ld      C       A
@@ -11893,11 +11893,11 @@ sonic_process:                                                                  
         ld      B       $FF
         ld      A       [$.D216]
         ld      [IX`mob+%mob.unknown14] A
-        jp      ._4b1b
+        jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4fa6
+@_4fa6
         res     1   	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.unknown14] $0A
         ld      DE      [$.TEMP3]
@@ -11918,14 +11918,14 @@ sonic_process:                                                                  
         sbc     HL'     BC'
         exx     
         
-        jp      nc	._4b1b
+        jp      nc	@_4b1b
         set     1   	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.unknown14] $01
-        jp      ._4b1b
+        jp      @_4b1b
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4fd3  bit     0   	[IX`mob+%mob.flags]                                                                     ;$4FD3
+@_4fd3  bit     0   	[IX`mob+%mob.flags]                                                                     ;$4FD3
         ret     nz
         
         ld      HL      [$.D2B7]
@@ -11934,31 +11934,31 @@ sonic_process:                                                                  
         ret     z
         
         bit     7   	H
-        jr      z	._41
+        jr      z	@_41
         
         inc     HL
         ld      [$.D2B7]	HL
         ret
         
-._41    dec     HL
+@_41    dec     HL
         ld      [$.D2B7]        HL
         
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4fec  dec     [IX`mob+%mob.unknown15]                                                                         ;$4FEC
+@_4fec  dec     [IX`mob+%mob.unknown15]                                                                         ;$4FEC
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4ff0  dec     A                                                                                               ;$4FF0
+@_4ff0  dec     A                                                                                               ;$4FF0
         ld      [$.SONIC.unknown16]     A
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4ff5  ld      A       [$.FRAMECOUNT]                                                                          ;$4FF5
+@_4ff5  ld      A       [$.FRAMECOUNT]                                                                          ;$4FF5
         and     %00000011
         ret     nz
         
@@ -11976,7 +11976,7 @@ sonic_process:                                                                  
         
         ret
         
-.drownTimer                                                                                                     ;$5009
+@drownTimer                                                                                                     ;$5009
         ;---------------------------------------------------------------------------------------------------------------
         ;check for specific solidity data for this level
         ld      A       [$.LEVEL_SOLIDITY]
@@ -12002,7 +12002,7 @@ sonic_process:                                                                  
         ;count down 1 every 256 frames
         ld      A       $05
         sub     H
-        jr      nc	._42
+        jr      nc	@_42
         
         res     5   	[IY`vars+%vars.flags6]                  ;remove shield
         res     6   	[IY`vars+%vars.flags6]                  ;clear damage state
@@ -12026,18 +12026,18 @@ sonic_process:                                                                  
         xor     A`zero
         
         ;layout the oxygen countdown number
-._42    ld      E       A
+@_42    ld      E       A
         add     A       A
         add     A       $80
         ld      [$.LAYOUT_BUFFER]       A
         ld      A       $FF
         ld      [$.LAYOUT_BUFFER+1]     A
         ld      D       $00
-        ld      HL      ._5097
+        ld      HL      @_5097
         add     HL      DE
         ld      A       [$.FRAMECOUNT]
         and     [HL]
-        jr      nz	._43
+        jr      nz	@_43
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -12045,7 +12045,7 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 		;
         
-._43    ld      A       [$.FRAMECOUNT]
+@_43    ld      A       [$.FRAMECOUNT]
         rrca    
         ret     nc
         
@@ -12073,11 +12073,11 @@ sonic_process:                                                                  
         
         %byte
         
-._5097  $01 $07 $0F $1F $3F $7F                                                                                 ;$5097
+@_5097  $01 $07 $0F $1F $3F $7F                                                                                 ;$5097
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._509d  ld      A               $10                                                                             ;$509D
+@_509d  ld      A               $10                                                                             ;$509D
         ld      [$.D28E]        A
         
 	;(we can compile with, or without, audio)
@@ -12096,7 +12096,7 @@ sonic_process:                                                                  
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._50af  exx                                                                                                     ;$50AF
+@_50af  exx                                                                                                     ;$50AF
         ld      HL'		[$.SONIC.Y]
         ld      [$.D2D9]        HL
         exx     
@@ -12109,7 +12109,7 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         ;joypad up is pressed...
         
-._50c1  bit     2   	[IX`mob+%mob.flags]                                                                     ;$50C1
+@_50c1  bit     2   	[IX`mob+%mob.flags]                                                                     ;$50C1
         ret     nz
         
         bit     0   	[IX`mob+%mob.flags]
@@ -12124,7 +12124,7 @@ sonic_process:                                                                  
         ld      HL      [$.SONIC.Xspeed]
         ld      A       L
         or      H
-        jr      z	._44
+        jr      z	@_44
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -12132,21 +12132,21 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 		;
         
-._44    set     2   	[IY`vars+%vars.timeLightningFlags]
+@_44    set     2   	[IY`vars+%vars.timeLightningFlags]
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._50e3  res     2   	[IY`vars+%vars.timeLightningFlags]                                                     	;$50E3
+@_50e3  res     2   	[IY`vars+%vars.timeLightningFlags]                                                     	;$50E3
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._50e8  ld      HL      [$.D2DC]                                                                                ;$50E8
+@_50e8  ld      HL      [$.D2DC]                                                                                ;$50E8
         ld      DE      [$.SONIC.Y]
         and     A
         sbc     HL      DE
-        jp      c	._55a8
+        jp      c	@_55a8
         
         ld      HL              $0000
         ld      [$.D29B]        HL
@@ -12156,17 +12156,17 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5100  set     2   	[IX`mob+%mob.flags]                                                                    	;$5100
+@_5100  set     2   	[IX`mob+%mob.flags]                                                                    	;$5100
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5105  ld      [IX`mob+%mob.unknown14]	$0D                                                                     ;$5105
+@_5105  ld      [IX`mob+%mob.unknown14]	$0D                                                                     ;$5105
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._510a  ;clear joypad input                                                                                    `$510A
+@_510a  ;clear joypad input                                                                                    `$510A
         ld      [IY`vars+%vars.joypad]  $FF
         
         ld      A`flags         [$.SONIC.flags]
@@ -12177,11 +12177,11 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5117  dec     A                                                                                               ;$5117
+@_5117  dec     A                                                                                               ;$5117
         ld      [$.D28A]	A
-        jr      z	._46
+        jr      z	@_46
         cp      $14
-        jr      c	._45
+        jr      c	@_45
         
         xor     A`zero
         ld      L`zero              A`zero
@@ -12192,42 +12192,42 @@ sonic_process:                                                                  
         ld      [$.SONIC.Yspeed+1]  HL`zero
         
         ld      [IX`mob+%mob.unknown14] $0F
-        jp      ._4c39
+        jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._45    res     1   	[IX`mob+%mob.flags]
+@_45    res     1   	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.unknown14] $0E
-        jp      ._4c39
+        jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._46    ld      HL      [$.D2D5]
+@_46    ld      HL      [$.D2D5]
         ld      B       [HL]
         inc     HL
         ld      C       [HL]
         inc     HL
         ld      A       [HL]
         and     A
-        jr      z	._49
-        jp      m	._47
+        jr      z	@_49
+        jp      m	@_47
         ld      [$.D2D3]        A
         set     4   [IY`vars+%vars.flags6]
-        jr      ._48
+        jr      @_48
         
-._47    set     2   [IY`vars+%vars.unknown_0D]
+@_47    set     2   [IY`vars+%vars.unknown_0D]
         
-._48    ld      A               $01
+@_48    ld      A               $01
         ld      [$.D289]	A
         ret
         
-._49    ld      A       B
+@_49    ld      A       B
         ld      H       $00
         ld      B       $05
         
-._50    add     A       A
+@_50    add     A       A
         rl      H
-        djnz    ._50
+        djnz    @_50
         
         ld      L       A
         ld      DE      $0008
@@ -12255,7 +12255,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5193  xor     A`zero                                          ;set A to 0                                    `$5319
+@_5193  xor     A`zero                                          ;set A to 0                                    `$5319
         ld      L`zero  A`zero
         ld      H`zero  A`zero
         ld      [$.SONIC.Yspeed]        HL`zero
@@ -12264,22 +12264,22 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.unknown14] $16
         ld      A       [$.SONIC.unknown13]
         cp      $12
-        jp      c	._4c39
+        jp      c	@_4c39
         
         res     6   	[IY`vars+%vars.unknown0]
         set     2   	[IX`mob+%mob.flags]
-        jp      ._4c39
+        jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._51b3  dec     A                                                                                               ;$51B3
+@_51b3  dec     A                                                                                               ;$51B3
         ld      [$.D28C]        A
         ld      [IX`mob+%mob.unknown14] $11
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._51bc  ld      [IX`mob+%mob.width]     28                                                                      ;$51BC
+@_51bc  ld      [IX`mob+%mob.width]     28                                                                      ;$51BC
         ld      [IX`mob+%mob.unknown14] 16
         
         bit     7   	[IX`mob+%mob.Ydirection]
@@ -12299,7 +12299,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._51dd  ld      A       [$.SONIC.flags]                                                                         ;$51DD
+@_51dd  ld      A       [$.SONIC.flags]                                                                         ;$51DD
         and     $FA
         ld      [$.SONIC.flags]	A
         ld      [IX`mob+%mob.unknown14] $14
@@ -12312,7 +12312,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._51f3  ld      A       [$.SONIC.unknown16]                                                                     ;$51F3
+@_51f3  ld      A       [$.SONIC.unknown16]                                                                     ;$51F3
         and     A
         ret     nz
         
@@ -12332,7 +12332,7 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         
         ;every other frame...                                                                                  `$5206
-._5206  ld      A       [$.FRAMECOUNT]
+@_5206  ld      A       [$.FRAMECOUNT]
         and     %00000001
         ret     nz
         
@@ -12341,27 +12341,27 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._520f  ld      HL      ._592b                                                                                  ;$592B
+@_520f  ld      HL      @_592b                                                                                  ;$592B
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5213  ld      HL      ._5939                                                                                  ;$5213
+@_5213  ld      HL      @_5939                                                                                  ;$5213
         
         bit     1   	[IX`mob+%mob.flags]
         ret     z
         
-        ld      HL      ._594b
+        ld      HL      @_594b
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._521f  ld      [IX`mob+%mob.unknown13] $00                                                                     ;$521F
+@_521f  ld      [IX`mob+%mob.unknown13] $00                                                                     ;$521F
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5224  bit     4   	[IX`mob+%mob.flags]                     ;mob underwater?                               	`$5224
+@_5224  bit     4   	[IX`mob+%mob.flags]                     ;mob underwater?                               	`$5224
         ret     z
         
         ld      A       [$.FRAMECOUNT]
@@ -12372,15 +12372,15 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5231  dec     A                                                                                               ;$5231
+@_5231  dec     A                                                                                               ;$5231
         ld      [$.D2E1]        A
         cp      $06
-        jr      c	._51
+        jr      c	@_51
 	
         cp      $0A
         ret     c
         
-._51    ld      A`updates       [IY`vars+%vars.spriteUpdateCount]
+@_51    ld      A`updates       [IY`vars+%vars.spriteUpdateCount]
         ld      HL`addr,[$.SPRITETABLE_ADDR]                    ;get current sprite-table address
         
         push    AF`updates                                      ;remember no. of sprite updates pending
@@ -12397,7 +12397,7 @@ sonic_process:                                                                  
         ld      HL      [$.D2E2]
         and     A
         sbc     HL      BC
-        ld      BC      ._526e                                  ;address of sprite layout
+        ld      BC      @_526e                                  ;address of sprite layout
         call    \\gfx.sprites\processSpriteLayout
         
         pop     HL
@@ -12411,18 +12411,18 @@ sonic_process:                                                                  
         
         %byte
         
-._526e  $00 $02 $04 $06 $FF $FF                                                                                 ;$526E
+@_526e  $00 $02 $04 $06 $FF $FF                                                                                 ;$526E
         $20 $22 $24 $26 $FF $FF
         $FF $FF $FF $FF $FF $FF
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5280  ld      [IX`mob+%mob.unknown14] $09                                                                     ;$5280
+@_5280  ld      [IX`mob+%mob.unknown14] $09                                                                     ;$5280
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5285  dec     A                                                                                               ;$5285
+@_5285  dec     A                                                                                               ;$5285
         ld      [$.D28B]        A
         ret     nz
         
@@ -12442,7 +12442,7 @@ sonic_process:                                                                  
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._529c  ld      [IY`vars+%vars.joypad]  $FB                                                                     ;$529C
+@_529c  ld      [IY`vars+%vars.joypad]  $FB                                                                     ;$529C
         ld      HL      [$.SONIC.X]
         ld      DE      $1B60
         and     A
@@ -12463,11 +12463,11 @@ sonic_process:                                                                  
         ld      HL      $.D2FE
         
         bit     0   	[IY`vars+%vars.unknown_0D]
-        jr      nz	._52
+        jr      nz	@_52
         
         ld      [HL]    $50
         call    \\findEmptyMob
-        jp      c	._4c39
+        jp      c	@_4c39
         
         push    IX
         push    HL
@@ -12491,41 +12491,41 @@ sonic_process:                                                                  
         pop     IX
         
         set     0       [IY`vars+%vars.unknown_0D]
-        jp      ._4c39
+        jp      @_4c39
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._52    bit     1   	[IY`vars+%vars.unknown_0D]
-        jr      nz	._53
+@_52    bit     1   	[IY`vars+%vars.unknown_0D]
+        jr      nz	@_53
         
         dec     [HL]
-        jp      nz	._4c39
+        jp      nz	@_4c39
         
         set     1   	[IY`vars+%vars.unknown_0D]
         ld      [HL]    $8C
-._53    ld      [IX`mob%mob.unknown14]  $17
+@_53    ld      [IX`mob%mob.unknown14]  $17
         ld      A       [HL]
         and     A
-        jr      z	._54
+        jr      z	@_54
         
         dec     [HL]
-        jp      ._4c39
+        jp      @_4c39
         
-._54    ld      [IX`mob+%mob.unknown14] $19
-        jp      ._4c39
+@_54    ld      [IX`mob+%mob.unknown14] $19
+        jp      @_4c39
 
         ;---------------------------------------------------------------------------------------------------------------
         
-._532e  ld      A       [IX`mob+%mob.height]                                                                    ;$532E
+@_532e  ld      A       [IX`mob+%mob.height]                                                                    ;$532E
         cp      $18
-        jr      z	._55
+        jr      z	@_55
         
         ld      HL      [$.SONIC.Y]
         ld      DE      $0008
         add     HL      DE
         ld      [$.SONIC.Y]HL
         
-._55    ld      [IX`mob+%mob.width]     $18
+@_55    ld      [IX`mob+%mob.width]     $18
         ld      [IX`mob+%mob.height]    $18
         ld      HL      [$.SONIC.Xspeed]
         ld      B       [IX`mob+%mob.Xdirection]
@@ -12535,83 +12535,83 @@ sonic_process:                                                                  
         ld      A       H
         or      L
         or      B
-        jp      z	._60
+        jp      z	@_60
         
         ld      [IX`mob+%mob.unknown14] $09
         
         bit     2   	[IY`vars+%vars.joypad]
-        jr      nz	._57
+        jr      nz	@_57
         
         bit     1   	[IY`vars+%vars.joypad]
-        jr      z	._57
+        jr      z	@_57
         
         bit     7   	[IX`mob+%mob.flags]
-        jp      z	._56
+        jp      z	@_56
         
         bit     7   	B
-        jr      nz	._59
+        jr      nz	@_59
         
         res     0   	[IX`mob+%mob.flags]
-        jp      ._4fa6
+        jp      @_4fa6
         
-._56    ld      DE      $FFF0
+@_56    ld      DE      $FFF0
         ld      C       $FF
-        jp      ._4b1b
+        jp      @_4b1b
         
-._57    bit     3   	[IY`vars+%vars.joypad]
-        jr      nz	._59
+@_57    bit     3   	[IY`vars+%vars.joypad]
+        jr      nz	@_59
         
         bit     1   	[IY`vars+%vars.joypad]
-        jr      z	._59
+        jr      z	@_59
         
         bit     7   	[IX`mob+%mob.flags]
-        jp      z	._58
+        jp      z	@_58
         
         bit     7   	B
-        jr      z	._59
+        jr      z	@_59
         
         res     0   	[IX`mob+%mob.flags]
-        jp      ._4fa6
+        jp      @_4fa6
         
-._58    ld      DE      $0010
+@_58    ld      DE      $0010
         ld      C       $00
-        jp      ._4b1b
+        jp      @_4b1b
         
-._59    ld      DE      $0004
+@_59    ld      DE      $0004
         ld      C       $00
         ld      A       B
         and     A
-        jp      m	._4b1b
+        jp      m	@_4b1b
         
         ld      DE      $FFFC
         ld      C       $FF
-        jp      ._4b1b
+        jp      @_4b1b
         
-._60    bit     7   	[IX`mob+%mob.flags]
-        jr      z	._62
+@_60    bit     7   	[IX`mob+%mob.flags]
+        jr      z	@_62
         
         ld      [IX`mob+%mob.unknown14] $07
         res     0	[IX`mob+%mob.flags]
         ld      DE      [$.D2B7]
         
         bit     7   	D
-        jr      z	._61
+        jr      z	@_61
         
         ld      HL      $FFB0
         and     A
         sbc     HL      DE
-        jp      nc	._4b49
+        jp      nc	@_4b49
         
-._61    dec     DE
+@_61    dec     DE
         ld      [$.D2B7]        DE
-        jp      ._4b49
+        jp      @_4b49
         
-._62    ld      [IX`mob+%mob.unknown14] $09
+@_62    ld      [IX`mob+%mob.unknown14] $09
         push    DE
         push    HL
         
         bit     7   	B
-        jr      z	._63
+        jr      z	@_63
         
         ld      A       L
         cpl     
@@ -12620,54 +12620,54 @@ sonic_process:                                                                  
         cpl     
         ld      H       A
         inc     HL
-._63    ld      DE      [$.D240]
+@_63    ld      DE      [$.D240]
         xor     A`zero
         sbc     HL      DE
         pop     HL
         pop     DE
-        jp      c	._4b1b
+        jp      c	@_4b1b
         
         ld      C       A
         ld      E       C
         ld      D       C
         ld      [IX`mob+%mob.unknown14] $09
-        jp      ._4b1b
+        jp      @_4b1b
 
         ;---------------------------------------------------------------------------------------------------------------
         
-._5407  bit     7   	[IX`mob+%mob.flags]                                                                     ;$5407
-        jr      z	._65
+@_5407  bit     7   	[IX`mob+%mob.flags]                                                                     ;$5407
+        jr      z	@_65
         
         bit     3   	[IX`mob+%mob.flags]
-        jr      nz	._64
+        jr      nz	@_64
         
         bit     5   	[IY`vars+%vars.joypad]
-        jr      z	._65
+        jr      z	@_65
         
-._64    bit     5   	[IY`vars+%vars.joypad]
-        jr      nz	._66
+@_64    bit     5   	[IY`vars+%vars.joypad]
+        jr      nz	@_66
         
         res     0   	[IX`mob+%mob.flags]
         
         ld      A       [$.SONIC.Xspeed]
         and     $F8
         ld      [$.SONIC.Xspeed]        A
-        jp      ._4b7f
+        jp      @_4b7f
         
-._65    res     3   	[IX`mob+%mob.flags]
-        jp      ._4bac
+@_65    res     3   	[IX`mob+%mob.flags]
+        jp      @_4bac
         
-._66    set     3   	[IX`mob+%mob.flags]
-        jp      ._4bac
+@_66    set     3   	[IX`mob+%mob.flags]
+        jp      @_4bac
         
         ;---------------------------------------------------------------------------------------------------------------
         ;Sonic is dead...
         
-._543c  set     5   	[IX`mob+%mob.flags]                     ;make Sonic pass over the floor                	`$543C
+@_543c  set     5   	[IX`mob+%mob.flags]                     ;make Sonic pass over the floor                	`$543C
         
         ld      A       [$.D287]
         cp      $60
-        jr      z	._54aa
+        jr      z	@_54aa
         
         ;has Sonic finished falling off the screen?
         ld      HL      [$.CAMERA_Y]
@@ -12675,10 +12675,10 @@ sonic_process:                                                                  
         add     HL      DE
         ld      DE      [$.SONIC.Y]
         sbc     HL      DE
-        jr      nc	._67
+        jr      nc	@_67
         
         bit     2   	[IY`vars+%vars.flags6]
-        jr      nz	._67
+        jr      nz	@_67
         
         ld      A               $01
         ld      [$.D283]        A
@@ -12688,61 +12688,61 @@ sonic_process:                                                                  
         dec     [HL]
         
         set     2   	[IY`vars+%vars.flags6]
-        jp      ._54aa
+        jp      @_54aa
         
-._67    xor     A`zero
+@_67    xor     A`zero
         ld      HL      $0080
         
         bit     3   	[IY`vars+%vars.unknown0]
-        jr      nz	._71
+        jr      nz	@_71
         
         ld      DE      [$.SONIC.Yspeed]
         
         bit     7   	D
-        jr      nz	._68
+        jr      nz	@_68
         
         ld      HL      $0600
         and     A
         sbc     HL      DE
-        jr      c	._72
+        jr      c	@_72
         
-._68    ex      DE      HL
+@_68    ex      DE      HL
         ld      B       [IX`mob+%mob.Ydirection]
         ld      A       H
         cp      $80
-        jr      nc	._69
+        jr      nc	@_69
         
         cp      $08
-        jr      nc	._70
+        jr      nc	@_70
         
-._69    ld      DE      $0030
+@_69    ld      DE      $0030
         ld      C       $00
-._70    add     HL      DE
+@_70    add     HL      DE
         ld      A       B
         adc     A       C
-._71    ld      [$.SONIC.Yspeed]        HL
+@_71    ld      [$.SONIC.Yspeed]        HL
         ld      [$.SONIC.Ydirection]    A
         
-._72    xor     A`zero
+@_72    xor     A`zero
         ld      L`zero  		A`zero
         ld      H`zero  		A`zero
         ld      [$.SONIC.Xspeed]        HL`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-._54aa                                                                                                          ;$54AA
+@_54aa                                                                                                          ;$54AA
         ld      [IX`mob+%mob.unknown14]	$0B
         
         bit     3   	[IY`vars+%vars.unknown0]
-        jp      z	._4c39
+        jp      z	@_4c39
         
         ld      [IX`mob+%mob.unknown14] $15
-        jp      ._4c39
+        jp      @_4c39
 
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $00
         ;air
         
-._54bc  ;check if the player is underwater                                                                     	`$54BC
+@_54bc  ;check if the player is underwater                                                                     	`$54BC
         bit     7   	[IY`vars+%vars.flags6]                  ;underwater flag
         ret     nz                                              ;this solidity is not valid underwater
         
@@ -12753,7 +12753,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $01
         ;spikes?
         
-._54c6  bit     0   	[IY`vars+%vars.scrollRingFlags]		;is the player dead?                           	`$54C6
+@_54c6  bit     0   	[IY`vars+%vars.scrollRingFlags]		;is the player dead?                           	`$54C6
         jp      z	hitPlayer._35fd              		;if not, damage them
         ret
 
@@ -12761,7 +12761,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $02
         ;jump ramp?
         
-._54ce  ld      A       [IX`mob+%mob.X+0]                                                                       ;$54CE
+@_54ce  ld      A       [IX`mob+%mob.X+0]                                                                       ;$54CE
         add     A       $0C
         and     %00011111
         cp      $1A
@@ -12769,12 +12769,12 @@ sonic_process:                                                                  
         
         ld      A       [$.SONIC.flags]
         rrca    
-        jr      c	._73
+        jr      c	@_73
         
         and     $02
         ret     z
         
-._73    ld      L       [IX`mob+%mob.Xspeed+0]
+@_73    ld      L       [IX`mob+%mob.Xspeed+0]
         ld      H       [IX`mob+%mob.Xspeed+1]
         
         bit     7   	[IX`mob+%mob.Xdirection]
@@ -12811,7 +12811,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $03
         ;horizontal spring? (facing left)
         
-._550f  ld      A       [IX`mob+%mob.X+0]                                                                       ;$550F
+@_550f  ld      A       [IX`mob+%mob.X+0]                                                                       ;$550F
         add     A       $0C
         and     %00011111
         cp      $10
@@ -12834,7 +12834,7 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $04
         ;vertical spring?
         
-._552d 
+@_552d 
         ld      A       [IX`mob+%mob.X+0]                                                                       ;$552D
         add     A       $0C
         and     %00011111
@@ -12864,7 +12864,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $05
         
-._5556  ld      A       [IX`mob+%mob.X+0]                                                                       ;$5556
+@_5556  ld      A       [IX`mob+%mob.X+0]                                                                       ;$5556
         add     A       $0C
         and     %00011111
         cp      $10
@@ -12887,7 +12887,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $06
 
-._5578  bit     7   	[IX`mob+%mob.flags]                                                                    	;$5578
+@_5578  bit     7   	[IX`mob+%mob.flags]                                                                    	;$5578
         ret     z
         
         ld      HL      [$.SONIC.Xsubpixel]
@@ -12902,7 +12902,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $07
         
-._5590  bit     7   	[IX`mob+%mob.flags]									;$5590
+@_5590  bit     7   	[IX`mob+%mob.flags]									;$5590
         ret     z
         
         ld      HL      [$.SONIC.Xsubpixel]
@@ -12918,8 +12918,8 @@ sonic_process:                                                                  
         ;referenced by table at `_58e5` - index $08
         ;water? (non-raster)
         
-._55a8  bit     4   	[IX`mob+%mob.flags]			;mob underwater?                               	`$55A8
-        jr      nz	._74
+@_55a8  bit     4   	[IX`mob+%mob.flags]			;mob underwater?                               	`$55A8
+        jr      nz	@_74
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -12927,14 +12927,14 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 		;
         
-._74    set     4   	[IX`mob+%mob.flags]			;set mob underwater
+@_74    set     4   	[IX`mob+%mob.flags]			;set mob underwater
         ret
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $09
         ;vertical spring? (up-centre)
         
-._55b6  ld      A       [IX`mob+%mob.X+0]                                                                       ;$55B6
+@_55b6  ld      A       [IX`mob+%mob.X+0]                                                                       ;$55B6
         add     A       $0C
         and     %00011111
         cp      $08
@@ -12966,7 +12966,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0A
         
-._55e2  bit     7   	[IX`mob+%mob.Ydirection]                                                                ;$55E2
+@_55e2  bit     7   	[IX`mob+%mob.Ydirection]                                                                ;$55E2
         ret     nz
         
 	;(we can compile with, or without, audio)
@@ -12980,7 +12980,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0B
         
-._55eb  bit     4   	[IY`vars+%vars.flags6]                                                                  ;$55EB
+@_55eb  bit     4   	[IY`vars+%vars.flags6]                                                                  ;$55EB
         ret     nz
         
         ld      A       [$.SONIC.X]
@@ -13014,17 +13014,17 @@ sonic_process:                                                                  
         add     A       A
         rl      H
         ld      D       H
-        ld      HL      ._5643
+        ld      HL      @_5643
         ld      B       $05
         
-._75    ld      A       [HL]
+@_75    ld      A       [HL]
         inc     HL
         cp      E
-        jr      nz	._76
+        jr      nz	@_76
         
         ld      A       [HL]
         cp      D
-        jr      nz	._76
+        jr      nz	@_76
         
         inc     HL
         ld      [$.D2D5]        HL
@@ -13038,11 +13038,11 @@ sonic_process:                                                                  
 		;
         ret
         
-._76    inc     HL
+@_76    inc     HL
         inc     HL
         inc     HL
         inc     HL
-        djnz    ._75
+        djnz    @_75
         
         ret
         
@@ -13050,13 +13050,13 @@ sonic_process:                                                                  
         
         %byte
         
-._5643  $34 $3C $34 $2F $00 $19 $3A $19 $04 $00 $0E $3A $00 $00 $16 $1B                                         ;$5643
+@_5643  $34 $3C $34 $2F $00 $19 $3A $19 $04 $00 $0E $3A $00 $00 $16 $1B                                         ;$5643
         $32 $00 $00 $17 $2F $0C $00 $00 $FF
 
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0C
 
-._565c  ld      HL      [$.SONIC.Xspeed]                                                                        ;$565C
+@_565c  ld      HL      [$.SONIC.Xspeed]                                                                        ;$565C
         ld      A       [$.SONIC.Xdirection]
         ld      DE      $FFF8
         add     HL      DE
@@ -13065,7 +13065,7 @@ sonic_process:                                                                  
         ld      [$.SONIC.Xdirection]    A
         
         bit     4    	[IX`mob+%mob.flags]                     ;mob underwater?
-        jr      nz	._77
+        jr      nz	@_77
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -13073,25 +13073,25 @@ sonic_process:                                                                  
 		rst     \\sound\rst_playSFX
 		;
         
-._77    set     4   	[IX`mob+%mob.flags]                     ;set mob underwater
+@_77    set     4   	[IX`mob+%mob.flags]                     ;set mob underwater
         ret
 
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0D
 
-._567c  xor     A`zero                                          ;set A to 0                                     `$567C
+@_567c  xor     A`zero                                          ;set A to 0                                     `$567C
         ld      HL      $0005
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
         res     1	[IX`mob+%mob.flags]
         
-._568a  ld      A               $06
+@_568a  ld      A               $06
         ld      [$.D28C]        A
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._568f  ld      A       [IY`vars+%vars.joypad]                                                                  ;$568F
+@_568f  ld      A       [IY`vars+%vars.joypad]                                                                  ;$568F
         or      $0F
         ld      [IY`vars+%vars.joypad]  A
         
@@ -13105,45 +13105,45 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0E
 
-._56a6  xor     A`zero                                                                                          ;$56A6
+@_56a6  xor     A`zero                                                                                          ;$56A6
         ld      HL      $0006
         ld      [$.SONIC.Xspeed+0],A`zero
         ld      [$.SONIC.Xspeed+1],HL
         res     1   	[IX`mob+%mob.flags]
-        jr      ._568a
+        jr      @_568a
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $0F
         
-._56b6  xor     A`zero                                                                                          ;$56B6
+@_56b6  xor     A`zero                                                                                          ;$56B6
         ld      HL      $FFFB
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
         set     1	[IX`mob+%mob.flags]
         
-        jr      ._568a
+        jr      @_568a
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $10
         
-._56c6  xor     A`zero                                                                                          ;$56C6
+@_56c6  xor     A`zero                                                                                          ;$56C6
         ld      HL      $FFFA
         ld      [$.SONIC.Xspeed+0]      A`zero
         ld      [$.SONIC.Xspeed+1]      HL
         
         set     1   	[IX`mob+%mob.flags]
         
-        jr      ._568a
+        jr      @_568a
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $11
         
-._56d6  ld      A       [$.D2E1]                                                                                ;$56D6
+@_56d6  ld      A       [$.D2E1]                                                                                ;$56D6
         cp      $08
         ret     nc
         
-        call    ._5727
+        call    @_5727
         ld      DE      $0001
         ld      HL      [$.SONIC.Yspeed]
         ld      A       L
@@ -13157,13 +13157,13 @@ sonic_process:                                                                  
         add     HL      DE
         adc     A       $00
         and     A
-        jp      p	._78
+        jp      p	@_78
         
         ld      DE      $FFC8
         add     HL      DE
         adc     A       $FF
         
-._78    ld      [$.SONIC.Yspeed]        HL
+@_78    ld      [$.SONIC.Yspeed]        HL
         ld      [$.SONIC.Ydirection]    A
         ld      BC      $000C
         ld      HL      [$.SONIC.X]
@@ -13193,7 +13193,7 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         ;called by functions referenced by `_58e5`
 
-._5727  ld      HL      [$.SONIC.Xspeed]                                                                        ;$5727
+@_5727  ld      HL      [$.SONIC.Xspeed]                                                                        ;$5727
         ld      A       [$.SONIC.Xdirection]
         ld      C       A
         and     $80
@@ -13204,7 +13204,7 @@ sonic_process:                                                                  
         sub     $10
         and     $80
         cp      B
-        jr      z	._79
+        jr      z	@_79
         
         ld      A       L
         cpl     
@@ -13215,7 +13215,7 @@ sonic_process:                                                                  
         ld      A       C
         cpl     
         ld      C       A
-._79    ld      DE      $0001
+@_79    ld      DE      $0001
         ld      A       C
         add     HL      DE
         adc     A       $00
@@ -13234,7 +13234,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $12
         
-._5761  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5761
+@_5761  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5761
         ld      [IX`mob+%mob.Yspeed+1]          $F6
         ld      [IX`mob+%mob.Ydirection]        $FF
         
@@ -13249,7 +13249,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $13
         
-._5771  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5771
+@_5771  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5771
         ld      [IX`mob+%mob.Yspeed+1]          $F4
         ld      [IX`mob+%mob.Ydirection]        $FF
         
@@ -13264,7 +13264,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $14
         
-._5781  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5781
+@_5781  ld      [IX`mob+%mob.Yspeed+0]          $00                                                             ;$5781
         ld      [IX`mob+%mob.Yspeed+1]          $F2
         ld      [IX`mob+%mob.Ydirection]        $FF
         
@@ -13279,7 +13279,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $15
         
-._5791  ld      A       [$.D2B1]                                                                                ;$5791
+@_5791  ld      A       [$.D2B1]                                                                                ;$5791
         and     A
         ret     nz
         
@@ -13297,15 +13297,15 @@ sonic_process:                                                                  
         adc     A       $00
         ld      DE      $FF00
         ld      C       $FF
-        jp      m	._80
+        jp      m	@_80
         
         ld      DE      $0100
         ld      C       $00
-._80    add     HL      DE
+@_80    add     HL      DE
         adc     A       C
         ld      [$.SONIC.Xspeed]        HL
         ld      [$.SONIC.Xdirection]    A
-._57be  ld      HL      $.D2B1
+@_57be  ld      HL      $.D2B1
         ld      [HL]    $04
         inc     HL
         ld      [HL]    $0E
@@ -13323,7 +13323,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $16
         
-._57cd  call    ._5727                                                                                          ;$57CD
+@_57cd  call    @_5727                                                                                          ;$57CD
         ld      DE      $0001
         ld      HL      [$.SONIC.Yspeed]
         ld      A       L
@@ -13337,19 +13337,19 @@ sonic_process:                                                                  
         add     HL      DE
         adc     A       $00
         and     A
-        jp      p	._81
+        jp      p	@_81
         
         ld      DE      $FFC8
         add     HL      DE
         adc     A       $FF
-._81    ld      [$.SONIC.Yspeed]        HL
+@_81    ld      [$.SONIC.Yspeed]        HL
         ld      [$.SONIC.Ydirection]    A
-        jp      ._57be
+        jp      @_57be
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $17
         
-._57f6  ld      HL      [$.D2E9]                                                                                ;$57F6
+@_57f6  ld      HL      [$.D2E9]                                                                                ;$57F6
         ld      DE      $0082
         and     A
         sbc     HL      DE
@@ -13362,7 +13362,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $18
         
-._5808  ld      A       [$.SONIC.flags]                                                                         ;$5808
+@_5808  ld      A       [$.SONIC.flags]                                                                         ;$5808
         rlca    
         ret     nc
         
@@ -13372,9 +13372,9 @@ sonic_process:                                                                  
         ld      A       L
         and     %00011111
         cp      $10
-        jr      nc	._5858
+        jr      nc	@_5858
         
-._581b  ld      HL      [$.SONIC.X]
+@_581b  ld      HL      [$.SONIC.X]
         ld      BC      $000C
         add     HL      BC
         ld      A       L
@@ -13388,7 +13388,7 @@ sonic_process:                                                                  
         and     $E0
         ld      E       A
         ld      D       H
-        call    ._5893
+        call    @_5893
         ret     c
         
         ld      BC      $000C
@@ -13398,16 +13398,16 @@ sonic_process:                                                                  
         ld      C       $00
         ld      A       [HL]
         cp      $8A
-        jr      z	._5849
+        jr      z	@_5849
         
         ld      C       $89
-._5849  ld      [HL]    C
+@_5849  ld      [HL]    C
         ret
         
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $19
         
-._584b  ld      HL      [$.SONIC.X]                                                                             ;$584B
+@_584b  ld      HL      [$.SONIC.X]                                                                             ;$584B
         ld      BC      $000c
         add     HL      BC
         ld      A       L
@@ -13415,7 +13415,7 @@ sonic_process:                                                                  
         cp      $10
         ret     c
         
-._5858  ld      A       L
+@_5858  ld      A       L
         and     $E0
         add     A       $10
         ld      C       A
@@ -13427,7 +13427,7 @@ sonic_process:                                                                  
         and     $E0
         ld      E       A
         ld      D       H
-        call    ._5893
+        call    @_5893
         ret     c
         
         ld      BC      $000C
@@ -13437,7 +13437,7 @@ sonic_process:                                                                  
         ld      C       $00
         ld      A       [HL]
         cp      $89
-        jr      z	._5849
+        jr      z	@_5849
         
         ld      C       $8A
         ld      [HL]    C
@@ -13446,19 +13446,19 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $1A
 
-._5883  ld      HL      [$.SONIC.X]                                                                             ;$5883
+@_5883  ld      HL      [$.SONIC.X]                                                                             ;$5883
         ld      BC      $000c
         add     HL      BC
         ld      A       L
         and     %00011111
         cp      $10
         ret     nc
-        jp      ._581b
+        jp      @_581b
         
         ;---------------------------------------------------------------------------------------------------------------
         ;called by functions referenced by `58e5`
 
-._5893  push    BC  DE                                                                                          ;$5893
+@_5893  push    BC  DE                                                                                          ;$5893
         call    \\findEmptyMob
         pop     DE  BC
         ret     c
@@ -13489,7 +13489,7 @@ sonic_process:                                                                  
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $1B
         
-._58d0  bit     7   	[IX`mob+%mob.flags]                                                                     ;$58D0
+@_58d0  bit     7   	[IX`mob+%mob.flags]                                                                     ;$58D0
         ret     z
         
         ;is Sonic on the screen (vertically)
@@ -13509,37 +13509,37 @@ sonic_process:                                                                  
         
         %word
         
-._58e5  ._54bc, ._54c6, ._54ce, ._550f, ._552d, ._5556, ._5578, ._5590                                          ;$58E5
-        ._55a8, ._55b6, ._55e2, ._55eb, ._565c, ._567c, ._56a6, ._56b6
-        ._56c6, ._56d6, ._5761, ._5771, ._5781, ._5791, ._57cd, ._57f6
-        ._5808, ._584b, ._5883, ._58d0
+@_58e5  @_54bc, @_54c6, @_54ce, @_550f, @_552d, @_5556, @_5578, @_5590                                          ;$58E5
+        @_55a8, @_55b6, @_55e2, @_55eb, @_565c, @_567c, @_56a6, @_56b6
+        @_56c6, @_56d6, @_5761, @_5771, @_5781, @_5791, @_57cd, @_57f6
+        @_5808, @_584b, @_5883, @_58d0
 
         ;===============================================================================================================
         ;sprite layouts
         
         %byte
         
-._591d  ;Sonic's sprite layout                                                                                 `$591D
+@_591d  ;Sonic's sprite layout                                                                                 `$591D
         $B4 $B6 $B8 $FF $FF $FF
         $BA $BC $BE $FF $FF $FF
         $FF $FF
         
-._592b  $B8 $B6 $B4 $FF $FF $FF                                                                                 ;$592B
+@_592b  $B8 $B6 $B4 $FF $FF $FF                                                                                 ;$592B
         $BE $BC $BA $FF $FF $FF
         $FF $FF
         
-._5939  $B4 $B6 $B8 $FF $FF $FF                                                                                 ;$5939
+@_5939  $B4 $B6 $B8 $FF $FF $FF                                                                                 ;$5939
         $BA $BC $BE $FF $FF $FF
         $98 $9A $FF $FF $FF $FF
         
-._594b  $B4 $B6 $B8 $FF $FF $FF                                                                                 ;$594B
+@_594b  $B4 $B6 $B8 $FF $FF $FF                                                                                 ;$594B
         $BA $BC $BE $FF $FF $FF
         $FE $9C $9E $FF $FF $FF
         
-._595d  ;unknown data                                                                                          `$593D
+@_595d  ;unknown data                                                                                          `$593D
         $00 $00 $00 $00 $00 $00 $00 $00
         
-._5965  ;unknown data                                                                                          `$5965
+@_5965  ;unknown data                                                                                          `$5965
         $99 $59 $99 $59 $CB $59 $DD $59 $DF $59 $E2 $59 $E5 $59 $FB $59
         $FE $59 $01 $5A $53 $5A $65 $5A $68 $5A $6B $5A $AF $5A $C5 $5A
         $CC $5A $D0 $5A $DE $5A $E1 $5A $E4 $5A $E7 $5A $EA $5A $00 $5B
@@ -13580,36 +13580,36 @@ powerUps_ring_process:                                                          
         ld      [$.TEMP6]       HL
         
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         ;Add 10 rings to the ring count
-._5b24  ld      A       $10
+@_5b24  ld      A       $10
         call    \\screens\game\increaseRings
         
-._5b29  xor     A`zero                                          ;set A to 0
+@_5b29  xor     A`zero                                          ;set A to 0
         ld      [IX`mob+%mob.spriteLayout+0]    A`zero
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
         ret     
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     ld      HL      $5180                                   ;$15180 - blinking items art
+@_1     ld      HL      $5180                                   ;$15180 - blinking items art
         
-._5b34  call    \loadPowerUpIcon
+@_5b34  call    \loadPowerUpIcon
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._5bbf
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._5bbf
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5bbf
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5bbf
         
         ld      A       [$.FRAMECOUNT]
         and     %00000111
         cp      $05
         ret     nc
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._5bcc
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._5bcc
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5bcc
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5bcc
         ld      L       [IX`mob+%mob.Xsubpixel]
         ld      H       [IX`mob+%mob.X+0]
         ld      A       [IX`mob+%mob.X+1]
@@ -13625,13 +13625,13 @@ powerUps_ring_process:                                                          
         ld      A       [IX`mob+%mob.Y+1]
         
         bit     7       [IX`mob+%mob.flags]
-        jr      nz      ._2
+        jr      nz      @_2
         
         ld      E       [IX`mob+%mob.Yspeed+0]
         ld      D       [IX`mob+%mob.Yspeed+1]
         add     HL      DE
         adc     A       [IX`mob+%mob.Ydirection]
-._2     ld      L       H
+@_2     ld      L       H
         ld      H       A
         ld      [$.TEMP3]       HL
         ld      HL              $0004
@@ -13664,11 +13664,11 @@ powerUps_ring_process:                                                          
         
         %byte
         
-._5bbf  $54 $56 $58 $FF $FF $FF
+@_5bbf  $54 $56 $58 $FF $FF $FF
         $AA $AC $AE $FF $FF $FF
         $FF
 	
-._5bcc  $54 $FE $58 $FF $FF $FF
+@_5bcc  $54 $FE $58 $FF $FF $FF
         $AA $AC $AE $FF $FF $FF
         $FF
 	;
@@ -13683,10 +13683,10 @@ powerUps_speed_process:                                                         
         ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         ld      A                       $F0
         ld      [$.SONIC.unknown15]     A
@@ -13699,7 +13699,7 @@ powerUps_speed_process:                                                         
         
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL      $5200
+@_1     ld      HL      $5200
         jp      \powerups.ringprocess._5b34
 	;
 
@@ -13717,18 +13717,18 @@ powerUps_life_process:                                                          
         
         ld      A       [HL]
         and     C
-        jr      z       ._1                                     ;if not set, skip ahead
+        jr      z       @_1                                     ;if not set, skip ahead
         
         ld      [IX`mob+%mob.type]      $FF                     ;remove object?
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL              $0003
+@_1     ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._2
+        jr      c       @_2
         
         call    \_5deb
-        jr      c       ._2
+        jr      c       @_2
         
         bit     2       [IX`mob+%mob.flags]
         jp      nz      \powerups.ringprocess._5b24
@@ -13763,44 +13763,44 @@ powerUps_life_process:                                                          
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ld      A       [$.CURRENT_LEVEL]
+@_2     ld      A       [$.CURRENT_LEVEL]
         cp      4                                               ;level 4 (Bridge Act 2)?
-        jr      z       ._4
+        jr      z       @_4
         
         cp      $09                                             ;level 9 (Labyrinth Act 1)?
-        jr      z       ._6
+        jr      z       @_6
         
         cp      $0C                                             ;level 12 (Scrap Brain Act 1)?
-        jr      z       ._7
+        jr      z       @_7
         
         cp      $11                                             ;level 11 (Labyrinth Act 3)?
-        jr      z       ._8
+        jr      z       @_8
         
-._3     ld      HL      $5280
+@_3     ld      HL      $5280
         jp      \powerups.ringprocess._5b34
 
-._4     ld      C       $00
+@_4     ld      C       $00
         ld      DE      $0040
         ld      A       [IX`mob+%mob.unknown13]
         cp      $3C
-        jr      c       ._5
+        jr      c       @_5
         
         dec     C
         ld      DE      $FFC0
         
-._5     ld      [IX`mob+%mob.Yspeed+0]          E
+@_5     ld      [IX`mob+%mob.Yspeed+0]          E
         ld      [IX`mob+%mob.Yspeed+1]          D
         ld      [IX`mob+%mob.Ydirection]        C
         
         inc     [IX`mob+%mob.unknown13]
         ld      A       [IX`mob+%mob.unknown13]
         cp      $50
-        jr      c       ._3
+        jr      c       @_3
         
         ld      [IX`mob+%mob.unknown13] $28
-        jr      ._3
+        jr      @_3
         
-._6     set     2       [IX`mob+%mob.flags]
+@_6     set     2       [IX`mob+%mob.flags]
         ld      HL      $.D317
         call    \\levels.load\getLevelBitFlag
         ld      A       [HL]
@@ -13813,19 +13813,19 @@ powerUps_life_process:                                                          
         ld      HL      $5280
         jp      \powerups.ringprocess._5b34
         
-._7     set     1       [IX`mob+%mob.flags]
+@_7     set     1       [IX`mob+%mob.flags]
 
         ld      [IX`mob+%mob.Xspeed+0]          $80
         ld      [IX`mob+%mob.Xspeed+1]          $00
         ld      [IX`mob+%mob.Xdirection]        $00
-        jr      ._3
+        jr      @_3
         
-._8     ld      A       [$.D280]
+@_8     ld      A       [$.D280]
         cp      $11
-        jr      nc      ._3
+        jr      nc      @_3
         
         ld      [IX`mob+%mob.type]      $FF                     ;remove object?
-        jr      ._3
+        jr      @_3
 	;
 
 powerUps_shield_process:                                                                                                        ;$5CD7
@@ -13839,15 +13839,15 @@ powerUps_shield_process:                                                        
         ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         set     5       [IY`vars+%vars.flags6]
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL      $5300
+@_1     ld      HL      $5300
         jp      \powerups.ringprocess._5b34
 	;
 
@@ -13862,10 +13862,10 @@ powerUps_invincibility_process:                                                 
         ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         set     0       [IY`vars+%vars.unknown0]
         
@@ -13880,7 +13880,7 @@ powerUps_invincibility_process:                                                 
         
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL      $5380
+@_1     ld      HL      $5380
         jp      \powerups.ringprocess._5b34
 	;
 
@@ -13895,10 +13895,10 @@ powerUps_checkpoint_process:                                                    
         ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         ld      HL      $.D311
         call    \\levels.load\getLevelBitFlag
@@ -13931,7 +13931,7 @@ powerUps_checkpoint_process:                                                    
         ld      [DE]    A
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL      $5480
+@_1     ld      HL      $5480
         jp      \powerups.ringprocess._5b34
 	;
 
@@ -13946,15 +13946,15 @@ powerUps_continue_process:                                                      
         ld      HL              $0003
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         call    \_5deb
-        jr      c       ._1
+        jr      c       @_1
         
         set     3       [IY`vars+%vars.flags9]
         jp      \powerups.ringprocess._5b29
         
-._1     ld      HL      $5500
+@_1     ld      HL      $5500
         jp      \powerups.ringprocess._5b34
 	;
 
@@ -13967,7 +13967,7 @@ _5da8:                                                                          
         
         ld      A       [$.LEVEL_SOLIDITY]
         and     A
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      BC      $0000
         ld      E       C
@@ -13978,11 +13978,11 @@ _5da8:                                                                          
         ld      BC      $0012
         ld      A       [HL]
         cp      $AB
-        jr      z       ._2
+        jr      z       @_2
         
-._1     ld      DE      $0004
+@_1     ld      DE      $0004
         ld      BC      $0000
-._2     ld      L       [IX`mob+%mob.X+0]
+@_2     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [IX`mob+%mob.X+0]       L
@@ -14007,7 +14007,7 @@ _5deb:                                                                          
         
         ld      A       [$.SONIC.flags]
         and     %00000001
-        jr      nz      ._2
+        jr      nz      @_2
         
         ld      DE      [$.SONIC.X]
         ld      C       [IX`mob+%mob.X+0]
@@ -14016,17 +14016,17 @@ _5deb:                                                                          
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc      ._4
+        jr      nc      @_4
         
         ld      HL      $0010
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._4
+        jr      c       @_4
         
         ld      A       [$.SONIC.flags]
         and     $04
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -14048,16 +14048,16 @@ _5deb:                                                                          
         
         ret
         
-._1     ld      A       [$.SONIC.Ydirection]
+@_1     ld      A       [$.SONIC.Ydirection]
         and     A
-        jp      m       ._3
+        jp      m       @_3
         
-._2     call    \\_36be
+@_2     call    \\_36be
         and     A
         
         ret
 
-._3     ld      [IX`mob+%mob.Yspeed+0]          $80
+@_3     ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $FE
         ld      [IX`mob+%mob.Ydirection]        $FF
         ld      HL      $0400
@@ -14069,7 +14069,7 @@ _5deb:                                                                          
         scf     
         ret
 
-._4     ld      HL      [$.SONIC.X]
+@_4     ld      HL      [$.SONIC.X]
         ld      DE      $000C
         add     HL      DE
         ex      DE      HL
@@ -14080,10 +14080,10 @@ _5deb:                                                                          
         ld      BC      $FFEB
         and     A
         sbc     HL      DE
-        jr      nc      ._5
+        jr      nc      @_5
         
         ld      BC      $0015
-._5     ld      L       [IX`mob+%mob.X+0]
+@_5     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      BC
         ld      [$.SONIC.X]     HL
@@ -14106,7 +14106,7 @@ powerUps_emerald_process:                                                       
         call    \\levels.load\getLevelBitFlag
         ld      A       [HL]
         and     C
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      [IX`mob+%mob.width]     12
         ld      [IX`mob+%mob.height]    17
@@ -14119,7 +14119,7 @@ powerUps_emerald_process:                                                       
         ld      HL              $0202
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._2
+        jr      c       @_2
         
         ld      HL      $.D30B
         call    \\levels.load\getLevelBitFlag
@@ -14138,16 +14138,16 @@ powerUps_emerald_process:                                                       
 		rst     \\sound\rst_playMusic
 		;
         
-._1     ld      [IX`mob+%mob.type]      $FF                     ;remove object?
+@_1     ld      [IX`mob+%mob.type]      $FF                     ;remove object?
         ret
         
-._2     ld      A       [$.FRAMECOUNT]
+@_2     ld      A       [$.FRAMECOUNT]
         rrca    
-        jr      c       ._3
+        jr      c       @_3
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._5f10
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._5f10
-._3     ld      L       [IX`mob+%mob.Yspeed+0]
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_5f10
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_5f10
+@_3     ld      L       [IX`mob+%mob.Yspeed+0]
         ld      H       [IX`mob+%mob.Yspeed+1]
         ld      A       [IX`mob+%mob.Ydirection]
         ld      DE      $0020
@@ -14163,7 +14163,7 @@ powerUps_emerald_process:                                                       
         
         %byte
         
-._5f10  $5C $5E $FF $FF $FF $FF
+@_5f10  $5C $5E $FF $FF $FF $FF
         $FF
 	;
 
@@ -14179,11 +14179,11 @@ boss_endSign_process:                                                           
         bit     0       [IX`mob+%mob.unknown11]
         ;TODO: if we have to do this check every frame, then it would be better to turn this around and
         ;      fall through for the more common case, and jump for the one-time initialisation
-        jr      nz      ._1
+        jr      nz      @_1
         
         ;one time intialisation:
         ;---------------------------------------------------------------------------------------------------------------
-.init   ;turn 'under-water' mode off -- disabling the 'water line' raster effect,
+@init   ;turn 'under-water' mode off -- disabling the 'water line' raster effect,
         ;this is because the end-sign has no equivilent under-water palette
         res     7       [IY`vars+%vars.flags6]
         ;turn off auto-scroll to the right, if it was on
@@ -14197,7 +14197,7 @@ boss_endSign_process:                                                           
         call    \\gfx\decompressArt
         
         ;load the end-sign palette
-        ld      HL      .S1_EndSign_Palette
+        ld      HL      @S1_EndSign_Palette
         ld      A       %00000010
         call    \\gf\loadPaletteOnInterrupt
         
@@ -14208,7 +14208,7 @@ boss_endSign_process:                                                           
         
         ;prevent the player leaving the screen by locking the left-hand side of the screen
         ;(the edge of the level is effectively moved up to the current screen position)
-._1     ld      HL`cameraX      [$.CAMERA_X]
+@_1     ld      HL`cameraX      [$.CAMERA_X]
         ld      [$.LEVEL_LEFT]  HL`cameraX
         
         ;set the right-hand edge of the level such that the end-sign will be in the middle of the screen:
@@ -14241,13 +14241,13 @@ boss_endSign_process:                                                           
         
         ld      [IX`mob+%mob.unknown13] A
         ;BUG: this can never be true?
-        jr      z       ._3
+        jr      z       @_3
         ;has the player's status changed since the last frame?
         cp      C
-        jr      z       ._3
+        jr      z       @_3
         
         bit     7       [IX`mob+%mob.flags]
-        jr      z       ._3
+        jr      z       @_3
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -14261,7 +14261,7 @@ boss_endSign_process:                                                           
         
         ;has the player hit/passed the sign?
         bit     7       H`distanceHI                            ;is the negative bit set?
-        jr      z       ._2                                     ;no? skip forward
+        jr      z       @_2                                     ;no? skip forward
         
         ;convert negative number to positive (2's compliment)
         ;-- take the distance between player and end-sign and flip the bits, then add 1
@@ -14276,10 +14276,10 @@ boss_endSign_process:                                                           
         ;check for maximum speed allowed beyond the end-sign
         ;-- the height the end-sign leaps into the air is based upon your speed
         ;   (or more accurately, how far past it you are)
-._2     ld      DE`maxdistance  100                             ;=$0064
+@_2     ld      DE`maxdistance  100                             ;=$0064
         and     A`clearCarry
         sbc     HL`distance     DE`maxDistance
-        jr      nc      ._3
+        jr      nc      @_3
         
         ;make the end-sign leap up into the air at maximum speed
         ld      [IX`mob+%mob.Yspeed+0]          $00
@@ -14288,7 +14288,7 @@ boss_endSign_process:                                                           
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._3     ld      L`signYspeed    [IX`mob+%mob.Yspeed+0]
+@_3     ld      L`signYspeed    [IX`mob+%mob.Yspeed+0]
         ld      H`signYspeed    [IX`mob+%mob.Yspeed+1]
         ld      A`signDirection [IX`mob+%mob.Ydirection]
         ld      DE      26                                      ;=$001A
@@ -14299,11 +14299,11 @@ boss_endSign_process:                                                           
         ld      [IX`mob+%mob.Ydirection]        A`signDirection
         
         bit     3       [IX`mob+%mob.unknown11]
-        jr      nz      ._7
+        jr      nz      @_7
         bit     2       [IX`mob+%mob.unknown11]
-        jr      z       ._4
+        jr      z       @_4
         bit     7       [IX`mob+%mob.flags]
-        jr      z       ._7
+        jr      z       @_7
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -14318,22 +14318,22 @@ boss_endSign_process:                                                           
         ld      A       $A0
         ld      [$.D289]        A
         set     1       [IY`vars+%vars.flags6]
-        jp      ._7
+        jp      @_7
         
-._4     ld      HL              $0A0A
+@_4     ld      HL              $0A0A
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c       ._7
+        jr      c       @_7
         
         bit     7       [IX`mob+%mob.Ydirection]
-        jr      nz      ._7
+        jr      nz      @_7
         
         bit     1       [IX`mob+%mob.unknown11]
-        jr      nz      ._7
+        jr      nz      @_7
         
         ld      DE      [$.SONIC.Xspeed]
         bit     7       D
-        jr      z       ._5
+        jr      z       @_5
         
         ld      A       E
         cpl     
@@ -14342,13 +14342,13 @@ boss_endSign_process:                                                           
         cpl     
         ld      D       A
         inc     DE
-._5     ld      HL      $0300
+@_5     ld      HL      $0300
         and     A
         sbc     HL      DE
-        jr      nc      ._6
+        jr      nc      @_6
         
         ld      DE      $0300
-._6     ex      DE      HL
+@_6     ex      DE      HL
         add     HL      HL
         ld      [IX`mob+%mob.unknown14] L
         ld      [IX`mob+%mob.unknown15] H
@@ -14362,42 +14362,42 @@ boss_endSign_process:                                                           
 		rst     \\sound\rst_playSFX
 		;
         
-._7     ld      DE      ._6157
+@_7     ld      DE      @_6157
         bit     1       [IX`mob+%mob.unknown11]
-        jr      nz      ._
+        jr      nz      @_
         
         bit     2       [IX`mob+%mob.unknown11]
-        jr      nz      ._
+        jr      nz      @_
         
         ld      DE      $6171
         bit     3       [IX`mob+%mob.unknown11]
-        jr      z       ._
+        jr      z       @_
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $0C
-        jr      c       ._8
+        jr      c       @_8
         cp      $1C
-        jr      c       ._9
+        jr      c       @_9
         
         ld      DE      $618E
         ld      c       $01
-        jr      ._11
+        jr      @_11
         
-._8     ld      DE      $61A8
+@_8     ld      DE      $61A8
         ld      C       $04
         ld      A       [$.RINGS]
         cp      $50
-        jr      nc      ._11
+        jr      nc      @_11
         
-._9     cp      $40
-        jr      z       ._10
+@_9     cp      $40
+        jr      z       @_10
         
         ld      DE      $61C2
         ld      C       $03
         and     $0F
-        jr      z       ._11
+        jr      z       @_11
         
-._10    ld      A       [$.RINGS]
+@_10    ld      A       [$.RINGS]
         srl     A
         srl     A
         srl     A
@@ -14409,25 +14409,25 @@ boss_endSign_process:                                                           
         ld      DE      $6174
         ld      C       $02
         cp      B
-        jr      z       ._11
+        jr      z       @_11
         
         ld      DE      $618E
         ld      C       $01
-._11    ld      A       C
+@_11    ld      A       C
         ld      [$.D288]        A
-._      ld      L       [IX`mob+%mob.unknown12]
+@_      ld      L       [IX`mob+%mob.unknown12]
         ld      H       $00
         add     HL      DE
         ld      A       [HL]
         cp      $FF
-        jr      nz      ._12
+        jr      nz      @_12
         
         inc     HL
         ld      A       [HL]
         ld      [IX`mob+%mob.unknown12] A
-        jp      ._
+        jp      @_
         
-._12    ld      L       A
+@_12    ld      L       A
         ld      H       $00
         add     HL      HL
         ld      E       L
@@ -14436,18 +14436,18 @@ boss_endSign_process:                                                           
         add     HL      HL
         add     HL      HL
         add     HL      DE
-        ld      DE      ._61dc
+        ld      DE      @_61dc
         add     HL      DE
         ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         
         bit     1       [IX`mob+%mob.unknown11]
-        jr      nz      ._13
+        jr      nz      @_13
         
         inc     [IX`mob+%mob.unknown12]
         ret
         
-._13    ld      A       [IX`mob+%mob.unknown14]
+@_13    ld      A       [IX`mob+%mob.unknown14]
         add     A       [IX`mob+%mob.unknown16]
         ld      [IX`mob+%mob.unknown16] A
         ld      A       [IX`mob+%mob.unknown15]
@@ -14457,21 +14457,21 @@ boss_endSign_process:                                                           
         pop     AF
         adc     A       [IX`mob+%mob.unknown12]
         cp      $18
-        jr      c       ._14
+        jr      c       @_14
         
         xor     A`zero
-._14    ld      [IX`mob+%mob.unknown12] A
+@_14    ld      [IX`mob+%mob.unknown12] A
         ld      E       [IX`mob+%mob.Yspeed+0]
         ld      D       [IX`mob+%mob.Yspeed+1]
         ld      A       [IX`mob+%mob.Ydirection]
         and     A
-        jp      p       ._15
+        jp      p       @_15
         
         ld      HL      $FC00
         sbc     HL      DE
         ret     nc
         
-._15    ex      DE      HL
+@_15    ex      DE      HL
         ld      E       [IX`mob+%mob.unknown14]
         ld      D       [IX`mob+%mob.unknown15]
         ld      C       E
@@ -14497,7 +14497,7 @@ boss_endSign_process:                                                           
         xor     A`zero
         ld      DE      $0008
         sbc     HL      DE
-        jr      c       ._16
+        jr      c       @_16
         
         ld      L       C
         ld      H       B
@@ -14508,7 +14508,7 @@ boss_endSign_process:                                                           
         ld      [IX`mob+%mob.unknown15] H
         ret     nc
         
-._16    ld      [IX`mob+%mob.Yspeed+0]          A`zero
+@_16    ld      [IX`mob+%mob.Yspeed+0]          A`zero
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
         ld      [IX`mob+%mob.Ydirection]        A`zero
         res     1       [IX`mob+%mob.unknown11]
@@ -14520,7 +14520,7 @@ boss_endSign_process:                                                           
         ;---------------------------------------------------------------------------------------------------------------
         
         ;UNKNOWN
-._6157  %byte                                                                                                   ;$6157
+@_6157  %byte                                                                                                   ;$6157
         
         $00 $00 $00 $00 $00 $00
         $03 $03 $03 $03 $03 $03
@@ -14557,7 +14557,7 @@ boss_endSign_process:                                                           
         ;these are sprite layouts
         %byte
         
-._61dc  $4E $50 $52 $54 $FF $FF                                                                                 ;$61DC
+@_61dc  $4E $50 $52 $54 $FF $FF                                                                                 ;$61DC
         $6E $70 $72 $74 $FF $FF
         $FE $42 $44 $FF $FF $FF
 
@@ -14591,7 +14591,7 @@ boss_endSign_process:                                                           
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.S1_EndSign_Palette                                                                                             ;$626C
+@S1_EndSign_Palette                                                                                             ;$626C
         %byte
         
         $38 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $00 $00 $00 $00 $00
@@ -14600,44 +14600,44 @@ boss_endSign_process:                                                           
 palettePointers:                                                                                            	;$627C
 ;=======================================================================================================================
         %pointer
-.greenHill
+@greenHill
         paletteData.greenHill
-.bridge
+@bridge
         paletteData.bridge
-.jungle
+@jungle
         paletteData.jungle
-.labyrinth
+@labyrinth
         paletteData.labyrinth
-.scrapBrain
+@scrapBrain
         paletteData.scrapBrain
-.skyBaseExt
+@skyBaseExt
         paletteData.skyBaseExt
-.skyBaseInt
+@skyBaseInt
         paletteData.skyBaseInt
-.specialStage
+@specialStage
         paletteData.specialStage
 	;
 
 paletteCyclePointers:                                                                                       	;$628C
 ;=======================================================================================================================
         %pointer
-.greenHill
+@greenHill
         paletteData.greenHill_cycles
-.bridge
+@bridge
         paletteData.bridge_cycles
-.jungle
+@jungle
         paletteData.jungle_cycles
-.labyrinth
+@labyrinth
         paletteData.labyrinth_cycles
-.scrapBrain
+@scrapBrain
         paletteData.scrapBrain_cycles
-.skyBase1
+@skyBase1
         paletteData.skyBase_cycles
-.skyBaseInt
+@skyBaseInt
         paletteData.skyBaseInt_cycles
-.specialStage
+@specialStage
         paletteData.specialStage_cycles
-.skyBaseExt
+@skyBaseExt
         paletteData.skyBaseExt_cycles
 	;
 
@@ -14646,13 +14646,13 @@ paletteCyclePointers:                                                           
         
 paletteData:                                                                                                 	;$629E
 ;=======================================================================================================================
-.greenHill                                                      ;Green Hill                                    	`$629E
+@greenHill                                                      ;Green Hill                                    	`$629E
         %sms.palettes
         
         $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
         $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
         
-.greenHill_cycles                                               ;Green Hill Cycles x 3                         	`$62BE 
+@greenHill_cycles                                               ;Green Hill Cycles x 3                         	`$62BE 
         %sms.palette
         
         $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
@@ -14661,13 +14661,13 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.bridge                                                         ;Bridge                                        	`$62EE
+@bridge                                                         ;Bridge                                        	`$62EE
         %sms.palettes
         
         $38 $01 $06 $0B $2A $3A $0C $19 $3D $24 $38 $3C $3F $1F $00 $3F
         $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
         
-.bridge_cycles                                                  ;Bridge Cycles                                 	`$630E 
+@bridge_cycles                                                  ;Bridge Cycles                                 	`$630E 
         %sms.palette
         
         $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $38 $3C $3F $1F $00 $3F
@@ -14676,13 +14676,13 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.jungle                                                         ;Jungle                                        	`$633E
+@jungle                                                         ;Jungle                                        	`$633E
         %sms.palettes
         
         $04 $08 $0C $06 $0B $05 $25 $01 $03 $10 $34 $38 $3E $1F $00 $3F
         $04 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
         
-.jungle_cycles                                                  ;Jungle Cycles                                 	`$635E
+@jungle_cycles                                                  ;Jungle Cycles                                 	`$635E
         %sms.palette
         
         $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $34 $38 $3E $0F $00 $3F
@@ -14691,14 +14691,14 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.labyrinth                                                      ;Labyrinth                                     	`$638E
+@labyrinth                                                      ;Labyrinth                                     	`$638E
         %sms.palettes
         
         $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
         ;the water line raster split refers directly to this sprite palette:
         $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $15
         
-.labyrinth_cycles                                               ;Labyrinth Cycles                              	`$63AE
+@labyrinth_cycles                                               ;Labyrinth Cycles                              	`$63AE
         %sms.palette
         
         $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
@@ -14707,13 +14707,13 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.scrapBrain                                                     ;Scrap Brain                                   	`$63DE
+@scrapBrain                                                     ;Scrap Brain                                   	`$63DE
         %sms.palettes
         
         $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3D $15 $0F $27 $10 $29
         
-.scrapBrain_cycles                                              ;Scrap Brain Cycles                            	`$63FE
+@scrapBrain_cycles                                              ;Scrap Brain Cycles                            	`$63FE
         %sms.palette
         
         $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
@@ -14723,13 +14723,13 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.skyBaseExt                                                     ;Sky Base 1/2 Exterior                         	`$643E
+@skyBaseExt                                                     ;Sky Base 1/2 Exterior                         	`$643E
         %sms.palettes
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
         $10 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $15 $00
         
-.skyBase_cycles                                                 ;Sky Base 1 Cycles                             	`$645E
+@skyBase_cycles                                                 ;Sky Base 1 Cycles                             	`$645E
         %sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
@@ -14737,7 +14737,7 @@ paletteData:                                                                    
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $3F $3D $39 $24 $00 $38
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $39 $3D $3F $3D $24 $00 $38
         
-.skyBase_cycles_Lightning1                                      ;Sky Base 1 Lightning Cycles 1                 	`$649E
+@skyBase_cycles_Lightning1                                      ;Sky Base 1 Lightning Cycles 1                 	`$649E
         %sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
@@ -14745,7 +14745,7 @@ paletteData:                                                                    
         $10 $10 $20 $34 $30 $10 $11 $25 $20 $3D $3F $3D $39 $24 $00 $38
         $10 $10 $20 $34 $30 $10 $11 $25 $2A $39 $3D $3F $3D $24 $00 $38
         
-.skyBase_cycles_Lightning2                                      ;Sky Base 1 Lightning Cycles 2                 	`$64DE
+@skyBase_cycles_Lightning2                                      ;Sky Base 1 Lightning Cycles 2                 	`$64DE
         %sms.palette
         
         $10 $10 $20 $34 $30 $10 $11 $25 $2F $3D $39 $3D $3F $24 $00 $38
@@ -14753,7 +14753,7 @@ paletteData:                                                                    
         $10 $10 $20 $34 $30 $10 $11 $25 $3F $3D $3F $3D $39 $24 $00 $38
         $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
         
-.skyBaseExt_cycles                                              ;Sky Base 2                                    	`$651E
+@skyBaseExt_cycles                                              ;Sky Base 2                                    	`$651E
         %sms.palette
         
         $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $39 $3D $3F $0F $00 $3F
@@ -14763,26 +14763,26 @@ paletteData:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.specialStage                                                   ;Special Stage                                 	`$655E
+@specialStage                                                   ;Special Stage                                 	`$655E
         %sms.palettes
         
         $10 $04 $3B $1B $19 $2D $21 $32 $17 $13 $12 $27 $30 $1F $00 $3F
         $10 $20 $35 $1B $16 $2A $00 $3F $19 $13 $12 $27 $04 $1F $21 $30
         
-.specialStage_cycles                                            ;Special Stage Cycles                          	`$657E
+@specialStage_cycles                                            ;Special Stage Cycles                          	`$657E
         %sms.palette
         
         $10 $04 $3B $1B $19 $2D $11 $32 $17 $13 $12 $27 $30 $1F $00 $3F
         
         ;---------------------------------------------------------------------------------------------------------------
         
-.skyBaseInt                                                     ;Sky Base 2/3 Interior                         	`$658E
+@skyBaseInt                                                     ;Sky Base 2/3 Interior                         	`$658E
         %sms.palettes
         
         $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
         
-.skyBaseInt_cycles                                              ;Sky Base 2/3 Interior Cycles                  	`$65AE
+@skyBaseInt_cycles                                              ;Sky Base 2/3 Interior Cycles                  	`$65AE
         %sms.palette
         
         $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
@@ -14807,52 +14807,52 @@ badnick_crabmeat_process:                                                       
         ;select frame of animation:
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     ld      HL                  ._66c5
+@_1     ld      HL                  @_66c5
         add     HL                  DE
         ld      [$.TEMP6]           HL
         ld      A                   [HL]
         and     A
-        jr      nz	._2
+        jr      nz	@_2
         
         ;when we hit the end of the animation list, start over
         ld      [IX`mob+$12]        A                       	;set the mob's counter to 0
         ld      E                   A                       	;and likewise with the working copy
-        jp      ._1                                         	;proceed with next frame of animation
+        jp      @_1                                         	;proceed with next frame of animation
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     dec     A
-        jr      nz	._3
+@_2     dec     A
+        jr      nz	@_3
 	
         ld      C                   $00
         ld      H                   C
         ld      L                   $28
-        jp      ._6
+        jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._3     dec     A
-        jr      nz	._4
+@_3     dec     A
+        jr      nz	@_4
 	
         ld      C                   $FF
         ld      HL                  $FFD8
-        jp      ._6
+        jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     dec     A
-        jr      nz	._5
+@_4     dec     A
+        jr      nz	@_5
 	
         ld      C                   $00
         ld      L                   C
         ld      H                   C
-        jp      ._6
+        jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5     ld      A                   [IX`mob+%mob.unknown11]
+@_5     ld      A                   [IX`mob+%mob.unknown11]
         cp      $20
-        jp      nz	._7
+        jp      nz	@_7
         
         ld      HL                  $FFFF
         ld      [$.TEMP4]           HL
@@ -14860,7 +14860,7 @@ badnick_crabmeat_process:                                                       
         ld      [$.TEMP6]           HL
         
         call    \\findEmptyMob
-        jp      c	._7
+        jp      c	@_7
         
         ld      DE                  $0000
         ld      C                   E
@@ -14873,7 +14873,7 @@ badnick_crabmeat_process:                                                       
         ld      [$.TEMP6]           HL
         
         call    \\findEmptyMob
-        jr      c	._7
+        jr      c	@_7
         
         ld      DE                  $000E
         ld      BC                  $0000
@@ -14885,16 +14885,16 @@ badnick_crabmeat_process:                                                       
 		rst     \\sound\rst_playSFX
 		;
         
-        jp      ._7
+        jp      @_7
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;update the mob's speed and direction
-._6     ld      [IX`mob+%mob.Xspeed+0]      L
+@_6     ld      [IX`mob+%mob.Xspeed+0]      L
         ld      [IX`mob+%mob.Xspeed+1]      H
         ld      [IX`mob+%mob.Xdirection]    C
         
-._7     ld      L                   [IX`mob+%mob.unknown11]
+@_7     ld      L                   [IX`mob+%mob.unknown11]
         ld      H                   [IX`mob+$12]
         ld      DE                  $0008
         add     HL                  DE
@@ -14913,12 +14913,12 @@ badnick_crabmeat_process:                                                       
         ld      A                   [HL]
         add     A                   A
         ld      E                   A
-        ld      HL                  ._66e0
+        ld      HL                  @_66e0
         add     HL                  DE
         ld      C                   [HL]
         inc     HL
         ld      B                   [HL]
-        ld      DE                  .layout
+        ld      DE                  @layout
         call    animateMob
         
         ld      HL                  $0A04
@@ -14936,7 +14936,7 @@ badnick_crabmeat_process:                                                       
         ;what action to take on each frame:
         
 	%byte
-._66c5  $01 $01 $01 $01 $01 $01 $01 $01 $01 $01
+@_66c5  $01 $01 $01 $01 $01 $01 $01 $01 $01 $01
         $03 $03
         $04
         $02 $02 $02 $02 $02 $02 $02 $02 $02 $02
@@ -14944,17 +14944,17 @@ badnick_crabmeat_process:                                                       
         $04
         $00
 
-._66e0  %word
-	._66ea ._66ea ._66ea ._66f3 ._66f6
+@_66e0  %word
+	@_66ea @_66ea @_66ea @_66f3 @_66f6
 
 	%byte
-._66ea  $00 $0C $01 $0C $02 $0C $01 $0C $FF
-._66f3  $01 $01 $FF
-._66f6  $03 $01 $FF        
+@_66ea  $00 $0C $01 $0C $02 $0C $01 $0C $FF
+@_66f3  $01 $01 $FF
+@_66f6  $03 $01 $FF        
         
         ;sprite layouts                                                                     			`$66F9
 	%byte
-.layout $00 $02 $04 $FF $FF $FF
+@layout $00 $02 $04 $FF $FF $FF
         $20 $22 $24 $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
 
@@ -14987,7 +14987,7 @@ platform_swinging_process:                                                      
         ld      [$.SCROLLZONE_OVERRIDE_BOTTOM]  HL
         
         bit     0   [IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -15000,12 +15000,12 @@ platform_swinging_process:                                                      
         ld      [IX`mob+%mob.unknown11]	$E0
         set     0	[IX`mob+%mob.flags]
         set     1	[IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.width]	26
+@_1     ld      [IX`mob+%mob.width]	26
         ld      [IX`mob+%mob.height]	16
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
-        ld      HL      ._682f
+        ld      HL      @_682f
         ld      E	[IX`mob+%mob.unknown11]
         ld      D	$00
         add     HL      DE
@@ -15013,10 +15013,10 @@ platform_swinging_process:                                                      
         ld      B	H
         ld      A	[BC]
         and     A
-        jp      p	._2
+        jp      p	@_2
 	
         dec     D
-._2     ld      E	A
+@_2     ld      E	A
         ld      L	[IX`mob+%mob.unknown12]
         ld      H	[IX`mob+%mob.unknown13]
         add     HL      DE
@@ -15030,10 +15030,10 @@ platform_swinging_process:                                                      
         ld      D	$00
         ld      A	[BC]
         and     A
-        jp      p	._3
+        jp      p	@_3
 	
         dec     D
-._3     ld      E	A
+@_3     ld      E	A
         ld      L	[IX`mob+%mob.unknown14]
         ld      H	[IX`mob+%mob.unknown15]
         add     HL      DE
@@ -15042,12 +15042,12 @@ platform_swinging_process:                                                      
         
         ld      A	[$.SONIC.Ydirection]
         and     A
-        jp      m	._4
+        jp      m	@_4
         
         ld      HL      	$0806
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._4
+        jr      c	@_4
 	
         ld      HL      [$.SONIC.X]
         ld      DE      [$.TEMP1]
@@ -15056,16 +15056,16 @@ platform_swinging_process:                                                      
         ld      BC      $0010
         ld      DE      $0000
         call    _LABEL_7CC1_12
-._4     ld      HL      \spriteLayouts._6911
+@_4     ld      HL      \spriteLayouts._6911
         ld      A	[$.LEVEL_SOLIDITY]
         and     A
-        jr      z	._5
+        jr      z	@_5
 	
         ld      HL      \spriteLayouts._6923
-._5     ld      [IX`mob+%mob.spriteLayout+0]	L
+@_5     ld      [IX`mob+%mob.spriteLayout+0]	L
         ld      [IX`mob+%mob.spriteLayout+1]	H
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._6
+        jr      nz	@_6
 	
         ld      A	[IX`mob+%mob.unknown11]
         inc     A
@@ -15077,7 +15077,7 @@ platform_swinging_process:                                                      
         set     1	[IX`mob+%mob.flags]
         ret
         
-._6     ld      A	[IX`mob+%mob.unknown11]
+@_6     ld      A	[IX`mob+%mob.unknown11]
         dec     A
         dec     A
         ld      [IX`mob+%mob.unknown11]	A
@@ -15085,7 +15085,7 @@ platform_swinging_process:                                                      
         res     1	[IX`mob+%mob.flags]
         ret
         
-._682f  ;this is swinging position data
+@_682f  ;this is swinging position data
 	%byte	%byte
         $B3	$00
         $B3	$01
@@ -15206,14 +15206,14 @@ spriteLayouts:                                                                  
 ;=======================================================================================================================
         %byte
         
-._6911  $FE $FF $FF $FF $FF $FF
+@_6911  $FE $FF $FF $FF $FF $FF
         $18 $1A $18 $1A $FF $FF
         $FF $FF $FF $FF $FF $FF
-._6923  $FE $FF $FF $FF $FF $FF
+@_6923  $FE $FF $FF $FF $FF $FF
         $6C $6E $6E $48 $FF $FF
         $FF $FF
 
-._6931  $FE $FF $FF $FF
+@_6931  $FE $FF $FF $FF
         $FF $FF
         
         $6C $6E $6C $6E $FF $FF
@@ -15228,7 +15228,7 @@ explosion_process:                                                              
         
         ld      A       [IX`mob+%mob.unknown15]
         cp      $AA                                             ;=170, lifetime of explosion?
-        jr      z       ._1
+        jr      z       @_1
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -15239,15 +15239,15 @@ explosion_process:                                                              
         ld      [IX`mob+%mob.unknown17] A`zero
         
         bit     5       [IY`vars+%vars.flags0]
-        jr      z       ._1
+        jr      z       @_1
         
         ld      A	[$.CURRENT_LEVEL]
         cp      $12
-        jr      z       ._1
+        jr      z       @_1
         
         ld      A	[$.SONIC.flags]
         rlca    
-        jr      c       ._1
+        jr      c       @_1
         
         ld      A	[$.D2E8]
         ld      DE      [$.D2E6]
@@ -15263,7 +15263,7 @@ explosion_process:                                                              
         
         ld      A	[$.SONIC.Ydirection]
         and     A
-        jp      m       ._1
+        jp      m       @_1
         
         cpl     
         add     HL      DE
@@ -15273,7 +15273,7 @@ explosion_process:                                                              
         
 	;---------------------------------------------------------------------------------------------------------------
 	
-._1     xor     A`zero                                          ;set A to 0
+@_1     xor     A`zero                                          ;set A to 0
         ld      [IX`mob+%mob.Xspeed+0]          A`zero
         ld      [IX`mob+%mob.Xspeed+1]          A`zero
         ld      [IX`mob+%mob.Xdirection]        A`zero
@@ -15281,8 +15281,8 @@ explosion_process:                                                              
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
         ld      [IX`mob+%mob.Ydirection]        A`zero
         
-        ld      DE      ._69be
-        ld      BC      ._69b7
+        ld      DE      @_69be
+        ld      BC      @_69b7
         call    animateMob
         
         inc     [IX`mob+%mob.unknown11]
@@ -15298,13 +15298,13 @@ explosion_process:                                                              
         
         %byte
         
-._69b7  ;animation order                                                                                       `$69B7
+@_69b7  ;animation order                                                                                       `$69B7
         $00 $08
         $01 $08
         $02 $08
         $FF
 
-._69be  ;sprite layout                                                                                         `$69BE
+@_69be  ;sprite layout                                                                                         `$69BE
         $74 $76 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
@@ -15330,38 +15330,38 @@ platform_sinking_process:                                                       
         
         ld      A	[$.SONIC.Ydirection]
         and     A
-        jp      m	._2
+        jp      m	@_2
         
         ld      HL      	$0806
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._2
+        jr      c	@_2
         
         ld      DE      $0000
         
         ld      A	[IX`mob+%mob.Y+0]
         and     %00011111                       		;MOD 32
         cp      $10
-        jr      nc	._1
+        jr      nc	@_1
         
         ld      E	$80
-._1     ld      [IX`mob+%mob.Yspeed+0]		E
+@_1     ld      [IX`mob+%mob.Yspeed+0]		E
         ld      [IX`mob+%mob.Yspeed+1]		D
         ld      [IX`mob+%mob.Ydirection]	$00
         ld      BC      $0010
         call    _LABEL_7CC1_12
         ret
         
-._2     ld      C	$00
+@_2     ld      C	$00
         ld      L	C
         ld      H	C
         ld      A	[IX`mob+%mob.Y+0]
         and     %00011111
-        jr      z	._3
+        jr      z	@_3
         
         ld      HL      $ffc0
         dec     C
-._3     ld      [IX`mob+%mob.Yspeed+0]		L
+@_3     ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
         ret
@@ -15376,7 +15376,7 @@ platform_falling_process:                                                       
         add     A	[IX`mob+%mob.unknown17]
         ld      [IX`mob+%mob.unknown17]	A
         cp      $18
-        jr      c	._1
+        jr      c	@_1
 	
         ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
@@ -15387,30 +15387,30 @@ platform_falling_process:                                                       
         ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	A
-._1     ld      [IX`mob+%mob.width]		26
+@_1     ld      [IX`mob+%mob.width]		26
         ld      [IX`mob+%mob.height]		16
         
         ld      A	[$.SONIC.Ydirection]
         and     A
-        jp      m	._2
+        jp      m	@_2
         
         ld      HL      	$0806
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._2
+        jr      c	@_2
 	
         ld      [IX`mob+%mob.unknown16]	$01
         ld      BC      $0010
         ld      E	[IX`mob+%mob.Yspeed+0]
         ld      D	[IX`mob+%mob.Yspeed+1]
         call    _LABEL_7CC1_12
-._2     ld      HL      \spriteLayouts._6911
+@_2     ld      HL      \spriteLayouts._6911
         ld      A	[$.LEVEL_SOLIDITY]
         and     A
-        jr      z	._3
+        jr      z	@_3
 	
         ld      HL      \spriteLayouts._6923
-._3     ld      [IX`mob+%mob.spriteLayout+0]	L
+@_3     ld      [IX`mob+%mob.spriteLayout+0]	L
         ld      [IX`mob+%mob.spriteLayout+1]	H
         ld      HL      [$.CAMERA_Y]
         ld      DE      $00c0
@@ -15458,16 +15458,16 @@ unknown_6ac1_process:													;$6AC1
         ld      [$.TEMP6]	HL
         ld      [IX`mob+%mob.spriteLayout+0]	L
         ld      [IX`mob+%mob.spriteLayout+1]	H
-        ld      HL      ._6b72
+        ld      HL      @_6b72
         ld      A	[$.CURRENT_LEVEL]
         cp      $05
-        jr      z	._1
+        jr      z	@_1
 	
         cp      $0B
-        jr      z	._1
+        jr      z	@_1
 	
-        ld      HL      ._6b70
-._1     ld      A	[$.FRAMECOUNT]
+        ld      HL      @_6b70
+@_1     ld      A	[$.FRAMECOUNT]
         and     %00000001
         ld      E	A
         ld      D	$00
@@ -15483,12 +15483,12 @@ unknown_6ac1_process:													;$6AC1
         ld      DE      [$.CAMERA_X]
         and     A
         sbc     HL      DE
-        jr      c	._2
+        jr      c	@_2
 	
         inc     D
         ex      DE      HL
         sbc     HL      BC
-        jr      c	._2
+        jr      c	@_2
 	
         ld      C	[IX`mob+%mob.Y+0]
         ld      B	[IX`mob+%mob.Y+1]
@@ -15499,7 +15499,7 @@ unknown_6ac1_process:													;$6AC1
         ld      DE      [$.CAMERA_Y]
         and     A
         sbc     HL      DE
-        jr      c	._2
+        jr      c	@_2
 	
         ld      HL      $00c0
         add     HL      DE
@@ -15507,13 +15507,13 @@ unknown_6ac1_process:													;$6AC1
         sbc     HL      BC
         ret     nc
 	
-._2     ld      [IX`mob+%mob.type]	$FF              	;remove object?
+@_2     ld      [IX`mob+%mob.type]	$FF              	;remove object?
         ret     
 
 	%byte
 	
-._6b70  $06 $08
-._6b72  $34 $36
+@_6b70  $06 $08
+@_6b72  $34 $36
 	;
 
 badnick_buzzbomber_process:                                                                                         		;$6B74
@@ -15523,7 +15523,7 @@ badnick_buzzbomber_process:                                                     
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         
         bit     0       [IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      E       [IX`mob+%mob.X+0]
         ld      D       [IX`mob+%mob.X+1]
@@ -15545,40 +15545,40 @@ badnick_buzzbomber_process:                                                     
         ret     nc
 	
         set     0       [IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.width]     20
+@_1     ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    32
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      c	._2
+        jr      c	@_2
 	
         ld      DE      $0040
         sbc     HL      DE
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      A       [IX`mob+$12]
         cp      $05
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      [IX`mob+$12]        $05
-._2     ld      E       [IX`mob+$12]
+@_2     ld      E       [IX`mob+$12]
         ld      D       $00
         
-._3     ld      HL      $6CD7
+@_3     ld      HL      $6CD7
         add     HL      DE
         ld      [$.TEMP6]       HL
         ld      A       [HL]
         and     A
-        jr      nz      ._4
+        jr      nz      @_4
 	
         ld      [IX`mob+$12]    A
         ld      E       A
-        jp      ._3
+        jp      @_3
         
-._4     dec     A
-        jr      nz	._6
+@_4     dec     A
+        jr      nz	@_6
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -15587,7 +15587,7 @@ badnick_buzzbomber_process:                                                     
         ld      DE      [$.CAMERA_X]
         xor     A`zero
         sbc     HL      DE
-        jr      nc	._5
+        jr      nc	@_5
 	
         ld      [IX`mob+%mob.spriteLayout+0]    A`zero
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
@@ -15598,24 +15598,24 @@ badnick_buzzbomber_process:                                                     
         res     0       [IX`mob+%mob.flags]
         ret
         
-._5     ld      C       $FF
+@_5     ld      C       $FF
         ld      HL      $FE00
-        jp      ._8
+        jp      @_8
         
-._6     dec     A
-        jr      nz	._7
+@_6     dec     A
+        jr      nz	@_7
 	
         ld      C       $00
         ld      L       C
         ld      H       C
-        jp      ._8
+        jp      @_8
         
-._7     ld      A       [IX`mob+%mob.unknown11]
+@_7     ld      A       [IX`mob+%mob.unknown11]
         cp      $20
-        jp      nz	._9
+        jp      nz	@_9
 	
         call    \\findEmptyMob
-        jp      c	._9
+        jp      c	@_9
 	
         push    BC
         ld      E       [IX`mob+%mob.X+0]
@@ -15661,11 +15661,11 @@ badnick_buzzbomber_process:                                                     
         ld      L       C
         ld      H       C
         
-._8     ld      [IX`mob+%mob.Xspeed+0]          L
+@_8     ld      [IX`mob+%mob.Xspeed+0]          L
         ld      [IX`mob+%mob.Xspeed+1]          H
         ld      [IX`mob+%mob.Xdirection]        C
         
-._9     ld      L       [IX`mob+%mob.unknown11]
+@_9     ld      L       [IX`mob+%mob.unknown11]
         ld      H       [IX`mob+$12]
         ld      DE      $0008
         add     HL      DE
@@ -15675,12 +15675,12 @@ badnick_buzzbomber_process:                                                     
         ld      A       [HL]
         add     A       A
         ld      E       A
-        ld      HL      ._6ce2
+        ld      HL      @_6ce2
         add     HL      DE
         ld      C       [HL]
         inc     HL
         ld      B       [HL]
-        ld      DE      ._6cf9
+        ld      DE      @_6cf9
         call    animateMob
         
         ld      HL              $1000
@@ -15694,23 +15694,23 @@ badnick_buzzbomber_process:                                                     
         ret
         
         ;no reference to this?
-._6cd7  %byte
+@_6cd7  %byte
         
         $01 $01 $01 $01 $00 $02 $02 $03 $01 $01 $00
         
         ;animation frame order
-._6ce2  %word   ._6cea, ._6cea, ._6cef, ._6cf4
+@_6ce2  %word   @_6cea, @_6cea, @_6cef, @_6cf4
         
         %byte
         
-._6cea  $00 $02 $01 $02 $FF
-._6cef  $02 $02 $03 $02 $FF
-._6cf4  $04 $02 $05 $02 $FF
+@_6cea  $00 $02 $01 $02 $FF
+@_6cef  $02 $02 $03 $02 $FF
+@_6cf4  $04 $02 $05 $02 $FF
 
         ;sprite layout
         %byte
         
-._6cf9  $FE $0A $FF $FF $FF $FF
+@_6cf9  $FE $0A $FF $FF $FF $FF
         $0C $0E $10 $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
@@ -15743,7 +15743,7 @@ platform_moving_process:                                                        
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $07                                     	;Jungle act 2?
-        jr      z	._1
+        jr      z	@_1
         
         ld      HL                              $0020
         ld      [$.SCROLLZONE_OVERRIDE_LEFT]    HL        
@@ -15754,20 +15754,20 @@ platform_moving_process:                                                        
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_BOTTOM]  HL
         
-._1     ld      [IX`mob+%mob.width]     26
+@_1     ld      [IX`mob+%mob.width]     26
         ld      [IX`mob+%mob.height]    16
         ld      C       $00
         
         ld      A       [$.SONIC.Ydirection]
         and     A
-        jp      m	._2
+        jp      m	@_2
         
         ld      HL              $0806
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         
         ld      C       $00
-        jr      c	._2
+        jr      c	@_2
         
         ld      BC      $0010
         ld      DE      $0000
@@ -15775,7 +15775,7 @@ platform_moving_process:                                                        
         ld      C       $01
         
         ;move right 1px
-._2     ld      L       [IX`mob+%mob.unknown12]
+@_2     ld      L       [IX`mob+%mob.unknown12]
         ld      H       [IX`mob+%mob.unknown13]
         inc     HL
         ld      [IX`mob+%mob.unknown12] L
@@ -15784,42 +15784,42 @@ platform_moving_process:                                                        
         ld      DE      $00A0
         xor     A`zero                          		;set A to 0
         sbc     HL      DE
-        jr      c	._3
+        jr      c	@_3
         
         ld      [IX`mob+%mob.unknown12] A`zero
         ld      [IX`mob+%mob.unknown13] A`zero
         inc     [IX`mob+%mob.unknown14]
         
-._3     ld      DE      $0001
+@_3     ld      DE      $0001
         bit     0   	[IX`mob+%mob.unknown14]
-        jr      z	._4
+        jr      z	@_4
         
         ;move left 1px?
         ld      DE      $FFFF
-._4     ld      L       [IX`mob+%mob.X+0]
+@_4     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [IX`mob+%mob.X+0]       L
         ld      [IX`mob+%mob.X+1]       H
         ld      A       C
         and     A
-        jr      z	._5
+        jr      z	@_5
         
         ld      HL      [$.SONIC.X]
         add     HL      DE
         ld      [$.SONIC.X]     HL
         
-._5     ld      HL      \spriteLayouts._6911
+@_5     ld      HL      \spriteLayouts._6911
         ld      A       [$.LEVEL_SOLIDITY]
         and     A
-        jr      z	._6
+        jr      z	@_6
         
         ld      HL      \spriteLayouts._6931
         dec     A
-        jr      z	._6
+        jr      z	@_6
         
         ld      HL      \spriteLayouts._6923
-._6     ld      [IX`mob+%mob.spriteLayout+0]    L
+@_6     ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         
         ret
@@ -15843,13 +15843,13 @@ badnick_motobug_process:                                                        
         ld      E       [IX`mob+$12]
         ld      D       $00
         
-.actions
+@actions
         ;a "$00" AI action tells the code to repeat the mob's pre-programmed actions, the "behaviour" table near the
         ;bottom of this page gives a list of AI actions the mob will automatically play through whilst this chunk of
         ;code is not an AI action itself, we use it to define the zero value enum:
         ;'.actions.loop@index' used as the list-terminator
         
-.actions.loop                                                   ;@index = $00
+@actions.loop                                                   ;@index = $00
         ;===============================================================================================================
         ;NOTE: this row MUST be index 0 as the assembly code works on that basis
         ;
@@ -15863,48 +15863,48 @@ badnick_motobug_process:                                                        
                 ld      [$.TEMP6]       HL
                 ld      A               [HL]
                 and     A
-                jr      nz      .moveLeft
+                jr      nz      @moveLeft
                 
                 ;we've hit the end of the animation list, start over
                 ld      [IX`mob+$12]    A                       ;set the mob's counter to 0
                 ld      E               A                       ;and likewise with the working copy
-                jp      .loop                                   ;proceed with next frame of animation
+                jp      @loop                                   ;proceed with next frame of animation
 
 
 
         ;this is the mob's first AI action, "move left":
         
-.actions.moveLeft                                               ;@index = $01
+@actions.moveLeft                                               ;@index = $01
         ;===============================================================================================================
         ;return A
         ;       C`direction
         ;       HL`speed
                 ;-------------------------------------------------------------------------------------------------------
                 dec     A
-                jr      nz      .moveRight
+                jr      nz      @moveRight
 		
                 ld      C`direction     $FF                     ;set direction: left
                 ld      HL`speed        $FF00                   ;set speed: -256
-                jp      .apply
+                jp      @apply
                 
-.actions.moveRight                                              ;@index = $02
+@actions.moveRight                                              ;@index = $02
         ;===============================================================================================================
         ;return C`direction
         ;       HL`speed
                 ;-------------------------------------------------------------------------------------------------------
                 dec     A
-                jr      nz      .idleLeft
+                jr      nz      @idleLeft
 		
                 ld      C`direction     $00                     ;set direction: right
                 ld      HL`speed        $0100                   ;set speed: +256
-                jp      .apply
+                jp      @apply
         
         ;the AI code handles "idleLeft" and "idleRight" actions the same, they only differ in the animation displayed.
         ;therefore we define the "idleLeft" index but provide no code, the "idleRight" index will share the same ROM
         ;address but have a higher index
         
-.actions.idleLeft                                               ;@index = $03
-.actions.idleRight                                              ;@index = $04
+@actions.idleLeft                                               ;@index = $03
+@actions.idleRight                                              ;@index = $04
         ;===============================================================================================================
         ;return C`direction         : direction is set to $00 (default facing right)
         ;       HL`speed            : speed is set to $0000
@@ -15916,7 +15916,7 @@ badnick_motobug_process:                                                        
                 ;fall through to the ".apply" action below:
                 ;...
 
-.actions.apply                                                  ;@index = $05
+@actions.apply                                                  ;@index = $05
         ;===============================================================================================================
         ;params IX`mob          : Address of the current mob being processed
         ;       HL`speed
@@ -16006,21 +16006,21 @@ badnick_motobug_animations:                                                     
         
         ;sprite layout to use           `frame length
         ;($FF terminates)               `($FF for infinite)
-.moveLeft                                                       ;@index = $00                                  `$6EBB
+@moveLeft                                                       ;@index = $00                                  `$6EBB
         spriteLayout.leftIdle@index    8
         spriteLayout.leftMove@index    8
         $FF
         
-.moveRight                                                      ;@index = $01                                  `$6EC0
+@moveRight                                                      ;@index = $01                                  `$6EC0
         spriteLayout.rightIdle@index   8
         spriteLayout.rightMove@index   8
         $FF
         
-.idleLeft                                                       ;@index = $02                                  `$6EC5
+@idleLeft                                                       ;@index = $02                                  `$6EC5
         spriteLayout.leftIdle@index    $FF
         $FF
         
-.idleRight                                                      ;@index = $03                                  `$6EC8
+@idleRight                                                      ;@index = $03                                  `$6EC8
         spriteLayout.rightIdle@index   $FF
         $FF
 	;
@@ -16032,25 +16032,25 @@ badnick_motobug_spriteLayout:                                                   
         ;---------------------------------------------------------------------------------------------------------------
         %byte
         
-.leftIdle                                                       ;@index = $00
+@leftIdle                                                       ;@index = $00
         ;facing left -- frame #1
         $60 $62 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
-.leftMove                                                       ;@index = $01
+@leftMove                                                       ;@index = $01
         ;facing left -- frame #2 (when moving)
         $64 $66 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
-.rightIdle                                                      ;@index = $02
+@rightIdle                                                      ;@index = $02
         ;facing right -- frame #1
         $68 $6A $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
-.rightMove                                                      ;@index = $03
+@rightMove                                                      ;@index = $03
         ;facing right -- frame #2 (when moving)
         $6C $6E $FF $FF $FF $FF
         $FF
@@ -16065,38 +16065,38 @@ badnick_newtron_process:                                                        
         ld      [IX`mob+%mob.height]    20
         ld      A                   [IX`mob+%mob.unknown11]
         cp      $02
-        jr      z	._1
+        jr      z	@_1
 	
         and     A
-        jr      nz	._4
+        jr      nz	@_4
 	
-._1     ld      A                   [$.FRAMECOUNT]
+@_1     ld      A                   [$.FRAMECOUNT]
         and     $01
-        jr      z	._2
+        jr      z	@_2
 	
         ld      BC                  $0000
-        jr      ._3
+        jr      @_3
         
-._2     ld      BC                  ._6fed
-._3     inc     [IX`mob+%mob.unknown17]
+@_2     ld      BC                  @_6fed
+@_3     inc     [IX`mob+%mob.unknown17]
         ld      A                   [IX`mob+%mob.unknown17]
         cp      $3C
-        jp      c	._7
+        jp      c	@_7
 	
         ld      [IX`mob+%mob.unknown17] $00
         inc     [IX`mob+%mob.unknown11]
-        jp      ._7
+        jp      @_7
         
-._4     cp      $01
-        jp      nz	._6
+@_4     cp      $01
+        jp      nz	@_6
 	
         inc     [IX`mob+%mob.unknown17]
         ld      A                   [IX`mob+%mob.unknown17]
         cp      $64
-        jr      nz	._5
+        jr      nz	@_5
 	
         call    \\findEmptyMob
-        jp      c	._5
+        jp      c	@_5
 	
         push    BC
         ld      E                   [IX`mob+%mob.X+0]
@@ -16138,26 +16138,26 @@ badnick_newtron_process:                                                        
 		rst     \\sound\rst_playSFX
 		;
 	
-._5     ld      BC                  ._6fed
+@_5     ld      BC                  @_6fed
         cp      $78
-        jr      c	._7
+        jr      c	@_7
 	
         ld      [IX`mob+%mob.unknown17] $00
         inc     [IX`mob+%mob.unknown11]
-        jr      ._7
+        jr      @_7
         
-._6     cp      $03
-        jr      nz	._7
+@_6     cp      $03
+        jr      nz	@_7
 	
         ld      BC                  $0000
         inc     [IX`mob+%mob.unknown17]
         ld      A                   [IX`mob+%mob.unknown17]
         and     A
-        jr      nz	._7
+        jr      nz	@_7
 	
         ld      [IX`mob+%mob.unknown11] C
         
-._7     ld      [IX`mob+%mob.spriteLayout+0]    C
+@_7     ld      [IX`mob+%mob.spriteLayout+0]    C
         ld      [IX`mob+%mob.spriteLayout+1]    B
         ld      HL                  $0202
         ld      [$.TEMP6]           HL
@@ -16171,12 +16171,12 @@ badnick_newtron_process:                                                        
         ;sprite layout
         %byte
         
-._6fed  $1C $1E $FF $FF $FF $FF
+@_6fed  $1C $1E $FF $FF $FF $FF
         $FE $3E $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $40                                        	;odd?
 
-._7000  $42 $FF $FF $FF $FF $FE
+@_7000  $42 $FF $FF $FF $FF $FE
         $62 $FF $FF $FF $FF $FF
 	;
 
@@ -16189,7 +16189,7 @@ boss_greenHill_process:                                                         
         ld      [IX`mob+%mob.height]	28
         call    _7ca6
         bit     0	[IX`mob+%mob.unknown11]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
@@ -16225,7 +16225,7 @@ boss_greenHill_process:                                                         
         call    _7c8c
         
         set     0	[IX`mob+%mob.unknown11]
-._1     ld      A	[IX`mob+%mob.unknown13]
+@_1     ld      A	[IX`mob+%mob.unknown13]
         and     $3F
         ld      E	A
         ld      D	$00
@@ -16233,15 +16233,15 @@ boss_greenHill_process:                                                         
         add     HL      DE
         ld      A	[HL]
         and     A
-        jp      p	._2
+        jp      p	@_2
 	
         ld      C	$FF
-        jr      ._3
-._2     ld      C	$00
-._3     ld      [IX`mob+%mob.Yspeed+0]		A
+        jr      @_3
+@_2     ld      C	$00
+@_3     ld      [IX`mob+%mob.Yspeed+0]		A
         ld      [IX`mob+%mob.Yspeed+1]		C
         ld      [IX`mob+%mob.Ydirection]	C
-._4     ld      E	[IX`mob+%mob.unknown12]
+@_4     ld      E	[IX`mob+%mob.unknown12]
         ld      D	$00
         ld      L	[IX`mob+%mob.unknown14]
         ld      H	[IX`mob+%mob.unknown15]
@@ -16249,18 +16249,18 @@ boss_greenHill_process:                                                         
         ld      [$.TEMP6]	HL
         ld      A	[HL]
         and     A
-        jr      nz	._5
+        jr      nz	@_5
 	
         inc     HL
         ld      A	[HL]
         ld      [IX`mob+%mob.unknown12]	A
-        jp      ._4
+        jp      @_4
         
-._5     dec     A
+@_5     dec     A
         add     A	A
         ld      E	A
         ld      D	$00
-        ld      HL      ._724b
+        ld      HL      @_724b
         add     HL      DE
         ld      A	[HL]
         inc     HL
@@ -16276,21 +16276,21 @@ boss_greenHill_process:                                                         
         sbc     HL      DE
         ld      C	$FF
         ld      HL      $FF00
-        jp      c	._9
+        jp      c	@_9
         
         ld      [IX`mob+%mob.unknown12]	$00
         bit     1	[IX`mob+%mob.unknown11]
-        jr      nz	._6
+        jr      nz	@_6
 	
         ld      [IX`mob+%mob.unknown14]	$A4
         ld      [IX`mob+%mob.unknown15]	$72
         set     1	[IX`mob+%mob.unknown11]
-        jp      ._9
+        jp      @_9
         
-._6     ld      [IX`mob+%mob.unknown14]	$A7
+@_6     ld      [IX`mob+%mob.unknown14]	$A7
         ld      [IX`mob+%mob.unknown15]	$72
         res     1	[IX`mob+%mob.unknown11]
-        jp      ._9
+        jp      @_9
         
         ld      HL      [$.LEVEL_LEFT]
         ld      DE      $00e0
@@ -16301,21 +16301,21 @@ boss_greenHill_process:                                                         
         sbc     HL      DE
         ld      C	$00
         ld      HL      $0100
-        jp      nc	._9
+        jp      nc	@_9
 	
         ld      [IX`mob+%mob.unknown12]	$00
         bit     2	[IX`mob+%mob.unknown11]
-        jr      nz	._7
+        jr      nz	@_7
 	
         ld      [IX`mob+%mob.unknown14]	$A1
         ld      [IX`mob+%mob.unknown15]	$72
         set     2	[IX`mob+%mob.unknown11]
-        jp      ._9
+        jp      @_9
         
-._7     ld      [IX`mob+%mob.unknown14],$aa
+@_7     ld      [IX`mob+%mob.unknown14],$aa
         ld      [IX`mob+%mob.unknown15],$72
         res     2	[IX`mob+%mob.unknown11]
-        jp      ._9
+        jp      @_9
         
         ld      [IX`mob+%mob.Yspeed+0]		$60
         ld      [IX`mob+%mob.Yspeed+1]		$00
@@ -16330,16 +16330,16 @@ boss_greenHill_process:                                                         
         ld      C	A`zero
         ld      L	C
         ld      H	C
-        jp      nc	._9
+        jp      nc	@_9
 	
         ld      [IX`mob+%mob.unknown12]	$00
         ld      [IX`mob+%mob.unknown14]	$B0
         ld      [IX`mob+%mob.unknown15]	$72
-        jp      ._9
+        jp      @_9
         
         ld      C	$00
         ld      HL      $0400
-        jp      ._9
+        jp      @_9
         
         ld      [IX`mob+%mob.Yspeed+0]		$60
         ld      [IX`mob+%mob.Yspeed+1]		$00
@@ -16354,21 +16354,21 @@ boss_greenHill_process:                                                         
         ld      C	A`zero
         ld      L	C
         ld      H	C
-        jp      nc	._9
+        jp      nc	@_9
 	
         ld      [IX`mob+%mob.unknown12]	$00
         ld      [IX`mob+%mob.unknown14]	$BC
         ld      [IX`mob+%mob.unknown15]	$72
-        jp      ._9
+        jp      @_9
         
         ld      C	$FF
         ld      HL      $FC00
-        jr      ._9
+        jr      @_9
         
         ld      C	$00
         ld      L	C
         ld      H	C
-        jr      ._9
+        jr      @_9
         
         ld      C	$00
         ld      L	C
@@ -16377,7 +16377,7 @@ boss_greenHill_process:                                                         
         ld      [IX`mob+%mob.unknown15]	$72
         ld      [IX`mob+%mob.unknown12]	C
         ld      [IX`mob+%mob.unknown13]	C
-        jr      ._9
+        jr      @_9
         
         ld      [IX`mob+%mob.Yspeed+0]		$00
         ld      [IX`mob+%mob.Yspeed+1]		$FF
@@ -16392,7 +16392,7 @@ boss_greenHill_process:                                                         
         ld      C	A`zero
         ld      L	C
         ld      H	C
-        jp      c	._9
+        jp      c	@_9
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      DE      [$.LEVEL_LEFT]
@@ -16401,32 +16401,32 @@ boss_greenHill_process:                                                         
         ld      C	A`zero
         ld      L	C
         ld      H	C
-        jr      c	._8
+        jr      c	@_8
         ld      [IX`mob+%mob.unknown14]	$A1
         ld      [IX`mob+%mob.unknown15]	$72
         ld      [IX`mob+%mob.unknown12]	A
-        jr      ._9
+        jr      @_9
         
-._8     ld      [IX`mob+%mob.unknown14]	$A4
+@_8     ld      [IX`mob+%mob.unknown14]	$A4
         ld      [IX`mob+%mob.unknown15]	$72
         ld      [IX`mob+%mob.unknown12]	A
-        jr      ._9
+        jr      @_9
         
-._9     ld      [IX`mob+%mob.Xspeed+0]		L
+@_9     ld      [IX`mob+%mob.Xspeed+0]		L
         ld      [IX`mob+%mob.Xspeed+1]		H
         ld      [IX`mob+%mob.Xdirection]	C
         ld      HL      [$.TEMP6]
         ld      E	[HL]
         ld      D	$00
-        ld      HL      ._72c8
+        ld      HL      @_72c8
         add     HL      DE
         ld      A	[HL]
-        ld      HL      ._72f8
+        ld      HL      @_72f8
         and     A
-        jr      z	._10
+        jr      z	@_10
 	
-        ld      HL      ._730a
-._10    ld      E	A
+        ld      HL      @_730a
+@_10    ld      E	A
         ld      A	[IX`mob+%mob.flags]
         and     $FD
         or      E
@@ -16447,7 +16447,7 @@ boss_greenHill_process:                                                         
 	
 	%byte
 	
-._724b  $AC $70 $EC $70 $2C $71 $5D $71 $65 $71 $96 $71 $9D $71 $A3 $71
+@_724b  $AC $70 $EC $70 $2C $71 $5D $71 $65 $71 $96 $71 $9D $71 $A3 $71
         $B7 $71 $00 $00 $9D $71 $00 $14 $28 $28 $3C $3C $3C $50 $50 $50
         $50 $64 $64 $64 $64 $64 $64 $64 $64 $64 $64 $50 $50 $50 $50 $3C
         $3C $3C $28 $28 $14 $00 $00 $EC $D8 $D8 $C4 $C4 $C4 $B0 $B0 $B0
@@ -16455,15 +16455,15 @@ boss_greenHill_process:                                                         
         $C4 $C4 $D8 $D8 $EC $00 $01 $00 $00 $02 $00 $00 $03 $00 $00 $05
         $00 $00 $09 $00 $00 $07 $07 $07 $07 $04 $04 $04 $04 $04 $08 $00
         $00 $0B $0B $0B $0B $06 $06 $06 $06 $06 $08 $00 $00
-._72c8  $00 $00 $02 $02 $02 $00 $00 $02 $02 $00 $02 $00 $00 $00 $01 $04
+@_72c8  $00 $00 $02 $02 $02 $00 $00 $02 $02 $00 $02 $00 $00 $00 $01 $04
         $01 $00 $01 $04 $01 $01 $01 $04 $01 $01 $01 $04 $01 $FF $02 $02
         $01 $05 $01 $02 $01 $05 $01 $03 $01 $05 $01 $03 $01 $05 $01 $FF
 
         ;sprite layout
-._72f8  $20 $22 $24 $26 $28 $FF
+@_72f8  $20 $22 $24 $26 $28 $FF
         $40 $42 $44 $46 $48 $FF
         $60 $62 $64 $66 $68 $FF
-._730a  $2A $2C $2E $30 $32 $FF
+@_730a  $2A $2C $2E $30 $32 $FF
         $4A $4C $4E $50 $52 $FF
         $6A $6C $6E $70 $72 $FF
 	;
@@ -16481,7 +16481,7 @@ boss_capsule_process:                                                           
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
@@ -16490,20 +16490,20 @@ boss_capsule_process:                                                           
         ld      [IX`mob+%mob.Y+0]	L
         ld      [IX`mob+%mob.Y+1]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.width]	28
+@_1     ld      [IX`mob+%mob.width]	28
         ld      [IX`mob+%mob.height]	64
-        ld      HL      ._7564
+        ld      HL      @_7564
         bit     1	[IX`mob+%mob.flags]
-        jr      z	._2
+        jr      z	@_2
 	
-        ld      HL      ._757c
-._2     ld      A	[$.FRAMECOUNT]
+        ld      HL      @_757c
+@_2     ld      A	[$.FRAMECOUNT]
         rrca    
-        jr      nc	._3
+        jr      nc	@_3
 	
         ld      DE      $000C
         add     HL      DE
-._3     ld      C	[HL]
+@_3     ld      C	[HL]
         inc     HL
         ld      B	[HL]
         inc     HL
@@ -16522,13 +16522,13 @@ boss_capsule_process:                                                           
         ld      H	[IX`mob+%mob.Y+1]
         add     HL      BC
         ld      [$.D2AD]	HL
-        ld      HL      ._752e
+        ld      HL      @_752e
         ld      A	[$.FRAMECOUNT]
         and     $10
-        jr      z	._4
+        jr      z	@_4
 	
-        ld      HL      ._7552
-._4     ld      [IX`mob+%mob.spriteLayout+0]	L
+        ld      HL      @_7552
+@_4     ld      [IX`mob+%mob.spriteLayout+0]	L
         ld      [IX`mob+%mob.spriteLayout+1]	H
         ld      HL      [$.CAMERA_X]
         ld      [$.LEVEL_LEFT]	HL
@@ -16543,18 +16543,18 @@ boss_capsule_process:                                                           
         ld      HL      $0002
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jp      c	._8
+        jp      c	@_8
         
         ld      A	[$.SONIC.Ydirection]
         and     A
-        jp      m	._8
+        jp      m	@_8
         
         ld      E	[IX`mob+%mob.Y+0]
         ld      D	[IX`mob+%mob.Y+1]
         ld      HL      [$.SONIC.Y]
         and     A
         sbc     HL      DE
-        jr      c	._6
+        jr      c	@_6
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -16564,16 +16564,16 @@ boss_capsule_process:                                                           
         ld      BC      [$.SONIC.X]
         and     A
         sbc     HL      BC
-        jr      nc	._5
+        jr      nc	@_5
 	
         ld      DE      $001d
-._5     ld      L	[IX`mob+%mob.X+0]
+@_5     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
-        jp      ._7
+        jp      @_7
         
-._6     ld      HL      [$.SONIC.X]
+@_6     ld      HL      [$.SONIC.X]
         ld      BC      $000C
         add     HL      BC
         ld      C	L
@@ -16595,7 +16595,7 @@ boss_capsule_process:                                                           
         and     %00011111
         ld      C	A
         ld      B	$00
-        ld      HL      ._750e
+        ld      HL      @_750e
         add     HL      BC
         ld      C	[HL]
         ld      L	[IX`mob+%mob.Y+0]
@@ -16614,26 +16614,26 @@ boss_capsule_process:                                                           
         cp      $03
         ret     nz
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._7540
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._7540
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_7540
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_7540
         bit     1	[IY`vars+%vars.flags6]
-        jr      nz	._9
+        jr      nz	@_9
 	
         set     1	[IY`vars+%vars.flags6]
         
         ;Stop Sonic's movement (reset speed and direction)
-._7     xor     A`zero
+@_7     xor     A`zero
         ld      L`zero	A`zero
         ld      H`zero	A`zero
         ld      [$.SONIC.Xspeed]	HL`zero
         ld      [$.SONIC.Xdirection]	A`zero
         
-._8     bit     1	[IY`vars+%vars.flags6]
+@_8     bit     1	[IY`vars+%vars.flags6]
         ret     z
 	
-._9     ld      A	[IX`mob+%mob.unknown12]
+@_9     ld      A	[IX`mob+%mob.unknown12]
         cp      $08
-        jr      nc	._10
+        jr      nc	@_10
 	
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
@@ -16645,8 +16645,8 @@ boss_capsule_process:                                                           
         inc     [IX`mob+%mob.unknown12]
         ret
         
-._10    bit     1	[IX`mob+%mob.flags]
-        jr      nz	._11
+@_10    bit     1	[IX`mob+%mob.flags]
+        jr      nz	@_11
 	
         ld      A		$A0
         ld      [$.D289]	A	
@@ -16658,7 +16658,7 @@ boss_capsule_process:                                                           
 		;
         
         set     1	[IX`mob+%mob.flags]
-._11    xor     A`zero
+@_11    xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
         res     5	[IY`vars+%vars.flags0]
@@ -16669,7 +16669,7 @@ boss_capsule_process:                                                           
         call    \\math\_LABEL_625_57
         and     %00000001
         add     A	$23
-        call    ._74b6
+        call    @_74b6
         inc     [IX`mob+%mob.unknown16]
         ld      A	[IX`mob+%mob.unknown16]
         cp      $0C
@@ -16680,7 +16680,7 @@ boss_capsule_process:                                                           
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._74b6  ld      [$.D216]	A										;$74B6
+@_74b6  ld      [$.D216]	A										;$74B6
         call    \\findEmptyMob
         ret     c
 	
@@ -16721,23 +16721,23 @@ boss_capsule_process:                                                           
 	
 	%byte
 	
-._750e  $15 $12 $11 $10 $10 $0F $0E $0D $03 $03 $03 $03 $03 $03 $03 $03
+@_750e  $15 $12 $11 $10 $10 $0F $0E $0D $03 $03 $03 $03 $03 $03 $03 $03
         $03 $03 $03 $03 $03 $03 $03 $03 $0D $0E $0F $10 $10 $11 $12 $15
 
         ;sprite layout
-._752e  $00 $02 $04 $06 $FF $FF
+@_752e  $00 $02 $04 $06 $FF $FF
         $20 $22 $24 $26 $FF $FF
         $40 $42 $44 $46 $FF $FF
-._7540  $00 $08 $0A $06 $FF $FF
+@_7540  $00 $08 $0A $06 $FF $FF
         $20 $22 $24 $26 $FF $FF
         $40 $42 $44 $46 $FF $FF
-._7552  $00 $68 $6A $06 $FF $FF
+@_7552  $00 $68 $6A $06 $FF $FF
         $20 $22 $24 $26 $FF $FF
         $40 $42 $44 $46 $FF $FF
 
-._7564  $00 $00 $30 $00 $60 $19 $62 $19 $61 $19 $63 $19 $10 $00 $30 $00
+@_7564  $00 $00 $30 $00 $60 $19 $62 $19 $61 $19 $63 $19 $10 $00 $30 $00
         $64 $19 $66 $19 $65 $19 $67 $19
-._757c  $00 $00 $20 $00 $00 $00 $00 $00 $49 $19 $4B $19 $10 $00 $20 $00
+@_757c  $00 $00 $20 $00 $00 $00 $00 $00 $49 $19 $4B $19 $10 $00 $20 $00
         $00 $00 $00 $00 $4D $19 $4F $19
 	;
 
@@ -16749,57 +16749,57 @@ boss_freeBird_process:                                                          
         ld      [IX`mob+%mob.width]     12
         ld      [IX`mob+%mob.height]    16
         bit     7   [IX`mob+%mob.flags]
-        jr      z	._1
+        jr      z	@_1
 	
         ld      [IX`mob+%mob.Yspeed+0]      $00
         ld      [IX`mob+%mob.Yspeed+1]      $FD
         ld      [IX`mob+%mob.Ydirection]    $FF
-._1     ld      DE                  $0012
+@_1     ld      DE                  $0012
         ld      A                   [$.LEVEL_SOLIDITY]
         cp      $03
-        jr      nz	._2
+        jr      nz	@_2
 	
         ld      DE                  $0038
-._2     ld      L                   [IX`mob+%mob.Yspeed+0]
+@_2     ld      L                   [IX`mob+%mob.Yspeed+0]
         ld      H                   [IX`mob+%mob.Yspeed+1]
         ld      A                   [IX`mob+%mob.Ydirection]
         add     HL                  DE
         adc     A                   $00
         ld      C                   A
-        jp      m	._3
+        jp      m	@_3
 	
         ld      A                   H
         cp      $02
-        jr      c	._3
+        jr      c	@_3
 	
         ld      HL                  $0200
         ld      C                   $00
-._3     ld      [IX`mob+%mob.Yspeed+0]      L
+@_3     ld      [IX`mob+%mob.Yspeed+0]      L
         ld      [IX`mob+%mob.Yspeed+1]      H
         ld      [IX`mob+%mob.Ydirection]    C
         ld      HL                  $FE00
         ld      A                   [$.LEVEL_SOLIDITY]
         cp      $03
-        jr      nz	._4
+        jr      nz	@_4
 	
         ld      HL                  $FE80
-._4     ld      [IX`mob+%mob.Xspeed+0]      L
+@_4     ld      [IX`mob+%mob.Xspeed+0]      L
         ld      [IX`mob+%mob.Xspeed+1]      H
         ld      [IX`mob+%mob.Xdirection]    $FF
-        ld      BC                  ._7629
+        ld      BC                  @_7629
         ld      A                   [$.LEVEL_SOLIDITY]
         and     A
-        jr      z	._5
+        jr      z	@_5
 	
-        ld      BC                  ._762e
+        ld      BC                  @_762e
         cp      $03
-        jr      nz	._5
+        jr      nz	@_5
 	
-        ld      BC                  ._7633
-._5     ld      DE                  ._7638
+        ld      BC                  @_7633
+@_5     ld      DE                  @_7638
         call    animateMob
         
-._7612  ld      L                   [IX`mob+%mob.X+0]
+@_7612  ld      L                   [IX`mob+%mob.X+0]
         ld      H                   [IX`mob+%mob.X+1]
         ld      DE                  $0010
         add     HL                  DE
@@ -16813,12 +16813,12 @@ boss_freeBird_process:                                                          
 
 	%byte
 	
-._7629  $00 $02 $01 $02 $FF
-._762e  $02 $04 $03 $04 $FF
-._7633  $04 $03 $05 $03 $FF
+@_7629  $00 $02 $01 $02 $FF
+@_762e  $02 $04 $03 $04 $FF
+@_7633  $04 $03 $05 $03 $FF
 
         ;sprite layout
-._7638  $10 $12 $FF $FF $FF $FF
+@_7638  $10 $12 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
@@ -16851,24 +16851,24 @@ boss_freeRabbit_process:                                                        
         ld      [IX`mob+%mob.width]     12
         ld      [IX`mob+%mob.height]    32
         
-	ld      HL	._7760
+	ld      HL	@_7760
         ld      A       [$.LEVEL_SOLIDITY]
         and     A
-        jr      z	._1
+        jr      z	@_1
 	
-        ld      HL	._777b
+        ld      HL	@_777b
         dec     A
-        jr      z	._1
+        jr      z	@_1
 	
-        ld      HL	._7796
+        ld      HL	@_7796
         dec     A
-        jr      z	._1
+        jr      z	@_1
 	
-        ld      HL	._77b1
-._1     ld      [IX`mob+%mob.spriteLayout+0]    L
+        ld      HL	@_77b1
+@_1     ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         bit     7   [IX`mob+%mob.flags]
-        jr      z	._4
+        jr      z	@_4
         
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+0]      A`zero
@@ -16878,22 +16878,22 @@ boss_freeRabbit_process:                                                        
         ld      [IX`mob+%mob.Xspeed+1]      A`zero
         ld      [IX`mob+%mob.Xdirection]    A`zero
         
-        ld      HL	._7752
+        ld      HL	@_7752
         ld      A 	[$.LEVEL_SOLIDITY]
         ld      C 	A
         and     A
-        jr      z	._2
+        jr      z	@_2
 	
-        ld      HL	._776d
+        ld      HL	@_776d
         dec     A
-        jr      z	._2
+        jr      z	@_2
 	
-        ld      HL	._7788
+        ld      HL	@_7788
         dec     A
-        jr      z	._2
+        jr      z	@_2
 	
-        ld      HL	._77a3
-._2     ld      [IX`mob+%mob.spriteLayout+0]    L
+        ld      HL	@_77a3
+@_2     ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
@@ -16903,28 +16903,28 @@ boss_freeRabbit_process:                                                        
         ld      HL	$FFFC
         ld      A       C
         and     A
-        jr      z	._3
+        jr      z	@_3
 	
         ld      HL	$FFFE
-._3     ld      [IX`mob+%mob.Yspeed+0]      $00
+@_3     ld      [IX`mob+%mob.Yspeed+0]      $00
         ld      [IX`mob+%mob.Yspeed+1]      L
         ld      [IX`mob+%mob.Ydirection]    H
-._4     ld      L 	[IX`mob+%mob.Yspeed+0]
+@_4     ld      L 	[IX`mob+%mob.Yspeed+0]
         ld      H 	[IX`mob+%mob.Yspeed+1]
         ld      A 	[IX`mob+%mob.Ydirection]
         ld      DE	$0028
         add     HL	DE
         adc     A 	$00
         ld      C 	A
-        jp      m	._5
+        jp      m	@_5
 	
         ld      A	H
         cp      $02
-        jr      c	._5
+        jr      c	@_5
 	
         ld      HL	$0200
         ld      C       $00
-._5     ld      [IX`mob+%mob.Yspeed+0]      L
+@_5     ld      [IX`mob+%mob.Yspeed+0]      L
         ld      [IX`mob+%mob.Yspeed+1]      H
         ld      [IX`mob+%mob.Ydirection]    C
         ld      [IX`mob+%mob.Xspeed+0]      $80
@@ -16936,35 +16936,35 @@ boss_freeRabbit_process:                                                        
 	%byte
 	
         ;sprite layout
-._7752  $70, $72, $FF, $FF, $FF, $FF
+@_7752  $70, $72, $FF, $FF, $FF, $FF
         $54, $56, $FF, $FF, $FF, $FF
         $FF, $FF
         
-._7760  $5C, $5E, $FF, $FF, $FF, $FF
+@_7760  $5C, $5E, $FF, $FF, $FF, $FF
         $58, $5A, $FF, $FF, $FF, $FF
         $FF
         
-._776d  $FE, $FF, $FF, $FF, $FF, $FF
+@_776d  $FE, $FF, $FF, $FF, $FF, $FF
         $34, $36, $FF, $FF, $FF, $FF
         $FF, $FF
         
-._777b  $FE, $FF, $FF, $FF, $FF, $FF
+@_777b  $FE, $FF, $FF, $FF, $FF, $FF
         $38, $3A, $FF, $FF, $FF, $FF
         $FF
         
-._7788  $FE, $FF, $FF, $FF, $FF, $FF
+@_7788  $FE, $FF, $FF, $FF, $FF, $FF
         $3C, $3E, $FF, $FF, $FF, $FF
         $FF, $FF
         
-._7796  $FE, $FF, $FF, $FF, $FF, $FF
+@_7796  $FE, $FF, $FF, $FF, $FF, $FF
         $1C, $1E, $FF, $FF, $FF, $FF
         $FF
         
-._77a3  $FE, $FF, $FF, $FF, $FF, $FF
+@_77a3  $FE, $FF, $FF, $FF, $FF, $FF
         $14, $16, $FF, $FF, $FF, $FF
         $FF, $FF
         
-._77b1  $FE, $FF, $FF, $FF, $FF, $FF
+@_77b1  $FE, $FF, $FF, $FF, $FF, $FF
         $18, $1A, $FF, $FF, $FF, $FF
         $FF
 	;
@@ -16977,10 +16977,10 @@ _77be:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.D2EC]
         cp      $08
-        jr      nc	._4
+        jr      nc	@_4
         ld      A       [$.D2B1]
         and     A
-        jp      nz	._2
+        jp      nz	@_2
         ld      HL              $0c08
         ld      [$.TEMP6]       HL
         call    detectCollisionWithSonic
@@ -16990,10 +16990,10 @@ _77be:                                                                          
         ret     nz
         ld      A       [$.SONIC.flags]
         rrca    
-        jr      c	._1
+        jr      c	@_1
         and     %00000010
         jp      z	hitPlayer._35fd
-._1     ld      DE      $0001
+@_1     ld      DE      $0001
         ld      HL      [$.SONIC.Yspeed]
         ld      A       L
         cpl     
@@ -17033,14 +17033,14 @@ _77be:                                                                          
         inc     A
         ld      [$.D2EC]        A
         
-._2     ld      HL      [$.D216]
-        ld      DE      ._7922
+@_2     ld      HL      [$.D216]
+        ld      DE      @_7922
         add     HL      DE
         bit     1       [IX`mob+%mob.flags]
-        jr      z       ._3
+        jr      z       @_3
         ld      DE      $0012
         add     HL      DE
-._3     ld      [IX`mob+%mob.spriteLayout+0]    L
+@_3     ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         
         ld      HL      $.D2ED
@@ -17051,7 +17051,7 @@ _77be:                                                                          
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     xor     A`zero
+@_4     xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]          A`zero
         ld      [IX`mob+%mob.Xspeed+1]          A`zero
         ld      [IX`mob+%mob.Xdirection]        A`zero
@@ -17062,17 +17062,17 @@ _77be:                                                                          
         ld      DE      $0024
         ld      HL      [$.D216]
         bit     1       [IX`mob+%mob.flags]
-        jr      z       ._5
+        jr      z       @_5
         ld      DE      $0036
-._5     add     HL      DE
-        ld      DE      ._7922
+@_5     add     HL      DE
+        ld      DE      @_7922
         add     HL      DE
         ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         ld      HL      $.D2ED+1                                ;lo-addr of $.D2ED
         ld      A       [HL]
         cp      $0A
-        jp      nc      ._6
+        jp      nc      @_6
         dec     HL
         dec     [HL]
         ret     nz
@@ -17082,9 +17082,9 @@ _77be:                                                                          
         call    _7a3a
         ret
         
-._6     ld      A       [$.D2ED+1]                              ;lo-addr of $.D2ED
+@_6     ld      A       [$.D2ED+1]                              ;lo-addr of $.D2ED
         cp      $3A
-        jr      nc      ._7
+        jr      nc      @_7
         ld      L       [IX`mob+%mob.Ysubpixel]
         ld      H       [IX`mob+%mob.Y+0]
         ld      A       [IX`mob+%mob.Y+1]
@@ -17094,14 +17094,14 @@ _77be:                                                                          
         ld      [IX`mob+%mob.Ysubpixel] L
         ld      [IX`mob+%mob.Y+0]       H
         ld      [IX`mob+%mob.Y+1]       A
-._7     ld      HL      $.D2ED+1                                ;lo-addr of $.D2ED
+@_7     ld      HL      $.D2ED+1                                ;lo-addr of $.D2ED
         ld      A       [HL]
         cp      $5A
-        jr      nc      ._8
+        jr      nc      @_8
         inc     [HL]
         ret
         
-._8     jr      nz      ._9
+@_8     jr      nz      @_9
         ld      [HL]    $5B
         
 	;(we can compile with, or without, audio)
@@ -17117,14 +17117,14 @@ _77be:                                                                          
         
         ld      [IY`vars+%vars.spriteUpdateCount]       A
         
-._9     ld      [IX`mob+%mob.Xspeed+0]          $00
+@_9     ld      [IX`mob+%mob.Xspeed+0]          $00
         ld      [IX`mob+%mob.Xspeed+1]          $03
         ld      [IX`mob+%mob.Xdirection]        $00
         ld      [IX`mob+%mob.Yspeed+0]          $60
         ld      [IX`mob+%mob.Yspeed+1]          $FF
         ld      [IX`mob+%mob.Ydirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._7922
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._7922
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_7922
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_7922
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      [$.CAMERA_X]
@@ -17146,11 +17146,11 @@ _77be:                                                                          
         
         ld      A       [$.CURRENT_LEVEL]
         cp      $0B
-        jr      nz      ._10
+        jr      nz      @_10
         
         set     1       [IY`vars+%vars.flags9]
         
-._10    ;UNKNOWN
+@_10    ;UNKNOWN
         ld      HL      $DA28
         ld      DE      $2000
         ld      A       12
@@ -17160,7 +17160,7 @@ _77be:                                                                          
         ;sprite layouts
         %byte
         
-._7922  $2A $2C $2E $30 $32 $FF
+@_7922  $2A $2C $2E $30 $32 $FF
         $4A $4C $4E $50 $52 $FF
         $6A $6C $6E $70 $72 $FF
         
@@ -17233,11 +17233,11 @@ _79fa:                                                                          
         ld      C       $04
         
         bit     7       [IX`mob+%mob.Xdirection]
-        jr      z       ._1
+        jr      z       @_1
         
         ld      HL              $0028
         ld      C               $00
-._1     ld      [$.TEMP4]       HL
+@_1     ld      [$.TEMP4]       HL
         ld      [$.TEMP6]       DE
         add     A               C
         call    _3581
@@ -17350,12 +17350,12 @@ flower_process:                                                                 
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      [IX`mob+%mob.unknown11]	$32
         ld      [IX`mob+%mob.unknown12]	$00
         set     0	[IX`mob+%mob.flags]
-._1     ld      BC      $0000
+@_1     ld      BC      $0000
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.D2AB]	HL
@@ -17363,18 +17363,18 @@ flower_process:                                                                 
         ld      H	[IX`mob+%mob.Y+1]
         ld      A	[$.FRAMECOUNT]
         rrca    
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      DE      $0010
         add     HL      DE
         inc     BC
-._2     ld      [$.D2AD]	HL
+@_2     ld      [$.D2AD]	HL
         ld      A	[IX`mob+%mob.unknown12]
         add     A	A
         add     A	A
         ld      E	A
         ld      D	$00
-        ld      HL      ._7b85
+        ld      HL      @_7b85
         add     HL      DE
         push    HL
         add     HL      BC
@@ -17384,7 +17384,7 @@ flower_process:                                                                 
         add     A	A
         ld      E	A
         ld      D	$00
-        ld      HL      ._7b5d
+        ld      HL      @_7b5d
         add     HL      DE
         ld      [$.D2AF]	HL
         pop     HL
@@ -17408,10 +17408,10 @@ flower_process:                                                                 
         ret
 	
 	%byte
-._7b5d  $00 $00 $00 $00 $00 $00 $00 $00 $F0 $00 $F1 $00 $E2 $00 $F2 $00
+@_7b5d  $00 $00 $00 $00 $00 $00 $00 $00 $F0 $00 $F1 $00 $E2 $00 $F2 $00
         $00 $00 $00 $00 $F0 $00 $F1 $00 $E2 $00 $F2 $00 $2E $00 $2F $00
         $2E $00 $2F $00 $2E $00 $2F $00  
-._7b85  $00 $01 $08 $00 $02 $03 $78 $00 $01 $04 $08 $00 $02 $03 $78 $00
+@_7b85  $00 $01 $08 $00 $02 $03 $78 $00 $01 $04 $08 $00 $02 $03 $78 $00
 	;
 
 meta_blink_process:													;$7B95
@@ -17422,7 +17422,7 @@ meta_blink_process:													;$7B95
         set     0	[IY`vars+%vars.flags9]
         ld      A	[$.FRAMECOUNT]
         and     %00000001
-        jp      z	._1
+        jp      z	@_1
 	
         ld      A	[IX`mob+%mob.unknown12]
         ld      C	A
@@ -17430,7 +17430,7 @@ meta_blink_process:													;$7B95
         add     A	C
         ld      C	A
         ld      B	$00
-        ld      HL      ._7c17
+        ld      HL      @_7c17
         add     HL      BC
         ld      E	[HL]
         inc     HL
@@ -17440,11 +17440,11 @@ meta_blink_process:													;$7B95
         ld      [IX`mob+%mob.spriteLayout+0]	E
         ld      [IX`mob+%mob.spriteLayout+1]	D
         ld      [$.D302]	A
-        jr      ._2
+        jr      @_2
         
-._1     ld      [IX`mob+%mob.spriteLayout+0]	A
+@_1     ld      [IX`mob+%mob.spriteLayout+0]	A
         ld      [IX`mob+%mob.spriteLayout+1]	A
-._2     ld      L	[IX`mob+%mob.Yspeed+0]
+@_2     ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
         ld      A	[IX`mob+%mob.Ydirection]
         ld      DE      $0020
@@ -17459,13 +17459,13 @@ meta_blink_process:													;$7B95
         inc     H
         xor     A`zero
         sbc     HL      DE
-        jr      nc	._3
+        jr      nc	@_3
 	
         ld      [IX`mob+%mob.type]	$FF      		;remove object?
         res     0	[IY`vars+%vars.flags9]
         ret
         
-._3     ld      [IX`mob+%mob.Xspeed+0]		A
+@_3     ld      [IX`mob+%mob.Xspeed+0]		A
         ld      [IX`mob+%mob.Xspeed+1]		A
         ld      [IX`mob+%mob.Xdirection]	A
         dec     [IX`mob+%mob.unknown11]
@@ -17481,20 +17481,20 @@ meta_blink_process:													;$7B95
         ret
 
 	%word	%byte
-._7c17  ._7c29	$1C
-        ._7c31	$1C
-        ._7c39	$1C
-        ._7c29	$1D
-        ._7c31	$1D
-        ._7c39	$1D
+@_7c17  @_7c29	$1C
+        @_7c31	$1C
+        @_7c39	$1C
+        @_7c29	$1D
+        @_7c31	$1D
+        @_7c39	$1D
         
         ;sprite layout
 	%byte
-._7c29  $B4 $B6 $FF $FF $FF $FF
+@_7c29  $B4 $B6 $FF $FF $FF $FF
         $FF $FF
-._7c31  $B8 $BA $FF $FF $FF $FF
+@_7c31  $B8 $BA $FF $FF $FF $FF
         $FF $FF
-._7c39  $BC $BE $FF $FF $FF $FF
+@_7c39  $BC $BE $FF $FF $FF $FF
         $FF $FF
 	;
 
@@ -17506,16 +17506,16 @@ _7c41:                                                                          
         ;---------------------------------------------------------------------------------------------------------------
         ld      L       [IX`mob+%mob.unknown17]
 
-._1     ld      H       $00
+@_1     ld      H       $00
         add     HL      BC
         ld      A       [HL]
         cp      $FF
-        jr      nz      ._2
+        jr      nz      @_2
         ld      L       $00
         ld      [IX`mob+%mob.unknown17] L
-        jp      ._1
+        jp      @_1
         
-._2     inc     HL
+@_2     inc     HL
         push    HL
         ld      L       A
         ld      H       $00
@@ -17554,11 +17554,11 @@ findEmptyMob:                                                                   
         ld      DE      %mob.size
         ld      B       31                                      ;number of mob slots, less Sonic?
         
-.loop   ld      A       [HL]
+@loop   ld      A       [HL]
         cp      $FF                                             ;"No Mob" number
         ret     z                                               ;if = $FF then exit, empty slot found
         add     HL      DE
-        djnz    .loop
+        djnz    @loop
         
         ;no free mob place found!
         scf                                                     ;set the carry as a return flag
@@ -17617,10 +17617,10 @@ _LABEL_7CC1_12:                                                                 
         xor     A`zero                                          ;set A to 0
         
         bit     7       D
-        jr      z       ._1
+        jr      z       @_1
 	
         dec     A
-._1     add     HL      DE
+@_1     add     HL      DE
         adc     A       [IX`mob+%mob.Y+1]
         ld      L       H
         ld      H       A
@@ -17656,7 +17656,7 @@ badnick_chopper_process:                                                        
         
         ld      A       [IX`mob+%mob.unknown14]
         and     A
-        jr      z	._1
+        jr      z	@_1
         
         dec     [IX`mob+%mob.unknown14]
         
@@ -17668,11 +17668,11 @@ badnick_chopper_process:                                                        
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._1     bit     0       [IX`mobs+%mob.flags]
-        jr      nz	._3
+@_1     bit     0       [IX`mobs+%mob.flags]
+        jr      nz	@_3
         
         bit     1       [IX`mobs+%mob.flags]
-        jr      nz	._2
+        jr      nz	@_2
         
         ld      L                   [IX`mob+%mob.Y+0]
         ld      H                   [IX`mob+%mob.Y+1]
@@ -17688,7 +17688,7 @@ badnick_chopper_process:                                                        
         ld      [IX`mob+%mob.X+1]   H
         set     1       [IX`mob+%mob.flags]
         
-._2     ld      [IX`mob+%mob.Yspeed+0]      $00
+@_2     ld      [IX`mob+%mob.Yspeed+0]      $00
         ld      [IX`mob+%mob.Yspeed+1]      $FC
         ld      [IX`mob+%mob.Ydirection]    $FF
         set     0       [IX`mob+%mob.flags]
@@ -17700,9 +17700,9 @@ badnick_chopper_process:                                                        
 		;
         
         ld      [IX`mob+%mob.unknown11] $03
-        jr      ._5
+        jr      @_5
         
-._3     ld      L       [IX`mob+%mob.Yspeed+0]
+@_3     ld      L       [IX`mob+%mob.Yspeed+0]
         ld      H       [IX`mob+%mob.Yspeed+1]
         ld      A       [IX`mob+%mob.Ydirection]
         ld      DE      $0010
@@ -17710,15 +17710,15 @@ badnick_chopper_process:                                                        
         adc     A       $00
         ex      DE      HL
         and     A
-        jp      m	._4
+        jp      m	@_4
 	
         ld      HL      $0400
         and     A
         sbc     HL      DE
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      DE      $0400
-._4     ld      [IX`mob+%mob.Yspeed+0]      E
+@_4     ld      [IX`mob+%mob.Yspeed+0]      E
         ld      [IX`mob+%mob.Yspeed+1]      D
         ld      [IX`mob+%mob.Ydirection]    A
         ld      E       [IX`mob+$12]
@@ -17727,7 +17727,7 @@ badnick_chopper_process:                                                        
         ld      H       [IX`mob+%mob.Y+1]
         xor     A
         sbc     HL      DE
-        jr      c	._5
+        jr      c	@_5
 	
         ld      [IX`mob+%mob.Ysubpixel]     A
         ld      [IX`mob+%mob.Y+0]           E
@@ -17737,18 +17737,18 @@ badnick_chopper_process:                                                        
         ld      [IX`mob+%mob.Ydirection]    A
         ld      [IX`mob+%mob.unknown14]     $1E
         res     0       [IX`mob+%mob.flags]
-._5     ld      DE                  ._7de1
-        ld      BC                  ._7ddc
+@_5     ld      DE                  @_7de1
+        ld      BC                  @_7ddc
         call    animateMob
         ld      A       [IX`mob+%mob.unknown11]
         and     A
-        jr      z	._6
+        jr      z	@_6
         
         dec     [IX`mob+%mob.unknown11]
-        ld      [IX`mob+%mob.spriteLayout+0]    (LO ._7df7)
-        ld      [IX`mob+%mob.spriteLayout+1]    (HI ._7df7)
+        ld      [IX`mob+%mob.spriteLayout+0]    (LO @_7df7)
+        ld      [IX`mob+%mob.spriteLayout+1]    (HI @_7df7)
         
-._6     ld      HL              $0204
+@_6     ld      HL              $0204
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         
@@ -17758,18 +17758,18 @@ badnick_chopper_process:                                                        
         
         ret
 
-._7ddc  %byte
+@_7ddc  %byte
         $00 $04 $01 $04 $FF
 
         ;sprite layout
         %byte
-._7de1  $60 $62 $FF $FF $FF $FF
+@_7de1  $60 $62 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
         $64 $66 $FF $FF
         
-._7df7  $FF $FF $FF $FF $68 $6A
+@_7df7  $FF $FF $FF $FF $68 $6A
         $FF $FF $FF $FF $FF
 	;
 
@@ -17788,35 +17788,35 @@ mob_platform_fallVert:                                                          
         
         ld      [IX`mob+%mob.width]             $0C
         ld      [IX`mob+%mob.height]            $10
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._7e89
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._7e89
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_7e89
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_7e89
         bit     0       [IX`mob+%mob.flags]
-        jr      nz      ._7e3c
+        jr      nz      @_7e3c
         ld      A       [IX`mob+%mob.Y+0]
         ld      [IX`mob+%mob.unknown12] A
         ld      A       [IX`mob+%mob.Y+1]
         ld      [IX`mob+%mob.unknown13] A
         ld      [IX`mob+%mob.unknown14] $C0
         set     0       [IX`mob+%mob.flags]
-._7e3c  ld      [IX`mob+%mob.Yspeed+0]  $80
+@_7e3c  ld      [IX`mob+%mob.Yspeed+0]  $80
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
         ld      [IX`mob+%mob.Ydirection]        A`zero
         
         ld      A       [$.SONIC.Ydirection]
         and     A
-        jp      m       ._1
+        jp      m       @_1
         
         ld      HL              $0806
         ld      [$.TEMP6]       HL
         call    detectCollisionWithSonic
-        jr      c       ._1
+        jr      c       @_1
         
         ld      BC       $0010
         ld      E       [IX`mob+%mob.Yspeed+0]
         ld      D       [IX`mob+%mob.Yspeed+1]
         call    _LABEL_7CC1_12
-._1     ld      A       [$.FRAMECOUNT]
+@_1     ld      A       [$.FRAMECOUNT]
         and     $03
         ret     nz
         inc     [IX`mob+%mob.unknown11]
@@ -17836,7 +17836,7 @@ mob_platform_fallVert:                                                          
         ;sprite layout
         %byte
         
-._7e89  $FE $FF $FF $FF $FF $FF
+@_7e89  $FE $FF $FF $FF $FF $FF
         $18 $1A $FF $FF $FF $FF
         $28 $2E $FF $FF $FF $FF
 	;
@@ -17856,8 +17856,8 @@ mob_platform_fallHoriz:                                                         
         
         ld      [IX`mob+%mob.width]     $1A
         ld      [IX`mob+%mob.height]    $10
-        ld      [IX`mob+%mob.spriteLayout+0]    LO .layout
-        ld      [IX`mob+%mob.spriteLayout+1]    HI .layout
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @layout
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @layout
         bit     0       [IX`mob+%mob.flags]
         jp      nz      mob_platform_fallVert._7e3c
         ld      A	[IX`mob+%mob.Y+0]
@@ -17870,7 +17870,7 @@ mob_platform_fallHoriz:                                                         
         
         ;sprite layout
         %byte
-.layout $FE $FF $FF $FF $FF $FF                                                                                 ;$7ED9
+@layout $FE $FF $FF $FF $FF $FF                                                                                 ;$7ED9
         $6C $6E $6E $48 $FF $FF
         $FF
 	;
@@ -17885,7 +17885,7 @@ mob_platform_roll:                                                              
         ld      [IX`mob+%mob.width]     $0A
         ld      [IX`mob+%mob.height]    $10
         bit     0       [IX`mob+%mob.flags]
-        jr      nz      ._1
+        jr      nz      @_1
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
         ld      DE      $FFE8
@@ -17893,18 +17893,18 @@ mob_platform_roll:                                                              
         ld      [IX`mob+%mob.Y+0]       L
         ld      [IX`mob+%mob.Y+1]       H
         set     0       [IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.Yspeed+0]  $40
+@_1     ld      [IX`mob+%mob.Yspeed+0]  $40
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
         ld      [IX`mob+%mob.Ydirection]        A`zero
         ld      A	[IX`mob+%mob.unknown11]
         cp      $14
-        jr      c       ._2
+        jr      c       @_2
         ld      [IX`mob+%mob.Yspeed+0]          $C0
         ld      [IX`mob+%mob.Yspeed+1]          $FF
         ld      [IX`mob+%mob.Ydirection]        $FF
         
-._2     ld      A	[$.SONIC.Ydirection]
+@_2     ld      A	[$.SONIC.Ydirection]
         and     A
         jp      m       mob_platform_roll_continue._8003
         
@@ -17919,12 +17919,12 @@ mob_platform_roll:                                                              
         ld      HL      [$.SONIC.Xspeed]
         ld      A       L
         or      H
-        jr      z       ._4
+        jr      z       @_4
         ld      BC      $0012
         bit     7       H
-        jr      z       ._3
+        jr      z       @_3
         ld      BC      $FFFE
-._3     ld      DE      $0000
+@_3     ld      DE      $0000
         call    getFloorLayoutRAMAddressForMob
         ld      E       [HL]
         ld      D       $00
@@ -17943,13 +17943,13 @@ mob_platform_roll:                                                              
         and     $3F
         ld      A       D
         ld      E       D
-        jr      nz      ._5
-._4     ld      A	[$.SONIC.Xspeed+0]
+        jr      nz      @_5
+@_4     ld      A	[$.SONIC.Xspeed+0]
         ld      DE      [$.SONIC.Xspeed+1]
         sra     D
         rr      E
         rra     
-._5     ld      L       [IX`mob+%mob.X+0]
+@_5     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     A	[IX`mob+%mob.Xsubpixel]
         adc     HL      DE
@@ -17962,7 +17962,7 @@ mob_platform_roll:                                                              
         ld      [$.SONIC.X]	HL
         ld      DE      [$.SONIC.Xspeed]
         bit     7       D
-        jr      z       ._6
+        jr      z       @_6
         ld      A       E
         cpl     
         ld      E       A
@@ -17970,15 +17970,15 @@ mob_platform_roll:                                                              
         cpl     
         ld      D       A
         inc     DE
-._6     ld      L       [IX`mob+%mob.unknown12]
+@_6     ld      L       [IX`mob+%mob.unknown12]
         ld      H       [IX`mob+%mob.unknown13]
         add     HL      DE
         ld      A       H
         cp      $09
-        jr      c       ._7
+        jr      c       @_7
         sub     $09
         ld      H       A
-._7     ld      [IX`mob+%mob.unknown12] L
+@_7     ld      [IX`mob+%mob.unknown12] L
         ld      [IX`mob+%mob.unknown13] H
         ld      E       A
         ld      D       $00
@@ -17997,9 +17997,9 @@ mob_platform_roll:                                                              
 mob_platform_roll_continue:                                                                                     ;$8003
 ;=======================================================================================================================
         ;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
-._8003  ld      [IX`mob+%mob.spriteLayout+0]    LO ._8022
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._8022
-._800b  inc     [IX`mob+%mob.unknown11]
+@_8003  ld      [IX`mob+%mob.spriteLayout+0]    LO @_8022
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_8022
+@_800b  inc     [IX`mob+%mob.unknown11]
         ld      A       [IX`mob+%mob.unknown11]
         cp      $28
         ret     c
@@ -18009,10 +18009,10 @@ mob_platform_roll_continue:                                                     
 
         %byte
         
-._8019  $00 $00 $00 $12 $12 $12 $24 $24 $24
+@_8019  $00 $00 $00 $12 $12 $12 $24 $24 $24
 
         ;sprite layout
-._8022  $FE $FF $FF $FF $FF $FF
+@_8022  $FE $FF $FF $FF $FF $FF
         $3A $3C $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
 
@@ -18033,7 +18033,7 @@ boss_jungle_process:                                                            
         ld      [IX`mob+%mob.width]	32
         ld      [IX`mob+%mob.height]	28
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      HL      [$.SONIC.Y]
         ld      DE      $00E0
@@ -18080,12 +18080,12 @@ boss_jungle_process:                                                            
         
         set     0	[IX`mob+%mob.flags]
         
-._1     call    _7ca6
+@_1     call    _7ca6
         bit     0	[IX`mob+%mob.unknown11]
-        jr      nz	._2
+        jr      nz	@_2
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._81f4
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._81f4
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_81f4
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_81f4
         ld      [IX`mob+%mob.Yspeed+0]		$80
         ld      [IX`mob+%mob.Yspeed+1]		$00
         ld      [IX`mob+%mob.Ydirection]	$00
@@ -18100,17 +18100,17 @@ boss_jungle_process:                                                            
         ld      [IX`mob+%mob.Yspeed+1]		A`zero
         ld      [IX`mob+%mob.Ydirection]	A`zero
         set     0	[IX`mob+%mob.unknown11]
-._2     ld      A	[IX`mob+%mob.unknown12]
+@_2     ld      A	[IX`mob+%mob.unknown12]
         and     A
-        jp      nz	._4
+        jp      nz	@_4
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         bit     1	[IX`mob+%mob.unknown11]
-        jr      nz	._3
+        jr      nz	@_3
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._81f4
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._81f4
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_81f4
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_81f4
         res     1	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.Xspeed+0]		$00
         ld      [IX`mob+%mob.Xspeed+1]		$FF
@@ -18118,13 +18118,13 @@ boss_jungle_process:                                                            
         ld      DE      $021C
         and     A
         sbc     HL      DE
-        jp      nc	._8
+        jp      nc	@_8
 	
         ld      [IX`mob+%mob.unknown12]	$67
-        jp      ._8
+        jp      @_8
         
-._3     ld      [IX`mob+%mob.spriteLayout+0]	LO ._8206
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._8206
+@_3     ld      [IX`mob+%mob.spriteLayout+0]	LO @_8206
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8206
         set     1	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.Xspeed+0]		$00
         ld      [IX`mob+%mob.Xspeed+1]		$01
@@ -18132,42 +18132,42 @@ boss_jungle_process:                                                            
         ld      DE      $02AA
         and     A
         sbc     HL      DE
-        jp      c	._8
+        jp      c	@_8
 	
         ld      [IX`mob+%mob.unknown12]	$67
-        jp      ._8
+        jp      @_8
         
-._4     xor     A`zero
+@_4     xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]		A`zero
         ld      [IX`mob+%mob.Xspeed+1]		A`zero
         ld      [IX`mob+%mob.Xdirection]	A`zero
         ld      HL      $0001
         dec     [IX`mob+%mob.unknown12]
-        jr      z	._5
+        jr      z	@_5
 	
         ld      A	[IX`mob+%mob.unknown12]
         cp      $40
-        jr      nc	._6
+        jr      nc	@_6
 	
         ld      HL      $FFFF
         cp      $28
-        jr      c	._6
+        jr      c	@_6
 	
         cp      $34
-        jr      z	._7
+        jr      z	@_7
 	
-._5     ld      HL      $0000
-._6     ld      [IX`mob+%mob.Yspeed+0]		$00
+@_5     ld      HL      $0000
+@_6     ld      [IX`mob+%mob.Yspeed+0]		$00
         ld      [IX`mob+%mob.Yspeed+1]		L
         ld      [IX`mob+%mob.Ydirection]	H
-        jr      ._8
+        jr      @_8
         
-._7     ld      A	[IX`mob+%mob.unknown11]
+@_7     ld      A	[IX`mob+%mob.unknown11]
         xor     $02
         ld      [IX`mob+%mob.unknown11]	A
         ld      A	[$.D2EC]
         cp      $08
-        jr      nc	._8
+        jr      nc	@_8
 	
         call    \\findEmptyMob
         ret     c
@@ -18205,7 +18205,7 @@ boss_jungle_process:                                                            
         add     A	$64
         ld      [IX`mob+%mob.unknown12]	A
         pop     IX
-._8     ld      HL      $005A
+@_8     ld      HL      $005A
         ld      [$.D216]	HL
         call    _77be
         call    _79fa
@@ -18214,10 +18214,10 @@ boss_jungle_process:                                                            
         ;sprite layout
 	%byte
 	
-._81f4  $20 $22 $24 $26 $28 $FF
+@_81f4  $20 $22 $24 $26 $28 $FF
         $40 $42 $44 $46 $48 $FF
         $60 $54 $56 $58 $68 $FF
-._8206  $2A $2C $2E $30 $32 $FF
+@_8206  $2A $2C $2E $30 $32 $FF
         $4A $4C $4E $50 $52 $FF
         $6A $5A $5C $5E $72 $FF
 	;
@@ -18240,11 +18240,11 @@ unknown_8218_process:													;$8218
         ld      DE      $0002
         ld      C	$00
         and     A
-        jp      m	._1
+        jp      m	@_1
 	
         dec     C
         ld      DE      $FFFE
-._1     add     HL      DE
+@_1     add     HL      DE
         adc     A	C
         ld      [IX`mob+%mob.Xspeed+0]		L
         ld      [IX`mob+%mob.Xspeed+1]		H
@@ -18258,11 +18258,11 @@ unknown_8218_process:													;$8218
         ld      C	A
         ld      A	H
         cp      $03
-        jr      c	._2
+        jr      c	@_2
 	
         ld      HL      $0300
         ld      C	$00
-._2     ld      [IX`mob+%mob.Yspeed+0]		L
+@_2     ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
         ld      A	[$.FRAMECOUNT]
@@ -18271,14 +18271,14 @@ unknown_8218_process:													;$8218
         ld      [IX`mob+%mob.unknown11]	A	
         ld      A	[IX`mob+%mob.unknown11]
         cp      [IX`mob+%mob.unknown12]
-        jr      nc	._3
+        jr      nc	@_3
 	
-        ld      BC      ._82c1
-        ld      DE      ._82cd
+        ld      BC      @_82c1
+        ld      DE      @_82cd
         call    animateMob
         ret
         
-._3     jr      nz	._4
+@_3     jr      nz	@_4
         ld      A	[$.FRAMECOUNT]
         and     %00000001
         ret     z
@@ -18291,12 +18291,12 @@ unknown_8218_process:													;$8218
 		rst     \\sound\rst_playSFX
 		;
         
-._4     xor     A`zero
+@_4     xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]		A`zero
         ld      [IX`mob+%mob.Xspeed+1]		A`zero
         ld      [IX`mob+%mob.Xdirection]	A`zero
         
-        ld      BC      ._82c6
+        ld      BC      @_82c6
         ld      DE      _a3bb
         call    animateMob
         
@@ -18310,11 +18310,11 @@ unknown_8218_process:													;$8218
 	
 	%byte
 	
-._82c1  $00 $04 $01 $04 $FF
-._82c6  $01 $0C $02 $0C $03 $0C $FF
+@_82c1  $00 $04 $01 $04 $FF
+@_82c6  $01 $0C $02 $0C $03 $0C $FF
 
         ;sprite layout
-._82cd  $08 $0A $FF $FF $FF $FF
+@_82cd  $08 $0A $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         
@@ -18353,23 +18353,23 @@ badnick_yadrin_process:                                                         
         ld      [IX`mob+%mob.Ydirection]    A
         ld      A                   [IX`mob+%mob.unknown11]
         cp      $50
-        jr      c	._1
+        jr      c	@_1
 	
         ld      [IX`mob+%mob.Xspeed+0]      $40
         ld      [IX`mob+%mob.Xspeed+1]      $00
         ld      [IX`mob+%mob.Xdirection]    $00
-        ld      DE                  ._837e
-        ld      BC                  ._8379
+        ld      DE                  @_837e
+        ld      BC                  @_8379
         call    animateMob
-        jp      ._2
+        jp      @_2
         
-._1     ld      [IX`mob+%mob.Xspeed+0]      $C0
+@_1     ld      [IX`mob+%mob.Xspeed+0]      $C0
         ld      [IX`mob+%mob.Xspeed+1]      $FF
         ld      [IX`mob+%mob.Xdirection]    $FF
-        ld      DE                  ._837e
-        ld      BC                  ._8374
+        ld      DE                  @_837e
+        ld      BC                  @_8374
         call    animateMob
-._2     ld      A	[$.FRAMECOUNT]
+@_2     ld      A	[$.FRAMECOUNT]
         and     %00000111
         ret     nz
 	
@@ -18382,11 +18382,11 @@ badnick_yadrin_process:                                                         
         ret
         
 	%byte
-._8374  $00, $06, $01, $06, $FF
-._8379  $02, $06, $03, $06, $FF
+@_8374  $00, $06, $01, $06, $FF
+@_8379  $02, $06, $03, $06, $FF
 
         ;sprite layout
-._837e  $FE, $00, $02, $FF, $FF, $FF
+@_837e  $FE, $00, $02, $FF, $FF, $FF
         $20, $22, $24, $FF, $FF, $FF
         $FF, $FF, $FF, $FF, $FF, $FF
 
@@ -18411,7 +18411,7 @@ platform_bridge_process:                                                        
         ld      [IX`mob+%mob.width]	14
         ld      [IX`mob+%mob.height]	8
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._2
+        jr      nz	@_2
         
         xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
@@ -18421,20 +18421,20 @@ platform_bridge_process:                                                        
         ld      [$.TEMP1]	HL`zero
         
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         call    \\math\_LABEL_625_57
         and     %00011111
         inc     A
         ld      [IX`mob+%mob.unknown11]	A
         set     1	[IX`mob+%mob.flags]
-._1     dec     [IX`mob+%mob.unknown11]
-        jp      nz	._4
+@_1     dec     [IX`mob+%mob.unknown11]
+        jp      nz	@_4
 	
         ld      [IX`mob+%mob.unknown11]	$01
         ld      A	[$.D2AB+1]
         and     $80
-        jp      z	._4
+        jp      z	@_4
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -18444,7 +18444,7 @@ platform_bridge_process:                                                        
         ld      DE      $000e
         add     HL      DE
         ld      [$.D2AD]	HL
-        ld      HL      ._848e
+        ld      HL      @_848e
         ld      [$.D2AF]	HL
         set     0	[IX`mob+%mob.flags]
         ld      A	$20
@@ -18454,8 +18454,8 @@ platform_bridge_process:                                                        
 		rst     \\sound\rst_playSFX
 		;
 	
-._2     ld      [IX`mob+%mob.spriteLayout+0]	LO ._8481
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._8481
+@_2     ld      [IX`mob+%mob.spriteLayout+0]	LO @_8481
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8481
         ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
         ld      A	[IX`mob+%mob.Ydirection]
@@ -18465,10 +18465,10 @@ platform_bridge_process:                                                        
         ld      C	A
         ld      A	H
         cp      $04
-        jr      c	._3
+        jr      c	@_3
 	
         ld      H	$04
-._3     ld      [IX`mob+%mob.Yspeed+0]		L
+@_3     ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
         ld      [$.TEMP1]	HL
@@ -18478,12 +18478,12 @@ platform_bridge_process:                                                        
         ld      H	[IX`mob+%mob.Y+1]
         and     A
         sbc     HL      DE
-        jr      c	._4
+        jr      c	@_4
 	
         ld      [IX`mob+%mob.type]	$FF      		;remove object?
         ret
         
-._4     ld      HL      	$0402
+@_4     ld      HL      	$0402
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         ret     c
@@ -18499,10 +18499,10 @@ platform_bridge_process:                                                        
 
         ;sprite layout
 	%byte
-._8481  $FE $FF $FF $FF $FF $FF
+@_8481  $FE $FF $FF $FF $FF $FF
         $70 $72 $FF $FF $FF $FF
         $FF
-._848e  $00 $00 $00 $00 $00 $00 $00 $00
+@_848e  $00 $00 $00 $00 $00 $00 $00 $00
 	;
 
 mob_boss_bridge:                                                                                                ;$8496
@@ -18516,7 +18516,7 @@ mob_boss_bridge:                                                                
         ld      [IX`mob+%mob.spriteLayout+0]    LO _865a
         ld      [IX`mob+%mob.spriteLayout+1]    HI _865a
         bit     0       [IX`mob+%mob.flags]
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      HL      $03A0
         ld      DE      $0300
@@ -18541,9 +18541,9 @@ mob_boss_bridge:                                                                
 		;
         
         set     0       [IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      nz      ._2
+        jr      nz      @_2
 	
         call    \\math\_LABEL_625_57
         and     %00000001
@@ -18566,10 +18566,10 @@ mob_boss_bridge:                                                                
         inc     HL
         ld      [IX`mob+%mob.Y+1]       A
         inc     [IX`mob+%mob.unknown11]
-        jp      ._6
+        jp      @_6
         
-._2     dec     A
-        jr      nz      ._3
+@_2     dec     A
+        jr      nz      @_3
 	
         ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $FF
@@ -18579,14 +18579,14 @@ mob_boss_bridge:                                                                
         ld      D       [IX`mob+%mob.Y+1]
         xor     A`zero
         sbc     HL      DE
-        jp      c       ._6
+        jp      c       @_6
 	
         inc     [IX`mob+%mob.unknown11]
         ld      [IX`mob+%mob.unknown12] A`zero
-        jp      ._6
+        jp      @_6
         
-._3     dec     A
-        jr      nz      ._5
+@_3     dec     A
+        jr      nz      @_5
         
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+0]          A`zero
@@ -18595,12 +18595,12 @@ mob_boss_bridge:                                                                
         inc     [IX`mob+%mob.unknown12]
         ld      A	[IX`mob+%mob.unknown12]
         cp      $64
-        jp      nz      ._6
+        jp      nz      @_6
 	
         inc     [IX`mob+%mob.unknown11]
         ld      A	[$.D2EC]
         cp      $08
-        jr      nc      ._6
+        jr      nc      @_6
 	
         ld      HL      [$.SONIC.X]
         ld      E       [IX`mob+%mob.X+0]
@@ -18608,10 +18608,10 @@ mob_boss_bridge:                                                                
         and     A
         sbc     HL      DE
         ld      HL      _863a
-        jr      c       ._4
+        jr      c       @_4
 	
         ld      HL      _864a
-._4     ld      E       [HL]
+@_4     ld      E       [HL]
         inc     HL
         ld      D       [HL]
         inc     HL
@@ -18631,7 +18631,7 @@ mob_boss_bridge:                                                                
         pop     HL
         ld      B       $03
         
-.loop   push    BC
+@loop   push    BC
         ld      A	[HL]
         ld      [$.TEMP4]       A
         inc     HL
@@ -18649,7 +18649,7 @@ mob_boss_bridge:                                                                
         call    _85d1
         pop     HL
         pop     BC
-        djnz    .loop
+        djnz    @loop
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -18657,9 +18657,9 @@ mob_boss_bridge:                                                                
 		rst     \\sound\rst_playSFX
 		;
 	
-        jp      ._6
+        jp      @_6
         
-._5     ld      [IX`mob+%mob.Yspeed+0]          $80
+@_5     ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $00
         ld      [IX`mob+%mob.Ydirection]        $00
         ld      HL      $03C0
@@ -18667,11 +18667,11 @@ mob_boss_bridge:                                                                
         ld      D       [IX`mob+%mob.Y+1]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._6
+        jr      nc      @_6
 	
         ld      [IX`mob+%mob.unknown11] A`zero
         
-._6     ld      HL      $00A2
+@_6     ld      HL      $00A2
         ld      [$.D216]	HL
         call    _77be
         ret
@@ -18710,19 +18710,19 @@ _85d1:                                                                          
         ld      HL      [$.TEMP4]
         xor     A`zero
         bit     7       H
-        jr      z       ._1
+        jr      z       @_1
 	
         dec     A
-._1     ld      [IX`mob+%mob.Xspeed+0]          L
+@_1     ld      [IX`mob+%mob.Xspeed+0]          L
         ld      [IX`mob+%mob.Xspeed+1]          H
         ld      [IX`mob+%mob.Xdirection]        A
         ld      HL      [$.TEMP6]
         xor     A
         bit     7       H
-        jr      z       ._2
+        jr      z       @_2
 	
         dec     A
-._2     ld      [IX`mob+%mob.Yspeed+0]          L
+@_2     ld      [IX`mob+%mob.Yspeed+0]          L
         ld      [IX`mob+%mob.Yspeed+1]          H
         ld      [IX`mob+%mob.Ydirection]        A
         pop     IX
@@ -18761,7 +18761,7 @@ platform_balance_process:                                                       
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      [IX`mob+%mob.unknown11]	$1C
         ld      L	[IX`mob+%mob.X+0]
@@ -18771,17 +18771,17 @@ platform_balance_process:                                                       
         ld      [IX`mob+%mob.X+0]	L
         ld      [IX`mob+%mob.X+1]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      L	[IX`mob+%mob.unknown14]
+@_1     ld      L	[IX`mob+%mob.unknown14]
         ld      H	[IX`mob+%mob.unknown15]
         ld      A	[IX`mob+%mob.unknown16]
         ld      E	[IX`mob+%mob.unknown12]
         ld      D	[IX`mob+%mob.unknown13]
         ld      C	$00
         bit     7	D
-        jr      z	._2
+        jr      z	@_2
 	
         dec     C
-._2     add     HL      DE
+@_2     add     HL      DE
         adc     A	C
         ld      [IX`mob+%mob.unknown14]	L
         ld      [IX`mob+%mob.unknown15]	H
@@ -18793,28 +18793,28 @@ platform_balance_process:                                                       
         ld      [IX`mob+%mob.unknown12]	L
         ld      [IX`mob+%mob.unknown13]	H
         bit     7	H
-        jr      nz	._7
+        jr      nz	@_7
 	
         rlca    
-        jr      c	._7
+        jr      c	@_7
 	
         ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._6
+        jr      z	@_6
 	
         bit     1	[IX`mob+%mob.flags]
-        jr      z	._4
+        jr      z	@_4
 	
         ld      A	L
         or      H
-        jr      nz	._3
+        jr      nz	@_3
         ld      A	[$.D2E8]
         ld      HL      [$.D2E6]
         ld      [$.SONIC.Yspeed]	HL
         ld      [$.SONIC.Ydirection]	A
-        jr      ._4
+        jr      @_4
         
-._3     ld      A	L
+@_3     ld      A	L
         cpl     
         ld      L	A
         ld      A	H
@@ -18828,14 +18828,14 @@ platform_balance_process:                                                       
         ld      A	$FF
         ld      [$.SONIC.Ydirection]	A          		;set Sonic as currently jumping
         
-._4     ld      A	$1C
+@_4     ld      A	$1C
         sub     C
         ld      [IX`mob+%mob.unknown11]	A
-        jr      z	._5
-        jr      nc	._7
+        jr      z	@_5
+        jr      nc	@_7
 	
-._5     bit     1	[IX`mob+%mob.flags]
-        jr      z	._6
+@_5     bit     1	[IX`mob+%mob.flags]
+        jr      z	@_6
 	
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -18843,14 +18843,14 @@ platform_balance_process:                                                       
 		rst     \\sound\rst_playSFX
 		;
 	
-._6     xor     A`zero
+@_6     xor     A`zero
         ld      [IX`mob+%mob.unknown11]	A`zero
         ld      [IX`mob+%mob.unknown12]	A`zero
         ld      [IX`mob+%mob.unknown13]	A`zero
         ld      [IX`mob+%mob.unknown14]	A`zero
         ld      [IX`mob+%mob.unknown15]	$1C
         ld      [IX`mob+%mob.unknown16]	A`zero
-._7     ld      L	[IX`mob+%mob.X+0]
+@_7     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.Y+0]
@@ -18862,8 +18862,8 @@ platform_balance_process:                                                       
         ld      DE      $0010
         add     HL      DE
         ld      [$.TEMP6]	HL
-        ld      HL      ._8830
-        call    ._881a
+        ld      HL      @_8830
+        call    @_881a
         ld      HL      $0028
         ld      [$.TEMP4]	HL
         ld      A	$1C
@@ -18873,15 +18873,15 @@ platform_balance_process:                                                       
         ld      DE      $0010
         add     HL      DE
         ld      [$.TEMP6]	HL
-        ld      HL      ._8830
-        call    ._881a
+        ld      HL      @_8830
+        call    @_881a
         ld      HL      $002c
         ld      [$.TEMP4]	HL
         ld      L	[IX`mob+%mob.unknown15]
         ld      H	[IX`mob+%mob.unknown16]
         ld      [$.TEMP6]	HL
-        ld      HL      ._8834
-        call    ._881a
+        ld      HL      @_8834
+        call    @_881a
         res     1	[IX`mob+%mob.flags]
         ld      [IX`mob+%mob.width]	$14
         ld      A		$02
@@ -18894,7 +18894,7 @@ platform_balance_process:                                                       
         add     A		$04
         ld      [$.TEMP7]	A
         call    \\detectCollisionWithSonic
-        jr      nc	._8
+        jr      nc	@_8
         
         ld      A	[$.SONIC.Ydirection]
         and     A
@@ -18912,10 +18912,10 @@ platform_balance_process:                                                       
         add     A	$04
         ld      [$.TEMP7]	A
         call    \\detectCollisionWithSonic
-        jr      nc	._9
+        jr      nc	@_9
         ret
         
-._8     set     1	[IX`mob+%mob.flags]
+@_8     set     1	[IX`mob+%mob.flags]
         
         ld      A	[$.SONIC.Ydirection]
         and     A
@@ -18923,7 +18923,7 @@ platform_balance_process:                                                       
         
         ld      A	[IX`mob+%mob.unknown11]
         cp      $1C
-        jr      z	._9
+        jr      z	@_9
         ld      HL      [$.SONIC.Yspeed]
         ld      A	L
         cpl     
@@ -18938,14 +18938,14 @@ platform_balance_process:                                                       
         add     A	[IX`mob+%mob.unknown11]
         ld      [IX`mob+%mob.unknown11]	A
         cp      $1C
-        jr      c	._10
+        jr      c	@_10
 	
         ld      [IX`mob+%mob.unknown11]	$1C
-._9     ld      A	[$.D2E8]
+@_9     ld      A	[$.D2E8]
         ld      HL      [$.D2E6]
         ld      [$.SONIC.Yspeed]	HL
         ld      [$.SONIC.Ydirection]	A
-._10    ld      L	[IX`mob+%mob.Y+0]
+@_10    ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
         ld      BC      $0010
         add     HL      BC
@@ -18964,7 +18964,7 @@ platform_balance_process:                                                       
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._881a  ld      A	[HL]
+@_881a  ld      A	[HL]
         and     A
         ret     m
 	
@@ -18976,13 +18976,13 @@ platform_balance_process:                                                       
         ld      [$.TEMP4]	HL
         pop     HL
         inc     HL
-        jp      ._881a
+        jp      @_881a
         
         ;---------------------------------------------------------------------------------------------------------------
 	
 	%byte
-._8830  $36 $38 $3A $FF
-._8834  $3C $3E $FF
+@_8830  $36 $38 $3A $FF
+@_8834  $3C $3E $FF
 	;
 
 badnick_jaws_process:                                                                                               		;$8837
@@ -18992,7 +18992,7 @@ badnick_jaws_process:                                                           
         set     5   [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         ld      A                   [IX`mob+%mob.unknown11]
         cp      $80
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      [IX`mob+%mob.Xspeed+0]      $20
         ld      [IX`mob+%mob.Xspeed+1]      $00
@@ -19009,12 +19009,12 @@ badnick_jaws_process:                                                           
         ld      [$.TEMP1]           HL
         call    nc  	hitPlayer
         
-        ld      DE                  ._88be
-        ld      BC                  ._88b4
+        ld      DE                  @_88be
+        ld      BC                  @_88b4
         call    animateMob
-        jr      ._2
+        jr      @_2
         
-._1     ld      [IX`mob+%mob.Xspeed+0]      $E0
+@_1     ld      [IX`mob+%mob.Xspeed+0]      $E0
         ld      [IX`mob+%mob.Xspeed+1]      $FF
         ld      [IX`mob+%mob.Xdirection]    $FF
         
@@ -19029,11 +19029,11 @@ badnick_jaws_process:                                                           
         ld      [$.TEMP1]           HL
         call    nc  	hitPlayer
         
-        ld      DE                  ._88be
-        ld      BC                  ._88b9
+        ld      DE                  @_88be
+        ld      BC                  @_88b9
         call    animateMob
         
-._2     ld      A                   [$.FRAMECOUNT]
+@_2     ld      A                   [$.FRAMECOUNT]
         and     $07
         ret     nz
         
@@ -19045,12 +19045,12 @@ badnick_jaws_process:                                                           
         ret
         
 	%byte
-._88b4  $00, $04, $01, $04, $FF
-._88b9  $02, $04, $03, $04, $FF
+@_88b4  $00, $04, $01, $04, $FF
+@_88b9  $02, $04, $03, $04, $FF
 
         ;sprite layout
 	%byte
-._88be  $04, $2A, $2C, $FF, $FF, $FF
+@_88be  $04, $2A, $2C, $FF, $FF, $FF
         $FF, $FF, $FF, $FF, $FF, $FF
         $FF, $FF, $FF, $FF, $FF, $FF
         
@@ -19074,7 +19074,7 @@ trap_spikeball_process:                                                         
         ld      [IX`mob+%mob.width]	8
         ld      [IX`mob+%mob.height]	12
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -19089,10 +19089,10 @@ trap_spikeball_process:                                                         
         ld      [IX`mob+%mob.unknown14]	L
         ld      [IX`mob+%mob.unknown15]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      L	[IX`mob+%mob.unknown11]
+@_1     ld      L	[IX`mob+%mob.unknown11]
         ld      H	$00
         add     HL      HL
-        ld      DE      ._898e
+        ld      DE      @_898e
         add     HL      DE
         ld      E	[HL]
         inc     HL
@@ -19100,14 +19100,14 @@ trap_spikeball_process:                                                         
         ld      D	$00
         ld      B	D
         bit     7	E
-        jr      z	._2
+        jr      z	@_2
 	
         dec     D
-._2     bit     7	C
-        jr      z	._3
+@_2     bit     7	C
+        jr      z	@_3
 	
         dec     D
-._3     ld      L	[IX`mob+%mob.unknown12]
+@_3     ld      L	[IX`mob+%mob.unknown12]
         ld      H	[IX`mob+%mob.unknown13]
         add     HL      DE
         ld      [IX`mob+%mob.X+0]	L
@@ -19122,8 +19122,8 @@ trap_spikeball_process:                                                         
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._8987
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._8987
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8987
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8987
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
         cp      $B4
@@ -19135,11 +19135,11 @@ trap_spikeball_process:                                                         
 	%byte
 	
         ;sprite layout
-._8987  $60 $62 $FF $FF $FF $FF
+@_8987  $60 $62 $FF $FF $FF $FF
         $FF
 
         ;I imagine this a set of X/Y positions to do the spiked-ball rotation
-._898e  ;180 lines, ergo 2deg per frame?
+@_898e  ;180 lines, ergo 2deg per frame?
 	%byte	%byte
         $40	$00
         $40	$02
@@ -19329,7 +19329,7 @@ trap_spear_process:                                                             
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -19338,7 +19338,7 @@ trap_spear_process:                                                             
         ld      [IX`mob+%mob.X+0]	L
         ld      [IX`mob+%mob.X+1]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      L	[IX`mob+%mob.X+0]
+@_1     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.Y+0]
@@ -19350,46 +19350,46 @@ trap_spear_process:                                                             
         rlca    
         rlca    
         and     $03
-        jr      nz	._2
+        jr      nz	@_2
 	
-        ld      HL      ._8bbc
+        ld      HL      @_8bbc
         ld      A	[$.FRAMECOUNT]
         and     $3F
         ld      E	A
         cp      $08
-        jr      c	._5
+        jr      c	@_5
 	
-        ld      HL      ._8bcd
+        ld      HL      @_8bcd
         ld      E	$00
-        jr      ._5
+        jr      @_5
         
-._2     cp      $01
-        jr      nz	._3
+@_2     cp      $01
+        jr      nz	@_3
 	
-        ld      HL      ._8bcd
+        ld      HL      @_8bcd
         ld      E	$00
-        jr      ._5
+        jr      @_5
         
-._3     cp      $02
-        jr      nz	._4
+@_3     cp      $02
+        jr      nz	@_4
 	
-        ld      HL      ._8bc4
+        ld      HL      @_8bc4
         ld      A	[$.FRAMECOUNT]
         and     $3f
         ld      E	A
         cp      $08
-        jr      c	._5
+        jr      c	@_5
 	
-        ld      HL      ._8bcc
+        ld      HL      @_8bcc
         ld      E	$00
-        jr      ._5
+        jr      @_5
         
-._4     ld      HL      ._8bcc
+@_4     ld      HL      @_8bcc
         ld      E	$00
-._5     ld      D	$00
+@_5     ld      D	$00
         add     HL      DE
         ld      A	[HL]
-        ld      HL      ._8bce
+        ld      HL      @_8bce
         add     A	A
         add     A	A
         add     A	A
@@ -19397,20 +19397,20 @@ trap_spear_process:                                                             
         add     HL      DE
         ld      B	$03
         
-.loop   push    BC
+@loop   push    BC
         ld      A	[HL]
         inc     HL
         ld      E	[HL]
         inc     HL
         and     A
-        jp      m	._6
+        jp      m	@_6
         push    HL
         ld      D	$00
         ld      [$.TEMP6]	DE
         call    \\_3581
         pop     HL
-._6     pop     BC
-        djnz    .loop
+@_6     pop     BC
+        djnz    @loop
         
         ld      [IX`mob+%mob.spriteLayout+0]	B
         ld      [IX`mob+%mob.spriteLayout+1]	B
@@ -19437,11 +19437,11 @@ trap_spear_process:                                                             
         
 	%byte
 	
-._8bbc  $00 $01 $02 $03 $04 $05 $06 $07
-._8bc4  $07 $06 $05 $04 $03 $02 $01 $00
-._8bcc  $00
-._8bcd  $08
-._8bce  $12 $00 $32 $10 $32 $20 $01 $30 $12 $04 $32 $14 $32 $20 $02 $30
+@_8bbc  $00 $01 $02 $03 $04 $05 $06 $07
+@_8bc4  $07 $06 $05 $04 $03 $02 $01 $00
+@_8bcc  $00
+@_8bcd  $08
+@_8bce  $12 $00 $32 $10 $32 $20 $01 $30 $12 $04 $32 $14 $32 $20 $02 $30
         $12 $08 $32 $18 $32 $20 $06 $30 $12 $0C $32 $1C $32 $20 $0A $30
         $12 $10 $32 $20 $FF $00 $0E $30 $12 $14 $32 $20 $FF $00 $12 $30
         $12 $18 $32 $20 $FF $00 $16 $30 $12 $1C $32 $20 $FF $00 $1A $30
@@ -19457,7 +19457,7 @@ trap_fireball_process:                                                          
         ld      [IX`mob+%mob.width]	4
         ld      [IX`mob+%mob.height]	10
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -19482,17 +19482,17 @@ trap_fireball_process:                                                          
         call    \\getFloorLayoutRAMAddressForMob
         ld      A	[HL]
         cp      $52
-        jr      z	._1
+        jr      z	@_1
 	
         set     1	[IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._4
+        jr      z	@_4
 	
         dec     [IX`mob+%mob.unknown11]
-        jr      z	._3
+        jr      z	@_3
         
-._2     xor     A`zero
+@_2     xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
         ld      [IX`mob+%mob.Xspeed+0]		A`zero
@@ -19503,35 +19503,35 @@ trap_fireball_process:                                                          
         ;---------------------------------------------------------------------------------------------------------------
         
 	;(we can compile with, or without, audio)
-._3	?( \\sound )
+@_3	?( \\sound )
 		ld      A	$18
 		rst     \\sound\rst_playSFX
 		;
 		
-._4     xor     A`zero
+@_4     xor     A`zero
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._5
+        jr      nz	@_5
 	
         ld      [IX`mob+%mob.Xspeed+0]		$00
         ld      [IX`mob+%mob.Xspeed+1]		$FF
         ld      [IX`mob+%mob.Xdirection]	$FF
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._8d39
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._8d39
-        jr      ._6
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8d39
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8d39
+        jr      @_6
         
-._5     ld      [IX`mob+%mob.Xspeed+0]		A
+@_5     ld      [IX`mob+%mob.Xspeed+0]		A
         ld      [IX`mob+%mob.Xspeed+1]		$01
         ld      [IX`mob+%mob.Xdirection]	A	
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._8d41
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._8d41
-._6     ld      [IX`mob+%mob.Yspeed+0]		A
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_8d41
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_8d41
+@_6     ld      [IX`mob+%mob.Yspeed+0]		A
         ld      [IX`mob+%mob.Yspeed+1]		A
         ld      [IX`mob+%mob.Ydirection]	A	
         bit     6	[IX`mob+%mob.flags]
-        jr      nz	._7
+        jr      nz	@_7
 	
         bit     7	[IX`mob+%mob.flags]
-        jr      nz	._7
+        jr      nz	@_7
 	
         ld      HL      $0402
         ld      [$.TEMP6]	HL
@@ -19545,14 +19545,14 @@ trap_fireball_process:                                                          
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._7
+        jr      nc	@_7
 	
         ld      HL      [$.CAMERA_X]
         ld      BC      $0110
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._7
+        jr      c	@_7
 	
         ld      E	[IX`mob+%mob.Y+0]
         ld      D	[IX`mob+%mob.Y+1]
@@ -19561,18 +19561,18 @@ trap_fireball_process:                                                          
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._7
+        jr      nc	@_7
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00d0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._7
+        jr      c	@_7
 	
         ret
         
-._7     ld      L	[IX`mob+%mob.unknown12]
+@_7     ld      L	[IX`mob+%mob.unknown12]
         ld      H	[IX`mob+%mob.unknown13]
         ld      [IX`mob+%mob.X+0]	L
         ld      [IX`mob+%mob.X+1]	H
@@ -19581,15 +19581,15 @@ trap_fireball_process:                                                          
         ld      [IX`mob+%mob.Y+0]	L
         ld      [IX`mob+%mob.Y+1]	H
         ld      [IX`mob+%mob.unknown11]	$96
-        jp      ._2
+        jp      @_2
         
         ;---------------------------------------------------------------------------------------------------------------
         ;sprite layout
 	%byte
 	
-._8d39  $2E $FF $FF $FF $FF $FF
+@_8d39  $2E $FF $FF $FF $FF $FF
         $FF $FF
-._8d41  $30 $FF $FF $FF $FF $FF
+@_8d41  $30 $FF $FF $FF $FF $FF
         $FF
 	;
 	
@@ -19601,16 +19601,16 @@ meta_water_process:                                                             
         ld      A	[IX`mob+%mob.unknown11]
         ld      E	A
         ld      D	$00
-        ld      HL      ._8e36
+        ld      HL      @_8e36
         add     HL      DE
         ld      E	[HL]
         ld      A	D
         bit     7	E
-        jr      z	._1
+        jr      z	@_1
 	
         dec     A
         dec     D
-._1     ld      L	[IX`mob+%mob.Ysubpixel]
+@_1     ld      L	[IX`mob+%mob.Ysubpixel]
         ld      H	[IX`mob+%mob.Y+0]
         add     HL      DE
         adc     A	[IX`mob+%mob.Y+1]
@@ -19621,34 +19621,34 @@ meta_water_process:                                                             
         ld      H	[IX`mob+%mob.Y+1]
         ld      A	[$.FRAMECOUNT]
         and     $0F
-        jr      nz	._2
+        jr      nz	@_2
 	
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
         cp      $20
-        jr      c	._2
+        jr      c	@_2
 	
         ld      [IX`mob+%mob.unknown11]	$00
-._2     ld      [$.D2DC]	HL
+@_2     ld      [$.D2DC]	HL
         ld      DE      [$.CAMERA_Y]
         and     A
         ld      A	$FF
         sbc     HL      DE
-        jr      c	._3
+        jr      c	@_3
 	
         ex      DE      HL
         ld      HL      $000C
         ld      A	$FF
         sbc     HL      DE
-        jr      nc	._3
+        jr      nc	@_3
 	
         ld      HL      $00B4
         xor     A`zero
         sbc     HL      DE
-        jr      c	._3
+        jr      c	@_3
 	
         ld      A	E
-._3     ld      [$.WATERLINE]	A
+@_3     ld      [$.WATERLINE]	A
         and     A
         ret     z
 	
@@ -19675,11 +19675,11 @@ meta_water_process:                                                             
         add     A	A
         ld      C	A
         ld      B	$00
-        ld      HL      ._8e16
+        ld      HL      @_8e16
         add     HL      BC
         ld      B	$04
         
-.loop   push    BC
+@loop   push    BC
         ld      C	[HL]
         inc     HL
         push    HL
@@ -19699,7 +19699,7 @@ meta_water_process:                                                             
         call    \\_3581
         pop     HL
         pop     BC
-        djnz    .loop
+        djnz    @loop
         
         pop     HL
         pop     AF
@@ -19710,9 +19710,9 @@ meta_water_process:                                                             
         ;---------------------------------------------------------------------------------------------------------------
 	
 	%byte
-._8e16  $00 $40 $80 $C0 $10 $50 $90 $D0 $20 $60 $A0 $E0 $30 $70 $B0 $F0
+@_8e16  $00 $40 $80 $C0 $10 $50 $90 $D0 $20 $60 $A0 $E0 $30 $70 $B0 $F0
         $08 $48 $88 $C8 $18 $58 $98 $D8 $28 $68 $A8 $E8 $38 $78 $B8 $F8
-._8e36  $FE $FC $F8 $F0 $E8 $D8 $C8 $C8 $C8 $C8 $D8 $E8 $F0 $F8 $FC $FE
+@_8e36  $FE $FC $F8 $F0 $E8 $D8 $C8 $C8 $C8 $C8 $D8 $E8 $F0 $F8 $FC $FE
         $02 $04 $08 $10 $18 $28 $38 $38 $38 $38 $28 $18 $10 $08 $04 $02
 	;
 
@@ -19723,18 +19723,18 @@ powerUps_bubbles_process:                                                       
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      A	[IX`mob+%mob.unknown12]
         and     %01111111					;=$7F
-        jr      nz	._1
+        jr      nz	@_1
 	
         call    \\math\_LABEL_625_57
         and     %00000111
         ld      E	A
         ld      D	$00
-        ld      HL      ._8ec2
+        ld      HL      @_8ec2
         add     HL      DE
         bit     0	[HL]
         call    nz	\\_91eb
 	
-._1     ld      L	[IX`mob+%mob.X+0]
+@_1     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.Y+0]
@@ -19744,7 +19744,7 @@ powerUps_bubbles_process:                                                       
         add     A	A
         ld      E	A
         ld      D	$00
-        ld      HL      ._8eb6
+        ld      HL      @_8eb6
         add     HL      DE
         ld      E	[HL]
         ld      [$.TEMP4]	DE
@@ -19767,8 +19767,8 @@ powerUps_bubbles_process:                                                       
         ret
         
 	%byte
-._8eb6  $08 $05 $08 $04 $07 $03 $06 $02 $07 $01 $06 $00
-._8ec2  $01 $00 $01 $01 $00 $01 $00 $01
+@_8eb6  $08 $05 $08 $04 $07 $03 $06 $02 $07 $01 $06 $00
+@_8ec2  $01 $00 $01 $01 $00 $01 $00 $01
 	;
 
 _8eca:                                                                                                          ;$8ECA
@@ -19783,21 +19783,21 @@ _8eca:                                                                          
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
         ld      A	[IX`mob+%mob.unknown11]
         and     $0F
-        jr      nz      ._2
+        jr      nz      @_2
 	
         call    \\math\_LABEL_625_57
         ld      BC      $0020
         ld      D       $00
         and     $3F
         cp      $20
-        jr      c       ._1
+        jr      c       @_1
 	
         ld      BC      $FFE0
         ld      D       $FF
-._1     ld      [IX`mob+%mob.Xspeed+0]          C
+@_1     ld      [IX`mob+%mob.Xspeed+0]          C
         ld      [IX`mob+%mob.Xspeed+1]          B
         ld      [IX`mob+%mob.Xdirection]        D
-._2     ld      [IX`mob+%mob.Yspeed+0]          $A0
+@_2     ld      [IX`mob+%mob.Yspeed+0]          $A0
         ld      [IX`mob+%mob.Yspeed+1]          $FF
         ld      [IX`mob+%mob.Ydirection]        $FF
         ld      L       [IX`mob+%mob.X+0]
@@ -19808,20 +19808,20 @@ _8eca:                                                                          
         ld      BC      $0008
         xor     A`zero
         sbc     HL      BC
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      L       A`zero
         ld      H       A`zero
-._3     and     A
+@_3     and     A
         sbc     HL      DE
-        jr      nc      ._4
+        jr      nc      @_4
 	
         ld      HL      [$.CAMERA_X]
         ld      BC      $0100
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._4
+        jr      c       @_4
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -19830,24 +19830,24 @@ _8eca:                                                                          
         ld      HL      [$.D2DC]
         and     A
         sbc     HL      DE
-        jr      nc      ._4
+        jr      nc      @_4
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $fff0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc      ._4
+        jr      nc      @_4
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00C0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc      ._5
+        jr      nc      @_5
 	
-._4     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
-._5     ld      HL      $0000
+@_4     ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
+@_5     ld      HL      $0000
         ld      [$.TEMP4]	HL
         ld      [$.TEMP6]	HL
         ld      A       $0C
@@ -19889,21 +19889,21 @@ badnick_burrobot_process:                                                       
         add     HL                  DE
         adc     A                   $00
         ld      C                   A
-        jp      m	._1
+        jp      m	@_1
 	
         ld      A                   H
         cp      $04
-        jr      c	._1
+        jr      c	@_1
 	
         ld      HL                  $0300
         ld      C                   $00
         
-._1     ld      [IX`mob+%mob.Yspeed+0]      L
+@_1     ld      [IX`mob+%mob.Yspeed+0]      L
         ld      [IX`mob+%mob.Yspeed+1]      H
         ld      [IX`mob+%mob.Ydirection]    C
         
         bit     0       [IX`mob+%mob.flags]
-        jp      nz	._4
+        jp      nz	@_4
         
         ld      DE                  $FFD0
         ld      L                   [IX`mob+%mob.X+0]
@@ -19912,7 +19912,7 @@ badnick_burrobot_process:                                                       
         ld      DE                  [$.SONIC.X]
         and     A
         sbc     HL                  DE
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      BC                  $0030
         ld      L                   [IX`mob+%mob.X+0]
@@ -19920,42 +19920,42 @@ badnick_burrobot_process:                                                       
         add     HL                  BC
         and     A
         sbc     HL                  DE
-        jr      c	._2
+        jr      c	@_2
         set     0       [IX`mob+%mob.flags]
         ld      [IX`mob+%mob.Yspeed+0]      $80
         ld      [IX`mob+%mob.Yspeed+1]      $FD
         ld      [IX`mob+%mob.Ydirection]    $FF
-._2     ld      L                   [IX`mob+%mob.X+0]
+@_2     ld      L                   [IX`mob+%mob.X+0]
         ld      H                   [IX`mob+%mob.X+1]
         ld      DE                  [$.SONIC.X]
         and     A
         sbc     HL                  DE
-        jr      c	._3
+        jr      c	@_3
 	
         ld      [IX`mob+%mob.Xspeed+0]      $C0
         ld      [IX`mob+%mob.Xspeed+1]      $FF
         ld      [IX`mob+%mob.Xdirection]    $FF
-        ld      DE                  ._9059
-        ld      BC                  ._904a
+        ld      DE                  @_9059
+        ld      BC                  @_904a
         call    animateMob
         set     1       [IX`mob+%mob.flags]
         ret
         
-._3     ld      [IX`mob+%mob.Xspeed+0]      $40
+@_3     ld      [IX`mob+%mob.Xspeed+0]      $40
         ld      [IX`mob+%mob.Xspeed+1]      $00
         ld      [IX`mob+%mob.Xdirection]    $00
-        ld      DE      ._9059
-        ld      BC      ._9045
+        ld      DE      @_9059
+        ld      BC      @_9045
         call    animateMob
         res     1       [IX`mob+%mob.flags]
         ret
         
-._4     ld      BC      ._9054
+@_4     ld      BC      @_9054
         bit     1       [IX`mob+%mob.flags]
-        jr      nz	._5
+        jr      nz	@_5
 	
-        ld      BC      ._904f
-._5     ld      DE      ._9059
+        ld      BC      @_904f
+@_5     ld      DE      @_9059
         call    animateMob
         
         bit     7       [IX`mob+%mob.flags]
@@ -19968,15 +19968,15 @@ badnick_burrobot_process:                                                       
         
         %byte
         
-._9045  $00 $04 $01 $04 $FF
-._904a  $02 $04 $03 $04 $FF
-._904f  $04 $04 $04 $04 $FF
-._9054  $05 $04 $05 $04 $FF
+@_9045  $00 $04 $01 $04 $FF
+@_904a  $02 $04 $03 $04 $FF
+@_904f  $04 $04 $04 $04 $FF
+@_9054  $05 $04 $05 $04 $FF
 
         ;sprite layout
         %byte
         
-._9059  $44 $46 $FF $FF $FF $FF
+@_9059  $44 $46 $FF $FF $FF $FF
         $64 $66 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
     
@@ -20008,10 +20008,10 @@ platform_float_process:                                                         
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	30
         ld      [IX`mob+%mob.height]	28
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._91de
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._91de
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_91de
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_91de
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -20026,7 +20026,7 @@ platform_float_process:                                                         
         ld      [IX`mob+%mob.unknown13]	L
         ld      [IX`mob+%mob.unknown14]	H
         set     1	[IX`mob+%mob.flags]
-._1     ld      BC      $0010
+@_1     ld      BC      $0010
         ld      DE      $0020
         call    \\getFloorLayoutRAMAddressForMob
         ld      E	[HL]
@@ -20048,10 +20048,10 @@ platform_float_process:                                                         
         ld      L	C
         ld      H	C
         cp      $1E
-        jr      z	._2
+        jr      z	@_2
 	
         bit     0	[IX`mob+%mob.flags]
-        jr      z	._3
+        jr      z	@_3
 	
         ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
@@ -20063,27 +20063,27 @@ platform_float_process:                                                         
         ld      A	H
         neg     
         cp      $02
-        jr      c	._2
+        jr      c	@_2
 	
         ld      HL      $FF00
         ld      C	$FF
-._2     ld      [IX`mob+%mob.Yspeed+0]		L
+@_2     ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
-._3     ld      E	[IX`mob+%mob.X+0]
+@_3     ld      E	[IX`mob+%mob.X+0]
         ld      D	[IX`mob+%mob.X+1]
         ld      HL      [$.CAMERA_X]
         ld      BC      $FFE0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      HL      [$.CAMERA_X]
         inc     H
         and     A
         sbc     HL      DE
-        jr      c	._4
+        jr      c	@_4
 	
         ld      E	[IX`mob+%mob.Y+0]
         ld      D	[IX`mob+%mob.Y+1]
@@ -20092,16 +20092,16 @@ platform_float_process:                                                         
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00e0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._5
+        jr      nc	@_5
 	
-._4     ld      L	[IX`mob+%mob.unknown11]
+@_4     ld      L	[IX`mob+%mob.unknown11]
         ld      H	[IX`mob+%mob.unknown12]
         ld      [IX`mob+%mob.X+0]	L
         ld      [IX`mob+%mob.X+1]	H
@@ -20121,7 +20121,7 @@ platform_float_process:                                                         
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5     ld      HL      	$0E02
+@_5     ld      HL      	$0E02
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         ret     c
@@ -20129,13 +20129,13 @@ platform_float_process:                                                         
         set     0	[IX`mob+%mob.flags]
         ld      A	[$.SONIC.Yspeed+1]
         and     A
-        jp      p	._6
+        jp      p	@_6
 	
         neg     
         cp      $02
         ret     nc
         
-._6     ld      E	[IX`mob+%mob.Yspeed+0]
+@_6     ld      E	[IX`mob+%mob.Yspeed+0]
         ld      D	[IX`mob+%mob.Yspeed+1]
         ld      BC      $0010
         call    _LABEL_7CC1_12
@@ -20145,7 +20145,7 @@ platform_float_process:                                                         
 
         ;sprite layout
 	%byte
-._91de  $FE $FF $FF $FF $FF $FF
+@_91de  $FE $FF $FF $FF $FF $FF
         $16 $18 $1A $1C $FF $FF
         $FF
 	;
@@ -20160,18 +20160,18 @@ _91eb:                                                                          
         ld      C       $42
         ld      A	[IX`mob+%mob.type]
         cp      $41
-        jr      nz      ._1
+        jr      nz      @_1
 	
         push    HL
         call    \\math\_LABEL_625_57
         and     $0F
         ld      E       A
         ld      D       $00
-        ld      HL      ._9257
+        ld      HL      @_9257
         add     HL      DE
         ld      C       [HL]
         pop     HL
-._1     ld      A       C
+@_1     ld      A       C
         ld      E       [IX`mob+%mob.X+0]
         ld      D       [IX`mob+%mob.X+1]
         ld      C       [IX`mob+%mob.Y+0]
@@ -20207,7 +20207,7 @@ _91eb:                                                                          
         pop     IX
         ret
 
-._9257  %byte   $42 $20 $20 $20 $42 $20 $20 $20 $42 $20 $20 $20 $42 $20 $20 $20
+@_9257  %byte   $42 $20 $20 $20 $42 $20 $20 $20 $42 $20 $20 $20 $42 $20 $20 $20
 	;
 
 mob_boss_labyrinth:                                                                                             ;$9267
@@ -20218,10 +20218,10 @@ mob_boss_labyrinth:                                                             
         ld      [IX`mob+%mob.width]     32
         ld      [IX`mob+%mob.height]    28
         call    _7ca6
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._9493
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._9493
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_9493
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_9493
         bit     0       [IX`mob+%mob.flags]
-        jr      nz      ._1
+        jr      nz      @_1
         
         ld      HL      $02d0
         ld      DE      $0290
@@ -20248,16 +20248,16 @@ mob_boss_labyrinth:                                                             
 		;
         
         set     0       [IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      nz      ._2
+        jr      nz      @_2
 	
         ld      A	[IX`mob+%mob.unknown13]
         add     A       A
         add     A       A
         ld      E       A
         ld      D       $00
-        ld      HL      ._947b
+        ld      HL      @_947b
         add     HL      DE
         ld      A	[HL]
         ld      [IX`mob+%mob.X+0]       A
@@ -20272,26 +20272,26 @@ mob_boss_labyrinth:                                                             
         inc     HL
         ld      [IX`mob+%mob.Y+1]       A
         inc     [IX`mob+%mob.unknown11]
-        jp      ._
+        jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     dec     A
-        jr      nz      ._5
+@_2     dec     A
+        jr      nz      @_5
 	
         ld      A	[IX`mob+%mob.unknown13]
         and     A
-        jr      nz      ._3
+        jr      nz      @_3
 	
         ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $FF
         ld      [IX`mob+%mob.Ydirection]        $FF
-        jp      ._4
+        jp      @_4
         
-._3     ld      [IX`mob+%mob.Yspeed+0]          $80
+@_3     ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $00
         ld      [IX`mob+%mob.Ydirection]        $00
-._4     ld      HL      ._9487
+@_4     ld      HL      @_9487
         ld      A	[IX`mob+%mob.unknown13]
         add     A       A
         ld      E       A
@@ -20305,16 +20305,16 @@ mob_boss_labyrinth:                                                             
         ld      D       [IX`mob+%mob.Y+1]
         and     A
         sbc     HL      DE
-        jp      nz      ._
+        jp      nz      @_
 	
         inc     [IX`mob+%mob.unknown11]
         ld      [IX`mob+%mob.unknown12],$00
-        jp      ._
+        jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5     dec     A
-        jp      nz      ._6
+@_5     dec     A
+        jp      nz      @_6
 	
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+0]          A`zero
@@ -20323,7 +20323,7 @@ mob_boss_labyrinth:                                                             
         inc     [IX`mob+%mob.unknown12]
         ld      A	[IX`mob+%mob.unknown12]
         cp      $64
-        jp      nz      ._
+        jp      nz      @_
 	
         inc     [IX`mob+%mob.unknown11]
         ld      L       [IX`mob+%mob.X+0]
@@ -20338,13 +20338,13 @@ mob_boss_labyrinth:                                                             
         ld      [$.TEMP3]	HL
         ld      A	[IX`mob+%mob.unknown13]
         and     A
-        jp      z       ._9432
+        jp      z       @_9432
         ld      A	[$.D2EC]
         cp      $08
-        jp      nc      ._
+        jp      nc      @_
 	
         call    findEmptyMob
-        jp      c       ._
+        jp      c       @_
         
         push    IX
         push    HL
@@ -20369,23 +20369,23 @@ mob_boss_labyrinth:                                                             
         ld      [IX`mob+%mob.Ydirection]    A`zero
         
         pop     IX
-        jp      ._
+        jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._6     ld      A	[IX`mob+%mob.unknown13]
+@_6     ld      A	[IX`mob+%mob.unknown13]
         and     A
-        jr      nz      ._7
+        jr      nz      @_7
 	
         ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $00
         ld      [IX`mob+%mob.Ydirection]        $00
-        jp      ._8
+        jp      @_8
         
-._7     ld      [IX`mob+%mob.Yspeed+0]          $80
+@_7     ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $FF
         ld      [IX`mob+%mob.Ydirection]        $FF
-._8     ld      HL      $948D
+@_8     ld      HL      $948D
         ld      A	[IX`mob+%mob.unknown13]
         add     A       A
         ld      E       A
@@ -20399,17 +20399,17 @@ mob_boss_labyrinth:                                                             
         ld      D       [IX`mob+%mob.Y+1]
         xor     A`zero
         sbc     HL      DE
-        jr      nz      ._
+        jr      nz      @_
 	
         ld      [IX`mob+%mob.unknown11] A`zero
         inc     [IX`mob+%mob.unknown13]
         ld      A	[IX`mob+%mob.unknown13]
         cp      $03
-        jr      c       ._
+        jr      c       @_
 	
         ld      [IX`mob+%mob.unknown13] $00
         
-._      ld      HL              $00A2
+@_      ld      HL              $00A2
         ld      [$.D216]	HL
         call    _77be
         ld      A	[$.D2EC]
@@ -20436,7 +20436,7 @@ mob_boss_labyrinth:                                                             
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._9432  ld      L       [IX`mob+%mob.X+0]
+@_9432  ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      $0004
         add     HL      DE
@@ -20468,18 +20468,18 @@ mob_boss_labyrinth:                                                             
 		rst     \\sound\rst_playSFX
 		;
         
-        jp      ._
+        jp      @_
         
         ;---------------------------------------------------------------------------------------------------------------
         
         %byte
         
-._947b  $3C $03 $60 $03 $EC $02 $60 $02 $8C $03 $60 $02
-._9487  $28 $03 $B0 $02 $B0
-._948c  $02 $60 $03 $60 $02 $60 $02
+@_947b  $3C $03 $60 $03 $EC $02 $60 $02 $8C $03 $60 $02
+@_9487  $28 $03 $B0 $02 $B0
+@_948c  $02 $60 $03 $60 $02 $60 $02
 
         ;sprite layout
-._9493  $20 $22 $24 $26 $28 $FF
+@_9493  $20 $22 $24 $26 $28 $FF
         $40 $42 $44 $46 $48 $FF
         $60 $62 $64 $66 $68 $FF
 	;
@@ -20497,7 +20497,7 @@ unknown_94a5_process:													;$94A5
         call    nc	hitPlayer._35fd
 	
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         set     1	[IX`mob+%mob.flags]
         ld      HL      [$.SONIC.X]
@@ -20510,21 +20510,21 @@ unknown_94a5_process:													;$94A5
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._1
+        jr      nc	@_1
 	
         set     2	[IX`mob+%mob.flags]
-._1     bit     0	[IX`mob+%mob.flags]
-        jr      nz	._3
+@_1     bit     0	[IX`mob+%mob.flags]
+        jr      nz	@_3
 	
         ld      [IX`mob+%mob.Yspeed+0]		$40
         ld      [IX`mob+%mob.Yspeed+1]		$00
         ld      [IX`mob+%mob.Ydirection]	$00
-        ld      HL      ._9698
+        ld      HL      @_9698
         bit     2	[IX`mob+%mob.flags]
-        jr      z	._2
+        jr      z	@_2
 	
-        ld      HL      ._9688
-._2     ld      [IX`mob+%mob.spriteLayout+0]	L
+        ld      HL      @_9688
+@_2     ld      [IX`mob+%mob.spriteLayout+0]	L
         ld      [IX`mob+%mob.spriteLayout+1]	H
         ld      HL      [$.SONIC.Y]
         ld      E	[IX`mob+%mob.Y+0]
@@ -20538,21 +20538,21 @@ unknown_94a5_process:													;$94A5
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._3     ld      C	[IX`mob+%mob.X+0]
+@_3     ld      C	[IX`mob+%mob.X+0]
         ld      B	[IX`mob+%mob.X+1]
         ld      HL      $FFF0
         add     HL      BC
         ld      DE      [$.CAMERA_X]
         and     A
         sbc     HL      DE
-        jr      c	._4
+        jr      c	@_4
 	
         ld      L	C
         ld      H	B
         inc     D
         and     A
         sbc     HL      DE
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      C	[IX`mob+%mob.Y+0]
         ld      B	[IX`mob+%mob.Y+1]
@@ -20561,23 +20561,23 @@ unknown_94a5_process:													;$94A5
         ld      DE      [$.CAMERA_Y]
         and     A
         sbc     HL      DE
-        jr      c	._4
+        jr      c	@_4
 	
         ld      HL      $00c0
         add     HL      DE
         and     A
         sbc     HL      BC
-        jr      nc	._5
+        jr      nc	@_5
 	
-._4     ld      [IX`mob+%mob.type]	$FF              	;remove object
-._5     xor     A`zero
+@_4     ld      [IX`mob+%mob.type]	$FF              	;remove object
+@_5     xor     A`zero
         ld      HL      $0002
         bit     2	[IX`mob+%mob.flags]
-        jr      nz	._6
+        jr      nz	@_6
 	
         dec     A
         ld      HL      $FFFE
-._6     ld      E	[IX`mob+%mob.Xspeed+0]
+@_6     ld      E	[IX`mob+%mob.Xspeed+0]
         ld      D	[IX`mob+%mob.Xspeed+1]
         add     HL      DE
         adc     A	[IX`mob+%mob.Xdirection]
@@ -20585,7 +20585,7 @@ unknown_94a5_process:													;$94A5
         ld      A	H
         ld      DE      $0100
         bit     7	C
-        jr      z	._7
+        jr      z	@_7
 	
         ld      A	L
         cpl     
@@ -20596,11 +20596,11 @@ unknown_94a5_process:													;$94A5
         inc     DE
         ld      A	D
         ld      DE      $FF00
-._7     and     A
-        jr      z	._8
+@_7     and     A
+        jr      z	@_8
 	
         ex      DE      HL
-._8     ld      [IX`mob+%mob.Xspeed+0]		L
+@_8     ld      [IX`mob+%mob.Xspeed+0]		L
         ld      [IX`mob+%mob.Xspeed+1]		H
         ld      [IX`mob+%mob.Xdirection]	C
         ld      HL      [$.SONIC.Y]
@@ -20616,18 +20616,18 @@ unknown_94a5_process:													;$94A5
         ld      A	$FF
         ld      HL      $FFFE
         bit     7	[IX`mob+%mob.Ydirection]
-        jr      nz	._9
+        jr      nz	@_9
 	
         ld      HL      $FFFC
-._9     jr      nc	._10
+@_9     jr      nc	@_10
 
         inc     A
         ld      HL      $0002
         bit     7	[IX`mob+%mob.Ydirection]
-        jr      z	._10
+        jr      z	@_10
 	
         ld      HL      $0004
-._10    ld      E	[IX`mob+%mob.Yspeed+0]
+@_10    ld      E	[IX`mob+%mob.Yspeed+0]
         ld      D	[IX`mob+%mob.Yspeed+1]
         add     HL      DE
         adc     A	[IX`mob+%mob.Ydirection]
@@ -20635,7 +20635,7 @@ unknown_94a5_process:													;$94A5
         ld      A	H
         ld      DE      $0100
         bit     7	C
-        jr      z	._11
+        jr      z	@_11
         ld      A	L
         cpl     
         ld      E	A
@@ -20645,23 +20645,23 @@ unknown_94a5_process:													;$94A5
         inc     DE
         ld      A	D
         ld      DE      $FF00
-._11    and     A
-        jr      z	._12
+@_11    and     A
+        jr      z	@_12
 	
         ex      DE      HL
-._12    ld      [IX`mob+%mob.Yspeed+0]		L
+@_12    ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
-        ld      HL      ._9688
+        ld      HL      @_9688
         bit     7	[IX`mob+%mob.Xdirection]
-        jr      z	._13
+        jr      z	@_13
 	
-        ld      HL      ._9698
-._13    push    HL
+        ld      HL      @_9698
+@_13    push    HL
         ld      L	[IX`mob+%mob.Xspeed+0]
         ld      H	[IX`mob+%mob.Xspeed+1]
         bit     7	H
-        jr      z	._14
+        jr      z	@_14
 	
         ld      A	L
         cpl     
@@ -20670,7 +20670,7 @@ unknown_94a5_process:													;$94A5
         cpl     
         ld      H	A
         inc     HL
-._14    ld      E	[IX`mob+%mob.unknown11]
+@_14    ld      E	[IX`mob+%mob.unknown11]
         ld      D	[IX`mob+%mob.unknown12]
         add     HL      DE
         ld      [IX`mob+%mob.unknown11]	L
@@ -20687,10 +20687,10 @@ unknown_94a5_process:													;$94A5
         ld      H	[IX`mob+%mob.X+1]
         ld      DE      $FFF9
         bit     7	[IX`mob+%mob.Xdirection]
-        jr      z	._15
+        jr      z	@_15
 	
         ld      DE      $000F
-._15    add     HL      DE
+@_15    add     HL      DE
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
@@ -20729,10 +20729,10 @@ unknown_94a5_process:													;$94A5
 	%byte
 	
         ;sprite layout
-._9688  $3C $3E $FF $FF $FF $FF
+@_9688  $3C $3E $FF $FF $FF $FF
         $FF $FF $38 $3A $FF $FF
         $FF $FF $FF $FF
-._9698  $56 $58 $FF $FF $FF $FF
+@_9698  $56 $58 $FF $FF $FF $FF
         $FF $FF $5A $5C $FF $FF
         $FF $FF $FF $FF
 	;
@@ -20757,7 +20757,7 @@ unknown_96a8_process:                                                           
         ld      [$.TEMP6]	HL`zero
         ld      E	[IX`mob+%mob.unknown12]
         ld      D	$00
-        ld      HL      ._96f5
+        ld      HL      @_96f5
         add     HL      DE
         ld      A	[HL]
         call    \\_3581
@@ -20776,7 +20776,7 @@ unknown_96a8_process:                                                           
         ret
 
 	%byte
-._96f5  $1C $1E $5E
+@_96f5  $1C $1E $5E
 	;
 
 unknown_96f8_process:                                                                                                        ;$96F8
@@ -20793,7 +20793,7 @@ unknown_96f8_process:                                                           
         push    HL
         ld      A	[$.D2DE]
         cp      $24
-        jr      nc	._3
+        jr      nc	@_3
 	
         ld      E	A
         ld      D	$00
@@ -20811,28 +20811,28 @@ unknown_96f8_process:                                                           
         ld      [$.TEMP6]	HL
         ld      A	[IX`mob+%mob.unknown12]
         and     A
-        jr      z	._1
+        jr      z	@_1
 	
         cp      $08
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      HL      $0004
         ld      [$.TEMP4]	HL
         ld      A	$0C
-        jr      ._2
+        jr      @_2
         
-._1     ld      A	$40
+@_1     ld      A	$40
         call    \\_3581
         ld      HL      [$.TEMP4]
         ld      DE      $0008
         add     HL      DE
         ld      [$.TEMP4]	HL
         ld      A	$42
-._2     call    \\_3581
+@_2     call    \\_3581
         ld      A	[$.D2DE]
         add     A	$06
         ld      [$.D2DE]	A
-._3     pop     HL
+@_3     pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]	HL
         ld      [IY`vars+%vars.spriteUpdateCount]	A
@@ -20840,7 +20840,7 @@ unknown_96f8_process:                                                           
         ld      [IX`mob+%mob.height]	$0C
         ld      A	[IX`mob+%mob.unknown12]
         and     A
-        jr      z	._4
+        jr      z	@_4
 	
         ld      C	$00
         ld      B	C
@@ -20849,15 +20849,15 @@ unknown_96f8_process:                                                           
         ld      [IX`mob+%mob.Yspeed+1]		C
         ld      [IX`mob+%mob.Ydirection]	C
         dec     [IX`mob+%mob.unknown12]
-        jp      nz	._6
+        jp      nz	@_6
 	
         ld      [IX`mob+%mob.type]	$FF              	;remove object
-        jp      ._6
+        jp      @_6
         
-._4     ld      HL      	$0206
+@_4     ld      HL      	$0206
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._5
+        jr      c	@_5
 	
         ld      BC      [$.SONIC.Y]
         ld      E	[IX`mob+%mob.Y+0]
@@ -20866,17 +20866,17 @@ unknown_96f8_process:                                                           
         add     HL      DE
         and     A
         sbc     HL      BC
-        jr      nc	._5
+        jr      nc	@_5
 	
         ld      HL      $0006
         add     HL      DE
         and     A
         sbc     HL      BC
-        jr      c	._5
+        jr      c	@_5
 	
         ld      A	[IX`mob+%mob.unknown12]
         and     A
-        jr      nz	._5
+        jr      nz	@_5
 	
         xor     A`zero
         ld      L`zero	A`zero
@@ -20896,46 +20896,46 @@ unknown_96f8_process:                                                           
 		rst     \\sound\rst_playSFX
 		;
 	
-._5     ld      [IX`mob+%mob.Yspeed+0]		$98
+@_5     ld      [IX`mob+%mob.Yspeed+0]		$98
         ld      [IX`mob+%mob.Yspeed+1]		$FF
         ld      [IX`mob+%mob.Ydirection]	$FF
         ld      A	[IX`mob+%mob.unknown11]
         and     $0F
-        jr      nz	._7
+        jr      nz	@_7
 	
         call    \\math\_LABEL_625_57
         ld      BC      $0020
         ld      D	$00
         and     $3F
         cp      $20
-        jr      c	._6
+        jr      c	@_6
 	
         ld      BC      $FFE0
         ld      D	$FF
-._6     ld      [IX`mob+%mob.Xspeed+0]		C
+@_6     ld      [IX`mob+%mob.Xspeed+0]		C
         ld      [IX`mob+%mob.Xspeed+1]		B
         ld      [IX`mob+%mob.Xdirection]	D
-._7     ld      L	[IX`mob+%mob.X+0]
+@_7     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ex      DE      HL
         ld      HL      [$.CAMERA_X]
         ld      BC      $0008
         xor     A`zero
         sbc     HL      BC
-        jr      nc	._8
+        jr      nc	@_8
 	
         ld      L	A`zero
         ld      H	A`zero
-._8     and     A
+@_8     and     A
         sbc     HL      DE
-        jr      nc	._9
+        jr      nc	@_9
 	
         ld      HL      [$.CAMERA_X]
         ld      BC      $0100
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._9
+        jr      c	@_9
 	
         ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
@@ -20943,24 +20943,24 @@ unknown_96f8_process:                                                           
         ld      HL      [$.D2DC]
         and     A
         sbc     HL      DE
-        jr      nc	._9
+        jr      nc	@_9
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $FFF0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._9
+        jr      nc	@_9
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00C0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._10
+        jr      nc	@_10
 	
-._9     ld      [IX`mob+%mob.type]	$FF              	;remove object
-._10    inc     [IX`mob+%mob.unknown11]
+@_9     ld      [IX`mob+%mob.type]	$FF              	;remove object
+@_10    inc     [IX`mob+%mob.unknown11]
         ret
 	;
 
@@ -20969,28 +20969,28 @@ platform_flipper_process:                                                       
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]             	;mob does not collide with the floor
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._9a7e
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._9a7e
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9a7e
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9a7e
         bit     5	[IY`vars+%vars.joypad]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      A	[IX`mob+%mob.unknown11]
         ld      [IX`mob+%mob.unknown12]	A
         ld      A	[IX`mob+%mob.unknown11]
         cp      $05
-        jr      nc	._2
+        jr      nc	@_2
 	
         inc     [IX`mob+%mob.unknown11]
-        jp      ._2
+        jp      @_2
         
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._2
+        jr      z	@_2
 	
         dec     [IX`mob+%mob.unknown11]
-._2     ld      A	[IX`mob+%mob.unknown11]
+@_2     ld      A	[IX`mob+%mob.unknown11]
         cp      $01
-        jr      nc	._3
+        jr      nc	@_3
 	
         ld      HL      $140C
         ld      [$.TEMP6]	HL
@@ -20999,8 +20999,8 @@ platform_flipper_process:                                                       
         call    \\detectCollisionWithSonic
         ret     c
 	
-        ld      BC      ._999e
-        call    ._9aaf
+        ld      BC      @_999e
+        call    @_9aaf
         ret     nc
 	
         ld      A	[$.D2E8]
@@ -21016,10 +21016,10 @@ platform_flipper_process:                                                       
         ld      [$.SONIC.Xdirection]	A
         ret
         
-._3     cp      $04
-        jp      nc	._4
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._9a90
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._9a90
+@_3     cp      $04
+        jp      nc	@_4
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9a90
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9a90
         ld      HL      	$080f
         ld      [$.TEMP6]	HL
         ld      [IX`mob+%mob.width]	$1E
@@ -21027,8 +21027,8 @@ platform_flipper_process:                                                       
         call    \\detectCollisionWithSonic
         ret     c
 	
-        ld      BC      ._99be
-        call    ._9aaf
+        ld      BC      @_99be
+        call    @_9aaf
         ret     nc
 	
         ld      A	[IX`mob+%mob.unknown12]
@@ -21041,7 +21041,7 @@ platform_flipper_process:                                                       
         add     A	A
         ld      C	A
         ld      B	$00
-        ld      HL      ._99fe
+        ld      HL      @_99fe
         add     HL      BC
         ld      E	[HL]
         inc     HL
@@ -21052,7 +21052,7 @@ platform_flipper_process:                                                       
         adc     A	$FF
         ld      [$.SONIC.Xspeed]	HL
         ld      [$.SONIC.Xdirection]	A	
-        ld      HL      ._9a3e
+        ld      HL      @_9a3e
         add     HL      BC
         ld      E	[HL]
         inc     HL
@@ -21086,8 +21086,8 @@ platform_flipper_process:                                                       
         ld      [$.SONIC.Xdirection]	A	
         ret
         
-._4     ld      [IX`mob+%mob.spriteLayout+0]	LO ._9aa2
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._9aa2
+@_4     ld      [IX`mob+%mob.spriteLayout+0]	LO @_9aa2
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9aa2
         ld      HL      $021A
         ld      [$.TEMP6]	HL
         ld      [IX`mob+%mob.width]	$1E
@@ -21095,8 +21095,8 @@ platform_flipper_process:                                                       
         call    \\detectCollisionWithSonic
         ret     c
 	
-        ld      BC      ._99de
-        call    ._9aaf
+        ld      BC      @_99de
+        call    @_9aaf
         ret     nc
 	
         ld      A	[$.D2E8]
@@ -21114,35 +21114,35 @@ platform_flipper_process:                                                       
 	
 	%byte
 	
-._999e  $FF $FF $FE $FE $FE $FD $FD $FD $FC $FC $FC $FC $FB $FB $FB $FB
+@_999e  $FF $FF $FE $FE $FE $FD $FD $FD $FC $FC $FC $FC $FB $FB $FB $FB
         $FA $FA $FA $FA $FA $F9 $F9 $F9 $F9 $F9 $F9 $FA $FA $FB $FC $FE
-._99be  $EA $EA $EA $F6 $F7 $F8 $F8 $F8 $F9 $F9 $F9 $FA $FA $FA $FB $FB
+@_99be  $EA $EA $EA $F6 $F7 $F8 $F8 $F8 $F9 $F9 $F9 $FA $FA $FA $FB $FB
         $FB $FB $FC $FC $FC $FC $FD $FD $FD $FD $FE $FE $FF $00 $02 $04
-._99de  $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EE $ED $EC $EC
+@_99de  $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EE $ED $EC $EC
         $EC $ED $EE $EF $F0 $F2 $F3 $F4 $F5 $F7 $F8 $F9 $FA $FB $FD $FF
-._99fe  $00 $F8 $00 $F8 $00 $F9 $00 $FA $00 $FB $00 $FC $E0 $FC $80 $FD
+@_99fe  $00 $F8 $00 $F8 $00 $F9 $00 $FA $00 $FB $00 $FC $E0 $FC $80 $FD
         $C0 $FD $00 $FE $40 $FE $80 $FE $C0 $FE $00 $FF $20 $FF $40 $FF
         $60 $FF $80 $FF $A0 $FF $C0 $FF $E0 $FF $E8 $FF $EA $FF $EC $FF
         $EE $FF $F0 $FF $F2 $FF $F4 $FF $F6 $FF $F8 $FF $FC $FF $FE $FF
-._9a3e  $00 $FC $00 $FC $00 $FC $00 $FB $00 $FA $00 $F9 $00 $F8 $00 $F7
+@_9a3e  $00 $FC $00 $FC $00 $FC $00 $FB $00 $FA $00 $F9 $00 $F8 $00 $F7
         $00 $F6 $80 $F5 $00 $F5 $C0 $F4 $80 $F4 $40 $F4 $00 $F4 $00 $F4
         $00 $F4 $00 $F4 $40 $F4 $80 $F4 $C0 $F4 $00 $F5 $00 $F6 $00 $F7
         $00 $F9 $00 $FA $00 $FC $80 $FC $00 $FD $C0 $FD $00 $FF $00 $FF
 
         ;sprite layout
-._9a7e  $FE $FF $FF $FF $FF $FF
+@_9a7e  $FE $FF $FF $FF $FF $FF
         $38 $3A $3C $3E $FF $FF
         $FF $FF $FF $FF $FF $FF
-._9a90  $48 $4A $4C $4E $FF $FF
+@_9a90  $48 $4A $4C $4E $FF $FF
         $68 $6A $6C $6E $FF $FF
         $FF $FF $FF $FF $FF $FF
-._9aa2  $FE $12 $14 $16 $FF $FF
+@_9aa2  $FE $12 $14 $16 $FF $FF
         $FE $32 $34 $36 $FF $FF
         $FF
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._9aaf  ld      A	[$.SONIC.Ydirection]									;$9AAF
+@_9aaf  ld      A	[$.SONIC.Ydirection]									;$9AAF
         and     A
         ret     m
         
@@ -21155,21 +21155,21 @@ platform_flipper_process:                                                       
         ld      B	$00
         ld      C	[HL]
         bit     7	C
-        jr      z	._5
+        jr      z	@_5
 	
         dec     B
-._5     ld      L	[IX`mob+%mob.Y+0]
+@_5     ld      L	[IX`mob+%mob.Y+0]
         ld      H	[IX`mob+%mob.Y+1]
         add     HL      BC
         ld      [$.SONIC.Y]	HL
         ld      A	[$.SONIC.Yspeed+1]
         cp      $03
-        jr      nc	._6
+        jr      nc	@_6
 	
         scf     
         ret
         
-._6     ld      DE      $0001
+@_6     ld      DE      $0001
         ld      HL      [$.SONIC.Yspeed]
         ld      A	L
         cpl     
@@ -21197,26 +21197,26 @@ platform_bumper_process:                                                        
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	$1C
         ld      [IX`mob+%mob.height]	$06
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._9b6e
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._9b6e
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9b6e
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9b6e
         ld      HL      $0001
         ld      A	[IX`mob+%mob.unknown12]
         cp      $60
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      HL      $FFFF
-._1     ld      [IX`mob+%mob.Xspeed+0]		$00
+@_1     ld      [IX`mob+%mob.Xspeed+0]		$00
         ld      [IX`mob+%mob.Xspeed+1]		L
         ld      [IX`mob+%mob.Xdirection]	H
         inc     A
         cp      $C0
-        jr      c	._2
+        jr      c	@_2
 	
         xor     A`zero
-._2     ld      [IX`mob+%mob.unknown12]	A`zero
+@_2     ld      [IX`mob+%mob.unknown12]	A`zero
         ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      nz	._3
+        jr      nz	@_3
 	
         ld      HL      	$0602
         ld      [$.TEMP6]	HL
@@ -21251,12 +21251,12 @@ platform_bumper_process:                                                        
 		;
         ret
         
-._3     dec     [IX`mob+%mob.unknown11]
+@_3     dec     [IX`mob+%mob.unknown11]
         ret
         
         ;sprite layout
 	%byte
-._9b6e  $08 $0A $28 $2A $FF $FF
+@_9b6e  $08 $0A $28 $2A $FF $FF
         $FF
 ;
 
@@ -21270,7 +21270,7 @@ unknown_9b75_process:                                                           
         ld      HL      	$0000
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._2
+        jr      c	@_2
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -21292,17 +21292,17 @@ unknown_9b75_process:                                                           
         add     A	A
         rl      H
         ld      D	H
-        ld      HL      ._9bd9
+        ld      HL      @_9bd9
         ld      B	$05
         
-.loop   ld      A	[HL]
+@loop   ld      A	[HL]
         inc     HL
         cp      E
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      A	[HL]
         cp      D
-        jr      nz	._1
+        jr      nz	@_1
 	
         inc     HL
         ld      A	[HL]
@@ -21310,19 +21310,19 @@ unknown_9b75_process:                                                           
         ld      A	$01
         ld      [$.D289]	A	
         set     4	[IY`vars+%vars.flags6]
-        jp      ._2
+        jp      @_2
         
-._1     inc     HL
+@_1     inc     HL
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
-._2     xor     A`zero
+@_2     xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
         ret
 	
 	%byte
-._9bd9  $7D $1A $15 $7D $01 $14 $01 $3C $18 $01 $02
+@_9bd9  $7D $1A $15 $7D $01 $14 $01 $3C $18 $01 $02
         $19 $14 $0F $1A
 	;
 
@@ -21333,12 +21333,12 @@ unknown_9be8_process:                                                           
         ld      [IX`mob+%mob.Xspeed+0]		$80
         ld      [IX`mob+%mob.Xspeed+1]		$01
         ld      [IX`mob+%mob.Xdirection]	$00
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._9c69
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._9c69
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_9c69
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_9c69
         
-._9bfc  set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
+@_9bfc  set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      A	[IX`mob+%mob.X+0]
         ld      [IX`mob+%mob.unknown11]	A
@@ -21352,24 +21352,24 @@ unknown_9be8_process:                                                           
 		;
 		
         set     0	[IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.width]	$06
+@_1     ld      [IX`mob+%mob.width]	$06
         ld      [IX`mob+%mob.height]	$08
         ld      A	[IX`mob+%mob.unknown13]
         cp      $64
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      HL      $0400
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-._2     inc     [IX`mob+%mob.unknown13]
+@_2     inc     [IX`mob+%mob.unknown13]
         ld      A	[IX`mob+%mob.unknown13]
         cp      $64
         ret     c
 	
         cp      $F0
-        jr      c	._3
+        jr      c	@_3
 	
         xor     A`zero                          		;set A to 0
         ld      [IX`mob+%mob.Xsubpixel]	A`zero
@@ -21386,7 +21386,7 @@ unknown_9be8_process:                                                           
 		;
         ret
         
-._3     xor     A`zero
+@_3     xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
         ld      [IX`mob+%mob.Xspeed+0]		A`zero
@@ -21396,7 +21396,7 @@ unknown_9be8_process:                                                           
 
         ;sprite layout
 	%byte
-._9c69  $0C $0E $FF $FF $FF $FF
+@_9c69  $0C $0E $FF $FF $FF $FF
 	$FF
 	;
 
@@ -21409,14 +21409,14 @@ _9c70:                                                                          
         ld      [IX`mob+%mob.Xspeed+0]          $80
         ld      [IX`mob+%mob.Xspeed+1]          $FE
         ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._9c87
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._9c87
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_9c87
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_9c87
         jp      \unknown.9be8\process._9bfc
 
         ;sprite layout
         %byte
         
-._9c87  $2C $2E $FF $FF $FF $FF
+@_9c87  $2C $2E $FF $FF $FF $FF
         $FF
 	;
 
@@ -21426,7 +21426,7 @@ mob_trap_flameThrower:                                                          
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         bit     0       [IX`mob+%mob.flags]
-        jr      nz      ._1
+        jr      nz      @_1
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -21443,7 +21443,7 @@ mob_trap_flameThrower:                                                          
         call    \\math\_LABEL_625_57
         ld      [IX`mob+%mob.unknown11] A
         set     0       [IX`mob+%mob.flags]
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
         ld      L       [IX`mob+%mob.Y+0]
@@ -21473,7 +21473,7 @@ mob_trap_flameThrower:                                                          
         ld      H       [HL]
         ld      L       A
         or      H
-        jr      z       ._2
+        jr      z       @_2
         ld      A	[IX`mob+%mob.unknown11]
         add     A       A
         add     A       A
@@ -21484,7 +21484,7 @@ mob_trap_flameThrower:                                                          
         add     HL      DE
         ld      B       $04
         
-.loop   push    BC
+@loop   push    BC
         ld      A	[HL]
         inc     HL
         ld      E       [HL]
@@ -21495,18 +21495,18 @@ mob_trap_flameThrower:                                                          
         call    _3581
         pop     HL
         pop     BC
-        djnz    .loop
+        djnz    @loop
         
         ld      A	[IX`mob+%mob.height]
         and     A
-        jr      z       ._2
+        jr      z       @_2
 	
         ld      HL      $0202
         ld      [$.TEMP6]	HL
         call    detectCollisionWithSonic
         call    nc      hitPlayer._35fd
 	
-._2     inc     [IX`mob+%mob.unknown11]
+@_2     inc     [IX`mob+%mob.unknown11]
         xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]    A`zero
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
@@ -21554,20 +21554,20 @@ mob_door_left:                                                                  
         call    _9ed4
         ld      A	[IX`mob+%mob.unknown11]
         cp      $28
-        jr      nc      ._2
+        jr      nc      @_2
 	
         ld      HL      $0005
         ld      [$.TEMP6]	HL
         call    detectCollisionWithSonic
-        jr      c       ._2
+        jr      c       @_2
 	
         ld      DE      $0005
         ld      A	[$.SONIC.Xdirection]
         and     A
-        jp      m       ._1
+        jp      m       @_1
 	
         ld      DE      $FFEC
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
@@ -21576,20 +21576,20 @@ mob_door_left:                                                                  
         ld      H`zero  A`zero
         ld      [$.SONIC.Xspeed]	HL`zero
         ld      [$.SONIC.Xdirection]    A`zero
-._2     ld      L       [IX`mob+%mob.X+0]
+@_2     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      $FFC8
         add     HL      DE
         ld      DE      [$.SONIC.X]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21598,7 +21598,7 @@ mob_door_left:                                                                  
         ld      DE      [$.SONIC.Y]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21606,14 +21606,14 @@ mob_door_left:                                                                  
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
 	
         call    _9eb4
-        jr      ._4
+        jr      @_4
         
-._3     call    _9ec4
-._4     ld      DE      _9f2b
-._9e7e  ld      A	[IX`mob+%mob.unknown11]
+@_3     call    _9ec4
+@_4     ld      DE      _9f2b
+@_9e7e  ld      A	[IX`mob+%mob.unknown11]
         and     $0F
         ld      C       A
         ld      B       $00
@@ -21714,11 +21714,11 @@ _9ed4:                                                                          
         ld      DE      $0014
         ld      A	[HL]
         cp      $A3
-        jr      z       ._1
+        jr      z       @_1
 	
         ld      DE      $0004
         set     1       [IX`mob+%mob.flags]
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [IX`mob+%mob.X+0]       L
@@ -21760,20 +21760,20 @@ mob_door_right:                                                                 
         call    _9ed4
         ld      A	[IX`mob+%mob.unknown11]
         cp      $28
-        jr      nc      ._2
+        jr      nc      @_2
 	
         ld      HL      $0005
         ld      [$.TEMP6]	HL
         call    detectCollisionWithSonic
-        jr      c       ._2
+        jr      c       @_2
 	
         ld      DE      $0005
         ld      A	[$.SONIC.Xdirection]
         and     A
-        jp      m       ._1
+        jp      m       @_1
 	
         ld      DE      $FFEC
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]	HL
@@ -21783,14 +21783,14 @@ mob_door_right:                                                                 
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-._2     ld      L       [IX`mob+%mob.X+0]
+@_2     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      $FFF0
         add     HL      DE
         ld      DE      [$.SONIC.X]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -21798,7 +21798,7 @@ mob_door_right:                                                                 
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21807,7 +21807,7 @@ mob_door_right:                                                                 
         ld      DE      [$.SONIC.Y]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21815,17 +21815,17 @@ mob_door_right:                                                                 
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
 	
         call    _9eb4
-        jr      ._4
-._3     call    _9ec4
-._4     ld      DE`spriteLayout ._9fee
+        jr      @_4
+@_3     call    _9ec4
+@_4     ld      DE`spriteLayout @_9fee
         jp      mob_door_left._9e7e
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._9fee  ;sprite layout                                                                                         `$9FEE
+@_9fee  ;sprite layout                                                                                         `$9FEE
         $36 $FF $FF $FF $FF $FF
         $3E $FF $FF $FF $FF $FF
         $36 $FF $FF $FF $FF $FF
@@ -21849,20 +21849,20 @@ mob_door:                                                                       
         
         ld      A       [IX`mob+%mob.unknown11]
         cp      $28
-        jr      nc      ._2
+        jr      nc      @_2
         
         ld      HL              $0005
         ld      [$.TEMP6]       HL
         call    detectCollisionWithSonic
-        jr      c       ._2
+        jr      c       @_2
         
         ld      DE      $0005
         ld      A       [$.SONIC.Xdirection]
         and     A
-        jp      m       ._1
+        jp      m       @_1
 	
         ld      DE      $FFEC
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]     HL
@@ -21872,14 +21872,14 @@ mob_door:                                                                       
         ld      [$.SONIC.Xspeed+1]      A`zero
         ld      [$.SONIC.Xdirection]    A`zero
         
-._2     ld      L       [IX`mob+%mob.X+0]
+@_2     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      $FFC8
         add     HL      DE
         ld      DE      [$.SONIC.X]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
         
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -21887,7 +21887,7 @@ mob_door:                                                                       
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
         
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21896,7 +21896,7 @@ mob_door:                                                                       
         ld      DE      [$.SONIC.Y]
         xor     A`zero
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
         
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -21904,19 +21904,19 @@ mob_door:                                                                       
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c       ._3
+        jr      c       @_3
         
         call    _9eb4
-        jr      ._4
+        jr      @_4
         
-._3     call    _9ec4
-._4     ld      DE      ._a0b1
+@_3     call    _9ec4
+@_4     ld      DE      @_a0b1
         jp      mob_door_left._9e7e
         
         ;---------------------------------------------------------------------------------------------------------------
         
         ;sprite layout
-._a0b1  %byte                                                                                                   ;$A0B1
+@_a0b1  %byte                                                                                                   ;$A0B1
         
         $38 $FF $FF $FF $FF $FF
         $3E $FF $FF $FF $FF $FF
@@ -21940,7 +21940,7 @@ trap_electric_process:                                                          
         ld      [IX`mob+%mob.width]	$30
         ld      [IX`mob+%mob.height]	$10
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -21955,10 +21955,10 @@ trap_electric_process:                                                          
         ld      [IX`mob+%mob.Y+0]	L
         ld      [IX`mob+%mob.Y+1]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         cp      $64
-        jr      c	._3
-        jr      nz	._2
+        jr      c	@_3
+        jr      nz	@_2
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -21966,28 +21966,28 @@ trap_electric_process:                                                          
 		rst     \\sound\rst_playSFX
 		;
         
-._2     ld      HL      $0000
+@_2     ld      HL      $0000
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-        ld      DE      ._a173
-        ld      BC      ._a167
+        ld      DE      @_a173
+        ld      BC      @_a167
         call    _7c41
-        jp      ._5
+        jp      @_5
         
-._3     cp      $46
-        jr      nc	._4
+@_3     cp      $46
+        jr      nc	@_4
 	
         xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
-        jp      ._5
+        jp      @_5
         
-._4     ld      DE      ._a173
-        ld      BC      ._a16e
+@_4     ld      DE      @_a173
+        ld      BC      @_a16e
         call    _7c41
-._5     inc     [IX`mob+%mob.unknown11]
+@_5     inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
         cp      $A0
         ret     c
@@ -21995,12 +21995,12 @@ trap_electric_process:                                                          
         ld      [IX`mob+%mob.unknown11]	$00
         ret
 
-._a167  %byte                                                                        				;$A167
+@_a167  %byte                                                                        				;$A167
         $00 $01 $01 $01 $02 $01 $FF
-._a16e                                                                          				;$A16E
+@_a16e                                                                          				;$A16E
         $02 $01 $03 $01 $FF
 
-._a173  ;sprite layout                                                          				`$A173
+@_a173  ;sprite layout                                                          				`$A173
         $02 $04 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
@@ -22043,24 +22043,24 @@ badnick_ballhog_process:                                                        
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc      ._3
+        jr      nc      @_3
 	
-        ld      BC      ._a2d2
+        ld      BC      @_a2d2
         ld      A	[IX`mob+%mob.unknown11]
         cp      $EB
-        jr      c       ._2
-        jr      nz      ._1
+        jr      c       @_2
+        jr      nz      @_1
 	
         ld      [IX`mob+%mob.unknown16] $00
-._1     ld      BC      ._a2d7
-._2     ld      DE      ._a2da
+@_1     ld      BC      @_a2d7
+@_2     ld      DE      @_a2da
         call    _7c41
         ld      A	[IX`mob+%mob.unknown11]
         cp      $ED
-        jp      nz      ._6
+        jp      nz      @_6
         
         call    \\findEmptyMob
-        jp      c       ._6
+        jp      c       @_6
         
         ld      E       [IX`mob+%mob.X+0]
         ld      D       [IX`mob+%mob.X+1]
@@ -22089,26 +22089,26 @@ badnick_ballhog_process:                                                        
         ld      [IX`mob+%mob.Yspeed+1]          $01
         ld      [IX`mob+%mob.Ydirection]        A`zero
         pop     IX
-        jp      ._6
+        jp      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._3     ld      BC      ._a2d2
+@_3     ld      BC      @_a2d2
         ld      A	[IX`mob+%mob.unknown11]
         cp      $EB
-        jr      c       ._5
-        jr      nz      ._4
+        jr      c       @_5
+        jr      nz      @_4
 	
         ld      [IX`mob+%mob.unknown16] $00
-._4     ld      BC      ._a2d7
-._5     ld      DE      ._a30b
+@_4     ld      BC      @_a2d7
+@_5     ld      DE      @_a30b
         call    _7c41
         ld      A	[IX`mob+%mob.unknown11]
         cp      $ED
-        jr      nz      ._6
+        jr      nz      @_6
         
         call    \\findEmptyMob
-        jp      c       ._6
+        jp      c       @_6
         
         ld      E       [IX`mob+%mob.X+0]
         ld      D       [IX`mob+%mob.X+1]
@@ -22137,16 +22137,16 @@ badnick_ballhog_process:                                                        
         ld      [IX`mob+%mob.Yspeed+1]          $01
         ld      [IX`mob+%mob.Ydirection]        A`zero
         pop     IX
-._6     inc     [IX`mob+%mob.unknown11]
+@_6     inc     [IX`mob+%mob.unknown11]
         ret
         
-._a2d2  %byte                                                                                                   ;$A2D2
+@_a2d2  %byte                                                                                                   ;$A2D2
         $00 $1C $01 $06 $FF
         
-._a2d7  %byte                                                                                                   ;$A2D7
+@_a2d7  %byte                                                                                                   ;$A2D7
         $02 $18 $FF        
         
-._a2da  ;sprite layouts                                                                                        	`$A2DA
+@_a2da  ;sprite layouts                                                                                        	`$A2DA
         %byte
         
         $40 $42 $FF $FF $FF $FF
@@ -22161,7 +22161,7 @@ badnick_ballhog_process:                                                        
         $68 $6A $FF $FF $FF $FF
         $FF
         
-._a30b  $50 $52 $FF $FF $FF $FF                                                                                 ;$A30B
+@_a30b  $50 $52 $FF $FF $FF $FF                                                                                 ;$A30B
         $70 $72 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
 
@@ -22189,12 +22189,12 @@ unknown_a33c_process:                                                           
         call    nc hitPlayer._35fd
         
         bit     7  	[IX`mob+%mob.flags]
-        jr      z	._1
+        jr      z	@_1
 	
         ld      [IX`mob+%mob.Yspeed+0]          $00
         ld      [IX`mob+%mob.Yspeed+1]          $FD
         ld      [IX`mob+%mob.Ydirection]        $FF
-._1     ld      L       [IX`mob+%mob.Yspeed+0]
+@_1     ld      L       [IX`mob+%mob.Yspeed+0]
         ld      H       [IX`mob+%mob.Yspeed+1]
         ld      A       [IX`mob+%mob.Ydirection]
         ld      DE      $001F
@@ -22205,14 +22205,14 @@ unknown_a33c_process:                                                           
         ld      [IX`mob+%mob.Ydirection]        A
         ld      A       [IX`mob+%mob.unknown11]
         cp      $82
-        jr      nc	._2
+        jr      nc	@_2
 	
-        ld      BC      ._a3b1
-        ld      DE      ._a3bb
+        ld      BC      @_a3b1
+        ld      DE      @_a3bb
         call    _7c41
-        jp      ._4
+        jp      @_4
         
-._2     jr      nz	._3
+@_2     jr      nz	@_3
         ld      [IX`mob+%mob.unknown16] $00
         
 	;(we can compile with, or without, audio)
@@ -22221,10 +22221,10 @@ unknown_a33c_process:                                                           
 		rst     \\sound\rst_playSFX
 		;
         
-._3     ld      BC      ._a3b4
-        ld      DE      ._a3bb
+@_3     ld      BC      @_a3b4
+        ld      DE      @_a3bb
         call    _7c41
-._4     inc     [IX`mob+%mob.unknown11]
+@_4     inc     [IX`mob+%mob.unknown11]
         ld      A       [IX`mob+%mob.unknown11]
         cp      $A5
         ret     c
@@ -22232,14 +22232,14 @@ unknown_a33c_process:                                                           
         ld      [IX`mob+%mob.type]	$FF      		;remove mob?
         ret
         
-._a3b1  %byte                                                                                			;$A3B1
+@_a3b1  %byte                                                                                			;$A3B1
         $00 $08 $FF
         
-._a3b4                                                                                  			;$A3B4
+@_a3b4                                                                                  			;$A3B4
         $01 $0C $02 $0C $03 $0C $FF
         
         ;sprite layout
-._a3bb                                                                                  			;$A3BB
+@_a3bb                                                                                  			;$A3BB
         $20 $22 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
@@ -22264,7 +22264,7 @@ door_switch_process:                                                            
         ld      [IX`mob+%mob.height]    $11
         
         bit     0  	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -22275,30 +22275,30 @@ door_switch_process:                                                            
         
         set     0  	[IX`mob+%mob.flags]
         
-._1     ld      HL      $0001
+@_1     ld      HL      $0001
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c	._3
+        jr      c	@_3
         
         ld      A       [$.SONIC.Ydirection]
         and     A
-        jp      m	._3
+        jp      m	@_3
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._a48b
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._a48b
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a48b
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a48b
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $03
-        jr      nz	._2
+        jr      nz	@_2
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._a49b
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._a49b
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a49b
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a49b
         
-._2     ld      BC      $0006
+@_2     ld      BC      $0006
         ld      DE      $0000
         call    _LABEL_7CC1_12
         
         bit     1       [IX`mob+%mob.flags]
-        jr      nz	._4
+        jr      nz	@_4
 	
         set     1  [IX`mob+%mob.flags]
         ld      HL      $.D317
@@ -22313,40 +22313,40 @@ door_switch_process:                                                            
 		rst     \\sound\rst_playSFX
 		;
 		
-        jr      ._4
+        jr      @_4
         
         ;-------------------------------------------------------------------------------------------
         
-._3     res     1  	[IX`mob+%mob.flags]
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._a493
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._a493
+@_3     res     1  	[IX`mob+%mob.flags]
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a493
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a493
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $03
-        jr      nz	._4
+        jr      nz	@_4
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._a4a3	;TODO: invalid address??
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._a4a3
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_a4a3	;TODO: invalid address??
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_a4a3
         
-._4     xor     A`zero
+@_4     xor     A`zero
         ld      [IX`mob+%mob.Yspeed+0]          A`zero
         ld      [IX`mob+%mob.Yspeed+1]          $02
         ld      [IX`mob+%mob.Ydirection]        A`zero
         ret
         
         ;sprite layout
-._a48b  %byte                                                                                			;$A48B
+@_a48b  %byte                                                                                			;$A48B
         $1A $1C $FF $FF $FF $FF
         $FF $FF
         
-._a493                                                                                  			;$A493
+@_a493                                                                                  			;$A493
         $3A $3C $FF $FF $FF $FF
         $FF $FF
         
-._a49b                                                                                  			;$A49B
+@_a49b                                                                                  			;$A49B
         $38 $3A $FF $FF $FF $FF
         $FF $FF
         
-._a4a3
+@_a4a3
         $34 $36 $FF $FF $FF $FF
         $FF $FF
 	;
@@ -22360,20 +22360,20 @@ door_switching_process:                                                         
         
         ld      A       [IX`mob+%mob.unknown11]
         cp      $28
-        jr      nc	._2
+        jr      nc	@_2
         
         ld      HL      $0005
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c	._2
+        jr      c	@_2
         
         ld      DE      $0005
         ld      A       [$.SONIC.Xdirection]
         and     A
-        jp      m	._1
+        jp      m	@_1
 	
         ld      DE      $FFEC
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         add     HL      DE
         ld      [$.SONIC.X]     HL
@@ -22385,40 +22385,40 @@ door_switching_process:                                                         
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ld      HL      $.D317
+@_2     ld      HL      $.D317
         call    \\levels.load\getLevelBitFlag
         bit     1	[IX`mob+%mob.flags]
-        jr      z	._3
+        jr      z	@_3
         ld      A	[HL]
         and     c
-        jr      nz	._5
-        jr      ._4
+        jr      nz	@_5
+        jr      @_4
         
-._3     ld      A	[HL]
+@_3     ld      A	[HL]
         and     C
-        jr      z	._5
+        jr      z	@_5
 	
-._4     ld      A	[IX`mob+%mob.unknown11]
+@_4     ld      A	[IX`mob+%mob.unknown11]
         cp      $30
-        jr      nc	._6
+        jr      nc	@_6
 	
         inc     A
         inc     A
         ld      [IX`mob+%mob.unknown11]	A
-        jr      ._6
+        jr      @_6
         
-._5     ld      A	[IX`mob+%mob.unknown11]
+@_5     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._6
+        jr      z	@_6
 	
         dec     A
         dec     A
         ld      [IX`mob+%mob.unknown11]	A
-._6     ld      DE      ._a51a
+@_6     ld      DE      @_a51a
         jp      mob_door_left._9e7e
         
         ;sprite layout
-._a51a  %byte                                                                                			;$A51A
+@_a51a  %byte                                                                                			;$A51A
         $3E $FF $FF $FF $FF $FF
         $38 $FF $FF $FF $FF $FF
         $3E $FF $FF $FF $FF $FF
@@ -22442,15 +22442,15 @@ badnick_caterkiller_process:                                                    
         
         ld      A       [$.FRAMECOUNT]
         and     %00000001
-        jr      nz	._5
+        jr      nz	@_5
         
-        ld      HL      ._a6b9
+        ld      HL      @_a6b9
         
         bit     1       [IX`mob+%mob.flags]
-        jr      z	._1
+        jr      z	@_1
         
-        ld      HL      ._a769
-._1     ld      E       [IX`mob+%mob.unknown11]
+        ld      HL      @_a769
+@_1     ld      E       [IX`mob+%mob.unknown11]
         sla     E
         ld      D       $00
         add     HL      DE
@@ -22462,16 +22462,16 @@ badnick_caterkiller_process:                                                    
         ld      A       [IX`mob+%mob.X+1]
         add     HL      BC
         bit     7       B
-        jr      z	._2
+        jr      z	@_2
 	
         adc     A       $FF
-        jr      ._3
+        jr      @_3
         
-._2     adc     A       $00
-._3     ld      [IX`mob+%mob.Xsubpixel] L
+@_2     adc     A       $00
+@_3     ld      [IX`mob+%mob.Xsubpixel] L
         ld      [IX`mob+%mob.X+0]       H
         ld      [IX`mob+%mob.X+1]       A
-        ld      HL      ._a6e5
+        ld      HL      @_a6e5
         add     HL      DE
         ld      E       [HL]
         inc     HL
@@ -22483,35 +22483,35 @@ badnick_caterkiller_process:                                                    
         ld      [IX`mob+%mob.unknown13] H
         ld      C       $00
         bit     7       H
-        jr      z	._4
+        jr      z	@_4
         
         ld      C       $FF
-._4     ld      [IX`mob+%mob.unknown14] C
-._5     ld      L       [IX`mob+%mob.X+0]
+@_4     ld      [IX`mob+%mob.unknown14] C
+@_5     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      [$.TEMP1]       HL
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
         ld      [$.TEMP3]       HL
         bit     1       [IX`mob+%mob.flags]
-        jr      nz	._7
+        jr      nz	@_7
 	
-        ld      HL      ._a711
+        ld      HL      @_a711
         ld      E       [IX`mob+%mob.unknown11]
         ld      D       $00
         add     HL      DE
         
         ld      A       $24
-        call    ._a688
+        call    @_a688
         
         ld      A       $26
-        call    ._a6a2
+        call    @_a6a2
         
         ld      A       $26
-        call    ._a688
+        call    @_a688
         
         ld      A       $26
-        call    ._a6a2
+        call    @_a6a2
         
         ld      [IX`mob+%mob.width]     $06
         ld      HL              $0802
@@ -22519,45 +22519,45 @@ badnick_caterkiller_process:                                                    
         call    \\detectCollisionWithSonic
         ld      HL      $0000
         ld      [$.TEMP1]       HL
-        jr      c	._6
+        jr      c	@_6
 	
         call    hitPlayer
-        jr      ._9
+        jr      @_9
         
-._6     ld      [IX`mob+%mob.width]     $16
+@_6     ld      [IX`mob+%mob.width]     $16
         ld      HL              $0806
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
         call    nc      hitPlayer._35fd
-        jr      ._9
+        jr      @_9
         
-._7     ld      HL      ._a795
+@_7     ld      HL      @_a795
         ld      E       [IX`mob+%mob.unknown11]
         ld      D       $00
         add     HL      DE
         
         ld      A       $2A
-        call    ._a688
+        call    @_a688
         
         ld      A       $28
-        call    ._a6a2
+        call    @_a6a2
         
         ld      A       $28
-        call    ._a688
+        call    @_a688
         
         ld      A       $28
-        call    ._a6a2
+        call    @_a6a2
         
         ld      [IX`mob+%mob.width]     $10
         ld      HL              $0401
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c	._8
+        jr      c	@_8
 	
         call    hitPlayer._35fd
-        jr      ._9
+        jr      @_9
         
-._8     ld      [IX`mob+%mob.width]     $16
+@_8     ld      [IX`mob+%mob.width]     $16
         ld      HL              $0410
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
@@ -22565,7 +22565,7 @@ badnick_caterkiller_process:                                                    
         ld      [$.TEMP1]       HL
         call    nc      hitPlayer
         
-._9     ld      [IX`mob+%mob.Yspeed+1]  $01
+@_9     ld      [IX`mob+%mob.Yspeed+1]  $01
         ld      A       [$.FRAMECOUNT]
         and     %00000001
         ret     nz
@@ -22589,7 +22589,7 @@ badnick_caterkiller_process:                                                    
         
         ;===============================================================================================================
         
-._a688                                                                                                          ;$A688
+@_a688                                                                                                          ;$A688
         push    HL
         ld      E               [HL]
         ld      D               $00
@@ -22605,7 +22605,7 @@ badnick_caterkiller_process:                                                    
         
         ;===============================================================================================================
         
-._a6a2                                                                                                          ;$A6A2
+@_a6a2                                                                                                          ;$A6A2
         push    HL
         ld      E               [HL]
         ld      D               $00
@@ -22618,17 +22618,17 @@ badnick_caterkiller_process:                                                    
         add     HL      DE
         ret
         
-._a6b9  %byte                                                                                                   ;$A6B9
+@_a6b9  %byte                                                                                                   ;$A6B9
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $00 $E0 $FF $E0 $FF $E0 $FF $E0 $FF $C0 $FF
         $C0 $FF $80 $FF $80 $FF $00 $FF $00 $FF $00 $FE
         
-._a6e5  %byte                                                                                                   ;$A6E5
+@_a6e5  %byte                                                                                                   ;$A6E5
         $00 $FF $80 $FF $80 $FF $C0 $FF $C0 $FF $E0 $FF $E0 $FF $F0 $FF
         $F0 $FF $F0 $FF $F0 $FF $10 $00 $10 $00 $10 $00 $10 $00 $20 $00
         $20 $00 $40 $00 $40 $00 $80 $00 $80 $00 $00 $01
         
-._a711  %byte                                                                                                   ;$A711
+@_a711  %byte                                                                                                   ;$A711
         $00 $01 $02 $02 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03 $03
         $03 $03 $02 $02 $01 $00 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07
         $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $07 $0E $0D $0C $0C
@@ -22636,12 +22636,12 @@ badnick_caterkiller_process:                                                    
         $0D $0E $15 $13 $12 $11 $10 $10 $0F $0F $0F $0F $0F $0F $0F $0F
         $0F $0F $10 $10 $11 $12 $13 $15
         
-._a769  %byte                                                                                                   ;$A769
+@_a769  %byte                                                                                                   ;$A769
         $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         $00 $00 $00 $00 $00 $00 $20 $00 $20 $00 $20 $00 $20 $00 $40 $00
         $40 $00 $80 $00 $80 $00 $00 $01 $00 $01 $00 $02
 
-._a795  %byte                                                                                                   ;$A795
+@_a795  %byte                                                                                                   ;$A795
         $15 $14 $13 $13 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12 $12
         $12 $12 $13 $13 $14 $15 $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E
         $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $0E $07 $08 $09 $09
@@ -22657,7 +22657,7 @@ boss_scrapbrain_process:                                                        
         ld      [IX`mob+%mob.width]     $1E
         ld      [IX`mob+%mob.height]    $2F
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      HL              $0340
         ld      [$.LEVEL_LEFT]  HL
@@ -22690,13 +22690,13 @@ boss_scrapbrain_process:                                                        
 		;
         
         set     0	[IX`mob+%mob.flags]
-._1     bit     1	[IX`mob+%mob.flags]
-        jr      nz	._4
+@_1     bit     1	[IX`mob+%mob.flags]
+        jr      nz	@_4
         
         ld      HL              [$.CAMERA_X]
         ld      [$.LEVEL_LEFT]  HL
         ld      DE      \boss.running\_baf9
-        ld      BC      ._a9b7
+        ld      BC      @_a9b7
         call    _7c41
         
         ld      L       [IX`mob+%mob.X+0]
@@ -22708,13 +22708,13 @@ boss_scrapbrain_process:                                                        
         xor     A`zero
         ld      BC      [$.SONIC.Xspeed]
         bit     7  	B
-        jr      nz	._2
+        jr      nz	@_2
 	
         sbc     HL      DE
-        jr      c	._3
+        jr      c	@_3
 	
-._2     ld      BC      $FF80
-._3     inc     B
+@_2     ld      BC      $FF80
+@_3     inc     B
         ld      [IX`mob+%mob.Xspeed+0]          C
         ld      [IX`mob+%mob.Xspeed+1]          B
         ld      [IX`mob+%mob.Xdirection]        A
@@ -22723,7 +22723,7 @@ boss_scrapbrain_process:                                                        
         ld      DE      $05A0
         xor     A`zero
         sbc     HL      DE
-        jp      c	._9
+        jp      c	@_9
 	
         ld      L       A
         ld      H       A
@@ -22732,10 +22732,10 @@ boss_scrapbrain_process:                                                        
         ld      [$.SONIC.Xspeed]        HL
         ld      [$.SONIC.Xdirection]    A
         set     1 	[IX`mob+%mob.flags]
-        jp      ._9
+        jp      @_9
         
-._4     bit     2  	[IX`mob+%mob.flags]
-        jr      nz	._5
+@_4     bit     2  	[IX`mob+%mob.flags]
+        jr      nz	@_5
         
         ld      HL      $0530
         ld      DE      $0220
@@ -22751,51 +22751,51 @@ boss_scrapbrain_process:                                                        
         inc     [IX`mob+%mob.unknown11]
         ld      A       [IX`mob+%mob.unknown11]
         cp      $C0
-        jp      c	._9
+        jp      c	@_9
 	
         set     2  [IX`mob+%mob.flags]
-        jp      ._9
+        jp      @_9
         
-._5     bit     3  [IX`mob+%mob.flags]
-        jr      nz	._6
+@_5     bit     3  [IX`mob+%mob.flags]
+        jr      nz	@_6
 	
         ld      [IY`vars+%vars.joypad]	$FF
         xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]    A`zero
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
         dec     [IX`mob+%mob.unknown11]
-        jp      nz	._9
+        jp      nz	@_9
         set     3  	[IX`mob+%mob.flags]
-        jp      ._9
+        jp      @_9
         
-._6     bit     4  	[IX`mob+%mob.flags]               	;mob underwater?
-        jr      nz	._8
+@_6     bit     4  	[IX`mob+%mob.flags]               	;mob underwater?
+        jr      nz	@_8
 	
         ld      DE      [$.SONIC.X]
         ld      HL      $0596
         and     A
         sbc     HL      DE
-        jr      nc	._9
+        jr      nc	@_9
 	
         ld      HL      $05C0
         xor     A`zero
         sbc     HL      DE
-        jr      c	._9
+        jr      c	@_9
 	
         or      [IX`mob+%mob.unknown11]
-        jr      nz	._7
+        jr      nz	@_7
 	
         ld      HL      [$.SONIC.Y]
         ld      DE      $028D
         xor     A`zero
         sbc     HL      DE
-        jr      c	._9
+        jr      c	@_9
 	
         ld      L`zero  A`zero
         ld      H`zero  A`zero
         ld      [$.SONIC.Xspeed]        HL`zero
         ld      [$.SONIC.Xdirection]    A`zero
-._7     ld      A               $80
+@_7     ld      A               $80
         ld      [$.SONIC.flags] A
         ld      HL              $05A0
         ld      [$.SONIC.X]     HL
@@ -22815,7 +22815,7 @@ boss_scrapbrain_process:                                                        
         inc     [IX`mob+%mob.unknown11]
         ld      A       [IX`mob+%mob.unknown11]
         cp      $C0
-        jr      nz	._9
+        jr      nz	@_9
 	
         ld      HL      [$.CAMERA_X]
         inc     H
@@ -22833,12 +22833,12 @@ boss_scrapbrain_process:                                                        
         set     1 [IY`vars+%vars.flags6]
         ret
         
-._8     ld      A       [IX`mob+%mob.unknown11]
+@_8     ld      A       [IX`mob+%mob.unknown11]
         and     A
-        jr      z	._9
+        jr      z	@_9
 	
         dec     [IX`mob+%mob.unknown11]
-._9     ld      E       [IX`mob+%mob.unknown11]
+@_9     ld      E       [IX`mob+%mob.unknown11]
         ld      D       $00
         ld      HL      $0280
         xor     A`zero
@@ -22859,7 +22859,7 @@ boss_scrapbrain_process:                                                        
         ld      BC      [$.CAMERA_X]
         and     A
         sbc     HL      BC
-        ld      BC      ._a9c0               			;address of sprite layout
+        ld      BC      @_a9c0               			;address of sprite layout
         call    \\gfx.sprites\processSpriteLayout
         ld      A       [IX`mob+%mob.unknown11]
         and     %00011111
@@ -22874,11 +22874,11 @@ boss_scrapbrain_process:                                                        
         
         ret
         
-._a9b7  %byte                                                                                			;$A9B7
+@_a9b7  %byte                                                                                			;$A9B7
         $03 $08 $04 $07 $05 $08 $04 $07 $FF
         
         ;sprite layout
-._a9c0  %byte                                                                                			;$A9C0
+@_a9c0  %byte                                                                                			;$A9C0
         $74 $76 $76 $78 $FF $FF
         $FF
 	;
@@ -22894,7 +22894,7 @@ meta_clouds_process:                                                            
         push    HL
         ld      A       [$.D2DE]
         cp      $24
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      E       A
         ld      D       $00
@@ -22920,14 +22920,14 @@ meta_clouds_process:                                                            
         ld      BC      [$.CAMERA_X]
         and     A
         sbc     HL      BC
-        ld      BC      ._aa63               			;address of sprite layout
+        ld      BC      @_aa63               			;address of sprite layout
         call    \\gfx.sprites\processSpriteLayout
         
         ld      A               [$.D2DE]
         add     A               $0C
         ld      [$.D2DE]        A
         
-._1     pop     HL
+@_1     pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]                    HL
         ld      [IY`vars+%vars.spriteUpdateCount]       A
@@ -22939,7 +22939,7 @@ meta_clouds_process:                                                            
         ld      H       [IX`mob+%mob.X+1]
         and     A
         sbc     HL      DE
-        jr      nc	._2
+        jr      nc	@_2
 	
         call    \\math\_LABEL_625_57
         ld      B       $00
@@ -22952,7 +22952,7 @@ meta_clouds_process:                                                            
         add     HL      BC
         ld      [IX`mob+%mob.X+0]               L
         ld      [IX`mob+%mob.X+1]               H
-._2     ld      [IX`mob+%mob.Xspeed+0]          $00
+@_2     ld      [IX`mob+%mob.Xspeed+0]          $00
         ld      [IX`mob+%mob.Xspeed+1]          $FD
         ld      [IX`mob+%mob.Xdirection]        $FF
         ld      [IX`mob+%mob.spriteLayout+0]    $00
@@ -22960,7 +22960,7 @@ meta_clouds_process:                                                            
         ret
         
         ;sprite layout
-._aa63  %byte                                                                                			;$AA63
+@_aa63  %byte                                                                                			;$AA63
         $40 $42 $44 $46 $FF $FF
         $FF
 	;
@@ -22973,7 +22973,7 @@ trap_propeller_process:                                                         
         ld      [IX`mob+%mob.width]	$05
         ld      [IX`mob+%mob.height]	$14
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -22988,7 +22988,7 @@ trap_propeller_process:                                                         
         ld      [IX`mob+%mob.Y+0]	L
         ld      [IX`mob+%mob.Y+1]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      L	[IX`mob+%mob.X+0]
+@_1     ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.Y+0]
@@ -22996,14 +22996,14 @@ trap_propeller_process:                                                         
         ld      [$.TEMP3]	HL
         ld      E	[IX`mob+%mob.unknown11]
         ld      D	$00
-        ld      HL      ._ab01
+        ld      HL      @_ab01
         add     HL      DE
         ld      E	[HL]
         inc     HL
         ld      D	[HL]
         ld      B	$02
         
-.loop   push    BC
+@loop   push    BC
         ld      A	[DE]
         ld      L	A
         ld      H	$00
@@ -23016,12 +23016,12 @@ trap_propeller_process:                                                         
         ld      A	[DE]
         inc     DE
         and     A
-        jp      m	._2
+        jp      m	@_2
         push    DE
         call    \\_3581
         pop     DE
-._2     pop     BC
-        djnz    .loop
+@_2     pop     BC
+        djnz    @loop
         
         ld      HL      	$0202
         ld      [$.TEMP6]	HL
@@ -23040,7 +23040,7 @@ trap_propeller_process:                                                         
         ld      [IX`mob+%mob.unknown11],$00
         ret
         
-._ab01  %byte                                                                       				;$AB01
+@_ab01  %byte                                                                       				;$AB01
         $09 $AB $0F $AB $15 $AB $1B $AB $00 $00 $1C $00 $18 $3C $00 $00
         $1E $00 $18 $3E $00 $00 $38 $00 $18 $3A $00 $08 $1A $00 $00 $FF
 	;
@@ -23053,7 +23053,7 @@ mob_badnick_bomb:                                                               
         ld      [IX`mob+%mob.height],$10
         ld      A       [IX`mob+%mob.unknown11]
         cp      $64
-        jr      nc      ._1
+        jr      nc      @_1
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -23063,7 +23063,7 @@ mob_badnick_bomb:                                                               
         ld      HL      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      c       ._1
+        jr      c       @_1
 	
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -23073,12 +23073,12 @@ mob_badnick_bomb:                                                               
         ld      HL      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      nc      ._1
+        jr      nc      @_1
 	
         ld      [IX`mob+%mob.unknown11]         $64
-._1     ld      A       [IX`mob+%mob.unknown11]
+@_1     ld      A       [IX`mob+%mob.unknown11]
         cp      $1E
-        jr      nc      ._2
+        jr      nc      @_2
 	
         ld      [IX`mob+%mob.Xspeed+0]          $F8
         ld      [IX`mob+%mob.Xspeed+1]          $FF
@@ -23086,34 +23086,34 @@ mob_badnick_bomb:                                                               
         ld      DE      _ad0b
         ld      BC      _acf1
         call    _7c41
-        jp      ._7
+        jp      @_7
         
-._2     ld      A       [IX`mob+%mob.unknown11]
+@_2     ld      A       [IX`mob+%mob.unknown11]
         cp      $64
-        jp      c       ._4
+        jp      c       @_4
 	
         ld      [IX`mob+%mob.Xspeed+0]          $00
         ld      [IX`mob+%mob.Xspeed+1]          $00
         ld      [IX`mob+%mob.Xdirection]        $00
         cp      $66
-        jr      nc      ._3
+        jr      nc      @_3
 	
         ld      DE      _ad0b
         ld      BC      _ad01
         call    _7c41
-        jp      ._7
+        jp      @_7
         
-._3     ld      [IX`mob+%mob.spriteLayout+0]    LO _ad53
+@_3     ld      [IX`mob+%mob.spriteLayout+0]    LO _ad53
         ld      [IX`mob+%mob.spriteLayout+1]    HI _ad53
         cp      $67
-        jp      nz      ._7
+        jp      nz      @_7
 	
         ld      HL              $FFFE
         ld      [$.TEMP4]       HL
         ld      HL              $FFFC
         ld      [$.TEMP6]       HL
         call    findEmptyMob
-        jp      c       ._8
+        jp      c       @_8
 	
         ld      DE      $0000
         ld      C       E
@@ -23124,7 +23124,7 @@ mob_badnick_bomb:                                                               
         ld      HL              $FFFC
         ld      [$.TEMP6]       HL
         call    findEmptyMob
-        jp      c       ._8
+        jp      c       @_8
 	
         
         ld      DE      $0008
@@ -23136,7 +23136,7 @@ mob_badnick_bomb:                                                               
         ld      HL              $FFFE
         ld      [$.TEMP6]       HL
         call    findEmptyMob
-        jp      c       ._8
+        jp      c       @_8
         
         ld      DE      $0000
         ld      BC      $0008
@@ -23147,7 +23147,7 @@ mob_badnick_bomb:                                                               
         ld      HL              $FFFE
         ld      [$.TEMP6]       HL
         call    findEmptyMob
-        jp      c       ._8
+        jp      c       @_8
         
         ld      DE      $0008
         ld      BC      $0008
@@ -23161,12 +23161,12 @@ mob_badnick_bomb:                                                               
 		rst     \\sound\rst_playSFX
 		;
 		
-        jr      ._8
+        jr      @_8
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._4     cp      $23
-        jr      nc      ._5
+@_4     cp      $23
+        jr      nc      @_5
 	
         xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]          A`zero
@@ -23175,11 +23175,11 @@ mob_badnick_bomb:                                                               
         ld      DE      _ad0b
         ld      BC      _acf6
         call    _7c41
-        jr      ._7
+        jr      @_7
         
-._5     ld      A       [IX`mob+%mob.unknown11]
+@_5     ld      A       [IX`mob+%mob.unknown11]
         cp      $41
-        jr      nc      ._6
+        jr      nc      @_6
 	
         ld      [IX`mob+%mob.Xspeed+0]          $08
         ld      [IX`mob+%mob.Xspeed+1]          $00
@@ -23187,19 +23187,19 @@ mob_badnick_bomb:                                                               
         ld      DE      _ad0b
         ld      BC      _acf9
         call    _7c41
-        jr      ._7
+        jr      @_7
         
-._6     ld      [IX`mob+%mob.Xspeed+0]          $00
+@_6     ld      [IX`mob+%mob.Xspeed+0]          $00
         ld      [IX`mob+%mob.Xspeed+1]          $00
         ld      [IX`mob+%mob.Xdirection]        $00
         ld      DE      _ad0b
         ld      BC      _acfe
         call    _7c41
         
-._7     ld      [IX`mob+%mob.Yspeed+0]          $80
+@_7     ld      [IX`mob+%mob.Yspeed+0]          $80
         ld      [IX`mob+%mob.Yspeed+1]          $00
         ld      [IX`mob+%mob.Ydirection]        $00
-._8     ld      HL              $0202
+@_8     ld      HL              $0202
         ld      [$.TEMP6]       HL
         call    detectCollisionWithSonic
         call    nc      hitPlayer._35fd
@@ -23330,7 +23330,7 @@ trap_cannon_process:                                                            
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
@@ -23341,12 +23341,12 @@ trap_cannon_process:                                                            
         call    \\math\_LABEL_625_57
         ld      [IX`mob+%mob.unknown11]	A	
         set     0	[IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         cp      $64
-        jr      nz	._2
+        jr      nz	@_2
 	
         call    \\findEmptyMob
-        jr      c	._2
+        jr      c	@_2
 	
         push    IX
         ld      E	[IX`mob+%mob.X+0]
@@ -23378,26 +23378,26 @@ trap_cannon_process:                                                            
         ld      [IX`mob+%mob.unknown12]	$18
         ld      [IX`mob+%mob.unknown16]	$00
         ld      [IX`mob+%mob.unknown17]	$00
-._2     ld      A	[IX`mob+%mob.unknown12]
+@_2     ld      A	[IX`mob+%mob.unknown12]
         and     A
-        jr      z	._3
+        jr      z	@_3
 	
-        ld      DE      ._ae04
-        ld      BC      ._adfd
+        ld      DE      @_ae04
+        ld      BC      @_adfd
         call    animateMob
         dec     [IX`mob+%mob.unknown12]
         inc     [IX`mob+%mob.unknown11]
         ret
         
-._3     ld      [IX`mob+%mob.spriteLayout+0]	A	
+@_3     ld      [IX`mob+%mob.spriteLayout+0]	A	
         ld      [IX`mob+%mob.spriteLayout+1]	A	
         inc     [IX`mob+%mob.unknown11]
         ret
         
-._adfd  %byte                                                                        				;$ADFD
+@_adfd  %byte                                                                        				;$ADFD
         $00 $08 $01 $08 $02 $08 $FF
         
-._ae04  ;sprite layout                                                          `$AE04
+@_ae04  ;sprite layout                                                          `$AE04
         $FE $FF $FF $FF $FF $FF
         $74 $76 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
@@ -23425,10 +23425,10 @@ trap_cannonball_process:                                                        
         ld      D	[IX`mob+%mob.X+1]
         and     A
         sbc     HL      DE
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      [IX`mob+%mob.type]	$FF              	;remove object?
-._1     ld      HL      $0202
+@_1     ld      HL      $0202
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
@@ -23440,12 +23440,12 @@ trap_cannonball_process:                                                        
         ld      [IX`mob+%mob.Yspeed+0]		A`zero
         ld      [IX`mob+%mob.Yspeed+1]		A`zero
         ld      [IX`mob+%mob.Ydirection]	A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._ae81
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._ae81
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_ae81
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_ae81
         ret
         
 	;sprite layout
-._ae81  %byte                                                          						;$AE81
+@_ae81  %byte                                                          						;$AE81
         $02 $04 $FF $FF $FF $FF
         $FF
 	;
@@ -23456,48 +23456,48 @@ badnick_unidos_process:                                                         
         ;---------------------------------------------------------------------------------------------------------------
         set     5 [IX`mob+%mob.flags]               		;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         ld      [IX`mob+%mob.unknown11] $00
         ld      [IX`mob+%mob.unknown12] $2A
         ld      [IX`mob+%mob.unknown13] $52
         ld      [IX`mob+%mob.unknown14] $7C
         set     0 [IX`mob+%mob.flags]
-._1     ld      L       [IX`mob+%mob.X+0]
+@_1     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      DE      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      c	._2
+        jr      c	@_2
 	
         ld      [IX`mob+%mob.Xspeed+0]          $F8
         ld      [IX`mob+%mob.Xspeed+1]          $FF
         ld      [IX`mob+%mob.Xdirection]        $FF
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._b0d5
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._b0d5
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b0d5
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_b0d5
         
         ;set speed + direction of shot?
         ld      HL              $FF80
         ld      [$.D216]        HL
-        call    ._af98
+        call    @_af98
         
         ld      [IX`mob+%mob.unknown16] $01
-        jr      ._3
+        jr      @_3
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._2     ld      [IX`mob+%mob.Xspeed+0]          $08
+@_2     ld      [IX`mob+%mob.Xspeed+0]          $08
         ld      [IX`mob+%mob.Xspeed+1]          $00
         ld      [IX`mob+%mob.Xdirection]        $00
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._b0e7
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._b0e7
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b0e7
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_b0e7
         
         ;set speed + direction of shot?
         ld      HL              $0080
         ld      [$.D216]        HL
-        call    ._af98
+        call    @_af98
         
         ld      [IX`mob+%mob.unknown16] $FF
-._3     ld      [IX`mob+%mob.width]     $1C
+@_3     ld      [IX`mob+%mob.width]     $1C
         ld      [IX`mob+%mob.height]    $1C
         ld      HL              $1212
         ld      [$.TEMP6]       HL
@@ -23518,16 +23518,16 @@ badnick_unidos_process:                                                         
         add     HL      DE
         
         ld      B       $04
-.loop   push    BC
+@loop   push    BC
         push    HL
         ld      A       [HL]
         cp      $FE
-        jr      z	._4
+        jr      z	@_4
 	
         and     %11111110
         ld      E       A
         ld      D       $00
-        ld      HL      ._b031
+        ld      HL      @_b031
         add     HL      DE
         push    HL
         ld      E       [HL]
@@ -23554,29 +23554,29 @@ badnick_unidos_process:                                                         
         call    \\detectCollisionWithSonic
         call    nc	hitPlayer._35fd
 	
-._4     pop     HL
+@_4     pop     HL
         pop     BC
         ld      A       [HL]
         cp      $FE
-        jr      z	._6
+        jr      z	@_6
 	
         add     A       [IX`mob+%mob.unknown16]
         cp      $FF
-        jr      nz	._5
+        jr      nz	@_5
 	
         ld      A       $A3
-        jr      ._6
+        jr      @_6
         
         ;---------------------------------------------------------------------------------------------------------------
         
-._5     cp      $A4
-        jr      nz	._6
+@_5     cp      $A4
+        jr      nz	@_6
         
         xor     A`zero
         
-._6     ld      [HL]    A
+@_6     ld      [HL]    A
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
         ld      A       [$.FRAMECOUNT]
         and     %00000111
@@ -23589,7 +23589,7 @@ badnick_unidos_process:                                                         
         
         ;===============================================================================================================
 
-._af98                                                                                  			;$AF98
+@_af98                                                                                  			;$AF98
         ld      A       [IX`mob+%mob.unknown15]
         cp      $C8
         ret     nz
@@ -23621,22 +23621,22 @@ badnick_unidos_process:                                                         
         add     HL      DE
         ld      B       $04
         
-.loop   push    BC
+@loop   push    BC
         push    HL
         ld      A       [HL]
         cp      $4A
-        call    z  ._afdb
+        call    z  @_afdb
 	
         pop     HL
         pop     BC
         inc     HL
-        djnz    .loop
+        djnz    @loop
         
         ret
         
         ;===============================================================================================================
         
-._afdb                                                                                  			;$AFDB
+@_afdb                                                                                  			;$AFDB
         ld      [HL]            $FE
         call    \\findEmptyMob
         ret     c
@@ -23665,10 +23665,10 @@ badnick_unidos_process:                                                         
         ld      [IX`mob+%mob.Xspeed+1]  H
         xor     A`zero
         bit     7	H
-        jr      z	._1
+        jr      z	@_1
 	
         ld      A       $FF
-._1     ld      [IX`mob+%mob.Xdirection]        A
+@_1     ld      [IX`mob+%mob.Xdirection]        A
         xor     A`zero
         ld      [IX`mob+%mob.Yspeed+0]          A`zero
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
@@ -23676,7 +23676,7 @@ badnick_unidos_process:                                                         
         pop     IX
         ret
 
-._b031  %byte                                                                                			;$B031
+@_b031  %byte                                                                                			;$B031
         $0C $03 $0D $03 $0E $03 $0E $04 $0F $04 $10 $04 $10 $05 $11 $05
         $11 $06 $12 $06 $12 $07 $13 $07 $13 $08 $13 $09 $14 $09 $14 $0A
         $14 $0B $15 $0B $15 $0C $15 $0D $15 $0E $15 $0F $15 $10 $15 $11
@@ -23691,11 +23691,11 @@ badnick_unidos_process:                                                         
         $04 $09 $04 $09 $03 $0A $03 $0B $03
         
         ;sprite layout
-._b0d5                                                                                  			;$B0D5
+@_b0d5                                                                                  			;$B0D5
         $FE, $FF, $FF, $FF, $FF, $FF
         $FE, $26, $28, $FF, $FF, $FF
         $FF, $FF, $FF, $FF, $FF, $FF
-._b0e7                                                                                  			;$B0E7
+@_b0e7                                                                                  			;$B0E7
         $FE, $FF, $FF, $FF, $FF, $FF
         $FE, $20, $22, $FF, $FF, $FF
         $FF
@@ -23724,14 +23724,14 @@ unknown_b0f4_process:                                                           
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      HL      [$.CAMERA_X]
         ld      BC      $0110
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._1
+        jr      c	@_1
 	
         ld      L       [IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
@@ -23742,14 +23742,14 @@ unknown_b0f4_process:                                                           
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._1
+        jr      nc	@_1
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00D0
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      c	._1
+        jr      c	@_1
 	
         ld      HL      $0000
         ld      [$.TEMP4]       HL
@@ -23758,7 +23758,7 @@ unknown_b0f4_process:                                                           
         call    \\_3581
         ret
         
-._1     ld      [IX`mob+%mob.type]      $FF      		;remove mob?
+@_1     ld      [IX`mob+%mob.type]      $FF      		;remove mob?
         ret
 	;
 	
@@ -23768,13 +23768,13 @@ trap_turretRotating_process:                                                    
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         call    \\math\_LABEL_625_57
         and     %00000111
         ld      [IX`mob+%mob.unknown11]	A
         set     0 	[IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.spriteLayout+0]	$00
+@_1     ld      [IX`mob+%mob.spriteLayout+0]	$00
         ld      [IX`mob+%mob.spriteLayout+1]    $00
         ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -23788,48 +23788,48 @@ trap_turretRotating_process:                                                    
         add     A       A
         ld      E       A
         ld      D       $00
-        ld      HL      ._b227
+        ld      HL      @_b227
         add     HL      DE
         ld      B       $02
         
-.loop   push    BC
+@loop   push    BC
         ld      D       $00
         ld      E       [HL]
         bit     7 	E
-        jr      z	._2
+        jr      z	@_2
 	
         ld      D       $FF
-._2     ld      [$.TEMP4]       DE
+@_2     ld      [$.TEMP4]       DE
         inc     HL
         ld      D       $00
         ld      E       [HL]
         bit     7  	E
-        jr      z	._3
+        jr      z	@_3
 	
         ld      D       $FF
-._3     ld      [$.TEMP6]       DE
+@_3     ld      [$.TEMP6]       DE
         inc     HL
         ld      A       [HL]
         inc     HL
         inc     HL
         cp      $FF
-        jr      z	._4
+        jr      z	@_4
 	
         push    HL
         call    \\_3581
         pop     HL
-._4     pop     BC
-        djnz    .loop
+@_4     pop     BC
+        djnz    @loop
         
         ld      A       [$.FRAMECOUNT]
         and     $3F
-        jr      nz	._5
+        jr      nz	@_5
 	
         ld      A       [IX`mob+%mob.unknown11]
         inc     A
         and     %00000111
         ld      [IX`mob+%mob.unknown11] A
-._5     inc     [IX`mob+%mob.unknown12]
+@_5     inc     [IX`mob+%mob.unknown12]
         ld      A       [IX`mob+%mob.unknown12]
         cp      $1A
         ret     nz
@@ -23842,7 +23842,7 @@ trap_turretRotating_process:                                                    
         add     A       E
         ld      E       A
         ld      D       $00
-        ld      HL      ._b267
+        ld      HL      @_b267
         add     HL      DE
         ld      E       [HL]
         inc     HL
@@ -23857,27 +23857,27 @@ trap_turretRotating_process:                                                    
         ld      E       [HL]
         ld      D       $00
         bit     7  	E
-        jr      z	._6
+        jr      z	@_6
 	
         dec     D
-._6     inc     HL
+@_6     inc     HL
         ld      C       [HL]
         ld      B       $00
         bit     7  	C
-        jr      z	._7
+        jr      z	@_7
 	
         dec     B
-._7     call    _b5c2
+@_7     call    _b5c2
         ret
         
 	%byte
-._b227                                                                                  			;$B227
+@_b227                                                                                  			;$B227
         $08 $F8 $66 $00 $00 $00 $FF $00 $0C $FA $70 $00 $14 $FA $72 $00
         $0F $07 $4C $00 $17 $07 $4E $00 $0D $0C $6C $00 $15 $0C $6E $00
         $08 $0F $64 $00 $00 $00 $FF $00 $FC $0C $68 $00 $04 $0C $6A $00
         $F9 $07 $48 $00 $01 $07 $4A $00 $FB $F9 $50 $00 $03 $F9 $52 $00   
         
-._b267                                                                                  			;$B267
+@_b267                                                                                  			;$B267
         $00 $00 $00 $FE $08 $F0 $00 $01 $00 $FF $18 $F8 $00 $02 $00 $00
         $1E $07 $00 $01 $00 $01 $16 $16 $00 $00 $00 $02 $08 $20 $00 $FF
         $00 $01 $F8 $18 $00 $FE $00 $00 $F2 $07 $00 $FF $00 $FF $F7 $F6
@@ -23889,7 +23889,7 @@ platform_flyingRight_process:                                                   
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      A	[IX`mob+%mob.Ysubpixel]
         ld      [IX`mob+%mob.unknown12]	A
@@ -23902,7 +23902,7 @@ platform_flyingRight_process:                                                   
         
         set     0	[IX`mob+%mob.flags]
         
-._1     ld      A       [$.D2A3]
+@_1     ld      A       [$.D2A3]
         ld      C       A
         ld      DE      [$.D2A1]
         ld      L       [IX`mob+%mob.unknown12]
@@ -23916,14 +23916,14 @@ platform_flyingRight_process:                                                   
         
         ld      A       [$.SONIC.Ydirection]
         and     A
-        jp      m	._2
+        jp      m	@_2
         
         ld      [IX`mob+%mob.width]     $1E
         ld      [IX`mob+%mob.height]    $10
         ld      HL              $0A02
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c	._2
+        jr      c	@_2
         
         ld      HL                              $0030
         ld      [$.SCROLLZONE_OVERRIDE_TOP]     HL
@@ -23948,7 +23948,7 @@ platform_flyingRight_process:                                                   
         adc     A       $00
         ld      [$.SONIC.Xsubpixel]     HL
         ld      [$.SONIC.X+1]           A
-._2     ld      L       [IX`mob+%mob.X+0]
+@_2     ld      L       [IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
         ld      [$.TEMP1]       HL
         ld      L               [IX`mob+%mob.Y+0]
@@ -23958,11 +23958,11 @@ platform_flyingRight_process:                                                   
         ld      [$.TEMP4]       HL
         ld      E               [IX`mob+%mob.unknown11]
         ld      D               $00
-        ld      HL              ._b388
+        ld      HL              @_b388
         add     HL              DE
         ld      B               $02
         
-.loop   push    BC
+@loop   push    BC
         ld      E               [HL]
         ld      D               $00
         inc     HL
@@ -23970,16 +23970,16 @@ platform_flyingRight_process:                                                   
         ld      A               [HL]
         inc     HL
         cp      $FF
-        jr      z	._3
+        jr      z	@_3
 	
         push    HL
         call    \\_3581
         pop     HL
-._3     pop     BC
-        djnz    .loop
+@_3     pop     BC
+        djnz    @loop
         
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._b37b
-        ld      [IX`mob+%mob.spriteLayout+1]   	HI ._b37b
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_b37b
+        ld      [IX`mob+%mob.spriteLayout+1]   	HI @_b37b
         ld      A       [IX`mob+%mob.unknown11]
         add     A       $04
         ld      [IX`mob+%mob.unknown11] A
@@ -23990,12 +23990,12 @@ platform_flyingRight_process:                                                   
         ret
 
         ;sprite layout
-._b37b  %byte                                                                        				;$B37B
+@_b37b  %byte                                                                        				;$B37B
         $FE $FF $FF $FF $FF $FF
         $36 $36 $36 $36 $FF $FF
         $FF
         
-._b388                                                                          				;$B388
+@_b388                                                                          				;$B388
         $08 $1C $18 $3C $08 $1E $18 $3E $08 $38 $18 $3A $0C $1A $00 $FF
 	;
 
@@ -24005,17 +24005,17 @@ trap_spikewall_process:													;$B398
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H	[IX`mob+%mob.X+1]
         ld      [IX`mob+%mob.unknown11]	L
         ld      [IX`mob+%mob.unknown12]	H
         set     0	[IX`mob+%mob.flags]
-._1     ld      [IX`mob+%mob.width]	12
+@_1     ld      [IX`mob+%mob.width]	12
         ld      [IX`mob+%mob.height]	46
-        ld      [IX`mob+%mob.spriteLayout+0]	LO ._b45b
-        ld      [IX`mob+%mob.spriteLayout+1]	HI ._b45b
+        ld      [IX`mob+%mob.spriteLayout+0]	LO @_b45b
+        ld      [IX`mob+%mob.spriteLayout+1]	HI @_b45b
         ld      HL      	$0202
         ld      [$.TEMP6]	HL
 
@@ -24060,13 +24060,13 @@ trap_spikewall_process:													;$B398
         ld      DE      [$.CAMERA_Y]
         and     A
         sbc     HL      DE
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      A	[IX`mob+%mob.unknown11]
         ld      [IX`mob+%mob.X+0]	A	
         ld      A	[IX`mob+%mob.unknown12]
         ld      [IX`mob+%mob.X+1]	A	
-._2     ld      DE      [$.SONIC.Y]
+@_2     ld      DE      [$.SONIC.Y]
         ld      HL      $FFE0
         add     HL      BC
         xor     A`zero
@@ -24086,7 +24086,7 @@ trap_spikewall_process:													;$B398
         
         ;sprite layout
 	%byte
-._b45b  $16 $18 $FF $FF $FF $FF
+@_b45b  $16 $18 $FF $FF $FF $FF
         $16 $18 $FF $FF $FF $FF
         $16 $18 $FF $FF $FF $FF
 	;
@@ -24097,7 +24097,7 @@ trap_turretFixed_process:													;$B46D
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      BC	$0000
         ld      E 	C
@@ -24111,7 +24111,7 @@ trap_turretFixed_process:													;$B46D
         ld      [IX`mob+%mob.unknown11]	A
         set     0	[IX`mob+%mob.flags]
         
-._1     inc     [IX`mob+%mobs.unknown12]
+@_1     inc     [IX`mob+%mobs.unknown12]
         ld      A	[IX`mob+%mobs.unknown12]
         bit     6 	A
         ret     nz
@@ -24127,7 +24127,7 @@ trap_turretFixed_process:													;$B46D
         add     A 	E
         ld      E 	A
         ld      D 	$00
-        ld      HL	._b4e6
+        ld      HL	@_b4e6
         add     HL	DE
         ld      E 	[HL]
         inc     HL	
@@ -24175,7 +24175,7 @@ trap_turretFixed_process:													;$B46D
         
 	%byte
 	
-._b4e6  $80 $FE $80 $FE $00 $00 $F8 $FF $FF $FF $80 $01 $80 $FE $18 $00
+@_b4e6  $80 $FE $80 $FE $00 $00 $F8 $FF $FF $FF $80 $01 $80 $FE $18 $00
         $F8 $FF $00 $FF $80 $FE $80 $01 $00 $00 $10 $00 $FF $00 $80 $01
         $80 $01 $18 $00 $10 $00 $00 $00   
 	;
@@ -24188,14 +24188,14 @@ platform_flyingUpDown_process:                                                  
         ld      HL	_b37b
         ld      A       [$.LEVEL_SOLIDITY]
         cp      $01
-        jr      nz	._1
+        jr      nz	@_1
 	
-        ld      HL	._b5b5
-._1     ld      [IX`mob+%mob.spriteLayout+0]    L
+        ld      HL	@_b5b5
+@_1     ld      [IX`mob+%mob.spriteLayout+0]    L
         ld      [IX`mob+%mob.spriteLayout+1]    H
         ld      A               $50
         ld      [$.D216]	A
-        call    ._b53b
+        call    @_b53b
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
         cp      $A0
@@ -24206,17 +24206,17 @@ platform_flyingUpDown_process:                                                  
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._b53b  ld      A	[$.D216]										;$B53B
+@_b53b  ld      A	[$.D216]										;$B53B
         ld      L       A
         ld      DE      $0010
         ld      C       $00
         ld      A       [IX`mob+%mob.unknown11]
         cp      L
-        jr      c	._2
+        jr      c	@_2
 	
         dec     C
         ld      DE	$FFF0
-._2     ld      L 	[IX`mbob+%mob.Yspeed+0]
+@_2     ld      L 	[IX`mbob+%mob.Yspeed+0]
         ld      H 	[IX`mob+%mob.Yspeed+1]
         ld      A 	[IX`mob+%mob.Ydirection]
         add     HL	DE
@@ -24226,7 +24226,7 @@ platform_flyingUpDown_process:                                                  
         ld      [IX`mob+%mob.Ydirection]        A
         ld      A       H
         and     A
-        jp      p	._3
+        jp      p	@_3
 	
         ld      A	L
         cpl     
@@ -24237,21 +24237,21 @@ platform_flyingUpDown_process:                                                  
         inc     HL
         ld      A       H
         cp      $02
-        jr      c	._4
+        jr      c	@_4
 	
         ld      [IX`mob+%mob.Yspeed+0]          $00
         ld      [IX`mob+%mob.Yspeed+1]          $FE
         ld      [IX`mob+%mob.Ydirection]        $FF
-        jr      ._4
+        jr      @_4
         
-._3     cp      $02
-        jr      c	._4
+@_3     cp      $02
+        jr      c	@_4
 	
         ld      [IX`mob+%mob.Yspeed+0]          $00
         ld      [IX`mob+%mob.Yspeed+1]          $02
         ld      [IX`mob+%mob.Ydirection]        $00
         
-._4     ld      A	[$.SONIC.Ydirection]
+@_4     ld      A	[$.SONIC.Ydirection]
         and     A
         ret     m
         
@@ -24271,7 +24271,7 @@ platform_flyingUpDown_process:                                                  
         
         ;sprite layout
 	%byte
-._b5b5  $FE $FF $FF $FF $FF $FF
+@_b5b5  $FE $FF $FF $FF $FF $FF
         $6C $6E $6C $6E $FF $FF
         $FF
 	;
@@ -24312,19 +24312,19 @@ _b5c2:                                                                          
         ld      [IX`mob+%mob.unknown17] A`zero
         ld      HL              [$.TEMP4]
         bit     7       H
-        jr      z       ._1
+        jr      z       @_1
 	
         ld      A                       $FF
-._1     ld      [IX`mob+%mob.Xspeed+0]      L
+@_1     ld      [IX`mob+%mob.Xspeed+0]      L
         ld      [IX`mob+%mob.Xspeed+1]      H
         ld      [IX`mob+%mob.Xdirection]    A
         xor     A`zero
         ld      HL              [$.TEMP6]
         bit     7       H
-        jr      z       ._2
+        jr      z       @_2
 	
         ld      A               $FF
-._2     ld      [IX`mob+%mob.Yspeed+0]      L
+@_2     ld      [IX`mob+%mob.Yspeed+0]      L
         ld      [IX`mob+%mob.Yspeed+1]      H
         ld      [IX`mob+%mob.Ydirection]    A
         pop     IX
@@ -24345,12 +24345,12 @@ boss_skybase_process:                                                           
         ld      [IX`mob+%mob.height]    47
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     2	[IX`mob+%mob.flags]
-        jp      nz	._b821
+        jp      nz	@_b821
 	
         call    _7ca6
-        call    ._b7e6
+        call    @_b7e6
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         ld      HL      $0350
         ld      DE      $0120
@@ -24383,36 +24383,36 @@ boss_skybase_process:                                                           
         
         set     4	[IY`vars+%vars.unknown0]
         set     0	[IX`mob+%mob.flags]
-._1     ld      A	[IX`mob+%mob.unknown15]
+@_1     ld      A	[IX`mob+%mob.unknown15]
         and     A
-        jp      nz	._4
+        jp      nz	@_4
 	
-        call    ._b99f
+        call    @_b99f
         ld      A	[$.FRAMECOUNT]
         and     %00000111
-        jp      nz	._8
+        jp      nz	@_8
 	
         ld      A	[IX`mob+%mob.unknown16]
         cp      $1C
-        jr      nc	._2
+        jr      nc	@_2
 	
         inc     [IX`mob+%mob.unknown17]
         ld      A	[IX`mob+%mob.unknown17]
         cp      $02
-        jp      c	._3
+        jp      c	@_3
 	
-._2     ld      [IX`mob+%mob.unknown17]	$00
-._3     inc     [IX`mob+%mob.unknown16]
+@_2     ld      [IX`mob+%mob.unknown17]	$00
+@_3     inc     [IX`mob+%mob.unknown16]
         ld      A	[IX`mob+%mob.unknown16]
         cp      $28
-        jp      c	._8
+        jp      c	@_8
 	
         ld      [IX`mob+%mob.unknown16]	$00
         inc     [IX`mob+%mob.unknown15]
-        jp      ._8
+        jp      @_8
         
-._4     dec     A
-        jr      nz	._5
+@_4     dec     A
+        jr      nz	@_5
 	
         ld      [IX`mob+%mob.Yspeed+0]		$40
         ld      [IX`mob+%mob.Yspeed+1]		$FE
@@ -24426,10 +24426,10 @@ boss_skybase_process:                                                           
         ld      [IX`mob+%mob.X+1]	H
         ld      [IX`mob+%mob.spriteLayout+0]	LO _bb1d
         ld      [IX`mob+%mob.spriteLayout+1]	HI _bb1d
-        jp      ._8
+        jp      @_8
         
-._5     dec     A
-        jp      nz	._7
+@_5     dec     A
+        jp      nz	@_7
         ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
         ld      A	[IX`mob+%mob.Ydirection]
@@ -24437,14 +24437,14 @@ boss_skybase_process:                                                           
         add     HL      DE
         adc     A	$00
         ld      C	A
-        jp      m	._6
+        jp      m	@_6
 	
         ld      A	H
         cp      $02
-        jr      c	._6
+        jr      c	@_6
 	
         ld      HL      $0200
-._6     ld      [IX`mob+%mob.Yspeed+0]		L
+@_6     ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
         ld      [IX`mob+%mob.spriteLayout+0]	LO _bb1d
@@ -24456,7 +24456,7 @@ boss_skybase_process:                                                           
         ld      D	[IX`mob+%mob.unknown14]
         and     A
         sbc     HL      DE
-        jr      c	._8
+        jr      c	@_8
 	
         ld      [IX`mob+%mob.Y+0]	E
         ld      [IX`mob+%mob.Y+1]	D
@@ -24466,37 +24466,37 @@ boss_skybase_process:                                                           
         ld      [IX`mob+%mob.Yspeed+1]		A`zero
         ld      [IX`mob+%mob.Ydirection]	A`zero
         inc     [IX`mob+%mob.unknown15]
-        jp      ._8
+        jp      @_8
         
-._7     dec     A
-        jp      nz	._8
+@_7     dec     A
+        jp      nz	@_8
         ld      L	[IX`mob+%mob.unknown11]
         ld      H	[IX`mob+%mob.unknown12]
         ld      [IX`mob+%mob.X+0]	L
         ld      [IX`mob+%mob.X+1]	H
         ld      A	[IX`mob+%mob.unknown16]
         and     A
-        call    z	._b9d5
+        call    z	@_b9d5
 	
         ld      [IX`mob+%mob.unknown17]	$02
         set     1	[IX`mob+%mob.flags]
-        call    ._b99f
+        call    @_b99f
         inc     [IX`mob+%mob.unknown16]
         ld      A	[IX`mob+%mob.unknown16]
         cp      $12
-        jr      c	._8
+        jr      c	@_8
 	
         res     1	[IX`mob+%mob.flags]
         xor     A`zero
         ld      [IX`mob+%mob.unknown15]	A`zero
         ld      [IX`mob+%mob.unknown16]	A`zero
         
-._8     ld      HL      $ba31
+@_8     ld      HL      $ba31
         bit     1	[IX`mob+%mob.flags]
-        jr      z	._9
+        jr      z	@_9
 	
-        ld      HL      ._ba3b
-._9     ld      DE      $.TEMP1
+        ld      HL      @_ba3b
+@_9     ld      DE      $.TEMP1
         ldi     
         ldi     
         ldi     
@@ -24538,19 +24538,19 @@ boss_skybase_process:                                                           
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._b7e6  ld      A	[$.D2B1]										;$B7E6
+@_b7e6  ld      A	[$.D2B1]										;$B7E6
         and     A
         ret     nz
         bit     0	[IY`vars+%vars.scrollRingFlags]
         ret     nz
         ld      A	[$.SONIC.flags]
         rrca    
-        jr      c	._10
+        jr      c	@_10
 	
         and     $02
         ret     z
 	
-._10    ld      HL      [$.SONIC.X]
+@_10    ld      HL      [$.SONIC.X]
         ld      DE      $0410
         and     A
         sbc     HL      DE
@@ -24579,13 +24579,13 @@ boss_skybase_process:                                                           
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._b821  bit     3	[IX`mob+%mob.flags]									;$B821
-        jp      nz	._20
+@_b821  bit     3	[IX`mob+%mob.flags]									;$B821
+        jp      nz	@_20
 	
         res     5	[IX`mob+%mob.flags]               	;make mob adhere to the floor
         ld      A	[IX`mob+%mob.unknown11]
         cp      $0F
-        jr      nc	._11
+        jr      nc	@_11
 	
         add     A	A
         add     A	A
@@ -24610,7 +24610,7 @@ boss_skybase_process:                                                           
         inc     [IX`mob+%mob.unknown11]
         ld      A	[IX`mob+%mob.unknown11]
         cp      $0F
-        jr      nz	._11
+        jr      nz	@_11
 	
         set     5	[IY`vars+%vars.flags0]
         res     1	[IY`vars+%vars.flags2]
@@ -24619,18 +24619,18 @@ boss_skybase_process:                                                           
         ld      HL      $0550
         ld      [$.LEVEL_RIGHT]	HL
         
-._11    ld      E	[IX`mob+%mob.X+0]
+@_11    ld      E	[IX`mob+%mob.X+0]
         ld      D	[IX`mob+%mob.X+1]
         ld      HL      $05E0
         xor     A`zero
         sbc     HL      DE
-        jr      nc	._12
+        jr      nc	@_12
 	
         ld      C	A`zero
         ld      B	A`zero
-        jp      ._15
+        jp      @_15
         
-._12    ex      DE      HL
+@_12    ex      DE      HL
         ld      DE      [$.SONIC.X]
         xor     A`zero
         sbc     HL      DE
@@ -24638,31 +24638,31 @@ boss_skybase_process:                                                           
         xor     A`zero
         ld      BC      [$.SONIC.Xspeed]
         bit     7	B
-        jr      nz	._13
+        jr      nz	@_13
 	
         sbc     HL      DE
-        jr      c	._14
+        jr      c	@_14
 	
-._13    ld      BC      $FF80
-._14    inc     B
-._15    ld      [IX`mob+%mob.Xspeed+0]		C
+@_13    ld      BC      $FF80
+@_14    inc     B
+@_15    ld      [IX`mob+%mob.Xspeed+0]		C
         ld      [IX`mob+%mob.Xspeed+1]		B
         ld      [IX`mob+%mob.Xdirection]	A
         ld      A	[IX`mob+%mob.unknown17]
         cp      $06
-        jr      nz	._16
+        jr      nz	@_16
 	
         ld      A	[IX`mob+%mob.unknown16]
         dec     A
-        jr      nz	._16
+        jr      nz	@_16
 	
         bit     7	[IX`mob+%mob.flags]
-        jr      z	._16
+        jr      z	@_16
 	
         ld      [IX`mob+%mob.Yspeed+0]		$00
         ld      [IX`mob+%mob.Yspeed+1]		$FF
         ld      [IX`mob+%mob.Ydirection]	$FF
-._16    ld      DE      $0017
+@_16    ld      DE      $0017
         ld      BC      $0036
         call    \\getFloorLayoutRAMAddressForMob
         ld      E	[HL]
@@ -24672,23 +24672,23 @@ boss_skybase_process:                                                           
         ld      A	[HL]
         and     $3F
         and     A
-        jr      z	._17
+        jr      z	@_17
 	
         bit     7	[IX`mob+%mob.flags]
-        jr      z	._17
+        jr      z	@_17
 	
         ld      [IX`mob+%mob.Yspeed+0]		$80
         ld      [IX`mob+%mob.Yspeed+1]		$FD
         ld      [IX`mob+%mob.Ydirection]	$FF
-._17    ld      DE      $0000
+@_17    ld      DE      $0000
         ld      BC      $0008
         call    \\getFloorLayoutRAMAddressForMob
         ld      A	[HL]
         cp      $49
-        jr      nz	._18
+        jr      nz	@_18
 	
         bit     7	[IX`mob+%mob.flags]
-        jr      z	._18
+        jr      z	@_18
 	
         xor     A`zero
         ld      [IX`mob+%mob.unknown16]		A`zero
@@ -24706,47 +24706,47 @@ boss_skybase_process:                                                           
         call    _7c8c
         
         set     3	[IX`mob+%mob.flags]
-        jp      ._20
+        jp      @_20
         
-._18    ld      L	[IX`mob+%mob.Yspeed+0]
+@_18    ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
         ld      A	[IX`mob+%mob.Ydirection]
         ld      DE      $000E
         add     HL      DE
         adc     A	$00
         ld      C	A
-        jp      m	._19
+        jp      m	@_19
 	
         ld      A	H
         cp      $02
-        jr      c	._19
+        jr      c	@_19
 	
         ld      HL      $0200
-._19    ld      [IX`mob+%mob.Yspeed+0]		L
+@_19    ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	C
-        ld      BC      ._ba28
+        ld      BC      @_ba28
         ld      DE      \boss.running\_baf9
         call    _7c41
         ret
         
-._20    ld      [IY`vars+%vars.joypad]		$FF
-        call    ._b99f
+@_20    ld      [IY`vars+%vars.joypad]		$FF
+        call    @_b99f
         ld      A	[IX`mob+%mob.unknown16]
         cp      $30
-        jr      nc	._22
+        jr      nc	@_22
 	
         ld      C	A
         ld      A	[$.FRAMECOUNT]
         and     %00000111
-        jr      nz	._21
+        jr      nz	@_21
 	
         ld      A	[IX`mob+%mob.unknown17]
         inc     A
         and     %00000001
         ld      [IX`mob+%mob.unknown17]	A
         inc     [IX`mob+%mob.unknown16]
-._21    ld      A	C
+@_21    ld      A	C
         cp      $2C
         ret     c
 	
@@ -24754,7 +24754,7 @@ boss_skybase_process:                                                           
         ld      [IX`mob+%mob.spriteLayout+1]	HI _bb77
         ret
         
-._22    xor     A`zero
+@_22    xor     A`zero
         ld      [IX`mob+%mob.spriteLayout+0]	A`zero
         ld      [IX`mob+%mob.spriteLayout+1]	A`zero
         inc     [IX`mob+%mob.unknown16]
@@ -24767,7 +24767,7 @@ boss_skybase_process:                                                           
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._b99f  ld      HL      ._ba1c											;$B99F
+@_b99f  ld      HL      @_ba1c											;$B99F
         ld      A	[IX`mob+%mob.unknown17]
         add     A	A
         add     A	A
@@ -24799,7 +24799,7 @@ boss_skybase_process:                                                           
 
         ;---------------------------------------------------------------------------------------------------------------
 
-._b9d5  bit     5	[IY`vars+%vars.unknown0]								;$B9D5
+@_b9d5  bit     5	[IY`vars+%vars.unknown0]								;$B9D5
         ret     nz
         
         call    \\findEmptyMob
@@ -24833,11 +24833,11 @@ boss_skybase_process:                                                           
 	
 	%byte
 	
-._ba1b  $C9                             			;unused?
-._ba1c  $00 $00 $F9 $BA $00 $02 $0B $BB $00 $07 $0B $BB
-._ba28  $03 $08 $04 $07 $05 $08 $04 $07 $FF $30 $04 $A0 $01 $00 $00
-._ba37  $00 $00 $20 $22                 			;unused, or part of above?
-._ba3b  $30 $04 $A0 $01 $00 $00 $00 $00 $24 $26 $20 $04 $60 $01 $37 $10
+@_ba1b  $C9                             			;unused?
+@_ba1c  $00 $00 $F9 $BA $00 $02 $0B $BB $00 $07 $0B $BB
+@_ba28  $03 $08 $04 $07 $05 $08 $04 $07 $FF $30 $04 $A0 $01 $00 $00
+@_ba37  $00 $00 $20 $22                 			;unused, or part of above?
+@_ba3b  $30 $04 $A0 $01 $00 $00 $00 $00 $24 $26 $20 $04 $60 $01 $37 $10
         $38 $10 $4A $10 $4B $10 $30 $04 $60 $01 $28 $10 $19 $10 $4C $10
         $4D $10 $40 $04 $60 $01 $00 $10 $2D $10 $4E $10 $4F $10 $20 $04
         $70 $01 $00 $00 $00 $00 $00 $00 $00 $00 $30 $04 $70 $01 $00 $00
@@ -24909,7 +24909,7 @@ boss_electricBeam_process:                                                      
         ld      [$.SCROLLZONE_OVERRIDE_TOP]     HL
         
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
 
         ;UNKNOWN
         ld      HL      $EF3F
@@ -24919,7 +24919,7 @@ boss_electricBeam_process:                                                      
 
         ld      [IX`mob+%mob.unknown12]	$01
         set     0	[IX`mob+%mob.flags]
-._1     ld      HL      $0390
+@_1     ld      HL      $0390
         ld      [$.TEMP1]	HL
         ld      L	[IX`mob+%mob.unknown11]
         ld      H	$00
@@ -24927,19 +24927,19 @@ boss_electricBeam_process:                                                      
         ld      L	H
         ld      [$.TEMP6]	HL
         ld      DE      $011A
-        ld      HL      ._bcdd
-        call    ._bca5
+        ld      HL      @_bcdd
+        call    @_bca5
         ld      E	[IX`mob+%mob.unknown11]
         ld      D	$00
         ld      [$.TEMP4]	DE
         ld      DE      $01D2
-        ld      HL      ._bcdd
-        call    ._bca5
+        ld      HL      @_bcdd
+        call    @_bca5
         bit     4	[IY`vars+%vars.unknown0]
         ret     z
 	
         bit     1	[IX`mob+%mob.flags]
-        jr      z	._2
+        jr      z	@_2
 	
         ld      A	[$.FRAMECOUNT]
         bit     0	A
@@ -24948,14 +24948,14 @@ boss_electricBeam_process:                                                      
         and     $02
         ld      E	A
         ld      D	$00
-        ld      HL      ._bcc7
+        ld      HL      @_bcc7
         add     HL      DE
         ld      B	$0a
         ld      DE      $0130
         
-.loop   push    BC
+@loop   push    BC
         push    DE
-        call    ._bca5
+        call    @_bca5
         pop     DE
         push    HL
         ld      HL      $0010
@@ -24963,7 +24963,7 @@ boss_electricBeam_process:                                                      
         ex      DE      HL
         pop     HL
         pop     BC
-        djnz    .loop
+        djnz    @loop
         
         ld      HL      $0390
         ld      C	[IX`mob+%mob.unknown11]
@@ -24976,23 +24976,23 @@ boss_electricBeam_process:                                                      
         ld      DE      [$.SONIC.X]
         and     A
         sbc     HL      DE
-        jr      c	._2
+        jr      c	@_2
 	
         ld      HL      $000e
         add     HL      DE
         and     A
         sbc     HL      BC
-        jr      c	._2
+        jr      c	@_2
 	
         bit     0	[IY`vars+%vars.scrollRingFlags]
         call    z	hitPlayer._35fd
         
-._2     ld      A	[$.D2EC]
+@_2     ld      A	[$.D2EC]
         cp      $06
-        jr      nc	._5
+        jr      nc	@_5
 	
         bit     1	[IX`mob+%mob.flags]
-        jr      nz	._3
+        jr      nz	@_3
 	
         ld      A	[IX`mob+%mob.unknown11]
         inc     A
@@ -25008,9 +25008,9 @@ boss_electricBeam_process:                                                      
         set     1	[IX`mob+%mob.flags]
         ret
         
-._3     ld      A	[$.FRAMECOUNT]
+@_3     ld      A	[$.FRAMECOUNT]
         and     $0F
-        jr      nz	._4
+        jr      nz	@_4
         
 	;(we can compile with, or without, audio)
 	?( \\sound )
@@ -25018,33 +25018,33 @@ boss_electricBeam_process:                                                      
 		rst     \\sound\rst_playSFX
 		;
         
-._4     dec     [IX`mob+%mob.unknown11]
+@_4     dec     [IX`mob+%mob.unknown11]
         ret     nz
 	
         ld      [IX`mob+%mob.unknown11]	$00
         res     1	[IX`mob+%mob.flags]
         ret
         
-._5     ld      HL      [$.SONIC.X]
+@_5     ld      HL      [$.SONIC.X]
         ld      E	[IX`mob+%mob.X+0]
         ld      D	[IX`mob+%mob.X+1]
         and     A
         sbc     HL      DE
-        jr      nc	._6
+        jr      nc	@_6
 	
         ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._7
+        jr      z	@_7
 	
         dec     [IX`mob+%mob.unknown11]
-        jr      ._7
+        jr      @_7
         
-._6     ld      A	[IX`mob+%mob.unknown11]
+@_6     ld      A	[IX`mob+%mob.unknown11]
         cp      $80
-        jr      nc	._7
+        jr      nc	@_7
 	
         inc     [IX`mob+%mob.unknown11]
-._7     res     1	[IX`mob+%mob.flags]
+@_7     res     1	[IX`mob+%mob.flags]
         ld      A	[$.FRAMECOUNT]
         ld      C	A
         and     $40
@@ -25069,7 +25069,7 @@ boss_electricBeam_process:                                                      
         
         ;---------------------------------------------------------------------------------------------------------------
 
-._bca5  ld      [$.TEMP3]	DE										;$BAC5
+@_bca5  ld      [$.TEMP3]	DE										;$BAC5
         ld      A	[HL]
         inc     HL
         push    HL
@@ -25093,9 +25093,9 @@ boss_electricBeam_process:                                                      
 	
 	%byte
 	
-._bcc7  $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58
+@_bcc7  $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58
         $36 $38 $56 $58 $36 $38
-._bcdd  $40 $42        
+@_bcdd  $40 $42        
 	;
 
 unknown_bcdf_process:                                                                                                        ;$BCDF
@@ -25107,16 +25107,16 @@ unknown_bcdf_process:                                                           
         ld      HL      $0202
         ld      [$.TEMP6]	HL
         call    \\detectCollisionWithSonic
-        jr      c	._1
+        jr      c	@_1
 	
         bit     0	[IY`vars+%vars.scrollRingFlags]
         call    z	hitPlayer._35fd
 	
-        jp      ._8
+        jp      @_8
         
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         cp      $C8
-        jp      c	._6
+        jp      c	@_6
 	
         ld      E	[IX`mob+%mob.X+0]
         ld      D	[IX`mob+%mob.X+1]
@@ -25125,13 +25125,13 @@ unknown_bcdf_process:                                                           
         add     HL      BC
         and     A
         sbc     HL      DE
-        jp      nc	._8
+        jp      nc	@_8
 	
         ld      HL      [$.CAMERA_X]
         inc     H
         and     A
         sbc     HL      DE
-        jp      c	._8
+        jp      c	@_8
 	
         ld      HL      [$.SONIC.X]
         and     A
@@ -25139,23 +25139,23 @@ unknown_bcdf_process:                                                           
         ld      L	[IX`mob+%mob.Xspeed+0]
         ld      H	[IX`mob+%mob.Xspeed+1]
         ld      A	[IX`mob+%mob.Xdirection]
-        jr      nc	._2
+        jr      nc	@_2
 	
         ld      C	$FF
         ld      DE      $FFF4
         bit     7	A	
-        jr      nz	._3
+        jr      nz	@_3
 	
         ld      DE      $FFE8
-        jr      ._3
+        jr      @_3
 
-._2     ld      C	$00
+@_2     ld      C	$00
         ld      DE      $000C
         bit     7	A
-        jr      z	._3
+        jr      z	@_3
 	
         ld      DE      $0018
-._3     add     HL      DE
+@_3     add     HL      DE
         adc     A	C
         ld      [IX`mob+%mob.Xspeed+0]		L
         ld      [IX`mob+%mob.Xspeed+1]		H
@@ -25167,14 +25167,14 @@ unknown_bcdf_process:                                                           
         add     HL      BC
         and     A
         sbc     HL      DE
-        jr      nc	._8
+        jr      nc	@_8
 	
         ld      HL      [$.CAMERA_Y]
         ld      BC      $00c0
         add     HL      DE
         and     A
         sbc     HL      DE
-        jr      c	._8
+        jr      c	@_8
 	
         ld      HL      [$.SONIC.Y]
         and     A
@@ -25182,44 +25182,44 @@ unknown_bcdf_process:                                                           
         ld      L	[IX`mob+%mob.Yspeed+0]
         ld      H	[IX`mob+%mob.Yspeed+1]
         ld      A	[IX`mob+%mob.Ydirection]
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      C	$FF
         ld      DE      $FFF6
         bit     7	A	
-        jr      nz	._5
+        jr      nz	@_5
 	
         ld      DE      $FFFB
-        jr      ._5
+        jr      @_5
         
-._4     ld      DE      $000A
+@_4     ld      DE      $000A
         ld      C	$00
         bit     7	A
-        jr      z	._5
+        jr      z	@_5
 	
         ld      DE      $0005
-._5     add     HL      DE
+@_5     add     HL      DE
         adc     A	C
         ld      [IX`mob+%mob.Yspeed+0]		L
         ld      [IX`mob+%mob.Yspeed+1]		H
         ld      [IX`mob+%mob.Ydirection]	A	
-        jr      ._7
-._6     inc     [IX`mob+%mob.unknown11]
-._7     ld      BC      ._bdc7
-        ld      DE      ._bdce
+        jr      @_7
+@_6     inc     [IX`mob+%mob.unknown11]
+@_7     ld      BC      @_bdc7
+        ld      DE      @_bdce
         call    _7c41
         bit     4	[IY`vars+%vars.unknown0]
         ret     nz
 	
-._8     ld      [IX`mob+%mob.type]	$FF      		;remove object?
+@_8     ld      [IX`mob+%mob.type]	$FF      		;remove object?
         res     5	[IY`vars+%vars.unknown0]
         ret
 	
 	%byte
-._bdc7  $00 $01 $01 $01 $02 $01 $FF
+@_bdc7  $00 $01 $01 $01 $02 $01 $FF
 
         ;sprite layout
-._bdce  $44 $46 $FF $FF $FF $FF
+@_bdce  $44 $46 $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
         $FF $FF $FF $FF $FF $FF
 
@@ -25242,7 +25242,7 @@ cutscene_final_process:                                                         
         ld      [IY`vars+%vars.joypad]	$FF
         
         bit     1   	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         ld      HL	\bossPalette
         ld      A       %00000010
         call    \\gfx\loadPaletteOnInterrupt
@@ -25257,16 +25257,16 @@ cutscene_final_process:                                                         
         ld      [IX`mob+$12]    $FF
         set     6	[IY`vars+%vars.timeLightningFlags]      ;lock the screen - no scrolling
         set     1	[IX`mob+%mob.flags]
-._1     ld      A	[$.FRAMECOUNT]
+@_1     ld      A	[$.FRAMECOUNT]
         rrca    
-        jr      c	._2
+        jr      c	@_2
 	
         ld      A	[IX`mob+$12]
         and     A
-        jr      z	._2
+        jr      z	@_2
 	
         dec     [IX`mob+$12]
-        jr      nz	._2
+        jr      nz	@_2
 	
         ld      L	[IX`mob+%mob.X+0]
         ld      H       [IX`mob+%mob.X+1]
@@ -25288,7 +25288,7 @@ cutscene_final_process:                                                         
 		rst     \\sound\rst_playSFX
 		;
         
-._2     ld      [IX`mob+%mob.width]     32
+@_2     ld      [IX`mob+%mob.width]     32
         ld      [IX`mob+%mob.height]    28
         xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]      A`zero
@@ -25298,7 +25298,7 @@ cutscene_final_process:                                                         
         ld      [IX`mob+%mob.Yspeed+1]      A`zero
         ld      [IX`mob+%mob.Ydirection]    A`zero
         bit     6	[IY`vars+%vars.timeLightningFlags]
-        jr      z	._3
+        jr      z	@_3
 	
         ld      DE	[$.CAMERA_X]
         ld      HL	$0040
@@ -25307,19 +25307,19 @@ cutscene_final_process:                                                         
         ld      B 	[IX`mob+%mob.X+1]
         and     A
         sbc     HL      BC
-        jr      nc	._3
+        jr      nc	@_3
 	
         inc     DE
         ld      [$.CAMERA_X]	DE
-._3     ld      [IX`mob+%mob.spriteLayout+0]	LO ._bf21
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._bf21
+@_3     ld      [IX`mob+%mob.spriteLayout+0]	LO @_bf21
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_bf21
         bit     0	[IX`mob+%mob.flags]
-        jr      nz	._4
+        jr      nz	@_4
 	
         ld      HL		$1008
         ld      [$.TEMP6]       HL
         call    \\detectCollisionWithSonic
-        jr      c	._4
+        jr      c	@_4
 	
         ld      DE	$0001
         ld      HL	[$.SONIC.Yspeed]
@@ -25345,7 +25345,7 @@ cutscene_final_process:                                                         
 		rst     \\sound\rst_playSFX
 		;
         
-._4     call    _79fa
+@_4     call    _79fa
         bit     0	[IX`mob+%mob.flags]
         ret     z
         
@@ -25353,8 +25353,8 @@ cutscene_final_process:                                                         
         ld      [IX`mob+%mob.Yspeed+0]          $40
         ld      [IX`mob+%mob.Yspeed+1]          A`zero
         ld      [IX`mob+%mob.Ydirection]        A`zero
-        ld      [IX`mob+%mob.spriteLayout+0]    LO ._bf33
-        ld      [IX`mob+%mob.spriteLayout+1]    HI ._bf33
+        ld      [IX`mob+%mob.spriteLayout+0]    LO @_bf33
+        ld      [IX`mob+%mob.spriteLayout+1]    HI @_bf33
         dec     [IX`mob+%mob.unknown11]
         ret     nz
         
@@ -25367,12 +25367,12 @@ cutscene_final_process:                                                         
 	
         ld      A	[$.D27F]
         cp      $06
-        jr      c	._5
+        jr      c	@_5
 	
         set     7	[IY`vars+%vars.unknown0]
         ret
         
-._5     ld      A	[$.D289]
+@_5     ld      A	[$.D289]
         and     A
         ret     nz
 	
@@ -25383,12 +25383,12 @@ cutscene_final_process:                                                         
 
 	%byte
 	
-._bf21  $2A $2C $2E $30 $32 $FF
+@_bf21  $2A $2C $2E $30 $32 $FF
         $4A $4C $4E $50 $52 $FF
         $6A $6C $6E $70 $72 $FF
 
         ;sprite layout
-._bf33  $2A $34 $36 $38 $32 $FF
+@_bf33  $2A $34 $36 $38 $32 $FF
         $4A $4C $4E $50 $52 $FF
         $6A $6C $6E $70 $72 $FF
         $5C $5E $FF $FF $FF $FF
@@ -25407,7 +25407,7 @@ cutscene_emeralds_process:                                                      
         call    \loadPowerUpIcon
         
         bit     0   	[IX`mob+%mob.flags]
-        jr      nz	._1
+        jr      nz	@_1
         
         xor     A`zero                                      	;set A to 0
         ld      [IX`mob+%mob.spriteLayout+0]    A`zero
@@ -25425,20 +25425,20 @@ cutscene_emeralds_process:                                                      
         ld      [IX`mob+%mob.unknown11]	$64
         ret
         
-._1     ld      A	[IX`mob+%mob.unknown11]
+@_1     ld      A	[IX`mob+%mob.unknown11]
         and     A
-        jr      z	._2
+        jr      z	@_2
 	
         dec     [IX`mob+%mob.unknown11]
-        jr      ._3
+        jr      @_3
         
-._2     ld      [IX`mob+%mob.Yspeed+0]      $80
+@_2     ld      [IX`mob+%mob.Yspeed+0]      $80
         ld      [IX`mob+%mob.Yspeed+1]      $FF
         ld      [IX`mob+%mob.Ydirection]    $FF
-._3     ld      HL	._bff1
+@_3     ld      HL	@_bff1
         ld      A       [$.FRAMECOUNT]
         rrca    
-        jr      nc	._4
+        jr      nc	@_4
 	
         ld      A	[IY`vars+%vars.spriteUpdateCount]
         ld      HL      [$.SPRITETABLE_ADDR]
@@ -25457,13 +25457,13 @@ cutscene_emeralds_process:                                                      
         ld      BC      [$.CAMERA_X]
         and     A
         sbc     HL      BC
-        ld      BC      ._bff1                  		;address of sprite layout
+        ld      BC      @_bff1                  		;address of sprite layout
         call    \\gfx.sprites\processSpriteLayout
         pop     HL
         pop     AF
         ld      [$.SPRITETABLE_ADDR]    HL
         ld      [IY`vars+%vars.spriteUpdateCount]   A
-._4     ld      L	[IX`mob+%mob.Y+0]
+@_4     ld      L	[IX`mob+%mob.Y+0]
         ld      H       [IX`mob+%mob.Y+1]
         ld      DE      $0020
         add     HL      DE
@@ -25480,7 +25480,7 @@ cutscene_emeralds_process:                                                      
 	;sprite layout
 	%byte
 	
-._bff1  $5C $5E $FF $FF $FF $FF
+@_bff1  $5C $5E $FF $FF $FF $FF
         $FF
 
         $49 $43 $20 $54 $48 $45 $20 $48
@@ -25538,51 +25538,51 @@ playSFX:
 
 %track
 ;=======================================================================================================================
-.channelFrequencyPSG            	%byte                   ;+$00
+@channelFrequencyPSG            	%byte                   ;+$00
 /*      To set a frequency on the PSG a data byte is written to the sound port with bit 7 set and bits 6 & 5
         forming the sound channel number 0-3. this variable holds the bit mask for the track's particular
         channel to set the frequency (see ;PSGchannelBits` for the particulars)
 	*/
 
-.channelVolumePSG               	%byte                   ;+$01
+@channelVolumePSG               	%byte                   ;+$01
 /*      To set the volume of a channel, a data byte is written to the sound port with bits 7 & 4 set and bits
         6 & 5 forming the sound channel number 0-3. bits 0-3 form the volume level where 1111 is silence
         and 0000 is maximum. This variable holds the bit mask for the track's particular channel to set the
         volume (see ;initPSGValues` for examples)
 	*/
 
-.tickStep                       	%word                   ;+$02
-.fadeTicks                      	%word                   ;+$04
-.noteFrequencey                 	%word                   ;+$06 - can't find direct reference
-.detune                         	%word                   ;+$08
-.modulationFreq                 	%word                   ;+$0A
-.envelopeLevel                  	%byte                   ;+$0C
-.ADSRstate                      	%byte                   ;+$0D
-.attackRate                     	%byte                   ;+$0E
-.decay1Rate                     	%byte                   ;+$0F
-.decay1Level                    	%byte                   ;+$10
-.decay2Rate                     	%byte                   ;+$11
-.decay2Level                    	%byte                   ;+$12
-.sustainRate                    	%byte                   ;+$13
-.initModulationDelay            	%byte                   ;+$14
-.initModulationStepDelay        	%byte                   ;+$15
-.initModulationStepCount        	%byte                   ;+$16
-.initModulationFreqDelta        	%word                   ;+$17
-.modulationDelay                	%byte                   ;+$19
-.modulationStepDelay            	%byte                   ;+$1A
-.modulationStepCount            	%byte                   ;+$1B
-.modulationFreqDelta            	%word                   ;+$1C
-.effectiveVolume                	%byte                   ;+$1E
-.octave                         	%byte                   ;+$1F
-.loopAddress                    	%word                   ;+$20
-.masterLoopAddress              	%word                   ;+$22
-.defaultNoteLength              	%byte                   ;+$24
-.noiseMode                      	%byte                   ;+$25
-.tempoDivider                   	%word                   ;+$26
-.flags                          	%byte                   ;+$28
-.baseAddress                    	%word                   ;+$29
-.id                             	%byte                   ;+$2B
-.channelVolume                  	%byte                   ;+$2C
+@tickStep                       	%word                   ;+$02
+@fadeTicks                      	%word                   ;+$04
+@noteFrequencey                 	%word                   ;+$06 - can't find direct reference
+@detune                         	%word                   ;+$08
+@modulationFreq                 	%word                   ;+$0A
+@envelopeLevel                  	%byte                   ;+$0C
+@ADSRstate                      	%byte                   ;+$0D
+@attackRate                     	%byte                   ;+$0E
+@decay1Rate                     	%byte                   ;+$0F
+@decay1Level                    	%byte                   ;+$10
+@decay2Rate                     	%byte                   ;+$11
+@decay2Level                    	%byte                   ;+$12
+@sustainRate                    	%byte                   ;+$13
+@initModulationDelay            	%byte                   ;+$14
+@initModulationStepDelay        	%byte                   ;+$15
+@initModulationStepCount        	%byte                   ;+$16
+@initModulationFreqDelta        	%word                   ;+$17
+@modulationDelay                	%byte                   ;+$19
+@modulationStepDelay            	%byte                   ;+$1A
+@modulationStepCount            	%byte                   ;+$1B
+@modulationFreqDelta            	%word                   ;+$1C
+@effectiveVolume                	%byte                   ;+$1E
+@octave                         	%byte                   ;+$1F
+@loopAddress                    	%word                   ;+$20
+@masterLoopAddress              	%word                   ;+$22
+@defaultNoteLength              	%byte                   ;+$24
+@noiseMode                      	%byte                   ;+$25
+@tempoDivider                   	%word                   ;+$26
+@flags                          	%byte                   ;+$28
+@baseAddress                    	%word                   ;+$29
+@id                             	%byte                   ;+$2B
+@channelVolume                  	%byte                   ;+$2C
 
 ;define the variables in RAM:
 
@@ -25591,37 +25591,37 @@ playSFX:
 
 $
 ;=======================================================================================================================
-.playbackMode                   	%byte                   ;bit 4 dis/enables fading out
-.overriddenTrack                	%byte                   ;which music track the SFX is overriding
-.SFXpriority                    	%byte                   ;priority level of current SFX
-.noiseMode                      	%byte                   ;high/med/low noise & frequency mode
-.tickMultiplier                 	%word
-.tickDivider1                   	%word  
-.tickDivider2                   	%word  
-.tickDividerSFX                 	%word
-.fadeTicks                      	%word  
-.fadeTicksDecrement             	%word  
+@playbackMode                   	%byte                   ;bit 4 dis/enables fading out
+@overriddenTrack                	%byte                   ;which music track the SFX is overriding
+@SFXpriority                    	%byte                   ;priority level of current SFX
+@noiseMode                      	%byte                   ;high/med/low noise & frequency mode
+@tickMultiplier                 	%word
+@tickDivider1                   	%word  
+@tickDivider2                   	%word  
+@tickDividerSFX                 	%word
+@fadeTicks                      	%word  
+@fadeTicksDecrement             	%word  
 	
-.channel0trackPointer           	%word  
-.channel1trackPointer           	%word
-.channel2trackPointer           	%word
-.channel3trackPointer           	%word  
+@channel0trackPointer           	%word  
+@channel1trackPointer           	%word
+@channel2trackPointer           	%word
+@channel3trackPointer           	%word  
 	
-.track0dataPointer              	%word
-.track1dataPointer              	%word
-.track2dataPointer              	%word
-.track3dataPointer              	%word
-.track4dataPointer              	%word
+@track0dataPointer              	%word
+@track1dataPointer              	%word
+@track2dataPointer              	%word
+@track3dataPointer              	%word
+@track4dataPointer              	%word
 
 ;the `_loadMusic` routine assumes that the track RAM follows the data pointers above,
 ;so just take note in case of rearranging the RAM here
-.track0vars                     	%track
-.track1vars                     	%track
-.track2vars                     	%track
-.track3vars                     	%track
-.track4vars                     	%track
+@track0vars                     	%track
+@track1vars                     	%track
+@track2vars                     	%track
+@track3vars                     	%track
+@track4vars                     	%track
 
-.loopStack                      	%word
+@loopStack                      	%word
 
 	
 doLoadMusic:
@@ -25643,7 +25643,7 @@ doLoadMusic:
         ;begin a loop over the five tracks
         ld      A       5
         
-._1     ;fetch the track's offset value from the header and add it to the base address
+@_1     ;fetch the track's offset value from the header and add it to the base address
         ;giving you an absolute address to the track data
         ld      E       [HL]
         inc     HL
@@ -25661,14 +25661,14 @@ doLoadMusic:
         
         ;move on to the next track
         dec     A
-        jp      nz	._1
+        jp      nz	@_1
         
         ;initialise track variables (16-bit values)
         ;---------------------------------------------------------------------------------------------------------------
         ;the referenced table contains a list of addresses and 16-bit values to set
         ld      HL      initTrackValues_words
     
-._2     ;fetch the address of the variable to initialise from the table into DE
+@_2     ;fetch the address of the variable to initialise from the table into DE
         ld      E       [HL]
         inc     HL
         ld      D       [HL]
@@ -25676,39 +25676,39 @@ doLoadMusic:
         ;if the hi-byte is $FF (i.e. $FFFF) then leave the loop
         ld      A       D
         inc     A                                               ;if A is $FF then this will overflow
-        jr      z	._3                                     ;if $00 (as above) then leave the loop
+        jr      z	@_3                                     ;if $00 (as above) then leave the loop
         
         ;now copy two bytes from the table into the variable's address
         inc     HL
         ldi     
         ldi     
         
-        jp      ._2
+        jp      @_2
         
         ;initialise track variables (8-bit values)
         ;---------------------------------------------------------------------------------------------------------------
-._3     ;the referenced table contains a list of addresses and 8-bit values to set
+@_3     ;the referenced table contains a list of addresses and 8-bit values to set
         ld      HL      initTrackValues_bytes
         
         ;fetch the address of the variable to initialise from the table into DE
-._4     ld      E       [HL]
+@_4     ld      E       [HL]
         inc     HL
         ld      D       [HL]
         
         ;if the hi-byte is $FF (i.e. $FFFF) then leave the loop
         ld      A       D
         inc     A                                               ;if A is $FF then this will overflow
-        jr      z	._5                                     ;if $00 (as above) then leave the loop
+        jr      z	@_5                                     ;if $00 (as above) then leave the loop
         
         ;now copy one byte from the table into the variable's address
         inc     HL
         ldi
         
-        jp      ._4
+        jp      @_4
         
         ;finalise:
         ;---------------------------------------------------------------------------------------------------------------
-._5     pop     IX  HL  DE  BC  AF
+@_5     pop     IX  HL  DE  BC  AF
         
         ;store the song's base address in each track
         ld      [$.track0vars.baseAddress]      HL
@@ -25869,12 +25869,12 @@ doLoadSFX:
         
         ld      A       [$.SFXpriority]                         ;get the current driver SFX priority
         and     A                                               ;is it zero? (any sound allowed)
-        jr      z	._1                                         ;then proceed
+        jr      z	@_1                                         ;then proceed
         
         cp      E                                               ;is new SFX priority < current priority
-        jr      c	._2                                     ;if so, SFX is not high priority enough
+        jr      c	@_2                                     ;if so, SFX is not high priority enough
         
-._1     ;update the SFX priority with the new value
+@_1     ;update the SFX priority with the new value
         ;(only sounds with higher priority will be played instead)
         ld      A                   E
         ld      [$.SFXpriority]     A
@@ -25938,7 +25938,7 @@ doLoadSFX:
         ld      A       $02
         ld      [$.track4vars.flags]    A
         
-._2     pop     HL  DE  AF
+@_2     pop     HL  DE  AF
         ret
 	;
 
@@ -26053,7 +26053,7 @@ doUpdate:
         call    doUpdateTrack
         ld      [$.track4dataPointer]   DE
         bit     1   [IX+%track.flags]
-        jr      z	._1
+        jr      z	@_1
         
         ld      HL      $.channel0trackPointer
         ld      A       [$.overriddenTrack]
@@ -26064,7 +26064,7 @@ doUpdate:
         ld      [HL]    (LO $.track4vars)
         inc     HL
         ld      [HL]    (HI $.track4vars)
-._1     ld      IX      [$.channel0trackPointer]
+@_1     ld      IX      [$.channel0trackPointer]
         call    doProcessTrack
         ;TODO: Why not just use `inc IX`?
         ld      IX      [$.channel1trackPointer]
@@ -26082,11 +26082,11 @@ doUpdate:
         ld      BC      [$.fadeTicksDecrement]
         and     A
         sbc     HL      BC
-        jr      nc	._2
+        jr      nc	@_2
         
         ;stop all sound
         call    doStop
-._2     ld      [$.fadeTicks]   HL
+@_2     ld      [$.fadeTicks]   HL
         ret
 	;
 
@@ -26101,10 +26101,10 @@ doUpdateTrack:
         sbc     HL      BC
         ld      [IX+%track.tickStep+0]  L
         ld      [IX+%track.tickStep+1]  H
-        jr      z	.trackReadLoop
+        jr      z	@trackReadLoop
         jp      nc	doNote.x
         
-.trackReadLoop
+@trackReadLoop
         ld      A       [DE]
         and     A
         jp      m	doCommand
@@ -26168,7 +26168,7 @@ doNote:
         bit     0   [IX+%track.flags]
         jr      nz	doNote.doNoteLength
 
-.resetModValues
+@resetModValues
         ld      A       [IX+%track.initModulationDelay]
         ld      [IX+%track.modulationDelay]     A
         ld      A       [IX+%track.initModulationDelay+1]
@@ -26187,22 +26187,22 @@ doNote:
         ld      [IX+%track.envelopeLevel]       A
         ld      [IX+%track.effectiveVolume]     $0F
         
-.doNoteLength
+@doNoteLength
         inc     DE
         ld      A       [DE]
         inc     DE
         and     A
-        jr      nz	._1
+        jr      nz	@_1
         ld      A       [IX+%track.defaultNoteLength]
-._1     push    DE
+@_1     push    DE
         ld      C       A
         ld      L       [IX+%track.tempoDivider+0]
         ld      H       [IX+%track.tempoDivider+1]
         ld      A       L
         or      H
-        jr      nz	._2
+        jr      nz	@_2
         ld      HL      [$.tickMultiplier]
-._2     call    calcTickTime
+@_2     call    calcTickTime
         pop     DE
         ld      A       L
         add     A       [IX+%track.tickStep+0]
@@ -26211,7 +26211,7 @@ doNote:
         adc     A       [IX+%track.tickStep+1]
         ld      [IX+%track.tickStep+1]  A
         
-.x      res     0   [IX+%track.flags]
+@x      res     0   [IX+%track.flags]
         ret
 	;
 
@@ -26245,34 +26245,34 @@ doTrackSoundOut:
 ;=======================================================================================================================
         ld      A       [IX+%track.channelFrequencyPSG]
         cp      $E0
-        jr      nz	.doModulation
+        jr      nz	@doModulation
         ld      C       [IX+%track.noiseMode]
         ld      A       [$.noiseMode]
         cp      C
-        jp      z	.sendVolume
+        jp      z	@sendVolume
         ld      A               C
         ld      [$.noiseMode]   A
         or      %11100000                                       ;noise channel frequency?
         out     [%sms.ports.psg]        A
-        jp      .sendVolume
+        jp      @sendVolume
 
-.doModulation
+@doModulation
         ld      E       [IX+%track.modulationFreq+0]
         ld      D       [IX+%track.modulationFreq+1]
         ld      A       [IX+%track.modulationDelay]
         and     A
-        jr      z	._1
+        jr      z	@_1
         dec     [IX+%track.modulationDelay]
-        jp      .sendFrequency
+        jp      @sendFrequency
     
-._1     dec     [IX+%track.modulationStepDelay]
-        jp      nz	.sendFrequency
+@_1     dec     [IX+%track.modulationStepDelay]
+        jp      nz	@sendFrequency
         ld      A       [IX+$15]
         ld      [IX+%track.modulationStepDelay] A
         ld      L       [IX+%track.modulationFreqDelta+0]
         ld      H       [IX+%track.modulationFreqDelta+1]
         dec     [IX+%track.modulationStepCount]
-        jp      nz	._2
+        jp      nz	@_2
         ld      A       [IX+%track.initModulationStepCount]
         ld      [IX+%track.modulationStepCount] A
         ld      A       L
@@ -26284,16 +26284,16 @@ doTrackSoundOut:
         inc     HL
         ld      [IX+%track.modulationFreqDelta+0]       L
         ld      [IX+%track.modulationFreqDelta+1]       H
-        jp      .sendFrequency
+        jp      @sendFrequency
     
-._2     add     HL      DE
+@_2     add     HL      DE
         ld      [IX+%track.modulationFreq+0]    L
         ld      [IX+%track.modulationFreq+1]    H
         ex      DE      HL
 
         ;---------------------------------------------------------------------------------------------------------------
 
-.sendFrequency
+@sendFrequency
         ld      L       [IX+%track.noteFrequencey]
         ld      H       [IX+%track.noteFrequencey+1]
         ld      C       [IX+%track.detune+0]
@@ -26302,14 +26302,14 @@ doTrackSoundOut:
         add     HL      DE
         ld      A       [IX+%track.octave]
         and     A
-        jr      z	._4
+        jr      z	@_4
         ld      B       A
         
-._3     srl     H
+@_3     srl     H
         rr      L
-        djnz    ._3
+        djnz    @_3
     
-._4     ld      A       L
+@_4     ld      A       L
         and     %00001111
         or      [IX+%track.channelFrequencyPSG]
         out     [$sms.ports.psg]        A
@@ -26329,21 +26329,21 @@ doTrackSoundOut:
         or      c
         out     [$sms.ports.psg]        A
     
-.sendVolume
+@sendVolume
         ld      A       [IX+%track.fadeTicks+1]
         and     A
-        jr      z	._5
+        jr      z	@_5
         ld      C       A
         ld      A       [IX+%track.envelopeLevel]
         and     A
-        jr      z	._5
+        jr      z	@_5
         ld      L       A
         ld      H       $00
         call    calcTickTime
         rl      L
         ld      A       $00
         adc     A       H
-._5     and     [IX+%track.effectiveVolume]
+@_5     and     [IX+%track.effectiveVolume]
         xor     %00001111
         or      [IX+%track.channelVolumePSG]
         out     [%sms.ports.psg]        A
@@ -26357,9 +26357,9 @@ doTrackSoundOut:
         ld      H       [IX+%track.fadeTicks+1]
         ld      BC      [$.fadeTicksDecrement]
         sbc     HL      BC
-        jr      nc	._6
+        jr      nc	@_6
         ld      HL      $0000
-._6     ld      [IX+%track.fadeTicks+0] L
+@_6     ld      [IX+%track.fadeTicks+0] L
         ld      [IX+%track.fadeTicks+1] H
         ret
 	;
@@ -26407,7 +26407,7 @@ cmdFE_stopSFX:
         xor     A
         ld      [$.SFXpriority] A
 
-.stopTrack
+@stopTrack
         res     1   [IX+%track.flags]
         ld      A       %00001111
         or      [IX+%track.channelVolumePSG]
@@ -26444,9 +26444,9 @@ ADSRenvelopeAttack:
 ;=======================================================================================================================
         ld      A       [IX+%track.attackRate]
         add     A       [IX+%track.envelopeLevel]
-        jp      nc	._1
+        jp      nc	@_1
         ld      A       $FF
-._1     ld      [IX+%track.envelopeLevel]       A
+@_1     ld      [IX+%track.envelopeLevel]       A
         jp      nc	doTrackSoundOut
         inc     [IX+%track.ADSRstate]
         jp      doTrackSoundOut
@@ -26457,11 +26457,11 @@ ADSRenvelopeDecay1:
         ld      C       [IX+%track.decay1Level]
         ld      A       [IX+%track.envelopeLevel]
         sub     [IX+%track.decay1Rate]
-        jr      c	._1
+        jr      c	@_1
         cp      [IX+%track.decay1Level]
-        jr      c	._1
+        jr      c	@_1
         ld      C       A
-._1     ld      [IX+%track.envelopeLevel]       C
+@_1     ld      [IX+%track.envelopeLevel]       C
         jp      nc	doTrackSoundOut
         inc     [IX+%track.ADSRstate]
         jp      doTrackSoundOut
@@ -26472,11 +26472,11 @@ ADSRenvelopeDecay2:
         ld      C       [IX+%track.decay2Level]
         ld      A       [IX+%track.envelopeLevel]
         sub     [IX+%track.decay2Rate]
-        jr      c	._1
+        jr      c	@_1
         cp      [IX+%track.decay2Level]
-        jp      c	._1
+        jp      c	@_1
         ld      C       A
-._1     ld      [IX+%track.envelopeLevel]       C
+@_1     ld      [IX+%track.envelopeLevel]       C
         jp      nc	doTrackSoundOut
         inc     [IX+%track.ADSRstate]
         jp      doTrackSoundOut
@@ -26486,9 +26486,9 @@ ADSRenvelopeSustain:
 ;=======================================================================================================================
         ld      A       [IX+%track.envelopeLevel]
         sub     [IX+%track.sustainRate]
-        jp      nc	._1
+        jp      nc	@_1
         ld      A       $00
-._1     ld      [IX+%track.envelopeLevel]       A
+@_1     ld      [IX+%track.envelopeLevel]       A
         jp      nc	doTrackSoundOut
         inc     [IX+%track.ADSRstate]
         jp      doTrackSoundOut
@@ -26522,12 +26522,12 @@ cmd81_volumeSet:
         inc     DE
         ld      A       [IX+%track.id]
         cp      $04
-        jr      z	._1
+        jr      z	@_1
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
         
-._1     ld      A       [IX+%track.channelVolume]
+@_1     ld      A       [IX+%track.channelVolume]
         ld      [IX+%track.fadeTicks+1] A
         ld      [IX+%track.fadeTicks+0] $00
         jp      doUpdateTrack.trackReadLoop
@@ -26604,17 +26604,17 @@ cmd87_loopEnd:
         add     HL      BC
         ld      A       [HL]
         and     A
-        jr      nz	.loopInit
+        jr      nz	@loopInit
         ld      A       [DE]
         dec     A
-        jr      z	._2
+        jr      z	@_2
         ld      [HL]    A
-        jp      ._1
+        jp      @_1
 
-.loopInit
+@loopInit
         dec     [HL]
-        jr      z	._2
-._1     ex      DE      HL
+        jr      z	@_2
+@_1     ex      DE      HL
         inc     HL
         ld      A       [HL]
         inc     HL
@@ -26626,7 +26626,7 @@ cmd87_loopEnd:
         ex      DE      HL
         jp      doUpdateTrack.trackReadLoop
     
-._2     ld      [IX+%track.loopAddress+0]       L
+@_2     ld      [IX+%track.loopAddress+0]       L
         ld      [IX+%track.loopAddress+1]       H
         inc     DE
         inc     DE
@@ -26662,9 +26662,9 @@ cmd8B_volumeUp:
         ld      A       [IX+%track.channelVolume]
         inc     A
         cp      $10
-        jr      c	._1
+        jr      c	@_1
         ld      A       $0F
-._1     ld      [IX+%track.channelVolume]       A
+@_1     ld      [IX+%track.channelVolume]       A
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
@@ -26678,9 +26678,9 @@ cmd8C_volumeDown:
         ld      A       [IX+%track.channelVolume]
         dec     A
         cp      $10
-        jr      c	._1
+        jr      c	@_1
         xor     A
-._1     ld      [IX+%track.channelVolume]       A
+@_1     ld      [IX+%track.channelVolume]       A
         ld      A       [$.playbackMode]
         and     %00001000
         jp      nz	doUpdateTrack.trackReadLoop
@@ -26703,11 +26703,11 @@ calcTickTime:
         ld      L       A
         ld      H       A
         
-._1     rl      C
-        jp      nc	._2
+@_1     rl      C
+        jp      nc	@_2
         add     HL      DE
-._2     add     HL      HL
-        djnz    ._1
+@_2     add     HL      HL
+        djnz    @_1
         
         or      C
         ret     z
@@ -26782,77 +26782,77 @@ music_pointers:                                                                 
         ;TODO: in the original ROM the order needs to be preserved, and there are unused entries,
         ;      we'll need a way to specify this for an original build, but use auto-numbering for new builds
         
-.greenHill                                                      ;index $00
+@greenHill                                                      ;index $00
         \music.greenHill\data			                ;=$47D0 [$C7D0]
         
-.bridge                                                         ;index $01
+@bridge                                                         ;index $01
         \music.bridge\data			                ;=$574A [$D74A]
         
-.jungle                                                         ;index $02
+@jungle                                                         ;index $02
         \music.jungle\data			                ;=$524A [$D24A]
         
-.labyrinth                                                      ;index $03
+@labyrinth                                                      ;index $03
         \music.labyrinth\data			                ;=$760C [$F60C]
         
-.scrapBrain                                                     ;index $04
+@scrapBrain                                                     ;index $04
         \music.scrapBrain\data			                ;=$5B4F [$DB4F]
         
-.skyBase                                                        ;index $05
+@skyBase                                                        ;index $05
         \music.skyBase\data			                	;=$61A7 [$E1A7]
         
-.titleScreen                                                    ;index $06
+@titleScreen                                                    ;index $06
         \music.titleScreen\data		                ;=$64C3 [$E4C3]
         
-.mapScreen                                                      ;index $07
+@mapScreen                                                      ;index $07
         \music.mapScreen\data			                ;=$663C [$E63C]
         
-.invincibility                                                  ;index $08
+@invincibility                                                  ;index $08
         \music.invinciblity\data		                ;=$6704 [$E704]
         
-.actComplete                                                    ;index $09
+@actComplete                                                    ;index $09
         \music.actComplete\data		                ;=$68B4 [$E8B4]
         
-.death                                                          ;index $0A
+@death                                                          ;index $0A
         \music.death\data			                ;=$6991 [$E991]
         
-.boss1                                                          ;index $0B
+@boss1                                                          ;index $0B
         \music.boss\data			                ;=$6AC0 [$EAC0]
         
-.boss2                                                          ;index $0C
+@boss2                                                          ;index $0C
         \music.boss\data			                ;=$6AC0 [$EAC0]
         
-.boss3                                                          ;index $0D
+@boss3                                                          ;index $0D
         \music.boss\data			                ;=$6AC0 [$EAC0]
         
-.ending                                                         ;index $0E
+@ending                                                         ;index $0E
         \music.ending\data			              	;=$6D54 [$ED54]
     
         ;an unused entry
-.unused1                                                        ;index $0F
+@unused1                                                        ;index $0F
         \music.greenHill\data			                ;=$47D0 [$C7D0]
         
-.specialStage                                                   ;index $10
+@specialStage                                                   ;index $10
         \music.specialStage\data		                ;=$712C [$F12C]
 
         ;a couple of unused entries
-.unused2                                                        ;index $11
+@unused2                                                        ;index $11
         \music.greenHill\data			                ;=$47D0 [$C7D0]
-.unused3                                                        ;index $12
+@unused3                                                        ;index $12
         \music.greenHill\data			                ;=$47D0 [$C7D0]
 
-.allEmeralds                                                    ;index $13
+@allEmeralds                                                    ;index $13
         \music.allEmeralds\data		                ;=$798C [$F98C]
         
-.emerald                                                        ;index $14
+@emerald                                                        ;index $14
         \music.emerald\data			               	;=$7A26 [$FA26]
 	
 	;
 
 %sfxHeader
-.overriddenTrack                	%byte
-.tempoDivider                   	%word
-.tickDivider                    	%word
-.unused                         	%byte
+@overriddenTrack                	%byte
+@tempoDivider                   	%word
+@tickDivider                    	%word
+@unused                         	%byte
 
 
 sfx_pointers:                                                                                                 	;$C740
@@ -26901,15 +26901,15 @@ music_greenHill_data:                                                           
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;offset to channel 1
-        .channel2 - :                                           ;offset to channel 2
-        .channel3 - :                                           ;offset to channel 3
-        .channel4 - :                                           ;offset to channel 4
+        @channel1 - :                                           ;offset to channel 1
+        @channel2 - :                                           ;offset to channel 2
+        @channel3 - :                                           ;offset to channel 3
+        @channel4 - :                                           ;offset to channel 4
         $0000
 
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $82 $FF $14 $96 $00 $32 $0A
@@ -26943,43 +26943,43 @@ music_greenHill_data:                                                           
         $27 $00 $24 $00 $24 $00 $20 $00
         $FF
 
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $96 $00 $32 $0A
         $81 $0D
         $8A $0C
         $7F $00 $0C $00 $09 $00 $0C $00 $0D $00 $0A $00 $0E $00 $0B $00
         $86
-.a      $00 $06
+@a      $00 $06
         $8C $8C $8C $8C
         $00 $06
         $8B $8B $8B $8B
         $87 $18
-        .a - :
+        @a - :
         $00 $00 $00 $00 $0C $00 $0C $00 $0D $00 $0D $00 $0E $00 $0E $00
         $86
-.b      $00 $06
+@b      $00 $06
         $8C $8C $8C $8C
         $00 $06
         $8B $8B $8B $8B
         $87 $1E
-        .b - :
+        @b - :
         $02 $00 $04 $00
         $88
         $86
-.c      $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
+@c      $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
         $04 $00 $04 $00 $14 $00 $04 $00 $04 $00 $00 $00 $02 $00 $04 $00
         $87 $02
-        .c - :
+        @c - :
         $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
         $04 $00 $04 $00 $14 $00 $04 $00 $04 $00 $04 $00 $14 $00 $04 $00
         $02 $00 $02 $00 $12 $00 $02 $00 $02 $00 $02 $00 $12 $00 $02 $00
         $00 $00 $00 $00 $10 $00 $00 $00 $00 $00 $00 $00 $02 $00 $04 $00
         $86
-.d      $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
+@d      $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
         $04 $00 $04 $00 $14 $00 $04 $00 $04 $00 $00 $00 $02 $00 $04 $00
         $87 $02
-        .d - :
+        @d - :
         $05 $00 $05 $00 $15 $00 $05 $00 $05 $00 $05 $00 $15 $00 $05 $00
         $04 $00 $04 $00 $14 $00 $04 $00 $04 $00 $04 $00 $14 $00 $04 $00
         $02 $00 $02 $00 $12 $00 $02 $00 $02 $00 $02 $00 $12 $00 $02 $00
@@ -26992,7 +26992,7 @@ music_greenHill_data:                                                           
         $07 $00 $04 $00 $04 $00 $05 $00 $05 $00 $06 $00 $07 $00
         $FF
 
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $82 $00 $32 $0A
         $81 $09
@@ -27008,7 +27008,7 @@ music_greenHill_data:                                                           
         $81 $09 $27 $00
         $81 $04 $29 $00
         $86
-.e      $81 $09 $30 $00
+@e      $81 $09 $30 $00
         $81 $04 $27 $00
         $81 $09 $2B $00
         $81 $04 $30 $00
@@ -27017,7 +27017,7 @@ music_greenHill_data:                                                           
         $81 $09 $27 $00
         $81 $04 $29 $00
         $87 $0F
-        .e - :
+        @e - :
         $88
         $84 $04 $00
         $81 $09
@@ -27032,7 +27032,7 @@ music_greenHill_data:                                                           
         $10 $24
         $8A $06
         $86
-.f      $86
+@f      $86
         $81 $09 $30 $00
         $81 $05 $30 $00
         $81 $09 $29 $00
@@ -27059,7 +27059,7 @@ music_greenHill_data:                                                           
         $81 $09 $24 $00
         $81 $05 $27 $00
         $87 $03
-        .f - :                              ;$A2 $03
+        @f - :                              ;$A2 $03
         $81 $09 $30 $00
         $81 $05 $24 $00
         $81 $09 $29 $00
@@ -27084,7 +27084,7 @@ music_greenHill_data:                                                           
         $81 $09 $29 $00 $30 $00 $34 $00
         $8A $06
         $86
-.g      $81 $09 $2A $00
+@g      $81 $09 $2A $00
         $81 $05 $2A $00
         $81 $09 $25 $00
         $81 $05 $2A $00
@@ -27093,9 +27093,9 @@ music_greenHill_data:                                                           
         $81 $09 $25 $00
         $81 $05 $32 $00
         $87 $04
-        .g - :
+        @g - :
         $86
-.h      $81 $09 $29 $00
+@h      $81 $09 $29 $00
         $81 $05 $29 $00
         $81 $09 $24 $00
         $81 $05 $29 $00
@@ -27104,9 +27104,9 @@ music_greenHill_data:                                                           
         $81 $09 $24 $00
         $81 $05 $30 $00
         $87 $04
-        .h - :
+        @h - :
         $86
-.i      $81 $09 $28 $00
+@i      $81 $09 $28 $00
         $81 $05 $28 $00
         $81 $09 $23 $00
         $81 $05 $28 $00
@@ -27115,9 +27115,9 @@ music_greenHill_data:                                                           
         $81 $09 $23 $00
         $81 $05 $30 $00
         $87 $04
-        .i - :                                                  ;=$B2 $04
+        @i - :                                                  ;=$B2 $04
         $86
-.j      $81 $09 $30 $00
+@j      $81 $09 $30 $00
         $81 $05 $30 $00
         $81 $09 $29 $00
         $81 $05 $30 $00
@@ -27126,10 +27126,10 @@ music_greenHill_data:                                                           
         $81 $09 $29 $00
         $81 $05 $34 $00
         $87 $04
-        .j - :                                                  ;=$D7 $04
+        @j - :                                                  ;=$D7 $04
         $FF
 
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
@@ -27140,11 +27140,11 @@ music_greenHill_data:                                                           
         $81 $0C $71 $00 $71 $00 $71 $00
         $88
         $86
-.k      $81 $09 $70 $00 $70 $00
+@k      $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $0F
-        .k - :                                                  ;=$1C $05
+        @k - :                                                  ;=$1C $05
         $70 $00
         $81 $0C $71 $00 $71 $00 $71 $00
         $FF
@@ -27156,15 +27156,15 @@ music_marble_data:                                                              
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$00D8
-        .channel3 - :                                           ;=$01CC
-        .channel4 - :                                           ;=$0505
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$00D8
+        @channel3 - :                                           ;=$01CC
+        @channel4 - :                                           ;=$0505
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -27175,34 +27175,34 @@ music_marble_data:                                                              
         $81 $0C
         $83 $0C $01 $04 $06 $00
         $86
-.a      $1B $18 $1B $00 $19 $00
+@a      $1B $18 $1B $00 $19 $00
         $87 $03
-        .a - :                                                  ;=$2E $00
+        @a - :                                                  ;=$2E $00
         $1B $00 $19 $00 $14 $00 $10 $00 $17 $18 $19 $00 $15 $30
         $8D $15 $30 $8D $15 $30 $7F $00
         $86
-.b      $19 $18 $19 $00 $17 $00
+@b      $19 $18 $19 $00 $17 $00
         $87 $03
-        .b - :                                                  ;=$4F $00
+        @b - :                                                  ;=$4F $00
         $19 $18 $1B $18 $15 $24 $14 $30 $8D $14 $30 $7F $00 $09 $00
         $0B $00 $10 $00 $14 $00
         $86
-.c      $1B $18 $1B $00 $19 $00
+@c      $1B $18 $1B $00 $19 $00
         $87 $03
-        .c - :                                                  ;=$6F $00
+        @c - :                                                  ;=$6F $00
         $1B $00 $19 $00 $14 $00 $10 $00 $17 $18 $19 $00 $15 $30
         $8D $15 $30 $8D $15 $30 $7F $00 $19 $30 $8D $19 $18 $1B $18
         $18 $30 $8D $18 $12 $7F $06 $1B $00 $7F $00 $1B $24 $19 $00
         $8D $19 $30 $8D $19 $30 $8D $19 $30
         $86
-.d      $29 $00 $30 $06 $29 $06 $30 $00 $29 $00 $2B $00 $27 $00 $22 $00
+@d      $29 $00 $30 $06 $29 $06 $30 $00 $29 $00 $2B $00 $27 $00 $22 $00
         $2B $00 $25 $00 $29 $06 $25 $06 $29 $00 $25 $00 $27 $00 $29 $00
         $2B $00 $27 $00
         $87 $02
-        .d - :                                                  ;=$AF $00
+        @d - :                                                  ;=$AF $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $81 $0A
         $82 $FF $14 $82 $14 $32 $01
@@ -27210,41 +27210,41 @@ music_marble_data:                                                              
         $8A $0C
         $81 $0D
         $86
-.e      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
+@e      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
         $87 $02
-        .e - :                                                  ;=$E9 $00
+        @e - :                                                  ;=$E9 $00
         $86
-.f      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
+@f      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
         $87 $02
-        .f - :                                                  ;=$FE $00
+        @f - :                                                  ;=$FE $00
         $86
-.g      $0E $00 $0E $00 $07 $00 $07 $00 $02 $00 $02 $00 $07 $00 $07 $00
+@g      $0E $00 $0E $00 $07 $00 $07 $00 $02 $00 $02 $00 $07 $00 $07 $00
         $87 $02
-        .g - :                                                  ;=$13 $01
+        @g - :                                                  ;=$13 $01
         $00 $00 $00 $00 $07 $00 $07 $00 $04 $00 $04 $00 $07 $00 $07 $00
         $0E $00 $0E $00 $05 $00 $05 $00 $04 $00 $04 $00 $0E $00 $0E $00
         $86
-.h      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
+@h      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
         $87 $02
-        .h - :                                                  ;=$48 $01
+        @h - :                                                  ;=$48 $01
         $86
-.i      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
+@i      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
         $87 $02
-        .i - :                                                  ;=$5D $01
+        @i - :                                                  ;=$5D $01
         $0E $00 $0E $00 $05 $00 $05 $00 $02 $00 $02 $00 $05 $00 $05 $00
         $04 $00 $04 $00 $0B $00 $0B $00 $08 $00 $08 $00 $0B $00 $0B $00
         $86
-.j      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
+@j      $0C $00 $0C $00 $04 $00 $04 $00 $02 $00 $02 $00 $04 $00 $04 $00
         $87 $02
-        .j - :                                                  ;=$92 $01
+        @j - :                                                  ;=$92 $01
         $86
-.k      $09 $00 $09 $00 $09 $00 $09 $00 $07 $00 $07 $00 $07 $00 $07 $00
+@k      $09 $00 $09 $00 $09 $00 $09 $00 $07 $00 $07 $00 $07 $00 $07 $00
         $05 $00 $05 $00 $05 $00 $05 $00 $07 $00 $07 $00 $07 $00 $07 $00
         $87 $02
-        .k - :                                                  ;=$A7 $01
+        @k - :                                                  ;=$A7 $01
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $84 $04 $00
         $82 $B9 $14 $82 $00 $05 $01
@@ -27256,9 +27256,9 @@ music_marble_data:                                                              
         $83 $0C $01 $04 $06 $00
         $7F $0C
         $86
-.l      $1B $18 $1B $00 $19 $00
+@l      $1B $18 $1B $00 $19 $00
         $87 $03
-        .l - :                                                  ;=$EE $01
+        @l - :                                                  ;=$EE $01
         $1B $00 $19 $00 $14 $00 $10 $00 $17 $18 $19 $00 $15 $00
         $8D $15 $24
         $8A $03
@@ -27300,9 +27300,9 @@ music_marble_data:                                                              
         $8A $0C
         $7F $00
         $86
-.m      $19 $18 $19 $00 $17 $00
+@m      $19 $18 $19 $00 $17 $00
         $87 $03
-        .m - :                                                  ;=$B8 $02
+        @m - :                                                  ;=$B8 $02
         $19 $18 $1B $18 $15 $24 $14 $00 $8D $14 $18
         $84 $00 $00
         $8B $35 $0C
@@ -27317,9 +27317,9 @@ music_marble_data:                                                              
         $81 $09
         $7F $0C
         $86
-.n      $1B $18 $1B $00 $19 $00
+@n      $1B $18 $1B $00 $19 $00
         $87 $03
-        .n - :                                                  ;=$00 $03
+        @n - :                                                  ;=$00 $03
         $1B $00 $19 $00 $14 $00 $10 $00 $17 $18 $19 $00 $15 $00
         $8D $15 $24
         $8A $03
@@ -27376,11 +27376,11 @@ music_marble_data:                                                              
         $8C $8C $8C $24 $00
         $8B $8B $8B
         $86
-.o      $19 $00
+@o      $19 $00
         $8C $8C $8C $24 $00
         $8C
         $87 $02
-        .o - :                                                  ;=$1D $04
+        @o - :                                                  ;=$1D $04
         $81 $0B
         $22 $00
         $8C $8C $8C $19 $00
@@ -27388,55 +27388,55 @@ music_marble_data:                                                              
         $8C $8C $8C $22 $00
         $8B $8B $8B
         $86
-.p      $17 $00
+@p      $17 $00
         $8C $8C $8C $1B $00
         $8C
         $87 $02
-        .p - :                                                  ;=$40 $04
+        @p - :                                                  ;=$40 $04
         $81 $0B $20 $00
         $8C $8C $8C $17 $00
         $8B $8B $8B $19 $00
         $8C $8C $8C $20 $00
         $8B $8B $8B
         $86
-.q      $15 $00
+@q      $15 $00
         $8C $8C $8C $19 $00
         $8C
         $87 $02
-        .q - :                                                  ;=$63 $04
+        @q - :                                                  ;=$63 $04
         $81 $0B $22 $00
         $8C $8C $8C $19 $00
         $8B $8B $8B $1B $00
         $8C $8C $8C $22 $00
         $8B $8B $8B
         $86
-.r      $17 $00
+@r      $17 $00
         $8C $8C $8C $1B $00
         $8C
         $87 $02
-        .r - :                                                  ;=$86 $04
+        @r - :                                                  ;=$86 $04
         $81 $0B $24 $00
         $8C $8C $8C $17 $00
         $8B $8B $8B $20 $00
         $8C $8C $8C $24 $00
         $8B $8B $8B
         $86
-.s      $19 $00
+@s      $19 $00
         $8C $8C $8C $24 $00
         $8C
         $87 $02
-        .s - :                                                  ;=$A9 $04
+        @s - :                                                  ;=$A9 $04
         $81 $0B $22 $00
         $8C $8C $8C $19 $00
         $8B $8B $8B $1B $00
         $8C $8C $8C $22 $00
         $8B $8B $8B
         $86
-.t      $17 $00
+@t      $17 $00
         $8C $8C $8C $1B $00
         $8C
         $87 $02
-        .t - :                                                  ;=$CC $04
+        @t - :                                                  ;=$CC $04
         $81 $0B $20 $00
         $8C $8C $8C $17 $00
         $8B $8B $8B $19 $00
@@ -27448,24 +27448,24 @@ music_marble_data:                                                              
         $81 $0C $09 $00 $0B $00 $10 $00 $14 $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $0C
         $70 $00 $7F $00 $70 $00 $7F $00
         $88
         $86
-.u      $81 $09 $70 $00 $70 $00
+@u      $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $20
-        .u - :                                                  ;=$13 $05
+        @u - :                                                  ;=$13 $05
         $86
-.v      $81 $0C $71 $00
+@v      $81 $0C $71 $00
         $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $87 $08
-        .v - :                                                  ;=$26 $05
+        @v - :                                                  ;=$26 $05
         $FF
         
         $00 $00 $00 $00 $00 $00 $00
@@ -27475,15 +27475,15 @@ music_jungle_data:                                                              
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0198
-        .channel3 - :                                           ;=$0325
-        .channel4 - :                                           ;=$04AA
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0198
+        @channel3 - :                                           ;=$0325
+        @channel4 - :                                           ;=$04AA
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -27511,30 +27511,30 @@ music_jungle_data:                                                              
         $7F $0C $7F $0C $26 $03 $29 $03 $7F $0C $26 $03 $29 $03 $29 $03
         $32 $03 $7F $0C $22 $03 $26 $03 $7F $00
         $86
-.a      $26 $03
+@a      $26 $03
         $8C $29 $03
         $87 $03
-        .a - :                                                  ;=$36 $01
+        @a - :                                                  ;=$36 $01
         $86
-.b      $86
-.c      $26 $03 $29 $03
+@b      $86
+@c      $26 $03 $29 $03
         $87 $02
-        .c - :                                                  ;=$41 $01
+        @c - :                                                  ;=$41 $01
         $8B
         $87 $05
-        .b - :                                                  ;=$40 $01
+        @b - :                                                  ;=$40 $01
         $8C $8C $7F $12 $2B $03 $27 $03 $7F $0C $2B $03 $27 $03 $7F $0C
         $29 $03 $22 $03 $7F $00 $27 $03 $22 $03 $7F $0C
         $8B $8B $27 $00 $7F $0C $27 $00 $29 $00 $7F $0C $2B $00 $7F $0C
         $86
-.d      $29 $00 $7F $00 $7F $00
+@d      $29 $00 $7F $00 $7F $00
         $8C $8C $8C
         $87 $04
-        .d - :                                                  ;=$7B $01
+        @d - :                                                  ;=$7B $01
         $81 $0D $29 $00 $7F $00 $2B $00 $7F $0C $29 $00 $8D $29 $24
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $82 $FF $14 $96 $00 $14 $0A
@@ -27569,7 +27569,7 @@ music_jungle_data:                                                              
         $7F $0C $01 $00 $7F $0C
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $84 $04 $00
@@ -27602,33 +27602,33 @@ music_jungle_data:                                                              
         $7F $0C $24 $00 $8D $24 $24
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $8A $06
         $88
         $86
-.e      $81 $09 $70 $00 $7F $00 $70 $00
+@e      $81 $09 $70 $00 $7F $00 $70 $00
         $81 $0C $71 $00 $7F $00
         $81 $09 $70 $00
         $87 $1F
-        .e - :                                                  ;=$AE $04
+        @e - :                                                  ;=$AE $04
         $70 $00 $7F $00 $70 $00
         $81 $0C $71 $00 $71 $00 $71 $00
         $86
-.f      $81 $09 $70 $00 $7F $00 $70 $00
+@f      $81 $09 $70 $00 $7F $00 $70 $00
         $81 $0C $71 $00 $7F $00
         $81 $09 $70 $00
         $87 $0C
-        .f - :                                                  ;=$D3 $04
+        @f - :                                                  ;=$D3 $04
         $86
-.g      $70 $00 $7F $0C
+@g      $70 $00 $7F $0C
         $87 $04
-        .g - :                                                  ;=$EA $04
+        @g - :                                                  ;=$EA $04
         $81 $0C
         $86
-.h      $71 $00
+@h      $71 $00
         $87 $0C
-        .h - :                                                  ;=$F5 $04
+        @h - :                                                  ;=$F5 $04
         $FF
         
         $00 $00 $00 $00
@@ -27638,15 +27638,15 @@ music_bridge_data:                                                              
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$00FB
-        .channel3 - :                                           ;=$01BC
-        .channel4 - :                                           ;=$03E0
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$00FB
+        @channel3 - :                                           ;=$01BC
+        @channel4 - :                                           ;=$03E0
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -27679,7 +27679,7 @@ music_bridge_data:                                                              
         $81 $0C $25 $30 $8D $25 $30 $8D $25 $30 $8D $25 $30 $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         
         $82 $FF $1E $82 $00 $32 $01
@@ -27695,24 +27695,24 @@ music_bridge_data:                                                              
         $0D $00 $0D $00 $0A $00 $0D $00 $0C $00 $0C $00 $09 $00 $0C $00
         $03 $00 $03 $00 $13 $00 $03 $00 $00 $00 $00 $00 $10 $00 $00 $00
         $86
-.a      $86
-.b      $01 $00 $01 $00 $11 $00 $01 $00
+@a      $86
+@b      $01 $00 $01 $00 $11 $00 $01 $00
         $87 $02
-        .b - :                                                  ;=$89 $01
+        @b - :                                                  ;=$89 $01
         $86
-.c      $03 $00 $03 $00 $13 $00 $03 $00
+@c      $03 $00 $03 $00 $13 $00 $03 $00
         $87 $02
-        .c - :                                                  ;=$96 $01
+        @c - :                                                  ;=$96 $01
         $87 $03
-        .a - :                                                  ;=$88 $01
+        @a - :                                                  ;=$88 $01
         $86
-.d      $05 $00 $05 $00 $15 $00 $05 $00
+@d      $05 $00 $05 $00 $15 $00 $05 $00
         $87 $03
-        .d - :                              ;$A7 $01
+        @d - :                              ;$A7 $01
         $05 $00 $00 $00 $02 $00 $04 $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $96 $00 $32 $01
         $83 $14 $01 $04 $05 $00
@@ -27730,8 +27730,8 @@ music_bridge_data:                                                              
         $84 $00 $00
         $8A $03
         $86
-.e      $86
-.f      $11 $00
+@e      $86
+@f      $11 $00
         $81 $04 $11 $00
         $81 $08 $08 $00
         $81 $04 $11 $00
@@ -27749,9 +27749,9 @@ music_bridge_data:                                                              
         $81 $04 $11 $00
         $81 $08
         $87 $02
-        .f - :                                                  ;=$48 $02
+        @f - :                                                  ;=$48 $02
         $86
-.g      $13 $00
+@g      $13 $00
         $81 $04 $0A $00
         $81 $08 $0A $00
         $81 $04 $13 $00
@@ -27769,11 +27769,11 @@ music_bridge_data:                                                              
         $81 $04 $13 $00
         $81 $08
         $87 $02
-        .g - :                                                  ;=$8D $02
+        @g - :                                                  ;=$8D $02
         $87 $02
-        .e - :                                                  ;=$47 $02
+        @e - :                                                  ;=$47 $02
         $86
-.h      $15 $00
+@h      $15 $00
         $81 $04 $11 $00
         $81 $08 $11 $00
         $81 $04 $15 $00
@@ -27791,7 +27791,7 @@ music_bridge_data:                                                              
         $81 $04 $15 $00
         $81 $08
         $87 $02
-        .h - :                                                  ;=$D6 $02
+        @h - :                                                  ;=$D6 $02
         $17 $00
         $81 $04 $11 $00
         $81 $08 $13 $00
@@ -27826,7 +27826,7 @@ music_bridge_data:                                                              
         $81 $04 $2A $00
         $81 $08
         $86
-.i      $19 $00
+@i      $19 $00
         $81 $04 $29 $00
         $81 $08 $15 $00
         $81 $04 $19 $00
@@ -27844,19 +27844,19 @@ music_bridge_data:                                                              
         $81 $04 $25 $00
         $81 $08
         $87 $04
-        .i - :                                                  ;=$9B $03
+        @i - :                                                  ;=$9B $03
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $8A $0C
         $88
         $86
-.j      $81 $09 $70 $00 $70 $00
+@j      $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $0F
-        .j - :                                                  ;=$E4 $03
+        @j - :                                                  ;=$E4 $03
         $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00 $71 $06 $71 $06
         $FF
@@ -27866,15 +27866,15 @@ music_scrapBrain_data:                                                          
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$023F
-        .channel3 - :                                           ;=$031D
-        .channel4 - :                                           ;=$0604
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$023F
+        @channel3 - :                                           ;=$031D
+        @channel4 - :                                           ;=$0604
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $04 $00 $03 $00
         $85 $FF
@@ -27944,42 +27944,42 @@ music_scrapBrain_data:                                                          
         $19 $00 $7F $00 $22 $00 $24 $00 $25 $00 $27 $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $82 $00 $32 $01
         $8A $06
         $81 $0D $7F $18
         $88
         $86
-.a      $86
-.b      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
+@a      $86
+@b      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
         $87 $04
-        .b - :                                                  ;=$4F $02
+        @b - :                                                  ;=$4F $02
         $86
-.c      $0D $00 $0D $00 $05 $00 $05 $00 $02 $00 $02 $00 $05 $00 $05 $00
+@c      $0D $00 $0D $00 $05 $00 $05 $00 $02 $00 $02 $00 $05 $00 $05 $00
         $87 $04
-        .c - :                                                  ;=$64 $02
+        @c - :                                                  ;=$64 $02
         $86
-.d      $00 $00 $00 $00 $07 $00 $07 $00 $04 $00 $04 $00 $07 $00 $07 $00
+@d      $00 $00 $00 $00 $07 $00 $07 $00 $04 $00 $04 $00 $07 $00 $07 $00
         $87 $02
-        .d - :                                                  ;=$79 $02
+        @d - :                                                  ;=$79 $02
         $86
-.e      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
+@e      $02 $00 $02 $00 $09 $00 $09 $00 $05 $00 $05 $00 $09 $00 $09 $00
         $87 $02
-        .e - :                                                  ;=$8E $02
+        @e - :                                                  ;=$8E $02
         $00 $00 $00 $00 $07 $00 $07 $00 $04 $00 $04 $00 $07 $00 $07 $00
         $00 $00 $00 $00 $07 $00 $07 $00 $0D $00 $0D $00 $07 $00 $07 $00
         $0C $00 $7F $00 $0C $00 $7F $00 $00 $00 $00 $00 $7F $00 $0C $00
         $7F $00 $0C $00 $0D $00 $0C $00 $0C $00 $0C $00 $00 $00 $01 $00
         $87 $02
-        .a - :                                                  ;=$4E $02
+        @a - :                                                  ;=$4E $02
         $02 $30 $8D $02 $30 $00 $30 $8D $00 $30 $0D $30 $8D $0D $30
         $0C $30 $8D $0C $30 $02 $30 $8D $02 $30 $00 $30 $8D $00 $30
         $0D $30 $8D $0D $30 $0C $30 $8D $0C $00 $0C $00 $09 $00 $0C $00
         $0C $00 $0E $00 $00 $00 $01 $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $84 $04 $00
         $82 $FF $14 $96 $00 $32 $01
@@ -27989,7 +27989,7 @@ music_scrapBrain_data:                                                          
         $81 $0A
         $8A $06
         $86
-.f      $12 $00 $09 $00 $15 $00
+@f      $12 $00 $09 $00 $15 $00
         $81 $07 $09 $00
         $81 $0A $14 $00 $10 $00
         $81 $07 $14 $00
@@ -28029,7 +28029,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $15 $00
         $81 $0A
         $86
-.g      $10 $00
+@g      $10 $00
         $81 $07 $17 $00
         $81 $0A $17 $00
         $81 $07 $10 $00
@@ -28039,7 +28039,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $14 $00
         $81 $0A
         $87 $02
-        .g - :                                                  ;=$02 $04
+        @g - :                                                  ;=$02 $04
         $10 $00
         $81 $07 $17 $00
         $81 $0A $17 $00
@@ -28050,7 +28050,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $27 $00
         $81 $0A $24 $12
         $86
-.h      $12 $00
+@h      $12 $00
         $81 $07 $12 $00
         $81 $0A $19 $00
         $81 $07 $12 $00
@@ -28060,7 +28060,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $15 $00
         $81 $0A
         $87 $02
-        .h - :                                                  ;=$49 $04
+        @h - :                                                  ;=$49 $04
         $12 $00
         $81 $07 $19 $00
         $81 $0A $19 $00
@@ -28071,7 +28071,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $29 $00
         $81 $0A $25 $12
         $86
-.i      $24 $00
+@i      $24 $00
         $81 $07 $20 $00
         $81 $0A $20 $00
         $81 $07 $24 $00
@@ -28081,7 +28081,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $17 $00
         $81 $0A
         $87 $03
-        .i - :                                                  ;=$90 $04
+        @i - :                                                  ;=$90 $04
         $24 $00
         $81 $07 $20 $00
         $81 $0A $25 $00
@@ -28098,7 +28098,7 @@ music_scrapBrain_data:                                                          
         $81 $07 $27 $00
         $81 $0A $24 $00 $8D $24 $18 $09 $00 $0B $00 $10 $00 $11 $00
         $87 $02
-        .f - :                                                  ;=$39 $03
+        @f - :                                                  ;=$39 $03
         $8A $0C
         $15 $06 $09 $00 $14 $00 $12 $00 $15 $00 $09 $00 $12 $06 $14 $00
         $12 $00 $15 $06 $09 $00 $14 $00 $12 $00 $15 $00 $09 $00 $10 $06
@@ -28144,23 +28144,23 @@ music_scrapBrain_data:                                                          
         $81 $0A
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $70 $00 $7F $00 $70 $00 $7F $00
         $88
         $86
-.j      $81 $09 $70 $00 $70 $00
+@j      $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $1C
-        .j - :                                                  ;=$12 $06
+        @j - :                                                  ;=$12 $06
         $86
-.k      $81 $0C $71 $00
+@k      $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $02
-        .k - :                                                  ;=$25 $06
+        @k - :                                                  ;=$25 $06
         $81 $0C $71 $00 $71 $00
         $81 $09 $70 $00
         $81 $0C $71 $00
@@ -28175,15 +28175,15 @@ music_skybase_data:                                                             
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0158
-        .channel3 - :                                           ;=$01E2
-        .channel4 - :                                           ;=$02C3
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0158
+        @channel3 - :                                           ;=$01E2
+        @channel4 - :                                           ;=$02C3
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -28193,16 +28193,16 @@ music_skybase_data:                                                             
         $81 $0D
         $8A $06
         $86
-.a      $22 $00 $20 $00 $22 $00
+@a      $22 $00 $20 $00 $22 $00
         $81 $0A $20 $00
         $81 $0D $25 $00
         $81 $0A $22 $00 $25 $00
         $81 $0D
         $86
-.b      $25 $00 $81 $09 $25 $00
+@b      $25 $00 $81 $09 $25 $00
         $81 $0D
         $87 $02
-        .b - :                              ;$3B $00
+        @b - :                              ;$3B $00
         $22 $00
         $81 $0A $25 $00
         $81 $0D $19 $00 $17 $00 $15 $00 $22 $00 $20 $00 $22 $00
@@ -28211,18 +28211,18 @@ music_skybase_data:                                                             
         $81 $0A $22 $00 $25 $00
         $81 $0D
         $86
-.c      $25 $00
+@c      $25 $00
         $81 $0A $25 $00
         $81 $0D
         $87 $02
-        .c - :                              ;$6C $00
+        @c - :                              ;$6C $00
         $22 $00
         $81 $0A $25 $00
         $81 $0D $18 $00 $17 $00 $15 $00
         $87 $02
-        .a - :                              ;$24 $00
+        @a - :                              ;$24 $00
         $86
-.d      $19 $00 $19 $00
+@d      $19 $00 $19 $00
         $81 $0A $19 $00
         $81 $0D $17 $00
         $81 $0A $19 $00
@@ -28252,7 +28252,7 @@ music_skybase_data:                                                             
         $81 $0A $15 $00
         $81 $0D $18 $00
         $87 $02
-        .d - :                                                  ;=$8B $00
+        @d - :                                                  ;=$8B $00
         $21 $00 $19 $00 $21 $00 $22 $00
         $81 $0A $21 $00
         $81 $0D $1A $00 $22 $00 $21 $00
@@ -28265,32 +28265,32 @@ music_skybase_data:                                                             
         $3A $00 $41 $00 $44 $00 $47 $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $82 $FF $14 $96 $14 $14 $0A
         $81 $0E
         $8A $06
         $86
-.e      $02 $0C $02 $0C $02 $00 $02 $0C $02 $0C $02 $00 $00 $00 $02 $00
+@e      $02 $0C $02 $0C $02 $00 $02 $0C $02 $0C $02 $00 $00 $00 $02 $00
         $02 $00 $05 $00 $04 $00 $00 $00 $0D $0C $0D $0C $0D $00 $0D $0C
         $0D $0C $0D $00 $0D $0C $0D $00 $0E $00 $00 $00 $01 $00
         $87 $02
-        .e - :                                                  ;=$65 $01
+        @e - :                                                  ;=$65 $01
         $86
-.f      $0C $0C $0C $0C $0C $00 $0C $0C $0C $0C $0C $0C $0C $0C $0C $00
+@f      $0C $0C $0C $0C $0C $00 $0C $0C $0C $0C $0C $0C $0C $0C $0C $00
         $0C $00 $0C $00 $0D $0C $0D $0C $0D $00 $0D $0C $0D $0C $0D $0C
         $0D $00 $0D $00 $0D $00 $0D $00 $0D $00
         $87 $02
         $98 $01
         $86
-.g      $0C $00 $0C $00 $0C $0C $0C $00 $0C $0C $0C $0C $0C $0C $0C $0C
+@g      $0C $00 $0C $00 $0C $0C $0C $00 $0C $0C $0C $0C $0C $0C $0C $0C
         $0C $00 $0C $00 $0C $00
         $87 $02
-        .g - :                                                  ;=$C7 $01
+        @g - :                                                  ;=$C7 $01
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $84 $04 $00
@@ -28298,12 +28298,12 @@ music_skybase_data:                                                             
         $81 $0A
         $8A $06
         $86
-.h      $19 $00 $17 $00 $19 $00 $7F $00 $22 $0C $7F $00 $22 $00 $7F $00
+@h      $19 $00 $17 $00 $19 $00 $7F $00 $22 $0C $7F $00 $22 $00 $7F $00
         $22 $00 $7F $00 $19 $00 $7F $00 $15 $00 $12 $00 $12 $00 $18 $00
         $17 $00 $18 $00 $7F $00 $22 $0C $7F $00 $22 $00 $7F $00 $22 $00
         $7F $00 $18 $00 $7F $00 $15 $00 $12 $00 $12 $00
         $87 $02
-        .h - :                                                  ;=$F2 $01
+        @h - :                                                  ;=$F2 $01
         $83 $18 $01 $FA $F4 $FF
         $19 $30
         $83 $10 $01 $04 $07 $00
@@ -28331,19 +28331,19 @@ music_skybase_data:                                                             
         $27 $00 $2A $00 $31 $00 $34 $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $88
         $86
-.i      $70 $00 $70 $00 $70 $00 $70 $00
+@i      $70 $00 $70 $00 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00 $70 $00 $70 $00 $70 $00 $7F $00 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00 $70 $00 $70 $00
         $87 $09
-        .i - :                                                  ;=$C9 $02
+        @i - :                                                  ;=$C9 $02
         $70 $00 $70 $00 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00 $70 $00 $70 $00 $70 $00 $7F $00 $70 $00 $70 $00
@@ -28355,15 +28355,15 @@ music_titleScreen_data:                                                         
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$008C
-        .channel3 - :                                           ;=$00DA
-        .channel4 - :                                           ;=$013C
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$008C
+        @channel3 - :                                           ;=$00DA
+        @channel4 - :                                           ;=$013C
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $05 $00 $04 $00
         $85 $FF
@@ -28374,9 +28374,9 @@ music_titleScreen_data:                                                         
         $83 $01 $01 $FA $1E $00
         $7F $0C
         $86
-.a      $14 $06 $7F $06
+@a      $14 $06 $7F $06
         $87 $03
-        .a - :                              ;$27 $00
+        @a - :                              ;$27 $00
         $81 $0C
         $82 $FF $14 $96 $02 $32 $0A
         $83 $10 $01 $04 $06 $00
@@ -28388,14 +28388,14 @@ music_titleScreen_data:                                                         
         $17 $12 $1B $1E $19 $00 $7F $00 $21 $00 $7F $00 $29 $00 $7F $00
         $24 $00 $7F $0C $28 $12
         $86
-.b      $29 $00 $7F $00 $8C $8C $8C
+@b      $29 $00 $7F $00 $8C $8C $8C
         $87 $04
-        .b - :                                                  ;=$7B $00
+        @b - :                                                  ;=$7B $00
         $88
         $81 $00 $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $96 $0A $0A $0A
         $81 $0D
@@ -28410,7 +28410,7 @@ music_titleScreen_data:                                                         
         $81 $00 $7F $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $82 $02 $32 $0A
         $81 $0B
@@ -28430,13 +28430,13 @@ music_titleScreen_data:                                                         
         $81 $00 $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06 $8A $0C
         $70 $00 $71 $00 $71 $00 $71 $00
         $86
-.d      $81 $09 $70 $00
+@d      $81 $09 $70 $00
         $81 $0B $71 $00
         $81 $09 $70 $06 $70 $06
         $81 $0B $71 $00
@@ -28445,7 +28445,7 @@ music_titleScreen_data:                                                         
         $81 $09 $70 $00 $70 $06
         $81 $0B $71 $00
         $87 $03
-        .d - :                                                  ;=$4B $01
+        @d - :                                                  ;=$4B $01
         $88
         $81 $00 $7F $00
         $FF
@@ -28455,15 +28455,15 @@ music_mapScreen_data:                                                           
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$004D
-        .channel3 - :                                           ;=$008B
-        .channel4 - :                                           ;=$00C2
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$004D
+        @channel3 - :                                           ;=$008B
+        @channel4 - :                                           ;=$00C2
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -28473,14 +28473,14 @@ music_mapScreen_data:                                                           
         $25 $06 $27 $05 $2B $05 $32 $05 $35 $05 $37 $05 $3B $05 $42 $05
         $45 $05
         $86
-.a      $47 $05 $7F $05 $8C $8C
+@a      $47 $05 $7F $05 $8C $8C
         $87 $06
-        .a - :                                                  ;=$3D $00
+        @a - :                                                  ;=$3D $00
         $88
         $81 $00 $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $81 $0A
         $82 $FF $14 $78 $14 $23 $01
@@ -28489,14 +28489,14 @@ music_mapScreen_data:                                                           
         $25 $06 $27 $05 $2B $05 $32 $05 $35 $05 $37 $05 $3B $05 $42 $05
         $45 $05
         $86
-.b      $47 $05 $7F $05 $8C $8C
+@b      $47 $05 $7F $05 $8C $8C
         $87 $05
-        .b - :                                                  ;=$7B $00
+        @b - :                                                  ;=$7B $00
         $88
         $81 $00 $7F $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $81 $07
         $82 $FF $14 $78 $14 $23 $01
@@ -28508,7 +28508,7 @@ music_mapScreen_data:                                                           
         $81 $00 $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $81 $00 $7F $00
@@ -28519,22 +28519,22 @@ music_invincibility_data:                                                       
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$00A4
-        .channel3 - :                                           ;=$0109
-        .channel4 - :                                           ;=$0160
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$00A4
+        @channel3 - :                                           ;=$0109
+        @channel4 - :                                           ;=$0160
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
         $88
         $8A $06
         $86
-.a      $81 $0C
+@a      $81 $0C
         $82 $FF $14 $96 $00 $32 $0A
         $83 $10 $01 $04 $06 $00
         $7F $0C $23 $18 $23 $0C $24 $12
@@ -28544,13 +28544,13 @@ music_invincibility_data:                                                       
         $23 $00 $7F $00 $23 $00 $7F $00 $23 $00 $7F $00 $1B $00 $7F $00
         $19 $12 $21 $1E
         $87 $02
-        .a - :                                                  ;=$15 $00
+        @a - :                                                  ;=$15 $00
         $86
-.b      $7F $00 $09 $12 $0B $00 $7F $00
+@b      $7F $00 $09 $12 $0B $00 $7F $00
         $81 $07 $0B $00 $7F $00
         $81 $0D
         $87 $02
-        .b - :                                                  ;=$53 $00
+        @b - :                                                  ;=$53 $00
         $8C $8C
         $82 $FF $00 $96 $02 $32 $0A
         $8A $04
@@ -28560,34 +28560,34 @@ music_invincibility_data:                                                       
         $33 $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $96 $00 $0A $0A
         $81 $0E
         $88
         $86
-.c      $8A $0C
+@c      $8A $0C
         $0E $00 $0B $00 $06 $00 $06 $00 $09 $00 $09 $06 $08 $00 $09 $06
         $08 $00 $0E $00 $0B $00 $06 $00 $06 $00 $04 $00 $04 $06 $03 $00
         $04 $06 $03 $00
         $87 $02
-        .c - :                                                  ;=$AF $00
+        @c - :                                                  ;=$AF $00
         $86
-.d      $0C $06 $0C $12 $0E $00 $0E $00
+@d      $0C $06 $0C $12 $0E $00 $0E $00
         $87 $02
-        .d - :                                                  ;=$DA $00
+        @d - :                                                  ;=$DA $00
         $0C $06 $01 $12 $03 $00 $05 $00
         $8A $04
         $01 $00 $03 $00 $04 $00 $06 $00 $08 $00 $09 $00 $03 $00 $04 $00
         $06 $00 $08 $00 $09 $00 $10 $00
         $FF
         
-.channel
+@channel
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $82 $00 $32 $0A
         $88
         $86
-.e      $8A $06
+@e      $8A $06
         $81 $0A
         $83 $10 $01 $04 $06 $00
         $7F $0C $1B $18 $1B $0C $21 $12
@@ -28597,21 +28597,21 @@ music_invincibility_data:                                                       
         $1B $00 $7F $00 $1B $00 $7F $00 $1B $00 $7F $00 $16 $00 $7F $00
         $14 $12 $19 $1E
         $87 $02
-        .e - :                                                  ;=$12 $01
+        @e - :                                                  ;=$12 $01
         $86
-.f      $7F $00 $11 $12 $13 $00 $7F $00
+@f      $7F $00 $11 $12 $13 $00 $7F $00
         $81 $06 $13 $00 $7F $00
         $81 $0B
         $87 $04
-        .f - :                                                  ;=$4B $01
+        @f - :                                                  ;=$4B $01
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $8A $0C
         $86
-.g      $81 $09 $70 $00
+@g      $81 $09 $70 $00
         $81 $0B $71 $00
         $81 $09 $70 $06 $70 $06
         $81 $0B $71 $00
@@ -28620,17 +28620,17 @@ music_invincibility_data:                                                       
         $81 $09 $70 $00 $70 $06
         $81 $0B $71 $00
         $87 $04
-        .g - :                                                  ;=$64 $01
+        @g - :                                                  ;=$64 $01
         $8A $06
         $86
-.h      $81 $09 $70 $00
+@h      $81 $09 $70 $00
         $81 $0B $71 $0C
         $81 $09 $70 $00
         $81 $0C $71 $0C
         $81 $09 $70 $00
         $81 $0B $71 $00
         $87 $04
-        .h - :                                                  ;=$8F $01
+        @h - :                                                  ;=$8F $01
         $FF
         
         $00 $00 $00 $00
@@ -28640,15 +28640,15 @@ music_actComplete_data:                                                         
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0044
-        .channel3 - :                                           ;=$006F
-        .channel4 - :                                           ;=$00A2
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0044
+        @channel3 - :                                           ;=$006F
+        @channel4 - :                                           ;=$00A2
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $04 $00 $03 $00
         $85 $FF
@@ -28663,7 +28663,7 @@ music_actComplete_data:                                                         
         $81 $00 $7F $00
         $FF
         
-.channel
+@channel
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $96 $00 $0A $0A
         $81 $0D
@@ -28674,7 +28674,7 @@ music_actComplete_data:                                                         
         $81 $00 $7F $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $64 $14 $82 $00 $32 $0A
         $81 $0B
@@ -28686,15 +28686,15 @@ music_actComplete_data:                                                         
         $81 $00 $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $86
-.a      $81 $0B $71 $00 $71 $00
+@a      $81 $0B $71 $00 $71 $00
         $81 $09 $70 $00 $7F $00 $70 $00 $7F $00
         $87 $02
-        .a - :                                                  ;=$A7 $00
+        @a - :                                                  ;=$A7 $00
         $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00 $71 $00 $71 $00 $71 $00 $71 $00
         $81 $09 $70 $00 $70 $00
@@ -28708,15 +28708,15 @@ music_death_data:                                                               
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0064
-        .channel3 - :                                           ;=$009B
-        .channel4 - :                                           ;=$00E9
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0064
+        @channel3 - :                                           ;=$009B
+        @channel4 - :                                           ;=$00E9
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $82 $FF $14 $96 $0A $14 $0A
@@ -28724,9 +28724,9 @@ music_death_data:                                                               
         $81 $0F
         $8A $01
         $86
-.a      $00 $00 $0C $00 $0E $00 $8C $8C $40 $00 $0C $00 $7F $00 $8C $8C
+@a      $00 $00 $0C $00 $0E $00 $8C $8C $40 $00 $0C $00 $7F $00 $8C $8C
         $87 $03
-        .a - :                                                  ;=$1D $00
+        @a - :                                                  ;=$1D $00
         $8A $06
         $81 $0C $30 $18 $30 $0C $31 $12
         $83 $0B $01 $FA $FE $FF
@@ -28734,12 +28734,12 @@ music_death_data:                                                               
         $83 $10 $01 $04 $04 $00
         $30 $00 $7F $00 $30 $00 $7F $00 $30 $00 $7F $00 $28 $00 $7F $00
         $86
-.b      $26 $00 $7F $00 $8C
+@b      $26 $00 $7F $00 $8C
         $87 $08
-        .b - :                                                  ;=$5A $00
+        @b - :                                                  ;=$5A $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $1E $96 $0A $14 $0A
         $81 $0D
@@ -28751,7 +28751,7 @@ music_death_data:                                                               
         $13 $60
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $82 $0A $14 $0A
         $81 $0E
@@ -28767,12 +28767,12 @@ music_death_data:                                                               
         $83 $10 $01 $04 $04 $00
         $28 $00 $7F $00 $28 $00 $7F $00 $28 $00 $7F $00 $24 $00 $7F $00
         $86
-.c      $22 $00 $7F $00 $8C
+@c      $22 $00 $7F $00 $8C
         $87 $08
-        .c - :                                                  ;=$DF $00
+        @c - :                                                  ;=$DF $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
@@ -28792,9 +28792,9 @@ music_death_data:                                                               
         $81 $0B $71 $00
         $81 $09
         $86
-.d      $71 $04
+@d      $71 $04
         $87 $18
-        .d - :                                                  ;=$28 $01
+        @d - :                                                  ;=$28 $01
         $FF
 	;
 
@@ -28802,15 +28802,15 @@ music_boss_data:                                                                
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$014B
-        .channel3 - :                                           ;=$01B2
-        .channel4 - :                                           ;=$022A
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$014B
+        @channel3 - :                                           ;=$01B2
+        @channel4 - :                                           ;=$022A
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $04 $00 $05 $00
         $85 $FF
@@ -28853,7 +28853,7 @@ music_boss_data:                                                                
         $81 $09 $27 $00
         $81 $0D $32 $18
         $86
-.a      $82 $FF $14 $96 $00 $14 $0A
+@a      $82 $FF $14 $96 $00 $14 $0A
         $8B $29 $00 $8C $7F $00 $29 $00
         $82 $FF $00 $96 $00 $14 $0A
         $81 $08
@@ -28873,29 +28873,29 @@ music_boss_data:                                                                
         $09 $12
         $81 $0D
         $87 $02
-        .a - :                                                  ;=$F4 $00
+        @a - :                                                  ;=$F4 $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $82 $FF $14 $96 $01 $14 $0A
         $81 $0E
         $8A $12
         $86
-.b      $02 $00 $02 $00 $00 $00 $0E $00 $0D $00 $0E $00 $00 $00 $01 $00
+@b      $02 $00 $02 $00 $00 $00 $0E $00 $0D $00 $0E $00 $00 $00 $01 $00
         $87 $02
-        .b - :                                                  ;=$58 $01
+        @b - :                                                  ;=$58 $01
         $86
-.c      $07 $00 $07 $00 $06 $00 $05 $00 $04 $00 $05 $00 $06 $00 $07 $00
+@c      $07 $00 $07 $00 $06 $00 $05 $00 $04 $00 $05 $00 $06 $00 $07 $00
         $87 $02
-        .c - :                                                  ;=$6D $01
+        @c - :                                                  ;=$6D $01
         $8B $09 $0C $8C $09 $06 $0C $12 $0C $12 $0C $12 $0C $12 $0C $12
         $0C $12 $0C $12 $8B $09 $0C $8C $09 $06 $0C $12 $0C $12 $0C $12
         $0C $0C $0D $06 $7F $0C $0E $06 $7F $0C $00 $06 $7F $0C $01 $06
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $84 $04 $00
@@ -28903,51 +28903,51 @@ music_boss_data:                                                                
         $81 $0A
         $8A $06
         $86
-.d      $7F $0C $22 $00
+@d      $7F $0C $22 $00
         $86
-.e      $19 $00 $7F $0C
+@e      $19 $00 $7F $0C
         $87 $03
-        .e - :                                                  ;=$C7 $01
+        @e - :                                                  ;=$C7 $01
         $19 $18 $8D $19 $0C $8D $19 $24
         $87 $02
-        .d - :                                                  ;=$C2 $01
+        @d - :                                                  ;=$C2 $01
         $86
-.f      $7F $0C $22 $00 $7F $12 $22 $00 $7F $0C $22 $00 $7F $0C $22 $0C
+@f      $7F $0C $22 $00 $7F $12 $22 $00 $7F $0C $22 $00 $7F $0C $22 $0C
         $22 $00 $22 $0C $22 $00 $7F $0C $22 $18
         $87 $02
-        .f - :                                                  ;=$DC $01
+        @f - :                                                  ;=$DC $01
         $8B $19 $00 $7F $00 $19 $00
         $86
-.g      $09 $00 $7F $0C
+@g      $09 $00 $7F $0C
         $87 $07
-        .g - :                                                  ;=$02 $02
+        @g - :                                                  ;=$02 $02
         $19 $00 $7F $00 $19 $00
         $86
-.h      $09 $00 $7F $0C
+@h      $09 $00 $7F $0C
         $87 $03
-        .h - :                                                  ;=$11 $02
+        @h - :                                                  ;=$11 $02
         $09 $0C $0A $00 $7F $0C $0B $00 $7F $0C $10 $00 $7F $0C $11 $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $88
         $86
-.i      $81 $09 $70 $00 $7F $00 $70 $00
+@i      $81 $09 $70 $00 $7F $00 $70 $00
         $81 $0B $71 $0C
         $81 $09 $70 $00
         $87 $10
-        .i - :                                                  ;=$30 $02
+        @i - :                                                  ;=$30 $02
         $81 $0C $71 $00 $7F $00 $71 $00
         $81 $09 $70 $12 $70 $12 $70 $12
         $86
-.j      $70 $00 $7F $00 $70 $00
+@j      $70 $00 $7F $00 $70 $00
         $81 $0B $71 $0C
         $81 $09 $70 $00
         $87 $02
-        .j - :                                                  ;=$55 $02
+        @j - :                                                  ;=$55 $02
         $81 $0C $71 $00 $7F $00 $71 $00
         $81 $09 $70 $12 $70 $12 $70 $12 $70 $00 $7F $00 $70 $00
         $81 $0B $71 $0C
@@ -28960,15 +28960,15 @@ music_ending_data:                                                              
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0164
-        .channel3 - :                                           ;=$0254
-        .channel4 - :                                           ;=$0392
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0164
+        @channel3 - :                                           ;=$0254
+        @channel4 - :                                           ;=$0392
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $02 $00 $01 $00
         $85 $FF
@@ -28978,11 +28978,11 @@ music_ending_data:                                                              
         $81 $0D
         $8A $06
         $86
-.a      $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
+@a      $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
         $22 $00 $22 $00 $24 $00 $21 $00 $7F $00 $19 $0C $8D $19 $24
         $7F $00 $16 $00 $7F $00 $19 $00 $19 $00 $1B $00
         $87 $03
-        .a - :                                                  ;=$25 $00
+        @a - :                                                  ;=$25 $00
         $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
         $22 $00 $22 $00 $24 $00 $21 $00 $7F $00 $19 $1E $29 $00
         $8D $29 $30 $7F $18 $20 $00 $19 $0C $20 $00 $1B $0C $20 $00
@@ -28994,11 +28994,11 @@ music_ending_data:                                                              
         $8D $13 $0C $10 $00 $13 $00 $12 $30 $14 $18 $1B $0C $21 $00
         $22 $00 $24 $00
         $86
-.b      $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
+@b      $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
         $22 $00 $22 $00 $24 $00 $21 $00 $7F $00 $19 $0C $8D $19 $24
         $7F $00 $16 $00 $7F $00 $19 $00 $19 $00 $1B $00
         $87 $03
-        .b - :                                                  ;=$E1 $00
+        @b - :                                                  ;=$E1 $00
         $21 $00 $7F $00 $19 $0C $8D $19 $24 $7F $00 $22 $00 $7F $00
         $22 $00 $22 $00 $24 $00 $21 $00 $7F $00 $19 $1E $29 $0C $29 $00
         $26 $00 $7F $00 $29 $00 $2B $00 $7F $00 $29 $00 $8D $29 $30
@@ -29010,22 +29010,22 @@ music_ending_data:                                                              
         $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $7F $30
         $82 $FF $14 $96 $14 $14 $0A
         $81 $0E
         $8A $06
         $86
-.c      $0C $0C $0C $0C $01 $00 $11 $00 $01 $00 $02 $0C $02 $00 $12 $00
+@c      $0C $0C $0C $0C $01 $00 $11 $00 $01 $00 $02 $0C $02 $00 $12 $00
         $02 $00 $04 $00 $04 $00 $14 $00 $04 $00
         $87 $08
-        .c - :                                                  ;=$72 $01
+        @c - :                                                  ;=$72 $01
         $86
-.d      $05 $00 $05 $00 $10 $00 $05 $0C $05 $00 $00 $00 $05 $00 $04 $00
+@d      $05 $00 $05 $00 $10 $00 $05 $0C $05 $00 $00 $00 $05 $00 $04 $00
         $04 $00 $10 $00 $04 $0C $00 $00 $02 $00 $04 $00
         $87 $04
-        .d - :                                                  ;=$91 $01
+        @d - :                                                  ;=$91 $01
         $0D $0C $0D $00 $0C $0C $0C $00 $0D $0C $0D $00 $00 $0C $00 $00
         $02 $0C $04 $0C $0C $0C $0C $00 $0E $0C $0E $00 $00 $0C $00 $00
         $02 $0C $02 $00 $04 $0C $00 $0C $08 $0C $08 $00 $07 $0C $07 $00
@@ -29033,10 +29033,10 @@ music_ending_data:                                                              
         $02 $0C $02 $00 $07 $0C $07 $00 $8C $8C $8C $8C $04 $00 $04 $00
         $8B $04 $00 $8B $04 $00 $8B $04 $00 $8B $04 $00 $04 $00
         $86
-.e      $0C $0C $0C $0C $01 $00 $11 $00 $01 $00 $02 $0C $02 $00 $12 $00
+@e      $0C $0C $0C $0C $01 $00 $11 $00 $01 $00 $02 $0C $02 $00 $12 $00
         $02 $00 $04 $00 $04 $00 $14 $00 $04 $00
         $87 $0B
-        .e - :                                                  ;=$10 $02
+        @e - :                                                  ;=$10 $02
         $05 $00 $05 $00 $15 $00 $05 $00 $07 $00 $17 $00 $07 $00 $09 $0C
         $04 $0C $01 $00
         $82 $FF $14 $96 $14 $00 $0A
@@ -29047,14 +29047,14 @@ music_ending_data:                                                              
         $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $7F $30
         $84 $04 $00
         $82 $FF $14 $82 $00 $14 $0A
         $8A $03
         $86
-.f      $81 $0B $39 $00
+@f      $81 $0B $39 $00
         $81 $07 $34 $00
         $81 $0B $38 $00
         $81 $07 $39 $00
@@ -29063,14 +29063,14 @@ music_ending_data:                                                              
         $81 $0B $34 $00
         $81 $07 $36 $00
         $87 $20
-        .f - :                                                  ;=$63 $02
+        @f - :                                                  ;=$63 $02
         $8A $06
         $81 $0B
         $86
-.g      $19 $00 $15 $00 $10 $00 $09 $00 $09 $00 $10 $00 $15 $00 $19 $00
+@g      $19 $00 $15 $00 $10 $00 $09 $00 $09 $00 $10 $00 $15 $00 $19 $00
         $17 $00 $14 $00 $10 $00 $07 $00 $07 $00 $10 $00 $14 $00 $17 $00
         $87 $03
-        .g - :                                                  ;=$8C $02
+        @g - :                                                  ;=$8C $02
         $19 $00 $15 $00 $10 $00 $09 $00 $09 $00 $10 $00 $15 $00 $19 $00
         $10 $00 $14 $00 $17 $00 $1B $00 $20 $00 $24 $00 $27 $00 $2B $00
         $1A $00 $22 $00 $25 $00 $29 $00 $2A $00 $32 $00 $35 $00 $39 $00
@@ -29083,7 +29083,7 @@ music_ending_data:                                                              
         $14 $00 $08 $00 $09 $00 $0B $00 $11 $00 $12 $00 $14 $00 $16 $00
         $8A $03
         $86
-.h      $81 $0B $39 $00
+@h      $81 $0B $39 $00
         $81 $07 $34 $00
         $81 $0B $38 $00
         $81 $07 $39 $00
@@ -29092,7 +29092,7 @@ music_ending_data:                                                              
         $81 $0B $34 $00
         $81 $07 $36 $00
         $87 $2C
-        .h - :                                                  ;=$53 $03
+        @h - :                                                  ;=$53 $03
         $81 $0B
         $8A $06
         $7F $00 $19 $00 $7F $0C $19 $00 $7F $00 $19 $00 $14 $36
@@ -29102,27 +29102,27 @@ music_ending_data:                                                              
         $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $8A $06
         $81 $09 $70 $0C $70 $0C $70 $0C $70 $0C
         $86
-.i      $86
-.j      $70 $00 $70 $00
+@i      $86
+@j      $70 $00 $70 $00
         $81 $0D $71 $00
         $81 $09 $70 $00
         $87 $0F
-        .j - :                                                  ;=$A0 $03
+        @j - :                                                  ;=$A0 $03
         $70 $00
         $81 $0D $71 $00 $71 $00 $71 $00
         $87 $06
-        .i - :                                                  ;=$9F $03
+        @i - :                                                  ;=$9F $03
         $86
-.k      $81 $09 $70 $00 $70 $00
+@k      $81 $09 $70 $00 $70 $00
         $81 $0D $71 $00
         $81 $09 $70 $00
         $87 $0F
-        .k - :                                                  ;=$BF $03
+        @k - :                                                  ;=$BF $03
         $81 $00
         $88
         $7F $00
@@ -29135,15 +29135,15 @@ music_specialStage_data:                                                        
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0279
-        .channel3 - :                                           ;=$0359
-        .channel4 - :                                           ;=$049F
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0279
+        @channel3 - :                                           ;=$0359
+        @channel4 - :                                           ;=$049F
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $07 $00 $06 $00
         $85 $FF
@@ -29153,7 +29153,7 @@ music_specialStage_data:                                                        
         $81 $0D
         $8A $06
         $86
-.a      $29 $30 $7F $0C $26 $00
+@a      $29 $30 $7F $0C $26 $00
         $81 $09 $29 $00
         $81 $0D $29 $00
         $81 $09 $26 $00
@@ -29208,69 +29208,69 @@ music_specialStage_data:                                                        
         $81 $09 $2B $00
         $81 $0D
         $87 $02
-        .a - :                                                  ;=$24 $00
+        @a - :                                                  ;=$24 $00
         $86
-.b      $82 $FF $14 $96 $0A $14 $0A
+@b      $82 $FF $14 $96 $0A $14 $0A
         $81 $0D $32 $00 $7F $00 $32 $00 $7F $00 $32 $00 $7F $18
         $82 $FF $00 $96 $00 $14 $0A
         $81 $09
         $86
-.c      $42 $01 $44 $01
+@c      $42 $01 $44 $01
         $87 $02
-        .c - :                                                  ;=$B4 $01
+        @c - :                                                  ;=$B4 $01
         $7F $02 $7F $00
         $86
-.d      $42 $01 $44 $01
+@d      $42 $01 $44 $01
         $87 $02
-        .d - :                                                  ;=$C1 $01
+        @d - :                                                  ;=$C1 $01
         $7F $02
         $86
-.e      $42 $01 $44 $01
+@e      $42 $01 $44 $01
         $87 $02
-        .e - :                                                  ;=$CC $01
+        @e - :                                                  ;=$CC $01
         $7F $02 $7F $00
         $86
-.f      $42 $01 $44 $01
+@f      $42 $01 $44 $01
         $87 $06
-        .f - :                                                  ;=$D9 $01
+        @f - :                                                  ;=$D9 $01
         $82 $FF $14 $96 $0A $14 $0A
         $81 $0D $32 $00 $7F $00 $32 $00 $7F $00 $32 $00
         $82 $FF $00 $96 $00 $14 $0A
         $81 $09
         $86
-.g      $39 $01 $3B $01
+@g      $39 $01 $3B $01
         $87 $02
-        .g - :                                                  ;=$FE $01
+        @g - :                                                  ;=$FE $01
         $7F $02
         $86
-.h      $42 $01 $44 $01
+@h      $42 $01 $44 $01
         $87 $02
-        .h - :                                                  ;=$09 $02
+        @h - :                                                  ;=$09 $02
         $7F $02
         $86
-.i      $42 $01 $44 $01
+@i      $42 $01 $44 $01
         $87 $06
-        .i - :                                                  ;=$14 $02
+        @i - :                                                  ;=$14 $02
         $86
-.j      $39 $01 $3B $01
+@j      $39 $01 $3B $01
         $87 $02
-        .j - :                                                  ;=$1D $02
+        @j - :                                                  ;=$1D $02
         $7F $02
         $86
-.k      $42 $01 $44 $01
+@k      $42 $01 $44 $01
         $87 $02
-        .k - :                                                  ;=$28 $02
+        @k - :                                                  ;=$28 $02
         $7F $02
         $86
-.l      $86
-.m      $39 $01 $3B $01
+@l      $86
+@m      $39 $01 $3B $01
         $87 $02
-        .m - :                                                  ;=$34 $02
+        @m - :                                                  ;=$34 $02
         $7F $02
         $87 $05
-        .l - :                                                  ;=$33 $02
+        @l - :                                                  ;=$33 $02
         $87 $03
-        .b - :                                                  ;=$95 $01
+        @b - :                                                  ;=$95 $01
         $82 $FF $14 $96 $0A $14 $0A
         $81 $0D $32 $00 $7F $00 $32 $00 $7F $00 $32 $00 $7F $30 $1B $00
         $1A $00 $19 $00 $7F $0C
@@ -29279,46 +29279,46 @@ music_specialStage_data:                                                        
         $2B $0C $22 $0C $12 $0C $7F $30
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $82 $FF $12 $96 $10 $14 $0A
         $81 $0E
         $8A $06
         $86
-.n      $86
-.o      $02 $0C $12 $0C $02 $0C $12 $00 $02 $0C $02 $00 $12 $00 $02 $00
+@n      $86
+@o      $02 $0C $12 $0C $02 $0C $12 $00 $02 $0C $02 $00 $12 $00 $02 $00
         $02 $0C $12 $0C $07 $0C $17 $0C $07 $0C $17 $00 $07 $0C $07 $00
         $17 $00 $07 $00 $07 $0C $17 $0C
         $87 $04
-        .o - :                                                  ;=$87 $02
+        @o - :                                                  ;=$87 $02
         $06 $0C $16 $0C $06 $0C $16 $00 $06 $0C $06 $00 $16 $0C $06 $0C
         $16 $00 $06 $00 $0E $0C $0B $0C $0E $00 $0E $00 $0B $00 $0E $0C
         $0E $00 $0B $00 $0E $00 $0E $0C $0B $0C $04 $0C $14 $0C $04 $00
         $04 $00 $14 $00 $04 $0C $04 $00 $14 $00 $04 $00 $04 $0C $14 $0C
         $09 $0C $19 $0C $0A $0C $1A $0C $0B $0C $1B $0C $11 $0C $21 $0C
         $87 $02
-        .n - :                                                  ;=$86 $02
+        @n - :                                                  ;=$86 $02
         $86
-.p      $02 $0C $12 $0C $02 $0C $12 $00 $02 $0C $02 $00 $12 $00 $02 $00
+@p      $02 $0C $12 $0C $02 $0C $12 $00 $02 $0C $02 $00 $12 $00 $02 $00
         $02 $0C $12 $0C $07 $0C $17 $0C $07 $0C $17 $00 $07 $0C $07 $00
         $17 $00 $07 $00 $07 $0C $17 $0C
         $87 $03
-        .p - :                                                  ;=$08 $03
+        @p - :                                                  ;=$08 $03
         $02 $0C $12 $0C $02 $0C $12 $00 $02 $0C $02 $00 $12 $00 $02 $00
         $02 $0C $12 $0C $09 $0C $0C $0C $0C $0C $0C $0C $0C $0C $0E $0C
         $00 $0C $01 $0C
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $82 $FF $14 $82 $00 $14 $0A
         $81 $0A
         $8A $06
         $86
-.q      $86
-.r      $26 $00
+@q      $86
+@r      $26 $00
         $81 $06 $26 $00
         $81 $0A $22 $00
         $81 $06 $26 $00
@@ -29348,53 +29348,53 @@ music_specialStage_data:                                                        
         $81 $06 $1B $00
         $81 $0A
         $87 $04
-        .r - :                                                  ;=$67 $03
+        @r - :                                                  ;=$67 $03
         $21 $18 $1A $18 $1B $18 $21 $18 $1B $00 $7F $00 $1B $00 $7F $00
         $26 $00 $27 $00 $26 $00 $22 $00 $7F $00 $22 $00 $1B $00 $7F $00
         $16 $00 $7F $00 $12 $00 $7F $00 $24 $18 $14 $18 $16 $18 $18 $18
         $19 $00 $7F $00 $19 $00 $7F $00 $17 $00 $7F $00 $17 $00 $7F $00
         $16 $00 $17 $00 $16 $00 $14 $00 $7F $00 $14 $00 $7F $00 $14 $00
         $87 $02
-        .q - :                                                  ;=$66 $03
+        @q - :                                                  ;=$66 $03
         $86
-.s      $81 $0A $12 $00
+@s      $81 $0A $12 $00
         $86
-.t      $16 $00 $19 $00 $21 $00 $32 $00 $8C $8C
+@t      $16 $00 $19 $00 $21 $00 $32 $00 $8C $8C
         $87 $03
-        .t - :                                                  ;=$3D $04
+        @t - :                                                  ;=$3D $04
         $16 $00 $19 $00 $21 $00
         $81 $0A $17 $00
         $86
-.u      $1B $00 $22 $00 $26 $00 $27 $00 $8C $8C
+@u      $1B $00 $22 $00 $26 $00 $27 $00 $8C $8C
         $87 $03
-        .u - :                                                  ;=$56 $04
+        @u - :                                                  ;=$56 $04
         $1B $00 $22 $00 $26 $00
         $87 $03
-        .s - :                                                  ;=$38 $04
+        @s - :                                                  ;=$38 $04
         $81 $0A $12 $00
         $86
-.v      $16 $00 $19 $00 $21 $00 $32 $00 $8C $8C
+@v      $16 $00 $19 $00 $21 $00 $32 $00 $8C $8C
         $87 $03
-        .v - :                                                  ;=$73 $04
+        @v - :                                                  ;=$73 $04
         $16 $00 $19 $00 $21 $00 $19 $00
         $86
-.w      $21 $00 $24 $00 $27 $00 $29 $00 $8C $8C
+@w      $21 $00 $24 $00 $27 $00 $29 $00 $8C $8C
         $87 $03
-        .w - :                                                  ;=$8A $04
+        @w - :                                                  ;=$8A $04
         $24 $00 $27 $00 $29 $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $88
         $86
-.x      $81 $09 $70 $00 $70 $00
+@x      $81 $09 $70 $00 $70 $00
         $81 $0C $71 $00
         $81 $09 $70 $00
         $87 $7C
-        .x - :                                                  ;=$A5 $04
+        @x - :                                                  ;=$A5 $04
         $81 $0D $71 $00 $7F $00
         $81 $09 $70 $00 $7F $00 $70 $00 $7F $00 $70 $00 $7F $00 $70 $00
         $7F $00
@@ -29408,15 +29408,15 @@ music_labyrinth_data:                                                           
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$01E0
-        .channel3 - :                                           ;=$029D
-        .channel4 - :                                           ;=$0351
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$01E0
+        @channel3 - :                                           ;=$029D
+        @channel4 - :                                           ;=$0351
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $01 $00
         $85 $FF
@@ -29451,11 +29451,11 @@ music_labyrinth_data:                                                           
         $81 $09 $20 $00
         $81 $0D
         $86
-.a      $27 $00 $7F $00
+@a      $27 $00 $7F $00
         $81 $09 $27 $00
         $81 $0D
         $87 $03
-        .a - :                                                  ;=$CE $00
+        @a - :                                                  ;=$CE $00
         $20 $00 $7F $00
         $81 $09 $20 $00
         $81 $0D $20 $00 $1A $12 $17 $0C $23 $00 $7F $00
@@ -29468,11 +29468,11 @@ music_labyrinth_data:                                                           
         $81 $09 $20 $00
         $81 $0D
         $86
-.b      $27 $00 $7F $00
+@b      $27 $00 $7F $00
         $81 $09 $27 $00
         $81 $0D
         $87 $03
-        .b - :                                                  ;=$1E $01
+        @b - :                                                  ;=$1E $01
         $30 $00 $8D $30 $0C $30 $00 $2A $12 $27 $0C $23 $00 $7F $00
         $81 $09 $23 $00
         $81 $0D $25 $12 $25 $00 $23 $12 $25 $0C $27 $00 $7F $00
@@ -29500,7 +29500,7 @@ music_labyrinth_data:                                                           
         $8D					                ;superfluous
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $96 $00 $14 $0A
         $81 $0E
@@ -29508,55 +29508,55 @@ music_labyrinth_data:                                                           
         $88
         $00 $12
         $86
-.c      $03 $12 $05 $12 $06 $0C $07 $00 $7F $00
+@c      $03 $12 $05 $12 $06 $0C $07 $00 $7F $00
         $81 $0A $07 $00
         $81 $0E $07 $00 $0C $12 $0D $12 $0E $0C $00 $00 $7F $00
         $81 $0A $00 $00
         $81 $0E $00 $00
         $87 $07
-        .c - :                                                  ;=$EF $01
+        @c - :                                                  ;=$EF $01
         $03 $12 $05 $12 $06 $0C $07 $00 $7F $00
         $81 $0A $07 $00
         $81 $0E $07 $00 $0C $12 $0D $12 $0E $0C $00 $00
         $86
-.d      $00 $12
+@d      $00 $12
         $87 $03
-        .d - :                                                  ;=$32 $02
+        @d - :                                                  ;=$32 $02
         $00 $00 $00 $00 $00 $00
         $86
-.e      $0D $12
+@e      $0D $12
         $87 $03
-        .e - :                                                  ;=$3F $02
+        @e - :                                                  ;=$3F $02
         $0D $00 $0D $00 $0D $00
         $86
-.f      $08 $12
+@f      $08 $12
         $87 $03
-        .f - :                                                  ;=$4C $02
+        @f - :                                                  ;=$4C $02
         $08 $00 $08 $00 $08 $00
         $86
-.g      $07 $12
+@g      $07 $12
         $87 $03
-        .g - :                                                  ;=$59 $02
+        @g - :                                                  ;=$59 $02
         $07 $00 $07 $00 $07 $00
         $86
-.h      $00 $12
+@h      $00 $12
         $87 $03
-        .h - :                                                  ;=$66 $02
+        @h - :                                                  ;=$66 $02
         $00 $00 $00 $00 $00 $00
         $86
-.i      $0D $12
+@i      $0D $12
         $87 $03
-        .i - :                                                  ;=$73 $02
+        @i - :                                                  ;=$73 $02
         $0D $00 $0D $00 $0D $00
         $86
-.j      $08 $12
+@j      $08 $12
         $87 $03
-        .j - :                                                  ;=$80 $02
+        @j - :                                                  ;=$80 $02
         $08 $00 $08 $00 $08 $00 $07 $12 $07 $12 $0D $00 $0D $00 $0D $00
         $0E $00 $0E $00 $0E $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $84 $04 $00
         $82 $FF $14 $8C $00 $14 $0A
@@ -29564,41 +29564,41 @@ music_labyrinth_data:                                                           
         $8A $06
         $88
         $86
-.k      $81 $0B
+@k      $81 $0B
         $86
-.l      $30 $00 $7F $00 $8C $8C $8C $8C $30 $00 $8B $8B $8B
+@l      $30 $00 $7F $00 $8C $8C $8C $8C $30 $00 $8B $8B $8B
         $87 $06
-        .l - :                                                  ;=$B0 $02
+        @l - :                                                  ;=$B0 $02
         $81 $0A $20 $0C $20 $00 $7F $0C $20 $00 $7F $0C $17 $00
         $8D $17 $24 $23 $00 $25 $00 $26 $00 $27 $00 $26 $00 $25 $00
         $23 $00 $20 $00 $1A $00 $20 $00 $1A $00 $17 $0C $1A $00 $17 $00
         $87 $02
-        .k - :                                                  ;=$AD $02
+        @k - :                                                  ;=$AD $02
         $86
-.m      $7F $0C $17 $00 $17 $0C $7F $00 $12 $0C $1A $00 $7F $0C $20 $12
+@m      $7F $0C $17 $00 $17 $0C $7F $00 $12 $0C $1A $00 $7F $0C $20 $12
         $20 $00 $1A $00 $7F $0C $12 $0C $15 $00 $7F $0C $17 $12 $17 $00
         $13 $00 $7F $0C $15 $0C $16 $00 $7F $0C $17 $00 $7F $0C $17 $00
         $13 $12 $15 $0C $13 $00 $7F $0C $17 $00
         $87 $02
-        .m - :                                                  ;=$F3 $02
+        @m - :                                                  ;=$F3 $02
         $86
-.n      $17 $48 $17 $48 $20 $48 $20 $12 $22 $00 $23 $00 $25 $00 $27 $00
+@n      $17 $48 $17 $48 $20 $48 $20 $12 $22 $00 $23 $00 $25 $00 $27 $00
         $25 $00 $23 $00 $22 $00 $1A $00 $17 $00
         $87 $02
-        .n - :                                                  ;=$32 $03
+        @n - :                                                  ;=$32 $03
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $09
         $8A $06
         $88
         $86
-.o      $81 $09 $70 $00 $7F $00 $70 $00
+@o      $81 $09 $70 $00 $7F $00 $70 $00
         $81 $0B $71 $0C
         $81 $09 $70 $00
         $87 $2F
-        .o - :                                                  ;=$57 $03
+        @o - :                                                  ;=$57 $03
         $81 $09 $70 $00 $7F $00 $70 $00
         $81 $0B $71 $00 $71 $00 $71 $00
         $FF
@@ -29610,15 +29610,15 @@ music_allEmeralds_data:                                                         
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$003E
-        .channel3 - :                                           ;=$006B
-        .channel4 - :                                           ;=$0096
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$003E
+        @channel3 - :                                           ;=$006B
+        @channel4 - :                                           ;=$0096
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $01 $00 $02 $00
         $85 $FF
@@ -29626,60 +29626,60 @@ music_allEmeralds_data:                                                         
         $82 $FF $00 $96 $00 $14 $0A
         $81 $08 $7F $30 $7F $30
         $86
-.a      $14 $24
+@a      $14 $24
         $8B
         $87 $04
-        .a - :                                                  ;=$25 $00
+        @a - :                                                  ;=$25 $00
         $14 $24 $14 $24 $14 $24
         $86
-.b      $14 $24
+@b      $14 $24
         $8C
         $87 $09
-        .b - :                                                  ;=$33 $00
+        @b - :                                                  ;=$33 $00
         $88
         $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $83 $01 $01 $FE $F8 $FF
         $82 $FF $00 $96 $00 $14 $0A
         $81 $05 $7F $30 $7F $3C
         $86
-.c      $14 $24
+@c      $14 $24
         $8B
         $87 $04
-        .c - :                                                  ;=$52 $00
+        @c - :                                                  ;=$52 $00
         $14 $24 $14 $24 $14 $24
         $86
-.d      $14 $24
+@d      $14 $24
         $8C
         $87 $09
-        .d - :                                                  ;=$60 $00
+        @d - :                                                  ;=$60 $00
         $88
         $7F $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $82 $0A $14 $0A
         $81 $06
         $8A $03
         $86
-.e      $4B $00 $3B $00 $4B $00 $3B $00
+@e      $4B $00 $3B $00 $4B $00 $3B $00
         $8B
         $87 $07
-        .e - :                                                  ;=$77 $00
+        @e - :                                                  ;=$77 $00
         $86
-.f      $4B $00 $3B $00 $4B $00 $3B $00
+@f      $4B $00 $3B $00 $4B $00 $3B $00
         $8C
         $87 $0D
-        .f - :                                                  ;=$85 $00
+        @f - :                                                  ;=$85 $00
         $88
         $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $88
         $7F $10
@@ -29690,15 +29690,15 @@ music_emerald_data:                                                             
 ;=======================================================================================================================
         %word
         
-        .channel1 - :                                           ;=$000A
-        .channel2 - :                                           ;=$0086
-        .channel3 - :                                           ;=$00BC
-        .channel4 - :                                           ;=$00FB
+        @channel1 - :                                           ;=$000A
+        @channel2 - :                                           ;=$0086
+        @channel3 - :                                           ;=$00BC
+        @channel4 - :                                           ;=$00FB
         $0000
         
         %byte
         
-.channel1
+@channel1
         ;---------------------------------------------------------------------------------------------------------------
         $80 $05 $00 $06 $00
         $85 $FF
@@ -29732,7 +29732,7 @@ music_emerald_data:                                                             
         $7F $00
         $FF
         
-.channel2
+@channel2
         ;---------------------------------------------------------------------------------------------------------------
         $82 $FF $14 $96 $14 $14 $0A
         $81 $0E
@@ -29745,7 +29745,7 @@ music_emerald_data:                                                             
         $7F $00
         $FF
         
-.channel3
+@channel3
         ;---------------------------------------------------------------------------------------------------------------
         $84 $04 $00
         $82 $FF $14 $82 $0A $14 $0A
@@ -29755,14 +29755,14 @@ music_emerald_data:                                                             
         $22 $00 $24 $00 $26 $00 $29 $00 $20 $00 $22 $00 $24 $00 $27 $00
         $30 $00 $32 $00
         $86
-.a      $34 $04 $36 $04
+@a      $34 $04 $36 $04
         $87 $0F
-        .a - :                                                  ;=$EF $00
+        @a - :                                                  ;=$EF $00
         $88
         $7F $00
         $FF
         
-.channel4
+@channel4
         ;---------------------------------------------------------------------------------------------------------------
         $81 $00
         $88
@@ -29793,9 +29793,9 @@ sfx_fb43_data:                                                                  
         $8A $01
         $81 $0F $10 $00 $07 $00 $04 $00 $00 $00
         $86
-.a      $17 $00 $15 $00 $14 $00 $12 $00 $10 $00 $0B $00 $8C $8C $8C $8C
+@a      $17 $00 $15 $00 $14 $00 $12 $00 $10 $00 $0B $00 $8C $8C $8C $8C
         $87 $03
-        .a - :                                                  ;=$1A $00
+        @a - :                                                  ;=$1A $00
         $81 $00
         $FE
 	;
@@ -29822,9 +29822,9 @@ sfx_fb98_data:                                                                  
         $81 $0F
         $8A $01 $28 $00 $2A $00 $28 $00 $2A $00 $7F $02
         $86
-.a      $28 $00 $2A $00
+@a      $28 $00 $2A $00
         $87 $09
-        .a - :                                                  ;=$1C $00
+        @a - :                                                  ;=$1C $00
         $81 $00
         $FE
 	;
@@ -29839,9 +29839,9 @@ sfx_fbbf_data:                                                                  
         $81 $0F
         $8A $01
         $86
-.a      $17 $00 $19 $00 $1B $00 $20 $00 $22 $00 $24 $00 $8C $8C
+@a      $17 $00 $19 $00 $1B $00 $20 $00 $22 $00 $24 $00 $8C $8C
         $87 $07
-        .a - :                                                  ;=$12 $00
+        @a - :                                                  ;=$12 $00
         $81 $00
         $FE
 	;
@@ -29856,15 +29856,15 @@ sfx_fbe6_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $81 $0A
         $86
-.a      $3B $02 $8D $8B
+@a      $3B $02 $8D $8B
         $87 $03
-        .a - :                                                  ;=$16 $00
+        @a - :                                                  ;=$16 $00
         $3B $02
         $83 $01 $01 $FA $17 $00
         $86
-.b      $4B $03 $8D $8C
+@b      $4B $03 $8D $8C
         $87 $0E
-        .b - :                                                  ;=$27 $00
+        @b - :                                                  ;=$27 $00
         $81 $00
         $FE
 	;
@@ -29879,13 +29879,13 @@ sfx_fc18_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $81 $0A
         $86
-.a      $3B $0C $8D $8B
+@a      $3B $0C $8D $8B
         $87 $04
-        .a - :                                                  ;=$16 $00
+        @a - :                                                  ;=$16 $00
         $86
-.b      $3B $0C $8D $8C
+@b      $3B $0C $8D $8C
         $87 $06
-        .b - :                                                  ;=$1F $00
+        @b - :                                                  ;=$1F $00
         $81 $00
         $FE
 	;
@@ -29899,9 +29899,9 @@ sfx_fc42_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $81 $0F
         $86
-.a      $10 $01 $30 $01 $8C
+@a      $10 $01 $30 $01 $8C
         $87 $0F
-        .a - :                                                  ;=$10 $00
+        @a - :                                                  ;=$10 $00
         $81 $00
         $FE
 	;
@@ -29917,10 +29917,10 @@ sfx_fc5e_data:                                                                  
         $8A $06
         $81 $0F
         $86
-.a      $10 $00 $8C $12 $00 $8C $14 $00 $8C $15 $00 $8C $17 $00 $8C
+@a      $10 $00 $8C $12 $00 $8C $14 $00 $8C $15 $00 $8C $17 $00 $8C
         $19 $00
         $87 $03
-        .a - :                                                  ;=$18 $00
+        @a - :                                                  ;=$18 $00
         $81 $00
         $FE
 	;
@@ -29935,9 +29935,9 @@ sfx_fc8e_data:                                                                  
         $8A $04
         $81 $0F $38 $00 $40 $00 $43 $00 $40 $00 $43 $00
         $86
-.a      $48 $00 $7F $00 $8C $8C
+@a      $48 $00 $7F $00 $8C $8C
         $87 $07
-        .a - :                                                  ;=$1C $00
+        @a - :                                                  ;=$1C $00
         $81 $00
         $FE
 	;
@@ -29951,9 +29951,9 @@ sfx_fcb7_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $81 $0F
         $86
-.a      $18 $01 $7F $01 $8C $10 $01 $7F $01 $8C
+@a      $18 $01 $7F $01 $8C $10 $01 $7F $01 $8C
         $87 $07
-        .a - :                                                  ;=$10 $00
+        @a - :                                                  ;=$10 $00
         $81 $00
         $FE
 	;
@@ -29968,9 +29968,9 @@ sfx_fcd8_data:                                                                  
         $8A $01
         $81 $0F
         $86
-.a      $3B $00 $49 $00 $7F $02 $3B $00 $49 $00 $7F $02
+@a      $3B $00 $49 $00 $7F $02 $3B $00 $49 $00 $7F $02
         $87 $FF
-        .a - :                                                  ;=$12 $00
+        @a - :                                                  ;=$12 $00
         $81 $00
         $FE
 	;
@@ -29985,9 +29985,9 @@ sfx_fcfd_data:                                                                  
         $83 $01 $01 $FA $F0 $FF
         $81 $0F $10 $02 $7F $02
         $86
-.a      $19 $0C $8C $8C $8C $8C
+@a      $19 $0C $8C $8C $8C $8C
         $87 $03
-        .a - :                                                  ;=$1A $00
+        @a - :                                                  ;=$1A $00
         $81 $00
         $FE
 	;
@@ -30002,24 +30002,24 @@ sfx_fd24_data:                                                                  
         $83 $01 $01 $FA $C4 $FF
         $81 $00
         $86
-.a      $00 $09 $8B
+@a      $00 $09 $8B
         $87 $0A
-        .a - :                                                  ;=$16 $00
+        @a - :                                                  ;=$16 $00
         $86
-.b      $86
-.c      $00 $09 $00 $09 $8B
+@b      $86
+@c      $00 $09 $00 $09 $8B
         $87 $04
-        .c - :                                                  ;=$1F $00
+        @c - :                                                  ;=$1F $00
         $86
-.d      $00 $09
+@d      $00 $09
         $87 $08
-        .d - :                                                  ;=$29 $00
+        @d - :                                                  ;=$29 $00
         $86
-.e      $00 $09 $00 $09 $8C
+@e      $00 $09 $00 $09 $8C
         $87 $04
-        .e - :                                                  ;=$30 $00
+        @e - :                                                  ;=$30 $00
         $87 $FF
-        .b - :                                                  ;=$1E $00
+        @b - :                                                  ;=$1E $00
         $FE
 	;
 
@@ -30032,14 +30032,14 @@ sfx_fd62_data:                                                                  
         $82 $FF $00 $FF $00 $0A $01
         $81 $0F
         $86
-.a      $00 $01 $01 $01
+@a      $00 $01 $01 $01
         $87 $02
-        .a - :                                                  ;=$10 $00
+        @a - :                                                  ;=$10 $00
         $7F $05
         $86
-.b      $00 $01 $01 $01
+@b      $00 $01 $01 $01
         $87 $10
-        .b - :                                                  ;=$1B $00
+        @b - :                                                  ;=$1B $00
         $81 $00
         $FE
 	;
@@ -30058,9 +30058,9 @@ sfx_fd88_data:                                                                  
         $89 $04
         $81 $0C $00 $00 $8B
         $86
-.a      $00 $00 $8C
+@a      $00 $00 $8C
         $87 $0D
-        .a - :                                                  ;=$1F $00
+        @a - :                                                  ;=$1F $00
         $81 $00
         $FE
 	;
@@ -30076,13 +30076,13 @@ sfx_fdb1_data:                                                                  
         $8A $01
         $01 $00 $7F $00 $02 $00 $7F $00 $03 $00 $7F $00
         $86
-.a      $04 $00 $7F $00
+@a      $04 $00 $7F $00
         $87 $0F
-        .a - :                                                  ;=$1E $00
+        @a - :                                                  ;=$1E $00
         $86
-.b      $04 $00 $7F $00 $7F $00 $8C
+@b      $04 $00 $7F $00 $7F $00 $8C
         $87 $0F
-        .b - :                                                  ;=$27 $00
+        @b - :                                                  ;=$27 $00
         $81 $00
         $FE
 	;
@@ -30097,14 +30097,14 @@ sfx_fde6_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $89 $06
         $86
-.a      $00 $0C $8B
+@a      $00 $0C $8B
         $87 $07
-        .a - :                                                  ;=$12 $00
+        @a - :                                                  ;=$12 $00
         $00 $30
         $86
-.b      $00 $02 $8C
+@b      $00 $02 $8C
         $87 $0E
-        .b - :                                                  ;=$1C $00
+        @b - :                                                  ;=$1C $00
         $81 $00
         $FE
 	;
@@ -30119,9 +30119,9 @@ sfx_fe0c_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $89 $06
         $86
-.a      $00 $03 $7F $03 $8C $8C $8C $8C
+@a      $00 $03 $7F $03 $8C $8C $8C $8C
         $87 $03
-        .a - :                                                  ;=$12 $00
+        @a - :                                                  ;=$12 $00
         $00 $03
         $81 $00
         $FE
@@ -30136,9 +30136,9 @@ sfx_fe2f_data:                                                                  
         $82 $FF $00 $FA $00 $00 $0A
         $81 $0E
         $86
-.a      $0C $02 $0D $02
+@a      $0C $02 $0D $02
         $87 $0A
-        .a - :                                                  ;=$10 $00
+        @a - :                                                  ;=$10 $00
         $FE
 	;
 
@@ -30179,10 +30179,10 @@ sfx_fe74_data:                                                                  
         $8A $01
         $81 $0F $0C $02 $7F $02
         $86
-.a      $11 $00 $09 $00 $07 $00 $04 $00 $03 $00 $00 $00 $0E $00 $0C $00
+@a      $11 $00 $09 $00 $07 $00 $04 $00 $03 $00 $00 $00 $0E $00 $0C $00
         $8C $8C $8C
         $87 $04
-        .a - :                                                  ;=$16 $00
+        @a - :                                                  ;=$16 $00
         $81 $00
         $FE
 	;
@@ -30198,9 +30198,9 @@ sfx_fea4_data:                                                                  
         $8A $01
         $17 $00 $10 $00 $07 $00 $00 $00 $0C $00
         $86
-.a      $4B $00 $0B $00 $8C
+@a      $4B $00 $0B $00 $8C
         $87 $0F
-        .a - :                                                  ;=$1C $00
+        @a - :                                                  ;=$1C $00
         $81 $00
         $FE
 	;
@@ -30214,9 +30214,9 @@ sfx_fecc_data:                                                                  
         $82 $FF $00 $FA $00 $32 $0A
         $81 $0F
         $86
-.a      $19 $01 $39 $01 $8C
+@a      $19 $01 $39 $01 $8C
         $87 $0F
-        .a - :                                                  ;=$10 $00
+        @a - :                                                  ;=$10 $00
         $81 $00
         $FE
 	;
@@ -30232,9 +30232,9 @@ sfx_fee8_data:                                                                  
         $81 $0E
         $89 $06
         $86
-.a      $00 $00 $7F $00 $8C
+@a      $00 $00 $7F $00 $8C
         $87 $0E
-        .a - :                                                  ;=$14 $00
+        @a - :                                                  ;=$14 $00
         $81 $00
         $FE
 	;
@@ -30253,9 +30253,9 @@ sfx_ff08_data:                                                                  
         $7F $00
         $81 $0C
         $86
-.a      $5B $00 $0C $00 $7F $00 $57 $00 $8C
+@a      $5B $00 $0C $00 $7F $00 $57 $00 $8C
         $87 $06
-        .a - :                                                  ;=$36 $00
+        @a - :                                                  ;=$36 $00
         $81 $00
         $FE
 	;
@@ -30287,17 +30287,17 @@ sfx_ff83_data:                                                                  
         $83 $01 $01 $FA $F2 $FF
         $82 $FF $00 $FA $00 $00 $0A
         $86
-.a      $81 $0A
+@a      $81 $0A
         $86
-.b      $30 $06 $8B
+@b      $30 $06 $8B
         $87 $04
-        .b - :                                                  ;=$17 $00
+        @b - :                                                  ;=$17 $00
         $86
-.c      $30 $06 $8C $8C
+@c      $30 $06 $8C $8C
         $87 $05
-        .c - :                                                  ;=$1F $00
+        @c - :                                                  ;=$1F $00
         $87 $FF
-        .a - :                                                  ;=$14 $00
+        @a - :                                                  ;=$14 $00
         $81 $00
         $FE
         
