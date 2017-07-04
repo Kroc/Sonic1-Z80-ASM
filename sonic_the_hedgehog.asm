@@ -163,14 +163,14 @@ interruptHandler:                                                               
         ei
         
 	;we can compile with or without audio:
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		;switch in the music engine & data
 		ld	A`bank			\\sound@bank
 		ld      [%sms.mapper.slot1]     A`bank
 		ld      [$.SLOT1]               A`bank
 		;process the audio for this frame
 		call    \\sound\update
-		;
+	.ENDIF
 	
         call    readJoypad
         bit     4       [IY`vars+%vars.joypad]                  ;joypad button 1?
@@ -546,9 +546,9 @@ init:                                                                           
         
 	;if the sound module is being included,
 	;mute any current sound (e.g. after soft-reset)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		call    \\sound\call_muteSound
-		;
+	.ENDIF
         
         ;IY is used as a shorthand to some common variables throughout,
         ;though this is in practice slower than just using an absolute address
@@ -3055,10 +3055,10 @@ _LABEL_C52_106:                                                                 
 
         ;play the map screen music:
 	;(we can compile with, or without, audio)
-@_3	?( \\sound )
+@_3	.IFDEF OPTION_AUDIO
         	ld      A`music         7
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -3872,10 +3872,10 @@ titleScreen:                                                                    
         
         ;play title screen music:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.titleScreen@index
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ;initialise the animation parameters?
         xor     A`zero
@@ -3951,9 +3951,9 @@ titleScreen:                                                                    
         scf
 	
 	;(we can compile with, or without, audio)
-@_5	?( \\sound )
+@_5	.IFDEF OPTION_AUDIO
 		rst     \\sound\rst_muteSound
-		;
+	.ENDIF
         ret
 
         ;---------------------------------------------------------------------------------------------------------------
@@ -4134,10 +4134,10 @@ _1401:                                                                          
         djnz    @_5
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $1A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ld      HL      $.D216
         ld      A       [HL]
@@ -4377,10 +4377,10 @@ _155e:                                                                          
         jr      nz      @_13
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $02
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 
 @_13    ld      HL      [$.TEMP4]
         ld      DE      [$.TEMP6]
@@ -4575,10 +4575,10 @@ _172f:                                                                          
         call    \game\increaseScore
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx           $02
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      @_7
         
@@ -4604,10 +4604,10 @@ _172f:                                                                          
         call    \game\increaseScore
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx           $02
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      @_9
         
@@ -4645,10 +4645,10 @@ _172f:                                                                          
         call    \game\increaseScore
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx$02        $02
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      @_11
         
@@ -5266,9 +5266,9 @@ _LABEL_1C49_62:                                                                 
         djnz    @wait
 		
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		rst     \\sound\rst_muteSound
-		;
+	.ENDIF
         
 @_3     call    _LABEL_1CED_131
         and     A
@@ -5570,9 +5570,9 @@ _1e9e:                                                                          
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		rst     \\sound\rst_muteSound
-		;
+	.ENDIF
         
 @_1     ld      A       [IY`vars+%vars.spriteUpdateCount]
         
@@ -5595,12 +5595,12 @@ _1e9e:                                                                          
         jr      nz      @_1
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`bank                  \\sound@bank
 		ld      [%sms.mapper.slot1]     A`bank
 		ld      [$.SLOT1]               A`bank
 		call    \\sound\unpause
-		;
+	.ENDIF
         
         ret
 	;
@@ -5738,10 +5738,10 @@ _1f49:                                                                          
 @_2     push    BC
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $13
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         pop     BC
         
@@ -5830,9 +5830,9 @@ _1fa9:                                                                          
         jr      nz      @_5
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		rst     \\sound\rst_muteSound
-		;
+	.ENDIF
 		
         bit     7       [IY`vars+%vars.flags6]
         call    nz      disableWaterline
@@ -5884,10 +5884,10 @@ _202d:                                                                          
 ;TODO: should be a macro so as to exclude entirely without audio
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $0E
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -5898,10 +5898,10 @@ addExtraLife:                                                                   
         inc     [HL]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx   $09                                     ;extra life sound?
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -5918,10 +5918,10 @@ _203f:                                                                          
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $07
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         set     0       [IY`vars+%vars.timeLightningFlags]
         
@@ -5966,9 +5966,9 @@ _20b8:                                                                          
         ld      HL      $0028
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		call    \\sound\fadeOut
-		;
+	.ENDIF
 		
         call    \\gfx\fadeOut
         
@@ -6525,10 +6525,10 @@ loadLevel:                                                                      
         
         ;remember the current level music to restore it after invincibility &c.
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      [$.LEVEL_MUSIC] A
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
 	
 	;---------------------------------------------------------------------------------------------------------------
 	
@@ -6906,10 +6906,10 @@ _LABEL_258B_133:                                                                
         djnz    @_1
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`music	\\sound\music\pointers.allEmeralds@index
 		rst     \\sound\rst_playMusic
-	;
+	.ENDIF
         
         ld      HL      $241D
         ld      B       $3D
@@ -7059,10 +7059,10 @@ _LABEL_258B_133:                                                                
         call    \\gfx\_b50
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.ending@index
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         xor     A`zero                                          ;(set A to 0)
         ld      [$.TEMP1]       A`zero
@@ -9553,10 +9553,10 @@ hitPlayer:                                                                      
         
 	;play the death sound effect:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld	A`sfx	\\sound\music\pointers.death@index
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
 	
         ret
 	;
@@ -9623,10 +9623,10 @@ dropRings:                                                                      
         ld      [IY`vars+%vars.joypad],$FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$11
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
         ret
 	;
@@ -9668,10 +9668,10 @@ _36be:                                                                          
         
         ;play the explosion sound:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
         ;give the player 100 points
         ld      DE`hundreds     $0100
@@ -10274,10 +10274,10 @@ increaseRings:                                                                  
         
         ;play the 1-up sound effect:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$09
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -10287,10 +10287,10 @@ increaseRings:                                                                  
         ld      [$.RINGS]       A`rings
         ;play the pickup-ring sound:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$02
 		rst     \\sound\rst_playSFX
-        ;
+        .ENDIF
         ret
 	;
 
@@ -10347,10 +10347,10 @@ increaseScore:                                                                  
 	
         ;play extra life sound effect:
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$09
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 	
@@ -11969,10 +11969,10 @@ sonic_process:                                                                  
         res     0   	[IY`vars+%vars.unknown0]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       [$.LEVEL_MUSIC]
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ret
         
@@ -12014,10 +12014,10 @@ sonic_process:                                                                  
         
         ;drowned!
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx   \\sound\music\pointers.death@index	;=$0A
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         call    \\_91eb
         call    \\_91eb
@@ -12040,10 +12040,10 @@ sonic_process:                                                                  
         jr      nz	@_43
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $1A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_43    ld      A       [$.FRAMECOUNT]
         rrca    
@@ -12081,10 +12081,10 @@ sonic_process:                                                                  
         ld      [$.D28E]        A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $00
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
         ;--- UNUSED! (8 bytes) -----------------------------------------------------------------------------------------
@@ -12127,10 +12127,10 @@ sonic_process:                                                                  
         jr      z	@_44
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $06
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_44    set     2   	[IY`vars+%vars.timeLightningFlags]
         ret
@@ -12320,10 +12320,10 @@ sonic_process:                                                                  
         ret     z
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $03
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ld      A       $3C
         ld      [$.SONIC.unknown16]     A
@@ -12427,10 +12427,10 @@ sonic_process:                                                                  
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       [$.LEVEL_MUSIC]
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ld      C       [IY`vars+%vars.spriteUpdateCount]
         
@@ -12800,10 +12800,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        H
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $05
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -12823,10 +12823,10 @@ sonic_process:                                                                  
         set     1   	[IX`mob+%mob.flags]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -12854,10 +12854,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -12877,10 +12877,10 @@ sonic_process:                                                                  
         res     1   	[IX`mob+%mob.flags]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -12922,10 +12922,10 @@ sonic_process:                                                                  
         jr      nz	@_74
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $12					;splash?
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_74    set     4   	[IX`mob+%mob.flags]			;set mob underwater
         ret
@@ -12956,10 +12956,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -12970,10 +12970,10 @@ sonic_process:                                                                  
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $05
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13032,10 +13032,10 @@ sonic_process:                                                                  
         ld      [$.D28A]        A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $06
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
 @_76    inc     HL
@@ -13068,10 +13068,10 @@ sonic_process:                                                                  
         jr      nz	@_77
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $12
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_77    set     4   	[IX`mob+%mob.flags]                     ;set mob underwater
         ret
@@ -13183,10 +13183,10 @@ sonic_process:                                                                  
         ld      [$.D2E1]        A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $07
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13239,10 +13239,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13254,10 +13254,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13269,10 +13269,10 @@ sonic_process:                                                                  
         ld      [IX`mob+%mob.Ydirection]        $FF
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13313,10 +13313,10 @@ sonic_process:                                                                  
         ld      [HL]    $3F
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $07
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -13692,10 +13692,10 @@ powerUps_speed_process:                                                         
         ld      [$.SONIC.unknown15]     A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $02
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      \powerups.ringprocess._5b29
         
@@ -13748,10 +13748,10 @@ powerUps_life_process:                                                          
         ld      [IX`mob+%mob.spriteLayout+1]    A`zero
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $09
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ld      A       [$.CURRENT_LEVEL]
         cp      28                                              ;special stage?
@@ -13873,10 +13873,10 @@ powerUps_invincibility_process:                                                 
         ld      [$.D28D]        A
 
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.invincibility@index	;=$08
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         jp      \powerups.ringprocess._5b29
         
@@ -14133,10 +14133,10 @@ powerUps_emerald_process:                                                       
         ld      [$.D28B]        A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.emerald@index	;=$14
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
 @_1     ld      [IX`mob+%mob.type]      $FF                     ;remove object?
         ret
@@ -14306,12 +14306,12 @@ boss_endSign_process:                                                           
         jr      z       @_7
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.actComplete@index	;=$09
 		rst     \\sound\rst_playMusic
 		ld      A       $0C
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         res     2       [IX`mob+%mob.unknown11]
         set     3       [IX`mob+%mob.unknown11]
@@ -14357,10 +14357,10 @@ boss_endSign_process:                                                           
         res     3       [IY`vars+%vars.flags6]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $0B
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_7     ld      DE      @_6157
         bit     1       [IX`mob+%mob.unknown11]
@@ -14880,10 +14880,10 @@ badnick_crabmeat_process:                                                       
         call    _ac96
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$0A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      @_7
         
@@ -15652,10 +15652,10 @@ badnick_buzzbomber_process:                                                     
         pop     IX  BC
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $0A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         ld      C       $00
         ld      L       C
@@ -16133,10 +16133,10 @@ badnick_newtron_process:                                                        
         pop     IX  BC
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$0A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
 @_5     ld      BC                  @_6fed
         cp      $78
@@ -16209,10 +16209,10 @@ boss_greenHill_process:                                                         
         call    \\gfx\loadPaletteOnInterrupt
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.boss1@index	;=$0B
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         xor     A`zero
         ld      [$.D2EC]		A`zero
@@ -16652,10 +16652,10 @@ boss_capsule_process:                                                           
         ld      [$.D289]	A	
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.actComplete@index	;=$09
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         set     1	[IX`mob+%mob.flags]
 @_11    xor     A`zero
@@ -17023,10 +17023,10 @@ _77be:                                                                          
         ld      [$.D2B3]        A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ;TODO: Wouldn't just `LD HL, $.D2EC` & `INC [HL]` be quicker?
         ld      A       [$.D2EC]
@@ -17105,10 +17105,10 @@ _77be:                                                                          
         ld      [HL]    $5B
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`songID	[$.LEVEL_MUSIC]
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ld      A       [IY`vars+%vars.spriteUpdateCount]
         
@@ -17297,10 +17297,10 @@ _7a3a:                                                                          
         pop     IX
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 	
@@ -17337,10 +17337,10 @@ meta_trip_process:                                                              
         ld      [IY`vars+%vars.joypad]	$FF
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$11
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -17694,10 +17694,10 @@ badnick_chopper_process:                                                        
         set     0       [IX`mob+%mob.flags]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $12
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ld      [IX`mob+%mob.unknown11] $03
         jr      @_5
@@ -18056,10 +18056,10 @@ boss_jungle_process:                                                            
         call    \\gfx\loadPaletteOnInterrupt
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.boss1@index	;=$0B
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         xor     A`zero
         ld      [$.D2EC]	A`zero
@@ -18286,10 +18286,10 @@ unknown_8218_process:													;$8218
         ld      [IX`mob+%mob.unknown16]	$00
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_4     xor     A`zero
         ld      [IX`mob+%mob.Xspeed+0]		A`zero
@@ -18450,9 +18450,9 @@ platform_bridge_process:                                                        
         ld      A	$20
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
 @_2     ld      [IX`mob+%mob.spriteLayout+0]	LO @_8481
         ld      [IX`mob+%mob.spriteLayout+1]	HI @_8481
@@ -18535,10 +18535,10 @@ mob_boss_bridge:                                                                
         ld      [$.D2EC]        A`zero
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`songID	\\sound\music\pointers.boss1@index	;=$0B
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         set     0       [IX`mob+%mob.flags]
 @_1     ld      A	[IX`mob+%mob.unknown11]
@@ -18652,10 +18652,10 @@ mob_boss_bridge:                                                                
         djnz    @loop
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
         jp      @_6
         
@@ -18838,10 +18838,10 @@ platform_balance_process:                                                       
         jr      z	@_6
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$04
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
 @_6     xor     A`zero
         ld      [IX`mob+%mob.unknown11]	A`zero
@@ -19429,10 +19429,10 @@ trap_spear_process:                                                             
         ret     nz
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$1D
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
 	%byte
@@ -19503,10 +19503,10 @@ trap_fireball_process:                                                          
         ;---------------------------------------------------------------------------------------------------------------
         
 	;(we can compile with, or without, audio)
-@_3	?( \\sound )
+@_3	.IFDEF OPTION_AUDIO
 		ld      A	$18
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
 @_4     xor     A`zero
         bit     1	[IX`mob+%mob.flags]
@@ -20242,10 +20242,10 @@ mob_boss_labyrinth:                                                             
         ld      [$.D2EC]        A`zero
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.boss1@index	;=$0B
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         set     0       [IX`mob+%mob.flags]
 @_1     ld      A	[IX`mob+%mob.unknown11]
@@ -20463,10 +20463,10 @@ mob_boss_labyrinth:                                                             
         call    _85d1
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         jp      @_
         
@@ -20891,10 +20891,10 @@ unknown_96f8_process:                                                           
         ld      [IX`mob+%mob.unknown12]	$10
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$22
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 	
 @_5     ld      [IX`mob+%mob.Yspeed+0]		$98
         ld      [IX`mob+%mob.Yspeed+1]		$FF
@@ -21245,10 +21245,10 @@ platform_bumper_process:                                                        
         ld      [IX`mob+%mob.unknown11]	$08
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$07
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
 @_3     dec     [IX`mob+%mob.unknown11]
@@ -21346,10 +21346,10 @@ unknown_9be8_process:                                                           
         ld      [IX`mob+%mob.unknown12]	A
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$18
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         set     0	[IX`mob+%mob.flags]
 @_1     ld      [IX`mob+%mob.width]	$06
@@ -21380,10 +21380,10 @@ unknown_9be8_process:                                                           
         ld      [IX`mob+%mob.X+1]	A
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$18
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
 @_3     xor     A`zero
@@ -21515,10 +21515,10 @@ mob_trap_flameThrower:                                                          
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$17
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -21657,10 +21657,10 @@ _9eb4:                                                                          
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $19
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
 	;
@@ -21679,10 +21679,10 @@ _9ec4:                                                                          
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $19
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -21961,10 +21961,10 @@ trap_electric_process:                                                          
         jr      nz	@_2
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx           $13
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_2     ld      HL      $0000
         ld      [$.TEMP6]	HL
@@ -22216,10 +22216,10 @@ unknown_a33c_process:                                                           
         ld      [IX`mob+%mob.unknown16] $00
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_3     ld      BC      @_a3b4
         ld      DE      @_a3bb
@@ -22308,10 +22308,10 @@ door_switch_process:                                                            
         ld      [HL]    A
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $1A
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         jr      @_4
         
@@ -22684,10 +22684,10 @@ boss_scrapbrain_process:                                                        
         call    \\gfx\loadPaletteOnInterrupt
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.boss1@index	;=$0B
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         set     0	[IX`mob+%mob.flags]
 @_1     bit     1	[IX`mob+%mob.flags]
@@ -22823,10 +22823,10 @@ boss_scrapbrain_process:                                                        
         set     4 	[IX`mob+%mob.flags]               	;set mob underwater
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       \\sound\music\pointers.actComplete@index	;=$09
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         ld      A               $A0
         ld      [$.D289]        A
@@ -22867,10 +22867,10 @@ boss_scrapbrain_process:                                                        
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $19
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -23156,10 +23156,10 @@ mob_badnick_bomb:                                                               
         ld      [IX`mob+%mob.type]      $FF                     ;remove mob?
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A       $1B
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         jr      @_8
         
@@ -23370,10 +23370,10 @@ trap_cannon_process:                                                            
         pop     IX
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$1C
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         ld      [IX`mob+%mob.unknown12]	$18
         ld      [IX`mob+%mob.unknown16]	$00
@@ -24330,10 +24330,10 @@ _b5c2:                                                                          
         pop     IX
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
 	;
 
@@ -24376,10 +24376,10 @@ boss_skybase_process:                                                           
         ld      [$.D2EC]	A`zero
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.boss3@index	;=$0D
 		rst     \\sound\rst_playMusic
-		;
+	.ENDIF
         
         set     4	[IY`vars+%vars.unknown0]
         set     0	[IX`mob+%mob.flags]
@@ -24528,12 +24528,12 @@ boss_skybase_process:                                                           
         res     4	[IY`vars+%vars.unknown0]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.scrapBrain@index	;=$04
 		rst     \\sound\rst_playMusic
 		ld      A	$21
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         ret
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -24568,10 +24568,10 @@ boss_skybase_process:                                                           
         ld      [HL]	$3F
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
 		
         ld      HL      $.D2EC
         inc     [HL]
@@ -25013,10 +25013,10 @@ boss_electricBeam_process:                                                      
         jr      nz	@_4
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$13
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_4     dec     [IX`mob+%mob.unknown11]
         ret     nz
@@ -25060,10 +25060,10 @@ boss_electricBeam_process:                                                      
         ret     nz
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A`sfx	$13
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
         ret
         
@@ -25283,10 +25283,10 @@ cutscene_final_process:                                                         
         set     6	[IY+%vars.unknown0]
         
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	\\sound\music\pointers.titleScreen@index	;=$06
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_2     ld      [IX`mob+%mob.width]     32
         ld      [IX`mob+%mob.height]    28
@@ -25340,10 +25340,10 @@ cutscene_final_process:                                                         
         ld      [IX`mob+%mob.unknown11]	$01
 	
 	;(we can compile with, or without, audio)
-	?( \\sound )
+	.IFDEF OPTION_AUDIO
 		ld      A	$01
 		rst     \\sound\rst_playSFX
-		;
+	.ENDIF
         
 @_4     call    _79fa
         bit     0	[IX`mob+%mob.flags]
