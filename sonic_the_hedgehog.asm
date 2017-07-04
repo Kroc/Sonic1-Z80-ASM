@@ -20,7 +20,7 @@ start:                                                                          
 rst_playMusic:                                                                                                  ;$0018
 ;=======================================================================================================================
 .ORG	$0018
-@params A`musicID
+;params A`musicID
         ;---------------------------------------------------------------------------------------------------------------
         jp      call_playMusic
 	;
@@ -35,7 +35,7 @@ rst_muteSound:                                                                  
 rst_playSFX:                                                                                                    ;$0028
 ;=======================================================================================================================
 .ORG	$0028
-@params A`sfxID
+;params A`sfxID
         ;---------------------------------------------------------------------------------------------------------------
         jp      call_playSFX
 	;
@@ -65,7 +65,7 @@ pause:                                                                          
 ```	Pressing the Pause button causes an interrupt and jumps to $0066.
 	```
 .ORG	$0066
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         di                                                      ;disable interrupts
@@ -86,7 +86,7 @@ pause:                                                                          
 
 interruptHandler:                                                                                               ;$0073
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         di                                                      ;disable interrupts during interrupt!
@@ -280,9 +280,9 @@ loadPaletteFromInterrupt:                                                       
 ;=======================================================================================================================
 ```	loads a palette using the parameters set first by 'loadPaletteOnInterrupt'.
 	```
-@PARAMS IY`vars                 ``Address of the common variables (used throughout)
-        $.LOADPALETTE_ADDRESS   ``Address to the palette data
-        $.LOADPALETTE_FLAGS     ;flags to load tile / sprite palettes or both
+;PARAMS IY`vars                 ``Address of the common variables (used throughout)
+;       $.LOADPALETTE_ADDRESS   ``Address to the palette data
+;       $.LOADPALETTE_FLAGS     ;flags to load tile / sprite palettes or both
         ;---------------------------------------------------------------------------------------------------------------
         
         ld      A`bank                  1
@@ -315,7 +315,7 @@ loadPaletteFromInterrupt:                                                       
 	
 _LABEL_1A0_18:                                                                                                  ;$01A0
 ;-----------------------------------------------------------------------------------------------------------------------
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         bit     7       [IY`vars+%vars.flags6]                  ;check the underwater flag
@@ -343,7 +343,7 @@ loadPaletteFromInterrupt_water:                                                 
 ;-----------------------------------------------------------------------------------------------------------------------
         ;called only from `loadPaletteFromInterrupt`
 
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         ;get the position of the water line on screen
@@ -395,8 +395,8 @@ loadPaletteFromInterrupt_water:                                                 
 	
 doRasterSplit:                                                                                                  ;$01F2
 ;-----------------------------------------------------------------------------------------------------------------------
-@params IY`vars         ``Address of the common variables (used throughout)
-        A`step          ;the raster split step number (counts down from 3)
+;params IY`vars         ``Address of the common variables (used throughout)
+;       A`step          ;the raster split step number (counts down from 3)
         
         ;step 1?
         cp      1
@@ -495,7 +495,7 @@ init:                                                                           
 ;=======================================================================================================================
 ```	Clear the RAM and configure the system.
 	```
-@return IY`vars         ``Address of the common variables (used throughout)
+;return IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         ;tell the SMS the cartridge has no RAM and to use ROM banking
@@ -562,7 +562,7 @@ call_playMusic:													;$02D7
 ```	Switch banks to the sound module and play the given song. The previous bank is restored afterwards.
 	The ;rst $18` instruction ends up here.
 	```
-@params A`songIndex     ``Index number of song to play
+;params A`songIndex     ``Index number of song to play
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
         push    AF`songIndex
@@ -606,7 +606,7 @@ call_playSFX:                                                                   
 ```	Switch banks to the sound module and play the given SFX. The previous bank is restored afterwards.
 	The ;rst $28` instruction ends up here.
 	```
-@params A`SFXIndex	``Index number of SFX to play
+;params A`SFXIndex	``Index number of SFX to play
         ;---------------------------------------------------------------------------------------------------------------
         di      
         push    AF`SFXIndex
@@ -655,7 +655,7 @@ waitForInterrupt:                                                               
 ```	A commonly used routine to essentially 'refresh the screen' by halting main execution until the interrupt
         handler has done its work.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
         ;test bit 0 of the IY parameter (IY=$D200)
@@ -668,7 +668,7 @@ waitForInterrupt:                                                               
 
 unused_0323:                                                                                                    ;$0323
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)        
+;params IY`vars         ``Address of the common variables (used throughout)        
         ;---------------------------------------------------------------------------------------------------------------
         set     2   [IY`vars+%vars.flags0]
         ld      [$.UNUSED_D225]         HL                      ;unused RAM location!
@@ -681,9 +681,9 @@ loadPaletteOnInterrupt:                                                         
 ;=======================================================================================================================
         ;implementation can be found in the interrupt module
         
-@params IY`vars         ``Address of the common variables (used throughout)
-        A`flags
-        HL`addr
+;params IY`vars         ``Address of the common variables (used throughout)
+;       A`flags
+;       HL`addr
 	;---------------------------------------------------------------------------------------------------------------
         set     3       [IY`vars+%vars.flags0]                  ;set the flag for the interrupt handler
         ;store the parameters
@@ -694,7 +694,7 @@ loadPaletteOnInterrupt:                                                         
 	
 updateVDPSprites:                                                                                               ;$033E
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)        
+;params IY`vars         ``Address of the common variables (used throughout)        
         ;---------------------------------------------------------------------------------------------------------------       
         ;sprite Y positions:
         
@@ -777,9 +777,9 @@ unused_0397:                                                                    
 ;=======================================================================================================================
         ;fill VRAM from memory?
         
-@params BC              ;number of bytes to copy
-        DE              ;VDP address
-        HL              ;memory location to copy from
+;params BC              ;number of bytes to copy
+;       DE              ;VDP address
+;       HL              ;memory location to copy from
         ;---------------------------------------------------------------------------------------------------------------
         di      
         ld      A                               E
@@ -803,9 +803,9 @@ unused_0397:                                                                    
 
 unused_03ac:                                                                                                    ;$03AC
 ;=======================================================================================================================
-@params A               ;bank number for page 1, A+1 will be used as the bank number for page 2
-        DE              ;VDP address
-        HL              ;?
+;params A               ;bank number for page 1, A+1 will be used as the bank number for page 2
+;       DE              ;VDP address
+;       HL              ;?
         ;---------------------------------------------------------------------------------------------------------------
         di
         push    AF
@@ -887,11 +887,11 @@ unused_03ac:                                                                    
 
 decompressArt:                                                                                                  ;$0405
 ;=======================================================================================================================
-@params A`bank          ``Bank number for the relative address HL
-        HL`dataAddr     ``Relative address from the beginning of the bank (A) to the art data
-        D`VDPRegister   ``VDP register number to set
-        E`VDPData       ``VDP data value to send to VDP register in D
-        IY`vars         ``Address of the common variables (used throughout)
+;params A`bank          ``Bank number for the relative address HL
+;       HL`dataAddr     ``Relative address from the beginning of the bank (A) to the art data
+;       D`VDPRegister   ``VDP register number to set
+;       E`VDPData       ``VDP data value to send to VDP register in D
+;       IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
         
@@ -1196,9 +1196,9 @@ decompressScreen:                                                               
 ```	A screen layout is compressed using RLE (run-length-encoding). any byte that there are multiple of in a row
         are listed as two repeating bytes, followed by another byte specifying the remaining number of times to repeat.
 	```
-@params BC              ;length of the compressed data
-        DE              ;VDP register number (D) and value byte (E) to send to the VDP
-        HL              ;absolute address to the start of the compressed screen data
+;params BC              ;length of the compressed data
+;       DE              ;VDP register number (D) and value byte (E) to send to the VDP
+;       HL              ;absolute address to the start of the compressed screen data
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
         
@@ -1310,12 +1310,12 @@ decompressScreen:                                                               
 
 loadPalette:                                                                                                    ;$0566
 ;=======================================================================================================================
-@params A`flags         ;which palette(s) to set
-                        ;bit 0 - tile palette (0-15)
-                        ;bit 1 - sprite palette (16-31)
-        HL`addr         ;address of palette
-@return $.LOADPALETTE_TILE
-        $.LOADPALETTE_SPRITE
+;params A`flags         ;which palette(s) to set
+;                       ;bit 0 - tile palette (0-15)
+;                       ;bit 1 - sprite palette (16-31)
+;       HL`addr         ;address of palette
+;return $.LOADPALETTE_TILE
+;       $.LOADPALETTE_SPRITE
         ;---------------------------------------------------------------------------------------------------------------
         push    AF`flags
         
@@ -1366,9 +1366,9 @@ clearVRAM:                                                                      
 	```
         ;called only by `init`
         
-@params HL`addr         ;VRAM address
-        BC`size         ;length
-        A`value         ;value
+;params HL`addr         ;VRAM address
+;       BC`size         ;length
+;       A`value         ;value
         ;---------------------------------------------------------------------------------------------------------------
         ld      E`value             A`value                     ;temporarily shift the value to E
         ld      A                   L
@@ -1389,8 +1389,8 @@ clearVRAM:                                                                      
 	
 readJoypad:                                                                                                     ;$05A7
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
-@return $.VARS.joypad
+;params IY`vars         ``Address of the common variables (used throughout)
+;return $.VARS.joypad
         ;---------------------------------------------------------------------------------------------------------------
         
         in      A`joypad        [%sms.ports.joy.a]              ;read the joypad port
@@ -1402,8 +1402,8 @@ readJoypad:                                                                     
 
 print:                                                                                                          ;$05AF
 ;=======================================================================================================================
-@params HL`addr         ``Address to memory with column & row numbers,
-                        ``then text data terminated with $FF
+;params HL`addr         ``Address to memory with column & row numbers,
+;                       ``then text data terminated with $FF
         ;---------------------------------------------------------------------------------------------------------------
         ;get the column number
         ld      C       [HL]
@@ -1466,7 +1466,7 @@ hideSprites:                                                                    
 ;=======================================================================================================================
 ```	Moves all hardware sprites off-screen.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;get the address of the game's main sprite table
         ld      HL`table        $.SPRITETABLE
@@ -1500,13 +1500,13 @@ multiply:                                                                       
 ;=======================================================================================================================
 ```	Multiplies input HL by C
 	```
-@params HL              ``The starting value
-        C               ``The number to multiply by (i.e. HL × C)
-@return HL`result       ``The value after multiplication
-        DE              ``Is clobbered with the starting value
-        A               ``Set to 0
-        B               ``Set to 0 due to countdown loop
-        C               ``The last bit of input C, 0 or 1
+;params HL              ``The starting value
+;       C               ``The number to multiply by (i.e. HL × C)
+;return HL`result       ``The value after multiplication
+;       DE              ``Is clobbered with the starting value
+;       A               ``Set to 0
+;       B               ``Set to 0 due to countdown loop
+;       C               ``The last bit of input C, 0 or 1
         ;---------------------------------------------------------------------------------------------------------------
         
         xor     A`zero                                          ;set A to 0
@@ -1531,11 +1531,11 @@ multiply:                                                                       
 _LABEL_60F_111:                                                                                                 ;$060F
 ;=======================================================================================================================
         ;convert to decimal? (used by Map & Act Complete screens for the lives number)
-@params C               ;always 10 - base?
-        HL              ;always number of lives
-        DE              ;e.g. 60 ($3C)
-@return DE
-        HL
+;params C               ;always 10 - base?
+;       HL              ;always number of lives
+;       DE              ;e.g. 60 ($3C)
+;return DE
+;       HL
         ;---------------------------------------------------------------------------------------------------------------
         
         xor     A`zero                                          ;set A to 0
@@ -1620,7 +1620,7 @@ updateVDPscroll:                                                                
 ```	Checks if the camera has moved and updates the VDP scroll register cache accordingly
         (this is then written to the VDP during the interrupt routine).
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;fill B with vertical and C with horizontal VDP scroll values
         ld      BC`vdpScroll    [$.VDPSCROLL_HORZ]
@@ -1725,7 +1725,7 @@ fillOverscrollCache:                                                            
 ```	This fills in the cache of the overscroll area so that when the screen scrolls onto new tiles,
         they can be copied across in a fast and straight-forward fashion.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;scrolling enabled??
         ;TODO: this could be located at the call site (macro?) to avoid the wasted `call`+`ret`
@@ -1960,7 +1960,7 @@ fillScrollTiles:                                                                
 ;=======================================================================================================================
 ```	Fills in new tiles when the screen has scrolled.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         bit     0       [IY`vars+%vars.flags2]
         jp      z       ._4
@@ -2159,7 +2159,7 @@ getFloorLayoutRAMPosition:                                                      
 ;=======================================================================================================================
 ```	Converts block X & Y co-ords into an address in the Floor Layout in RAM.
 	```
-@params BC              ;a flag, $0000 or $0001 depending on callee? I think this is an "offset"
+;params BC              ;a flag, $0000 or $0001 depending on callee? I think this is an "offset"
         ;---------------------------------------------------------------------------------------------------------------
         ;get the low-byte of the width of the level in blocks. many levels are 256 blocks wide,
         ;ergo have a FloorWidth of $0100, making the low-byte $00
@@ -2438,8 +2438,8 @@ loadFloorLayout:                                                                
 ;=======================================================================================================================
         ;NOTE: called only by `loadLevel`
         
-@params HL`addr         ;address of Floor Layout data
-        BC`size         ;length of compressed data
+;params HL`addr         ;address of Floor Layout data
+;       BC`size         ;length of compressed data
         ;---------------------------------------------------------------------------------------------------------------
         ld      DE`floor        $.FLOORLAYOUT                   ;where in RAM the floor layout will go
 
@@ -2495,7 +2495,7 @@ fadeOut:                                                                        
 ;=======================================================================================================================
 ```	Fades the screen to black.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;switch in the default set of banks as palette data is primarily in bank 0 & 1, 
         ;though I am not certain about bank 2 (where the majority of the mob code is)
@@ -2553,9 +2553,9 @@ darkenPalette:                                                                  
 ;=======================================================================================================================
         ;fades a palette one step darker
         
-@params HL              ;source palette address
-        DE              ;destination palette address (RAM)
-        B               ;length of palette (16)
+;params HL              ;source palette address
+;       DE              ;destination palette address (RAM)
+;       B               ;length of palette (16)
         ;---------------------------------------------------------------------------------------------------------------
         ;NOTE: SMS colours are in the format: 00BBGGRR
         
@@ -2590,8 +2590,8 @@ darkenPalette:                                                                  
 	
 _aae:                                                                                                           ;$0AAE
 ;=======================================================================================================================
-@params HL
-        IY`vars         ``Address of the common variables (used throughout)
+;params HL
+;       IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      [$.TEMP6]       HL
         
@@ -2704,7 +2704,7 @@ _aae:                                                                           
 	
 _b50:                                                                                                           ;$0B50
 ;=======================================================================================================================
-@params HL`addr         ``Address of a palette
+;params HL`addr         ``Address of a palette
         ;---------------------------------------------------------------------------------------------------------------
         ld      [$.TEMP6]       HL                              ;put the palette parameter aside
         ld      HL      $.PALETTE                               ;RAM cache of current palette
@@ -2720,8 +2720,8 @@ _b50:                                                                           
 	
 _b60:                                                                                                           ;$0B60
 ;=======================================================================================================================
-@params HL
-        IY`vars         ``Address of the common variables (used throughout)
+;params HL
+;       IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      [$.TEMP6]       HL
         
@@ -2825,11 +2825,11 @@ _b60:                                                                           
 	
 getLevelBitFlag:                                                                                                ;$0C02
 ;=======================================================================================================================
-@params HL              ;an address to a series of 19 bits, one for each level
-                        ;$.D305+: set by life monitor
-                        ;$.D30B+: set by emerald
-                        ;$.D311+: set by continue monitor
-                        ;$.D317+: set by switch
+;params HL              ;an address to a series of 19 bits, one for each level
+;                       ;$.D305+: set by life monitor
+;                       ;$.D30B+: set by emerald
+;                       ;$.D311+: set by continue monitor
+;                       ;$.D317+: set by switch
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.CURRENT_LEVEL]
         ld      C       A
@@ -2865,9 +2865,9 @@ loadPowerUpIcon:                                                                
 ;=======================================================================================================================
         ;copy power-up icon into sprite VRAM
         
-@params HL              ;absolute address to uncompressed art data for the icons,
-                        ;assuming that slot 1 ($4000-$7FFF) is loaded with bank 5
-                        ;($14000-$17FFF)
+;params HL              ;absolute address to uncompressed art data for the icons,
+;                       ;assuming that slot 1 ($4000-$7FFF) is loaded with bank 5
+;                       ;($14000-$17FFF)
         ;---------------------------------------------------------------------------------------------------------------
         di
         ld      A`bank                  5
@@ -2915,7 +2915,7 @@ _LABEL_C52_106:                                                                 
 ;=======================================================================================================================
         ;map screen?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;reset horizontal / vertical hardware scroll, the map screen doesn't scroll
         xor     A`zero                                          ;set A to 0
@@ -3171,7 +3171,7 @@ _0dd9:                                                                          
 ;=======================================================================================================================
         ;referenced by table at $1201
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL              $0000
         ld      [$.TEMP1]       HL
@@ -3217,7 +3217,7 @@ _0e24:                                                                          
 ;=======================================================================================================================
         ;referenced by table at $1201
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      HL              $0000
         ld      [$.TEMP1]       HL
@@ -3244,7 +3244,7 @@ _0e4b:                                                                          
 ;=======================================================================================================================
         ;referenced by table at $1201
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL              $0000
         ld      [$.TEMP1]       HL
@@ -3289,8 +3289,8 @@ _0e82:                                                                          
 
 _LABEL_E86_110:                                                                                                 ;$0E86
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
-        $.TEMP1
+;params IY`vars         ``Address of the common variables (used throughout)
+;       $.TEMP1
         ;---------------------------------------------------------------------------------------------------------------
         push    HL  DE  BC
         
@@ -3346,7 +3346,7 @@ _0edd:                                                                          
 ;=======================================================================================================================
         ;something to do with constructing the sprites on the map screen?
         
-@params BC
+;params BC
         ;---------------------------------------------------------------------------------------------------------------
         push    HL  DE
         
@@ -3820,7 +3820,7 @@ S1_ZoneTitles:                                                                  
 
 titleScreen:                                                                                                    ;$1287
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;turn off screen
         ld      A       [$.VDPREGISTER_1]
@@ -4018,7 +4018,7 @@ _1401:                                                                          
 ;=======================================================================================================================
         ;Act Complete screen?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;--------------------------------------------------------------------------------------------------------------- 
         ;turn off the screen
         ld      A       [$.VDPREGISTER_1]
@@ -4190,7 +4190,7 @@ _155e:                                                                          
 ;=======================================================================================================================
         ;Act Complete screen?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.CURRENT_LEVEL]
         cp      19
@@ -4455,7 +4455,7 @@ _1711:                                                                          
 
 _1719:                                                                                                          ;$1719
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         xor     A`zero                                          ;set A to 0
         ld      [$.RINGS]       A`zero                          ;set ring-count to 0
@@ -4470,7 +4470,7 @@ _1726:                                                                          
 ;=======================================================================================================================
         ;called by Act Complete screen?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      HL      $.D284
         inc     [HL]
@@ -4659,7 +4659,7 @@ _172f:                                                                          
 
 _1860:                                                                                                          ;$1860
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         push    BC
         
@@ -4942,7 +4942,7 @@ _1a14:                                                                          
 
 _1a18:                                                                                                          ;$1A18
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IY`vars+%vars.spriteUpdateCount]       $00
         ld      HL      $.SPRITETABLE
@@ -5154,7 +5154,7 @@ _1bad:                                                                          
 ;=======================================================================================================================
         ;Demo playback??
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      HL      [$.D2B5]
         ld      DE      ._1bc6
@@ -5186,7 +5186,7 @@ _1bad:                                                                          
 
 _LABEL_1C49_62:                                                                                                 ;$1C49
 ;=======================================================================================================================
-@params IY`vars        ``Address of the common variables (used throughout)
+;params IY`vars        ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;set bit 0 of the parameter address (IY=$D200);
         ``waitForInterrupt` will pause until an interrupt event switches bit 0 of $D200 on
@@ -5282,9 +5282,9 @@ _LABEL_1C49_62:                                                                 
 	
 fillMemoryWithValue:                                                                                            ;$1CE8
 ;=======================================================================================================================
-@params HL`addr         ;memory address
-        B`count         ;number of bytes to fill
-        A`value         ;which value to fill with
+;params HL`addr         ;memory address
+;       B`count         ;number of bytes to fill
+;       A`value         ;which value to fill with
         ;---------------------------------------------------------------------------------------------------------------
         ld      [HL`addr]       A`value
         inc     HL`addr
@@ -5297,7 +5297,7 @@ _LABEL_1CED_131:                                                                
 ;=======================================================================================================================
         ;start level? (could be main gameplay loop)
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
         ld      A`bank                  5
@@ -5564,7 +5564,7 @@ _1e9e:                                                                          
 ;=======================================================================================================================
         ;demo mode?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         bit     1       [IY`vars+%vars.scrollRingFlags]
         ret     nz
@@ -5790,7 +5790,7 @@ _1fa5:                                                                          
 
 _1fa9:                                                                                                          ;$1FA9
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         dec     A
         ld      [$.D289]        A
@@ -5915,7 +5915,7 @@ add10Rings:                                                                     
 
 _203f:                                                                                                          ;$203F
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;(we can compile with, or without, audio)
 	?( \\sound )
@@ -5938,7 +5938,7 @@ _2047:                                                                          
 
 _2067:                                                                                                          ;$2067
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;wait until the water raster effect has finished its work (it requires three interrupts to produce)
         ld      A       [$.RASTERSPLIT_STEP]
@@ -5978,8 +5978,8 @@ _20b8:                                                                          
 	
 loadLevel:                                                                                                      ;$20CB
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
-        HL`header       ``Address of the level header
+;params IY`vars         ``Address of the common variables (used throughout)
+;       HL`header       ``Address of the level header
         ;---------------------------------------------------------------------------------------------------------------
         ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
         
@@ -6554,7 +6554,7 @@ loadMobList:                                                                    
 ;=======================================================================================================================
 ```	Reads in a list of mob IDs and their positions within the level.
 	```
-@params HL              ``Address of a mob layout list
+;params HL              ``Address of a mob layout list
         ;---------------------------------------------------------------------------------------------------------------
         ;NOTE: $.D2F2 is used only here -- perhaps a regular temp variable could be used
         
@@ -6605,12 +6605,12 @@ loadMobList:                                                                    
 
 loadMobFromList:												;$235E
 ;=======================================================================================================================
-@params IX`mob          ``Address of the mob structure to be setup
-        A               ``Mob type
-        HL`mobLayout	``address with the X & Y byte Block-positions of the mob on the Floor
-	DE`mobSize	``size of the mob structure (to skip to the next one)
-@return	IX`mob		``IX will be updated to be pointing to the next mob structure in RAM
-	HL`mobLayout	``The pointer to the mob layout list will have been moved forward to the next mob in the list
+;params IX`mob          ``Address of the mob structure to be setup
+;       A               ``Mob type
+;       HL`mobLayout	``address with the X & Y byte Block-positions of the mob on the Floor
+;	DE`mobSize	``size of the mob structure (to skip to the next one)
+;return	IX`mob		``IX will be updated to be pointing to the next mob structure in RAM
+;	HL`mobLayout	``The pointer to the mob layout list will have been moved forward to the next mob in the list
         ;--------------------------------------------------------------------------------------------------------------- 
         ld      [IX`mob+%mob.type]      A`mobType		;set the mob type
         
@@ -6838,7 +6838,7 @@ _2405:                                                                          
 
 _LABEL_258B_133:                                                                                                ;$258B
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.VDPREGISTER_1]
         and     %10111111
@@ -7076,7 +7076,7 @@ _LABEL_258B_133:                                                                
 
 _2718:                                                                                                          ;$2718
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         push    AF  HL  DE  BC
 ._1     push    BC
@@ -7110,8 +7110,8 @@ waitFrames:                                                                     
 ;=======================================================================================================================
 ```	Wait a given number of frames.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
-        BC`count        ``Number of frames to wait
+;params IY`vars         ``Address of the common variables (used throughout)
+;       BC`count        ``Number of frames to wait
         ;---------------------------------------------------------------------------------------------------------------
         push    BC`count
         
@@ -7138,7 +7138,7 @@ _275a:                                                                          
 ;=======================================================================================================================
         ;called only by _2718
         
-@params HL`addr
+;params HL`addr
         ;---------------------------------------------------------------------------------------------------------------
         ld      E       [HL]                                    ;E = $.D322 ($48)
         inc     HL
@@ -7855,7 +7855,7 @@ refresh:													;$2E5A
 ```	Updates the game display -- refreshes the lives & time display,
 	updates the camera and processes all the mobs in the level.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;do not update the Sonic sprite frame (upon Interrupt)
         res     7       [IY`vars+%vars.timeLightningFlags]
@@ -8061,7 +8061,7 @@ mobs_updateCamera:                                                              
 ;=======================================================================================================================
         ;called only by "refresh"
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;if scrolling is locked, do nothing
         ;TODO: we could do this test at the call site instead and avoid the wasted call/ret?
@@ -8785,7 +8785,7 @@ processMobs:													;$392B
 ;=======================================================================================================================
 ```	Runs the code for each of the mobs in memory.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;starting from $D37E (we skip Sonic), read pointers until a non-zero one is found,
         ;or 31 pointers have been read
@@ -8828,7 +8828,7 @@ processMobs:													;$392B
 
 processMob:													;$32C8
 ;=======================================================================================================================
-@params DE              ``Address of a mob structure
+;params DE              ``Address of a mob structure
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`type  [DE`mobAddr]                            ;get mob from the list
         cp      $FF                                             ;ignore mob type $FF
@@ -8868,7 +8868,7 @@ postProcessMob:													;$32E2
 ```	Once a mob has run its personal code, this routine handles things that all mobs share,
         such as moving the mob and collision with Sonic.
 ```
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;move mob:
         
@@ -9269,11 +9269,11 @@ processSpriteLayout:                                                            
 ```	Puts a mob on screen, combining multiple hardware sprites using a Sprite Layout - a list of sprites to arrange
         in a maximum 6 x 4 layout (note that each hardware sprite is 8 x 16, giving a maximum mob size of 48 x 64)
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
-        HL`xPos         ``X-position to place sprite layout on screen
-        D               ;?? (some kind of control flag)
-        E`ypos          ``Y-position to place sprite layout on screen
-        BC`layoutDat    ``Address of a sprite layout
+;params IY`vars         ``Address of the common variables (used throughout)
+;       HL`xPos         ``X-position to place sprite layout on screen
+;       D               ;?? (some kind of control flag)
+;       E`ypos          ``Y-position to place sprite layout on screen
+;       BC`layoutDat    ``Address of a sprite layout
         ;---------------------------------------------------------------------------------------------------------------
         ;store the X-position of the sprite for aligning the rows
         ld      [$.TEMP6]       HL`xpos
@@ -9404,11 +9404,11 @@ processSpriteLayout:                                                            
 	
 _3581:                                                                                                          ;$3581
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
-        $.TEMP3         ;y-position of some kind
-        $.TEMP6         ;y-position of some kind
-        $.TEMP1         ;x-position of some kind
-        $.TEMP4         ;x-position of some kind
+;params IY`vars         ``Address of the common variables (used throughout)
+;       $.TEMP3         ;y-position of some kind
+;       $.TEMP6         ;y-position of some kind
+;       $.TEMP1         ;x-position of some kind
+;       $.TEMP4         ;x-position of some kind
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL      [$.TEMP3]
         ld      BC      [$.TEMP6]
@@ -9464,11 +9464,11 @@ layoutSpritesHorizontal:                                                        
 ```     Places a set of sprites next to each other, dictated by a small data stream of indices, with $FE to leave a
         blank space and $FF to terminate. This routine is typically used to place text and numbers on screen.
 	```
-@params IY`vars         ``Address of the common variables (used throughout)
-        B`ypos
-        C`xpos
-        HL`addr         ;($.SPRITETABLE_ADDR)  
-        DE`data         ;$.LAYOUT_BUFFER : $A0, $A2, $A4, ($80 + $.LIVES * 2), $FF
+;params IY`vars         ``Address of the common variables (used throughout)
+;       B`ypos
+;       C`xpos
+;       HL`addr         ;($.SPRITETABLE_ADDR)  
+;       DE`data         ;$.LAYOUT_BUFFER : $A0, $A2, $A4, ($80 + $.LIVES * 2), $FF
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`tileIndex, [DE`data]				;check the current byte in the list
         cp      $FF                                             ;is it an end marker? ($FF)
@@ -9496,7 +9496,7 @@ layoutSpritesHorizontal:                                                        
 	
 hitPlayer:                                                                                                      ;$35E5
 ;=======================================================================================================================
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         bit     0   [IY`vars+%vars.scrollRingFlags]             ;is the player already dead?
         ret     nz                                              ;if so, leave now
@@ -9565,9 +9565,9 @@ dropRings:                                                                      
 ;=======================================================================================================================
         ;lose rings!
         
-@params IX`mob          ``Address of the current mob being processed
-        IY`vars         ``Address of the common variables (used throughout)
-        HL              ;?
+;params IX`mob          ``Address of the current mob being processed
+;       IY`vars         ``Address of the common variables (used throughout)
+;       HL              ;?
         ;---------------------------------------------------------------------------------------------------------------
         ;set player's ring-count to 0
         xor     A`zero
@@ -9633,10 +9633,10 @@ dropRings:                                                                      
 
 _36be:                                                                                                          ;$36BE
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
-        ;TODO: could we use BC/DE as parameters instead of RAM addresses?
-        $.TEMP1         ``An X-offset to place the explosion in the right place
-        $.TEMP2         ``A Y-offset to place the explosion in the right place
+;params IX`mob          ``Address of the current mob being processed
+;       ;TODO: could we use BC/DE as parameters instead of RAM addresses?
+;       $.TEMP1         ``An X-offset to place the explosion in the right place
+;       $.TEMP2         ``A Y-offset to place the explosion in the right place
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.type]  $0A                         ;change mob to explosion
         
@@ -9688,10 +9688,10 @@ getFloorLayoutRAMAddressForMob:                                                 
 ```	Retrieves an address in the Floor Layout in RAM based on the given mob's position.
         Note that each byte in the Floor Layout represents a 32x32 block (4x4 tiles).
 ```
-@params IX`mob          ``Address of the mob to process
-        BC`xOffset      ``Horizontal pixel offset to add to the mob's X position before locating tile
-        DE`yOffset      ``Vertical pixel offset to add to the mob's Y position before locating tile
-@return HL`addr         ``An address within the Floor Layout in RAM
+;params IX`mob          ``Address of the mob to process
+;       BC`xOffset      ``Horizontal pixel offset to add to the mob's X position before locating tile
+;       DE`yOffset      ``Vertical pixel offset to add to the mob's Y position before locating tile
+;return HL`addr         ``An address within the Floor Layout in RAM
         ;---------------------------------------------------------------------------------------------------------------
         ;how wide is the floor layout?
         ;TODO: we could do this check when loading a level and store the exact label to jump-to in RAM
@@ -9875,7 +9875,7 @@ updateSonicSpriteFrame:                                                         
 ;=======================================================================================================================
 ```	Copy the current Sonic animation frame into VRAM.
 ```
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      DE`frameCurrent [$.SONIC_CURRENT_FRAME]
         ld      HL`framePrev    [$.SONIC_PREVIOUS_FRAME]
@@ -10152,11 +10152,11 @@ detectCollisionWithSonic:                                                       
 ;=======================================================================================================================
 ```	Tests to see if the given mob has collided with Sonic.
 ```
-@params IX`mob          ``Address of the current mob being processed
-        IY`vars         ``Address of the common variables (used throughout)
-        $.TEMP6         ``Left indent of the mob, in pixels
-        $.TEMP7         ``Top indent of the mob, in pixels
-@return AF`carry        ``Carry flag is clear if collision, otherwise set
+;params IX`mob          ``Address of the current mob being processed
+;       IY`vars         ``Address of the common variables (used throughout)
+;       $.TEMP6         ``Left indent of the mob, in pixels
+;       $.TEMP7         ``Top indent of the mob, in pixels
+;return AF`carry        ``Carry flag is clear if collision, otherwise set
         ;---------------------------------------------------------------------------------------------------------------
         ;is Sonic dead? (no collision detection)
         bit     0   [IY`vars+%vars.scrollRingFlags]
@@ -10240,7 +10240,7 @@ increaseRings:                                                                  
 ;=======================================================================================================================
         ;NOTE: why does this not just use DAA?
 	
-@params A`count         ``Number of rings to add
+;params A`count         ``Number of rings to add
         ;---------------------------------------------------------------------------------------------------------------
         ;add the given number to the total ring count
         ld      C`count         A`count
@@ -10296,9 +10296,9 @@ increaseRings:                                                                  
 
 increaseScore:                                                                                                  ;$39D8
 ;=======================================================================================================================
-@params C`thousands     ``Thousands to add to the score
-        D`hundreds      ``Hundreds to add to the score
-        E`tens          ``Tens to add to the score 
+;params C`thousands     ``Thousands to add to the score
+;       D`hundreds      ``Hundreds to add to the score
+;       E`tens          ``Tens to add to the score 
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL`score        $.SCORE_TENS                    ;read the tens unit of the score
         ld      A`tens          E`tens                          ;handle the amount to add
@@ -10358,7 +10358,7 @@ updateTime:                                                                     
 ;=======================================================================================================================
         ;called only by `_LABEL_1CED_131`; main game loop?
         
-@params IY`vars         ``Address of the common variables (used throughout)
+;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;is Sonic dead? if so, exit now
         bit     0   [IY`vars+%vars.scrollRingFlags]
@@ -10880,8 +10880,8 @@ Unknown:                                                                        
 	
 sonic_process:                                                                                                  ;$49C8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
-        IY`vars         ``Address of the common variables (used throughout)
+;params IX`mob          ``Address of the current mob being processed
+;       IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         res     1	[IY`vars+%vars.unknown0]
         
@@ -13571,7 +13571,7 @@ sonic_process:                                                                  
 
 powerUps_ring_process:                                                                                          ;$5B09
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13675,7 +13675,7 @@ powerUps_ring_process:                                                          
 
 powerUps_speed_process:                                                                                                        ;$5BD9
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13705,7 +13705,7 @@ powerUps_speed_process:                                                         
 
 powerUps_life_process:                                                                                                        ;$5C05
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13830,7 +13830,7 @@ powerUps_life_process:                                                          
 
 powerUps_shield_process:                                                                                                        ;$5CD7
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13853,7 +13853,7 @@ powerUps_shield_process:                                                        
 
 powerUps_invincibility_process:                                                                                                        ;$5CFF
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]	20
         ld      [IX`mob+%mob.height]	24
@@ -13886,7 +13886,7 @@ powerUps_invincibility_process:                                                 
 
 powerUps_checkpoint_process:                                                                                                        ;$5D2F
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13937,7 +13937,7 @@ powerUps_checkpoint_process:                                                    
 
 powerUps_continue_process:                                                                                                        ;$5D80
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     20
         ld      [IX`mob+%mob.height]    24
@@ -13960,7 +13960,7 @@ powerUps_continue_process:                                                      
 
 _5da8:                                                                                                          ;$5DA8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         bit     0       [IX`mob+%mob.flags]
         ret     nz
@@ -14000,7 +14000,7 @@ _5da8:                                                                          
 
 _5deb:                                                                                                          ;$5DEB
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL              $0804
         ld      [$.TEMP1]       HL
@@ -14100,7 +14100,7 @@ _5deb:                                                                          
 	
 powerUps_emerald_process:                                                                                                        ;$5EA2
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL      $.D30B
         call    \\levels.load\getLevelBitFlag
@@ -14169,7 +14169,7 @@ powerUps_emerald_process:                                                       
 
 boss_endSign_process:                                                                                               		;$5F17
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     24
         ld      [IX`mob+%mob.height]    48
@@ -14794,7 +14794,7 @@ paletteData:                                                                    
 
 badnick_crabmeat_process:                                                                                           		;$65EE
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
@@ -14973,7 +14973,7 @@ badnick_crabmeat_process:                                                       
 
 platform_swinging_process:                                                                                          		;$673C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         
@@ -15222,7 +15222,7 @@ spriteLayouts:                                                                  
 
 explosion_process:                                                                                                  	;$693F
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         
@@ -15319,7 +15319,7 @@ explosion_process:                                                              
 
 platform_sinking_process:                                                                                                   	;$69E9
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         
@@ -15369,7 +15369,7 @@ platform_sinking_process:                                                       
 
 platform_falling_process:                                                                                            		;$6A47
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      A	[IX`mob+%mob.unknown16]
@@ -15427,7 +15427,7 @@ platform_falling_process:                                                       
 
 unknown_6ac1_process:													;$6AC1
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	2
@@ -15518,7 +15518,7 @@ unknown_6ac1_process:													;$6AC1
 
 badnick_buzzbomber_process:                                                                                         		;$6B74
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         
@@ -15737,7 +15737,7 @@ badnick_buzzbomber_process:                                                     
 
 platform_moving_process:                                                                                         		;$6D65
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5   	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         
@@ -15829,7 +15829,7 @@ badnick_motobug_process:                                                        
 ;=======================================================================================================================
 ```	AI for the Motobug Badnick
 	```
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;this mob adheres to the floor
         ;TODO: this shouldn't need to be done every frame?
@@ -16058,7 +16058,7 @@ badnick_motobug_spriteLayout:                                                   
 
 badnick_newtron_process:                                                                                            		;$6F08
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5                   [IX`mob+%mob.flags]     	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]     12
@@ -16182,7 +16182,7 @@ badnick_newtron_process:                                                        
 
 boss_greenHill_process:                                                                                             		;$700C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]              	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	32
@@ -16477,7 +16477,7 @@ bossPalette:                                                                    
 
 boss_capsule_process:                                                                                               		;$732C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -16743,7 +16743,7 @@ boss_capsule_process:                                                           
 
 boss_freeBird_process:                                                                                              		;$7594
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         res     5                   [IX`mob+%mob.flags]     	;mob adheres to the floor
         ld      [IX`mob+%mob.width]     12
@@ -16844,7 +16844,7 @@ boss_freeBird_process:                                                          
 
 boss_freeRabbit_process:                                                                                                        ;$7699
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         res     5	[IX`mob+%mob.flags]     		;mob adheres to the floor
 	
@@ -16973,7 +16973,7 @@ _77be:                                                                          
 ;=======================================================================================================================
         ;called by the boss mob code -- probably the exploded egg ship
 
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [$.D2EC]
         cp      $08
@@ -17213,7 +17213,7 @@ _79fa:                                                                          
 ;=======================================================================================================================
         ;called by green hill boss, jungle boss and final animation
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      A       [IX`mob+%mob.Xspeed+0]
         or      [IX`mob+%mob.Xspeed+1]
@@ -17248,7 +17248,7 @@ _7a3a:                                                                          
 ;=======================================================================================================================
         ;called by `_77be`, capsule and final animation
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         call    findEmptyMob
         ret     c
@@ -17306,7 +17306,7 @@ _7a3a:                                                                          
 	
 meta_trip_process:                                                                                                  	;$7AA7
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	64
@@ -17346,7 +17346,7 @@ meta_trip_process:                                                              
 
 flower_process:                                                                                                     	;$7AED
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -17416,7 +17416,7 @@ flower_process:                                                                 
 
 meta_blink_process:													;$7B95
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         set     0	[IY`vars+%vars.flags9]
@@ -17500,9 +17500,9 @@ meta_blink_process:													;$7B95
 
 _7c41:                                                                                                          ;$7C41
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
-        DE              ;e.g. $7DE1
-        BC              ;e.g. $7DDC
+;params IX`mob          ``Address of the current mob being processed
+;       DE              ;e.g. $7DE1
+;       BC              ;e.g. $7DDC
         ;---------------------------------------------------------------------------------------------------------------
         ld      L       [IX`mob+%mob.unknown17]
 
@@ -17546,9 +17546,9 @@ findEmptyMob:                                                                   
 ```	Search through the mob storage and find the first empty mob slot available
         (this is used when spawning new mobs, such as bullets).
 ```
-@return AF              ``carry is set if no mob was found
-        B               ``mob slot index number (0-31)
-        HL              ``address of the empty mob slot selected
+;return AF              ``carry is set if no mob was found
+;       B               ``mob slot index number (0-31)
+;       HL              ``address of the empty mob slot selected
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL      $.MOBS
         ld      DE      %mob.size
@@ -17569,8 +17569,8 @@ _7c8c:                                                                          
 ;=======================================================================================================================
         ;used by bosses to lock the screen?
         
-@params HL       
-        DE
+;params HL       
+;       DE
         ;---------------------------------------------------------------------------------------------------------------
         ld      [$.CAMERA_X_GOTO]       HL
         ld      [$.CAMERA_Y_GOTO]       DE
@@ -17605,8 +17605,8 @@ _7ca6:                                                                          
 
 _LABEL_7CC1_12:                                                                                                 ;$7CC1
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
-        D               ;bit 7 sets A to $FF instead of 0 -- direction?
+;params IX`mob          ``Address of the current mob being processed
+;       D               ;bit 7 sets A to $FF instead of 0 -- direction?
         ;---------------------------------------------------------------------------------------------------------------
         bit     6       [IY`vars+%vars.flags6]
         ret     nz
@@ -17644,7 +17644,7 @@ _LABEL_7CC1_12:                                                                 
 	
 badnick_chopper_process:                                                                                            		;$7CF6
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;mob does not collide with the floor
         set     5       [IX`mob+%mob.flags]
@@ -17777,7 +17777,7 @@ mob_platform_fallVert:                                                          
 ;=======================================================================================================================
         ;log - vertical (Jungle)
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         
@@ -17845,7 +17845,7 @@ mob_platform_fallHoriz:                                                         
 ;=======================================================================================================================
         ;log - horizontal (Jungle)
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               ;mob does not collide with the floor
         
@@ -17879,7 +17879,7 @@ mob_platform_roll:                                                              
 ;=======================================================================================================================
         ;log - floating (Jungle)
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         ld      [IX`mob+%mob.width]     $0A
@@ -18027,7 +18027,7 @@ mob_platform_roll_continue:                                                     
 	
 boss_jungle_process:                                                                                                	;$8053
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	32
@@ -18224,7 +18224,7 @@ boss_jungle_process:                                                            
 
 unknown_8218_process:													;$8218
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         res     5	[IX`mob+%mob.flags]               	;mob adheres to the floor
         ld      [IX`mob+%mob.width]	12
@@ -18324,7 +18324,7 @@ unknown_8218_process:													;$8218
 
 badnick_yadrin_process:                                                                                             		;$82E6
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     16
         ld      [IX`mob+%mob.height]    15
@@ -18405,7 +18405,7 @@ badnick_yadrin_process:                                                         
 
 platform_bridge_process:                                                                                            		;$83C1
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	14
@@ -18507,7 +18507,7 @@ platform_bridge_process:                                                        
 
 mob_boss_bridge:                                                                                                ;$8496
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         ld      [IX`mob+%mob.width]     30
@@ -18681,7 +18681,7 @@ _85d1:                                                                          
 ;=======================================================================================================================
         ;called by bridge & labyrinth boss
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         push    BC
         call    findEmptyMob
@@ -18757,7 +18757,7 @@ _865a:                                                                          
 
 platform_balance_process:                                                                                           		;$866C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -18987,7 +18987,7 @@ platform_balance_process:                                                       
 
 badnick_jaws_process:                                                                                               		;$8837
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5   [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         ld      A                   [IX`mob+%mob.unknown11]
@@ -19068,7 +19068,7 @@ badnick_jaws_process:                                                           
 
 trap_spikeball_process:                                                                                             		;$88FB
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	8
@@ -19325,7 +19325,7 @@ trap_spikeball_process:                                                         
 
 trap_spear_process:                                                                                                 	;$8AF6
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -19450,7 +19450,7 @@ trap_spear_process:                                                             
 
 trap_fireball_process:                                                                                              		;$8C16
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         res     5	[IX`mob+%mob.flags]               	;mob adheres to the floor
 								;(it doesn't move, so this is odd)
@@ -19595,7 +19595,7 @@ trap_fireball_process:                                                          
 	
 meta_water_process:                                                                                                 	;$8D48
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      A	[IX`mob+%mob.unknown11]
@@ -19718,7 +19718,7 @@ meta_water_process:                                                             
 
 powerUps_bubbles_process:                                                                                            		;$8E56
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      A	[IX`mob+%mob.unknown12]
@@ -19775,7 +19775,7 @@ _8eca:                                                                          
 ;=======================================================================================================================
         ;unknown mob
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]
         xor     A`zero
@@ -19863,7 +19863,7 @@ null_process:                                                                   
 
 badnick_burrobot_process:                                                                                           		;$8F6D
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
@@ -20003,7 +20003,7 @@ badnick_burrobot_process:                                                       
 
 platform_float_process:                                                                                             		;$90C0
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	30
@@ -20152,7 +20152,7 @@ platform_float_process:                                                         
 
 _91eb:                                                                                                          ;$91EB
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         call    findEmptyMob
         ret     c
@@ -20212,7 +20212,7 @@ _91eb:                                                                          
 
 mob_boss_labyrinth:                                                                                             ;$9267
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	 [IX`mob+%mob.flags]
         ld      [IX`mob+%mob.width]     32
@@ -20486,7 +20486,7 @@ mob_boss_labyrinth:                                                             
 	
 unknown_94a5_process:													;$94A5
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	8
@@ -20739,7 +20739,7 @@ unknown_94a5_process:													;$94A5
 
 unknown_96a8_process:                                                                                                        ;$96A8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         xor     A`zero
@@ -20781,7 +20781,7 @@ unknown_96a8_process:                                                           
 
 unknown_96f8_process:                                                                                                        ;$96F8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         xor     A`zero
@@ -20966,7 +20966,7 @@ unknown_96f8_process:                                                           
 
 platform_flipper_process:                                                                                           		;$9866
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]             	;mob does not collide with the floor
         ld      [IX`mob+%mob.spriteLayout+0]	LO ._9a7e
@@ -21192,7 +21192,7 @@ platform_flipper_process:                                                       
 
 platform_bumper_process:                                                                                            		;$9AFB
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	$1C
@@ -21262,7 +21262,7 @@ platform_bumper_process:                                                        
 
 unknown_9b75_process:                                                                                                        ;$9B75
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	30
@@ -21328,7 +21328,7 @@ unknown_9b75_process:                                                           
 
 unknown_9be8_process:                                                                                                        ;$9BE8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.Xspeed+0]		$80
         ld      [IX`mob+%mob.Xspeed+1]		$01
@@ -21404,7 +21404,7 @@ _9c70:                                                                          
 ;=======================================================================================================================
         ;unknown mob
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.Xspeed+0]          $80
         ld      [IX`mob+%mob.Xspeed+1]          $FE
@@ -21422,7 +21422,7 @@ _9c70:                                                                          
 
 mob_trap_flameThrower:                                                                                          ;$9C8E
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         bit     0       [IX`mob+%mob.flags]
@@ -21548,7 +21548,7 @@ _9d6a:                                                                          
 mob_door_left:                                                                                                  ;$9DFA
 ;=======================================================================================================================
         ;door - one way left (Scrap Brain)
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               ;mob does not collide with the floor
         call    _9ed4
@@ -21646,7 +21646,7 @@ mob_door_left:                                                                  
 
 _9eb4:                                                                                                          ;$9EB4
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      A	[IX`mob+%mob.unknown11]
         cp      $30
@@ -21667,7 +21667,7 @@ _9eb4:                                                                          
 
 _9ec4:                                                                                                          ;$9EC4
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      A	[IX`mob+%mob.unknown11]
         and     A
@@ -21688,7 +21688,7 @@ _9ec4:                                                                          
 
 _9ed4:                                                                                                          ;$9ED4
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     4
         ld      A	[IX`mob+%mob.unknown11]
@@ -21754,7 +21754,7 @@ mob_door_right:                                                                 
 ;=======================================================================================================================
         ;door - one way right (Scrap Brain)
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
@@ -21842,7 +21842,7 @@ mob_door_right:                                                                 
 
 mob_door:                                                                                                       ;$A025
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5       [IX`mob+%mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
@@ -21934,7 +21934,7 @@ mob_door:                                                                       
 
 trap_electric_process:                                                                                              		;$A0E8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	$30
@@ -22017,7 +22017,7 @@ trap_electric_process:                                                          
 
 badnick_ballhog_process:                                                                                            		;$A1AA
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     10
         ld      [IX`mob+%mob.height]    32
@@ -22178,7 +22178,7 @@ unknown_a33c_process:                                                           
 ;=======================================================================================================================
         ;mob: UNKNOWN (ball from Ball Hog?)
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         res     5  	[IX`mob+%mob.flags]               	;mob adheres to the floor
         ld      [IX`mob+%mob.width]     $0A
@@ -22258,7 +22258,7 @@ unknown_a33c_process:                                                           
 
 door_switch_process:                                                                                                     	;$A3F8
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     $0A
         ld      [IX`mob+%mob.height]    $11
@@ -22353,7 +22353,7 @@ door_switch_process:                                                            
 
 door_switching_process:                                                                                       			;$A4AB
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5  	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         call    _9ed4
@@ -22435,7 +22435,7 @@ door_switching_process:                                                         
 
 badnick_caterkiller_process:                                                                                        		;$A551
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     6
         ld      [IX`mob+%mob.height]    16
@@ -22652,7 +22652,7 @@ badnick_caterkiller_process:                                                    
 
 boss_scrapbrain_process:                                                                                            		;$A7ED
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     $1E
         ld      [IX`mob+%mob.height]    $2F
@@ -22885,7 +22885,7 @@ boss_scrapbrain_process:                                                        
 
 meta_clouds_process:                                                                                                	;$A9C7
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5 	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      A       [IY`vars+%vars.spriteUpdateCount]
@@ -22967,7 +22967,7 @@ meta_clouds_process:                                                            
 
 trap_propeller_process:                                                                                             		;$AA6A
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	$05
@@ -23047,7 +23047,7 @@ trap_propeller_process:                                                         
 
 mob_badnick_bomb:                                                                                               ;$AB21
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width],$0c
         ld      [IX`mob+%mob.height],$10
@@ -23221,7 +23221,7 @@ _ac96:                                                                          
 ;=======================================================================================================================
         ;crabmeat and bomb use this -- must be the spray shots
         
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         push    IX
         push    HL
@@ -23326,7 +23326,7 @@ _ad53:                                                                          
 	
 trap_cannon_process:                                                                                                	;$AD6C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -23413,7 +23413,7 @@ trap_cannon_process:                                                            
 
 trap_cannonball_process:                                                                                            		;$AE35
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.width]	12
@@ -23452,7 +23452,7 @@ trap_cannonball_process:                                                        
 
 badnick_unidos_process:                                                                                             		;$AE88
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5 [IX`mob+%mob.flags]               		;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -23703,7 +23703,7 @@ badnick_unidos_process:                                                         
 
 unknown_b0f4_process:                                                                                                        ;$B0F4
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5 	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+%mob.spriteLayout+0]	$00
@@ -23764,7 +23764,7 @@ unknown_b0f4_process:                                                           
 	
 trap_turretRotating_process:                                                                                        		;$B16C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -23885,7 +23885,7 @@ trap_turretRotating_process:                                                    
 
 platform_flyingRight_process:                                                                                       			;$B297
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]
         bit     0	[IX`mob+%mob.flags]
@@ -24001,7 +24001,7 @@ platform_flyingRight_process:                                                   
 
 trap_spikewall_process:													;$B398
 ;=======================================================================================================================
-@param  IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -24093,7 +24093,7 @@ trap_spikewall_process:													;$B398
 
 trap_turretFixed_process:													;$B46D
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         bit     0	[IX`mob+%mob.flags]
@@ -24182,7 +24182,7 @@ trap_turretFixed_process:													;$B46D
 
 platform_flyingUpDown_process:                                                                                      			;$B50E
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]                   	;mob does not collide with the floor
         ld      HL	_b37b
@@ -24278,7 +24278,7 @@ platform_flyingUpDown_process:                                                  
 
 _b5c2:                                                                                                          ;$B5C2
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         push    BC  DE
         call    findEmptyMob
@@ -24339,7 +24339,7 @@ _b5c2:                                                                          
 
 boss_skybase_process:                                                                                               		;$B634
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ld      [IX`mob+%mob.width]     30
         ld      [IX`mob+%mob.height]    47
@@ -24901,7 +24901,7 @@ _bb77:                                                                          
 
 boss_electricBeam_process:                                                                                          		;$BB84
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         
@@ -25100,7 +25100,7 @@ boss_electricBeam_process:                                                      
 
 unknown_bcdf_process:                                                                                                        ;$BCDF
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5	[IX`mob+%mob.flags]               	;mob does not collide with the floor
         set     5	[IY`vars+%vars.unknown0]
@@ -25233,7 +25233,7 @@ unknown_bcdf_process:                                                           
 
 cutscene_final_process:                                                                                                 	;$BDF9
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;mob does not collide with the floor
         set     5	[IX`mob+%mob.flags]
@@ -25397,7 +25397,7 @@ cutscene_final_process:                                                         
 
 cutscene_emeralds_process:                                                                                              		;$BF4C
 ;=======================================================================================================================
-@params IX`mob          ``Address of the current mob being processed
+;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5   [IX`mob+%mob.flags]                     	;mob does not collide with the floor
         
@@ -25628,7 +25628,7 @@ $
 	
 doLoadMusic:
 ;=======================================================================================================================
-@params HL              ``Address of song data to load
+;params HL              ``Address of song data to load
         ;---------------------------------------------------------------------------------------------------------------
         push    AF  BC  DE  HL  IX
         
@@ -25862,8 +25862,8 @@ doStop:
 
 doLoadSFX:
 ;=======================================================================================================================
-@params A`priority      ``Priority level of SFX being loaded
-        HL              ``Address of SFX data
+;params A`priority      ``Priority level of SFX being loaded
+;       HL              ``Address of SFX data
         ;---------------------------------------------------------------------------------------------------------------
         push    AF  DE  HL
         
@@ -26419,7 +26419,7 @@ cmdFE_stopSFX:
 
 commandPointers:
 ;=======================================================================================================================
-@index  $80
+;index  $80
         
         %word
         ;---------------------------------------------------------------------------------------------------------------
@@ -26719,7 +26719,7 @@ calcTickTime:
 
 doPlayMusic:
 ;=======================================================================================================================
-@params A               ;index number of music track to play (see `\\sound\music\pointers`)
+;params A               ;index number of music track to play (see `\\sound\music\pointers`)
         ;---------------------------------------------------------------------------------------------------------------
         push    HL
         
@@ -26746,7 +26746,7 @@ doPlayMusic:
 
 doPlaySFX:
 ;=======================================================================================================================
-@params A               ;index number of SFX to play (see `\\sound\sfx\pointers`)
+;params A               ;index number of SFX to play (see `\\sound\sfx\pointers`)
         ;---------------------------------------------------------------------------------------------------------------
         push    HL      DE
         
