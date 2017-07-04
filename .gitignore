@@ -1,0 +1,8 @@
+# don't accidentally include any ROM files
+*.sms
+
+# don't include any compiled object files,
+# these are binary, will change often,
+# and can be recreated anytime
+*.o
+
