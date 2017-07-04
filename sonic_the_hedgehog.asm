@@ -42,10 +42,10 @@ rst_playSFX:                                                                    
 	
 irq:                                                                                                            ;$0038
 ;=======================================================================================================================
-```	Every 1/50th (PAL) or 1/60th (NTSC) of a second, an interrupt is generated and control passes here.
+/*	Every 1/50th (PAL) or 1/60th (NTSC) of a second, an interrupt is generated and control passes here.
         There's only a small amount of space between this routine and the pause handler, so we just jump to the
         routine proper.
-	```
+	*/
 .ORG	$0038
 	;---------------------------------------------------------------------------------------------------------------
         jp      interruptHandler
@@ -53,8 +53,8 @@ irq:                                                                            
 
 copyright:                                                                                                      ;$003B
 ;=======================================================================================================================
-```     A short copyright message is wedged between the IRQ and NMI routines in the original ROM.
-	```
+/*      A short copyright message is wedged between the IRQ and NMI routines in the original ROM.
+	*/
         %string
         
         "Developed By (C) 1991 Ancient - S" $A5 "Hayashi." $00
@@ -62,8 +62,8 @@ copyright:                                                                      
 
 pause:                                                                                                          ;$0066
 ;=======================================================================================================================
-```	Pressing the Pause button causes an interrupt and jumps to $0066.
-	```
+/* 	Pressing the Pause button causes an interrupt and jumps to $0066.
+	*/
 .ORG	$0066
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
@@ -278,8 +278,8 @@ interruptHandler:                                                               
 	
 loadPaletteFromInterrupt:                                                                                       ;$0174
 ;=======================================================================================================================
-```	loads a palette using the parameters set first by 'loadPaletteOnInterrupt'.
-	```
+/* 	loads a palette using the parameters set first by 'loadPaletteOnInterrupt'.
+	*/
 ;PARAMS IY`vars                 ``Address of the common variables (used throughout)
 ;       $.LOADPALETTE_ADDRESS   ``Address to the palette data
 ;       $.LOADPALETTE_FLAGS     ;flags to load tile / sprite palettes or both
@@ -493,8 +493,8 @@ underwaterPalette_Boss:                                                         
 
 init:                                                                                                           ;$028B
 ;=======================================================================================================================
-```	Clear the RAM and configure the system.
-	```
+/* 	Clear the RAM and configure the system.
+	*/
 ;return IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -559,9 +559,9 @@ init:                                                                           
 
 call_playMusic:													;$02D7
 ;=======================================================================================================================
-```	Switch banks to the sound module and play the given song. The previous bank is restored afterwards.
+/* 	Switch banks to the sound module and play the given song. The previous bank is restored afterwards.
 	The ;rst $18` instruction ends up here.
-	```
+	*/
 ;params A`songIndex     ``Index number of song to play
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
@@ -584,9 +584,9 @@ call_playMusic:													;$02D7
 
 call_muteSound:                                                                                                	;$02ED
 ;=======================================================================================================================
-```	Switch banks to the sound module and mute all sound. The previous bank is restored afterwards.
+/* 	Switch banks to the sound module and mute all sound. The previous bank is restored afterwards.
 	The ;rst $20` instruction ends up here.
-	```
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         di                                                      ;disable interrupts
         
@@ -603,9 +603,9 @@ call_muteSound:                                                                 
 
 call_playSFX:                                                                                                  	;$02FE
 ;=======================================================================================================================
-```	Switch banks to the sound module and play the given SFX. The previous bank is restored afterwards.
+/* 	Switch banks to the sound module and play the given SFX. The previous bank is restored afterwards.
 	The ;rst $28` instruction ends up here.
-	```
+	*/
 ;params A`SFXIndex	``Index number of SFX to play
         ;---------------------------------------------------------------------------------------------------------------
         di      
@@ -652,9 +652,9 @@ initVDPRegisterValues:                                                          
 
 waitForInterrupt:                                                                                               ;$031C
 ;=======================================================================================================================
-```	A commonly used routine to essentially 'refresh the screen' by halting main execution until the interrupt
+/* 	A commonly used routine to essentially 'refresh the screen' by halting main execution until the interrupt
         handler has done its work.
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
@@ -1193,9 +1193,9 @@ decompressArt:                                                                  
 
 decompressScreen:                                                                                               ;$0501
 ;=======================================================================================================================
-```	A screen layout is compressed using RLE (run-length-encoding). any byte that there are multiple of in a row
+/* 	A screen layout is compressed using RLE (run-length-encoding). any byte that there are multiple of in a row
         are listed as two repeating bytes, followed by another byte specifying the remaining number of times to repeat.
-	```
+	*/
 ;params BC              ;length of the compressed data
 ;       DE              ;VDP register number (D) and value byte (E) to send to the VDP
 ;       HL              ;absolute address to the start of the compressed screen data
@@ -1362,8 +1362,8 @@ loadPalette:                                                                    
 
 clearVRAM:                                                                                                      ;$0595
 ;=======================================================================================================================
-```	Utility routine to wipe the Master System's Video RAM with the provided value.
-	```
+/* 	Utility routine to wipe the Master System's Video RAM with the provided value.
+	*/
         ;called only by `init`
         
 ;params HL`addr         ;VRAM address
@@ -1464,8 +1464,8 @@ print:                                                                          
 	
 hideSprites:                                                                                                    ;$05E2
 ;=======================================================================================================================
-```	Moves all hardware sprites off-screen.
-	```
+/* 	Moves all hardware sprites off-screen.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;get the address of the game's main sprite table
@@ -1498,8 +1498,8 @@ hideSprites:                                                                    
 
 multiply:                                                                                                       ;$05FC
 ;=======================================================================================================================
-```	Multiplies input HL by C
-	```
+/* 	Multiplies input HL by C
+	*/
 ;params HL              ``The starting value
 ;       C               ``The number to multiply by (i.e. HL × C)
 ;return HL`result       ``The value after multiplication
@@ -1617,9 +1617,9 @@ _LABEL_625_57:                                                                  
 updateVDPscroll:                                                                                                ;$063E
 ;=======================================================================================================================
 ;called only by `_LABEL_1CED_131`
-```	Checks if the camera has moved and updates the VDP scroll register cache accordingly
+/* 	Checks if the camera has moved and updates the VDP scroll register cache accordingly
         (this is then written to the VDP during the interrupt routine).
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;fill B with vertical and C with horizontal VDP scroll values
@@ -1722,9 +1722,9 @@ updateVDPscroll:                                                                
 
 fillOverscrollCache:                                                                                            ;$06BD
 ;=======================================================================================================================
-```	This fills in the cache of the overscroll area so that when the screen scrolls onto new tiles,
+/* 	This fills in the cache of the overscroll area so that when the screen scrolls onto new tiles,
         they can be copied across in a fast and straight-forward fashion.
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;scrolling enabled??
@@ -1958,8 +1958,8 @@ fillOverscrollCache:                                                            
 	
 fillScrollTiles:                                                                                                ;$07DB
 ;=======================================================================================================================
-```	Fills in new tiles when the screen has scrolled.
-	```
+/* 	Fills in new tiles when the screen has scrolled.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         bit     0       [IY`vars+%vars.flags2]
@@ -2157,8 +2157,8 @@ fillScrollTiles:                                                                
 
 getFloorLayoutRAMPosition:                                                                                      ;$08D5
 ;=======================================================================================================================
-```	Converts block X & Y co-ords into an address in the Floor Layout in RAM.
-	```
+/* 	Converts block X & Y co-ords into an address in the Floor Layout in RAM.
+	*/
 ;params BC              ;a flag, $0000 or $0001 depending on callee? I think this is an "offset"
         ;---------------------------------------------------------------------------------------------------------------
         ;get the low-byte of the width of the level in blocks. many levels are 256 blocks wide,
@@ -2272,9 +2272,9 @@ getFloorLayoutRAMPosition:                                                      
 	
 fillScreenWithFloorLayout:                                                                                      ;$0966
 ;=======================================================================================================================
-```     This routine is only called during level loading to populate the screen with the visible portion of the
+/*      This routine is only called during level loading to populate the screen with the visible portion of the
         Floor Layout. Scrolling fills in only the new tiles, so a full refresh of the screen is not required.
-	```
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         ;interrupts are disabled during this routine due to it writing to the display
         di
@@ -2493,8 +2493,8 @@ loadFloorLayout:                                                                
 	
 fadeOut:                                                                                                        ;$0A40
 ;=======================================================================================================================
-```	Fades the screen to black.
-	```
+/* 	Fades the screen to black.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;switch in the default set of banks as palette data is primarily in bank 0 & 1, 
@@ -5653,8 +5653,8 @@ autoscrollUp:                                                                   
 	
 dontScrollDown:                                                                                                 ;$1EFF
 ;=======================================================================================================================
-```	Fixes the bottom of the level to the current screen position, i.e. Jungle Act 2
-	```
+/* 	Fixes the bottom of the level to the current screen position, i.e. Jungle Act 2
+	*/
         ld      HL      [$.CAMERA_Y]
         ld      [$.LEVEL_BOTTOM]        HL
         ret
@@ -6552,8 +6552,8 @@ loadLevel:                                                                      
 	
 loadMobList:                                                                                               	;$232B
 ;=======================================================================================================================
-```	Reads in a list of mob IDs and their positions within the level.
-	```
+/* 	Reads in a list of mob IDs and their positions within the level.
+	*/
 ;params HL              ``Address of a mob layout list
         ;---------------------------------------------------------------------------------------------------------------
         ;NOTE: $.D2F2 is used only here -- perhaps a regular temp variable could be used
@@ -7108,8 +7108,8 @@ _2718:                                                                          
 	
 waitFrames:                                                                                                     ;$2745
 ;=======================================================================================================================
-```	Wait a given number of frames.
-	```
+/* 	Wait a given number of frames.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
 ;       BC`count        ``Number of frames to wait
         ;---------------------------------------------------------------------------------------------------------------
@@ -7310,8 +7310,8 @@ _2825:                                                                          
 
 _2828:                                                                                                          ;$2828
 ;=======================================================================================================================
-```	Credits screen palette.
-	```
+/* 	Credits screen palette.
+	*/
 	%sms.palettes
         $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
@@ -7563,8 +7563,8 @@ creditsPalette:                                                                 
 
 mobPointers:                                                                                                    ;$2AF6
 ;=======================================================================================================================
-```	This is the list of mobs defined in the game, with the order of this table providing the mob IDs.
-	```
+/* 	This is the list of mobs defined in the game, with the order of this table providing the mob IDs.
+	*/
 	%pointer
 .sonic
 	\sonic\process						;#00
@@ -7852,9 +7852,9 @@ hudLivesLayout:													;$2E55
 	
 refresh:													;$2E5A
 ;=======================================================================================================================
-```	Updates the game display -- refreshes the lives & time display,
+/* 	Updates the game display -- refreshes the lives & time display,
 	updates the camera and processes all the mobs in the level.
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;do not update the Sonic sprite frame (upon Interrupt)
@@ -7956,8 +7956,8 @@ displayRingCount:                                                               
         ;TODO: it'll be faster to layout the sprites when the level loads,
         ;      and just update the indices here
         
-```     Update the player's ring-count on the screen.
-	```
+/*      Update the player's ring-count on the screen.
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`rings         [$.RINGS]
         ld      C`rings         A`rings
@@ -7995,8 +7995,8 @@ displayRingCount:                                                               
 
 displayTime:                                                                                                    ;$2F1F
 ;=======================================================================================================================
-```	Draws the level time on the screen.
-	```
+/* 	Draws the level time on the screen.
+	*/
         ;TODO: It'll be faster to layout the sprites at level load and just update the indices
         ;      here instead of redoing the layout every time
 	;---------------------------------------------------------------------------------------------------------------
@@ -8585,9 +8585,9 @@ mobs_updateCamera:                                                              
 
 checkMobsOutOfBounds:                                                                                           ;$31E6
 ;=======================================================================================================================
-```	Check active mobs to see if they have moved too far off-screen and need to be despawned.
+/* 	Check active mobs to see if they have moved too far off-screen and need to be despawned.
         To avoid slow down, only four mobs are checked per frame.
-```	
+	*/
 	;called only by `refresh`, could be inlined?
         ;---------------------------------------------------------------------------------------------------------------
         ;check only 4 mobs per frame:
@@ -8783,8 +8783,8 @@ checkMobsOutOfBounds:                                                           
 
 processMobs:													;$392B
 ;=======================================================================================================================
-```	Runs the code for each of the mobs in memory.
-	```
+/* 	Runs the code for each of the mobs in memory.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ;starting from $D37E (we skip Sonic), read pointers until a non-zero one is found,
@@ -8865,9 +8865,9 @@ processMob:													;$32C8
 	
 postProcessMob:													;$32E2
 ;=======================================================================================================================
-```	Once a mob has run its personal code, this routine handles things that all mobs share,
+/* 	Once a mob has run its personal code, this routine handles things that all mobs share,
         such as moving the mob and collision with Sonic.
-```
+	*/
 ;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;move mob:
@@ -9266,9 +9266,9 @@ postProcessMob:													;$32E2
 	
 processSpriteLayout:                                                                                            ;$350F
 ;=======================================================================================================================
-```	Puts a mob on screen, combining multiple hardware sprites using a Sprite Layout - a list of sprites to arrange
+/* 	Puts a mob on screen, combining multiple hardware sprites using a Sprite Layout - a list of sprites to arrange
         in a maximum 6 x 4 layout (note that each hardware sprite is 8 x 16, giving a maximum mob size of 48 x 64)
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
 ;       HL`xPos         ``X-position to place sprite layout on screen
 ;       D               ;?? (some kind of control flag)
@@ -9461,9 +9461,9 @@ _3581:                                                                          
 	
 layoutSpritesHorizontal:                                                                                        ;$35CC
 ;=======================================================================================================================
-```     Places a set of sprites next to each other, dictated by a small data stream of indices, with $FE to leave a
+/*      Places a set of sprites next to each other, dictated by a small data stream of indices, with $FE to leave a
         blank space and $FF to terminate. This routine is typically used to place text and numbers on screen.
-	```
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
 ;       B`ypos
 ;       C`xpos
@@ -9685,9 +9685,9 @@ getFloorLayoutRAMAddressForMob:                                                 
 ;=======================================================================================================================
         ;TODO: This whole thing seems highly inefficient
         
-```	Retrieves an address in the Floor Layout in RAM based on the given mob's position.
+/* 	Retrieves an address in the Floor Layout in RAM based on the given mob's position.
         Note that each byte in the Floor Layout represents a 32x32 block (4x4 tiles).
-```
+	*/
 ;params IX`mob          ``Address of the mob to process
 ;       BC`xOffset      ``Horizontal pixel offset to add to the mob's X position before locating tile
 ;       DE`yOffset      ``Vertical pixel offset to add to the mob's Y position before locating tile
@@ -9873,8 +9873,8 @@ getFloorLayoutRAMAddressForMob:                                                 
 
 updateSonicSpriteFrame:                                                                                         ;$37E0
 ;=======================================================================================================================
-```	Copy the current Sonic animation frame into VRAM.
-```
+/* 	Copy the current Sonic animation frame into VRAM.
+	*/
 ;params IY`vars         ``Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         ld      DE`frameCurrent [$.SONIC_CURRENT_FRAME]
@@ -9984,8 +9984,8 @@ updateSonicSpriteFrame:                                                         
 	
 animateFloorRing:                                                                                               ;$3879
 ;=======================================================================================================================
-```	Updates the rings in the level (Floor Layout) with their next frame of animation.
-	```
+/* 	Updates the rings in the level (Floor Layout) with their next frame of animation.
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         ld      DE      [$.RING_CURRENT_FRAME]
         ld      HL      [$.RING_PREVIOUS_FRAME]
@@ -10150,8 +10150,8 @@ _LABEL_38B0_51:                                                                 
 
 detectCollisionWithSonic:                                                                                       ;$3956
 ;=======================================================================================================================
-```	Tests to see if the given mob has collided with Sonic.
-```
+/* 	Tests to see if the given mob has collided with Sonic.
+	*/
 ;params IX`mob          ``Address of the current mob being processed
 ;       IY`vars         ``Address of the common variables (used throughout)
 ;       $.TEMP6         ``Left indent of the mob, in pixels
@@ -15827,8 +15827,8 @@ platform_moving_process:                                                        
 
 badnick_motobug_process:                                                                                                        ;$6E0C
 ;=======================================================================================================================
-```	AI for the Motobug Badnick
-	```
+/* 	AI for the Motobug Badnick
+	*/
 ;params IX`mob          ``Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         ;this mob adheres to the floor
@@ -15999,8 +15999,8 @@ badnick_motobobug_actions:                                                      
 
 badnick_motobug_animations:                                                                                                     ;$6EBB
 ;=======================================================================================================================
-```	Maps actions to a set of animation timings.
-	```
+/* 	Maps actions to a set of animation timings.
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         %byte
         
@@ -16027,8 +16027,8 @@ badnick_motobug_animations:                                                     
 
 badnick_motobug_spriteLayout:                                                                                                   ;$6ECB
 ;=======================================================================================================================
-```	The Sprite Layouts (sprite composition of each animation frame) for the Motobug Badnick.
-	```
+/* 	The Sprite Layouts (sprite composition of each animation frame) for the Motobug Badnick.
+	*/
         ;---------------------------------------------------------------------------------------------------------------
         %byte
         
@@ -17543,9 +17543,9 @@ _7c41:                                                                          
 	
 findEmptyMob:                                                                                                   ;$7C7B
 ;=======================================================================================================================
-```	Search through the mob storage and find the first empty mob slot available
+/* 	Search through the mob storage and find the first empty mob slot available
         (this is used when spawning new mobs, such as bullets).
-```
+	*/
 ;return AF              ``carry is set if no mob was found
 ;       B               ``mob slot index number (0-31)
 ;       HL              ``address of the empty mob slot selected
@@ -25488,10 +25488,10 @@ cutscene_emeralds_process:                                                      
 
 ;-----------------------------------------------------------------------------------------------------------------------
 
-```	This is the public interface that passes forward to the internal implementation; this style of implementation
+/* 	This is the public interface that passes forward to the internal implementation; this style of implementation
 	is unique to the sound driver -- perhaps it's reused in other Ancient games, or it could be a 3rd-party piece
 	of code.
-```
+	*/
 
 update:
         jp      \sound.driver\doUpdate
@@ -25518,7 +25518,7 @@ playSFX:
         jp      \sound.driver\doPlaySFX			;this is used externally to start SFX
 	;
 
-```	This sound driver was disassembled by Valley Bell, to whom I am eternally grateful as I have no understanding
+/* 	This sound driver was disassembled by Valley Bell, to whom I am eternally grateful as I have no understanding
         of sound theory and could not have hoped to make sense of this.
 
         Terminology:
@@ -25533,25 +25533,23 @@ playSFX:
 
         Each of the five tracks have a large set of variables for managing their state.
         Below is the general definition of the track variables, which is duplicated five times in the RAM
-```
+	*/
 
 
 %track
 ;=======================================================================================================================
 .channelFrequencyPSG            	%byte                   ;+$00
-	```
-        To set a frequency on the PSG a data byte is written to the sound port with bit 7 set and bits 6 & 5
+/*      To set a frequency on the PSG a data byte is written to the sound port with bit 7 set and bits 6 & 5
         forming the sound channel number 0-3. this variable holds the bit mask for the track's particular
         channel to set the frequency (see ;PSGchannelBits` for the particulars)
-	```
+	*/
 
 .channelVolumePSG               	%byte                   ;+$01
-	```
-        To set the volume of a channel, a data byte is written to the sound port with bits 7 & 4 set and bits
+/*      To set the volume of a channel, a data byte is written to the sound port with bits 7 & 4 set and bits
         6 & 5 forming the sound channel number 0-3. bits 0-3 form the volume level where 1111 is silence
         and 0000 is maximum. This variable holds the bit mask for the track's particular channel to set the
         volume (see ;initPSGValues` for examples)
-	```
+	*/
 
 .tickStep                       	%word                   ;+$02
 .fadeTicks                      	%word                   ;+$04
