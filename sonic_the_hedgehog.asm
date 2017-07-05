@@ -3126,7 +3126,7 @@ _LABEL_C52_106:                                                                 
         jp      [HL]
 
 ;NOTE: externally jumped to
-@_:     ld      A               $01
+@_:     ld      A,	$01
         ld      [$.TEMP1],	A
         ld      BC,	$012C
         
@@ -5120,7 +5120,7 @@ _1b13:                                                                          
         ld      HL,	$.LAYOUT_BUFFER
         ret
         
-@_:     ld      A       [HL]
+@_:     ld      A,	[HL]
         rrca    
         rrca    
         rrca    
@@ -7242,7 +7242,7 @@ _2795:                                                                          
         inc     DE
         ld      A,	$FF
         ld      [DE],	A
-@_:     ld      A	[HL]
+@_:     ld      A,	[HL]
         inc     HL
         cp      $FF
         ret     z
@@ -8712,7 +8712,7 @@ checkMobsOutOfBounds:                                                           
         xor     A`zero
         
         ;has the mob gone too far left of the camera?
-@x:     ld      E'mobXpos           [IX`mob+Mob.X+0]
+@x:     ld      E'mobXpos,	[IX`mob+Mob.X+0]
         ld      D'mobXpos,	[IX`mob+Mob.X+1]
         sbc     HL'leftLimit,	DE'mobXpos
         jp      nc,	@removeMobExx                               ;if so, remove it
@@ -14454,7 +14454,7 @@ boss_endSign_process:                                                           
         ld      C,	$01
 @_11:   ld      A       C
         ld      [$.D288],	A
-@_:     ld      L       [IX`mob+Mob.unknown12]
+@_:     ld      L,	[IX`mob+Mob.unknown12]
         ld      H,	$00
         add     HL,	DE
         ld      A,	[HL]
@@ -20450,7 +20450,7 @@ mob_boss_labyrinth:                                                             
 	
         ld      [IX`mob+Mob.unknown13],	$00
         
-@_:     ld      HL              $00A2
+@_:     ld      HL,	$00A2
         ld      [$.D216],	HL
         call    _77be
         ld      A,	[$.D2EC]
@@ -26277,7 +26277,7 @@ doNote:
         adc     A,	[IX+Track.tickStep+1]
         ld      [IX+Track.tickStep+1],	A
         
-@x:     res     0   [IX+Track.flags]
+@x:     res     0,	[IX+Track.flags]
         ret
 	;
 
