@@ -10,7 +10,7 @@ start:                                                                          
                                                                 ;$0038 will be called at 50/60Hz
     
 @wait:  ;wait for the scanline to reach 176 (no idea why)
-        in      A`scanline,	[sms.ports.scanline]
+        in      A`scanline, [sms.ports.scanline]
         cp      176
         jr      nz,	@wait
         
@@ -72,11 +72,11 @@ pause:                                                                          
         push    AF`stack
         
         ;level time HUD / lightning flags
-        ld      A`pauseStatus,	[IY`vars+Vars.timeLightningFlags]
+        ld      A`pauseStatus, [IY`vars+Vars.timeLightningFlags]
         ;flip bit 3 (the pause bit)
         xor     %00001000
         ;save it back
-        ld      [IY`vars+Vars.timeLightningFlags],	A`pauseStatus
+        ld      [IY`vars+Vars.timeLightningFlags], A`pauseStatus
         
         pop     AF`stack
         ei                                                      ;enable interrupts
@@ -94,12 +94,15 @@ interruptHandler:                                                               
         ;push everything we're going to use to the stack so that when we return from the
         ;interrupt we don't find that our registers have changed mid-instruction!
         
-        push    AF,	HL  DE  BC
-        
+        push    AF
+	push	HL 
+	push	DE
+	push	BC
+	
         ;get the status of the VDP (the Master System's GPU)
-        in      A`vdpStatus,	[sms.ports.vdp.control]
+        in      A`vdpStatus, [sms.ports.vdp.control]
         
-        bit     7,	[IY`vars+Vars.flags6]                  ;check the underwater flag
+        bit     7,	[IY`vars+Vars.flags6]                  	;check the underwater flag
         jr      z,	@_1                                     ;if off, skip ahead
         
         ;the raster split is controlled across multiple interrupts, a counter is used to remember at which step
@@ -107,7 +110,7 @@ interruptHandler:                                                               
         
         ld      A`step,	[$.RASTERSPLIT_STEP]
         and     A`step                                          ;keep the value, but update the flags
-        jp      nz,	doRasterSplit                          ;if not zero, deal with the particulars
+        jp      nz,	doRasterSplit                          	;if not zero, deal with the particulars
         
         ;initialise raster split:
         ;---------------------------------------------------------------------------------------------------------------
@@ -144,7 +147,8 @@ interruptHandler:                                                               
         ld      [$.RASTERSPLIT_STEP],	A`counter
         
         ;---------------------------------------------------------------------------------------------------------------
-@_1:    push    IX  IY
+@_1:    push    IX
+	push	IY
         
         ;remember the current page 1 & 2 banks
         ld      HL`banks,	[$.SLOT1]
@@ -193,8 +197,12 @@ interruptHandler:                                                               
         
         ;pull everything off the stack so that the code that
         ;was running before the interrupt doesn't explode
-        pop     IY,	IX
-        pop     BC,	DE  HL  AF
+        pop     IY
+	pop	IX
+        pop     BC
+	pop	DE
+	pop	HL
+	pop	AF
         ret
 	
 @setJoypadButtonB:                                                                                              ;$00F2
@@ -471,7 +479,10 @@ doRasterSplit:                                                                  
         ld      A,	!VDP_REGISTER_0
         out     [sms.ports.vdp.control],	A
         
-@_3:    pop     BC  DE  HL  AF
+@_3:    pop     BC
+	pop	DE
+	pop	HL
+	pop	AF
         ei
         ret
 	;
@@ -1591,7 +1602,8 @@ _LABEL_625_57:                                                                  
 ;=======================================================================================================================
         ;random number generator?
         
-        push    HL,	DE
+        push    HL
+	push	DE
         
         ld      HL,	[$.D2D7]
         ld      E,	L
@@ -1610,7 +1622,8 @@ _LABEL_625_57:                                                                  
         ld      [$.D2D7],	HL
         ld      A,	H
         
-        pop     DE,	HL
+        pop     DE
+	pop	HL
         ret
 	;
 
@@ -1967,8 +1980,8 @@ fillScrollTiles:                                                                
         
         exx
         push    HL'stack
-                DE'stack
-                BC'stack
+        push	DE'stack
+	push	BC'stack
         
         ;---------------------------------------------------------------------------------------------------------------
         ;calculate the number of bytes to offset by to get to the correct row in the screen table
@@ -2296,10 +2309,14 @@ fillScreenWithFloorLayout:                                                      
         ;in 224-line mode it's 7 blocks tall
         ld      B,	!SMS.SCREEN.HEIGHT.BLOCKS
         
-@_1:    push    BC  HL  DE
+@_1:    push    BC
+	push	HL
+	push	DE
         ld      B,	!SMS.SCREEN.WIDTH.BLOCKS
         
-@_2:    push    BC  HL  DE
+@_2:    push    BC
+	push	HL
+	push	DE
         
         ;get the block index at the current location in the Floor Layout
         ld      A,	[HL]
@@ -3292,7 +3309,9 @@ _LABEL_E86_110:                                                                 
 ;params IY`vars         : Address of the common variables (used throughout)
 ;       $.TEMP1
         ;---------------------------------------------------------------------------------------------------------------
-        push    HL,	DE  BC
+        push    HL
+	push	DE
+	push	BC
         
         ld      HL,	[$.TEMP1]
         push    HL
@@ -3338,7 +3357,9 @@ _LABEL_E86_110:                                                                 
         pop     HL
         ld      [$.TEMP1],	HL
         
-        pop     BC,	DE  HL
+        pop     BC
+	pop	DE
+	pop	HL
         ret
 	;
 
@@ -3348,7 +3369,8 @@ _0edd:                                                                          
         
 ;params BC
         ;---------------------------------------------------------------------------------------------------------------
-        push    HL,	DE
+        push    HL
+	push	DE
         
         ;copy BC to HL
         ld      L,	C
@@ -3387,7 +3409,8 @@ _0edd:                                                                          
         inc     A
         ld      [$.TEMP1],	A
         
-        pop     DE,	HL
+        pop     DE
+	pop	HL
         ret
 	;
 	
@@ -7081,7 +7104,10 @@ _2718:                                                                          
 ;=======================================================================================================================
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
-        push    AF,	HL  DE  BC
+        push    AF
+	push	HL
+	push	DE
+	push	BC
 @_1:    push    BC
         
         res     0,	[IY`vars+Vars.flags0]
@@ -7105,7 +7131,10 @@ _2718:                                                                          
         or      C
         jr      nz,	@_1
         
-        pop     BC,	DE  HL  AF
+        pop     BC
+	pop	DE
+	pop	HL
+	pop	AF
         ret
 	;
 	
@@ -8814,7 +8843,8 @@ processMobs:													;$392B
         ld      A,	[IY`vars+Vars.spriteUpdateCount]
         ld      HL,	[$.SPRITETABLE_ADDR]
         
-        push    AF,	HL
+        push    AF
+	push	HL
         
         ;process the player:
         ld      HL,	$D024                       ;TODO: Sonic's sprite table entry (VRAM)
@@ -8822,7 +8852,8 @@ processMobs:													;$392B
         ld      DE,	$.SONIC
         call    processMob
         
-        pop     HL,	AF
+        pop     HL
+	pop	AF
         
         ld      [$.SPRITETABLE_ADDR],	HL
         ld      [IY`vars+Vars.spriteUpdateCount],	A
@@ -8837,7 +8868,8 @@ processMob:													;$32C8
         cp      $FF                                             ;ignore mob type $FF
         ret     z
         
-        push    BC,	HL
+        push    BC
+	push	HL
         
         ;transfer DE (address of the mob) to IX
         push    DE
@@ -8942,7 +8974,7 @@ postProcessMob:													;$32E2
         res     6,	[IX`mob+Mob.flags]
         
         push    DE`yOffset
-                HL`table
+        push	HL`table
         
         ;check for mob collision with Floor:
         ;---------------------------------------------------------------------------------------------------------------
@@ -8980,7 +9012,7 @@ postProcessMob:													;$32E2
         ld      [$.TEMP6],	A`solidity
         
         pop     HL`table
-                DE`yOffset
+        pop	DE`yOffset
         
         and     %00111111                                       ;air (or water), and nothing else?
         ;if there's no flags remaining for this Block, no kind of collision can be possible, so skip ahead
@@ -9262,7 +9294,7 @@ postProcessMob:													;$32E2
         call    nz,	\\gfx.sprites\processSpriteLayout
         
         pop     HL
-                BC
+        pop	BC
         
         ret
 	;
@@ -9580,7 +9612,8 @@ dropRings:                                                                      
         call    findEmptyMob
         jr      c,	@_367e
         
-        push    IX,,	HL
+        push    IX
+	push	HL
         pop     IX
         
         ld      [IX`mob+Mob.type],$55                          ;"make Sonic blink"?
@@ -13461,12 +13494,15 @@ sonic_process:                                                                  
         ;---------------------------------------------------------------------------------------------------------------
         ;called by functions referenced by `58e5`
 
-@_5893: push    BC  DE                                                                                          ;$5893
+@_5893: push    BC												;$5893
+	push	DE
         call    \\findEmptyMob
-        pop     DE,	BC
+        pop     DE
+	pop	BC
         ret     c
         
-        push    IX,	HL
+        push    IX
+	push	HL
         pop     IX
         
         xor     A`zero                                          ;set A to 0
@@ -15652,7 +15688,8 @@ badnick_buzzbomber_process:                                                     
         ld      [IX`mob+Mob.Yspeed+1],	$01
         ld      [IX`mob+Mob.Ydirection],	A`zero
         
-        pop     IX,	BC
+        pop     IX
+	pop	BC
         
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -16133,7 +16170,8 @@ badnick_newtron_process:                                                        
         ld      [IX`mob+Mob.Yspeed+1],	A`zero
         ld      [IX`mob+Mob.Ydirection],	A`zero
         
-        pop     IX,	BC
+        pop     IX
+	pop	BC
 	
 	;(we can compile with, or without, audio)
 	.IFDEF OPTION_AUDIO
@@ -24283,12 +24321,15 @@ _b5c2:                                                                          
 ;=======================================================================================================================
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
-        push    BC,	DE
+        push    BC
+	push	DE
         call    findEmptyMob
-        pop     DE,	BC
+        pop     DE
+	pop	BC
         ret     c
         
-        push    IX,	HL
+        push    IX
+	push	HL
         ld      L,	[IX`mob+Mob.X+0]
         ld      H,	[IX`mob+Mob.X+1]
         add     HL,	DE
@@ -25634,7 +25675,11 @@ doLoadMusic:
 ;=======================================================================================================================
 ;params HL              : Address of song data to load
         ;---------------------------------------------------------------------------------------------------------------
-        push    AF,	BC  DE  HL  IX
+        push    AF
+	push	BC
+	push	DE
+	push	HL
+	push	IX
         
         ;remember the song's base address in BC for later use
         ld      C,	L
@@ -25714,7 +25759,11 @@ doLoadMusic:
         
         ;finalise:
         ;---------------------------------------------------------------------------------------------------------------
-@_5:    pop     IX  HL  DE  BC  AF
+@_5:    pop     IX
+	pop	HL
+	pop	DE
+	pop	BC
+	pop	AF
         
         ;store the song's base address in each track
         ld      [$.track0vars.baseAddress],	HL
@@ -25820,7 +25869,9 @@ initPSGValues:
 doStop:
 ;=======================================================================================================================
         ;put any current values for these registers aside
-        push    AF,	HL  BC
+        push    AF
+	push	HL
+	push	BC
         
         ;mark the tracks as not "in-use" (bit 2) of the track's flags variable
         ld      A`flags,	[$.track0vars.flags]
@@ -25860,7 +25911,9 @@ doStop:
         ld      [$.playbackMode],	A
         
         ;restore the previous state of the registers and return
-        pop     BC,	HL  AF
+        pop     BC
+	pop	HL
+	pop	AF
         ret
 	;
 
@@ -25869,7 +25922,9 @@ doLoadSFX:
 ;params A`priority      : Priority level of SFX being loaded
 ;       HL              : Address of SFX data
         ;---------------------------------------------------------------------------------------------------------------
-        push    AF,	DE  HL
+        push    AF
+	push	DE
+	push	HL
         
         ld      E,	A                                       ;copy priority level of new SFX into E
         
@@ -25944,7 +25999,9 @@ doLoadSFX:
         ld      A,	$02
         ld      [$.track4vars.flags],	A
         
-@_2:    pop     HL  DE  AF
+@_2:    pop     HL
+	pop	DE
+	pop	AF
         ret
 	;
 
@@ -26003,7 +26060,8 @@ doUnpause:
 
 doFadeOut:
 ;=======================================================================================================================
-        push    AF,	HL
+        push    AF
+	push	HL
         
         ld      [$.fadeTicksDecrement],	HL
         
@@ -26014,7 +26072,8 @@ doFadeOut:
         ld      HL,	$1000
         ld      [$.fadeTicks],	HL
         
-        pop     HL,	AF
+        pop     HL
+	pop	AF
         ret
 	;
 
@@ -26124,7 +26183,8 @@ doUpdateTrack:
 
 doNoiseNote:
 ;=======================================================================================================================
-        push    DE,	IX
+        push    DE
+	push	IX
         pop     HL
         
         ld      BC,	$000E
@@ -26752,7 +26812,8 @@ doPlaySFX:
 ;=======================================================================================================================
 ;params A               ;index number of SFX to play (see `\\sound\sfx\pointers`)
         ;---------------------------------------------------------------------------------------------------------------
-        push    HL,	DE
+        push    HL
+	push	DE
         
         ;look up the index number in the SFX list
         ld      HL,	\sfx\pointers                         	;begin with the list of SFX
@@ -26777,7 +26838,8 @@ doPlaySFX:
         ex      DE,	HL
         call    doLoadSFX
         
-        pop     DE,	HL
+        pop     DE
+	pop	HL
         ret
 	;
 
