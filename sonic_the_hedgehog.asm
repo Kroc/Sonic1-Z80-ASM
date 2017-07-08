@@ -98,7 +98,7 @@ interruptHandler:                                                               
 	push	BC
 	
         ;get the status of the VDP (the Master System's GPU)
-        in      A`vdpStatus, [sms.ports.vdp.control]
+        in      A`vdpStatus, [sms.ports.vdp_control]
         
         bit     7,	[IY`vars+Vars.flags6]                  	;check the underwater flag
         jr      z,	@_1                                     ;if off, skip ahead
@@ -124,24 +124,24 @@ interruptHandler:                                                               
         ;copy the water line position into the working space for the raster split. this is to
         ;avoid the water line changing height between the multiple interrupts needed to produce
         ;the split, I think
-        ld      [RASTERSPLIT_LINE],	A`waterline
+        ld      [RASTERSPLIT_LINE], A`waterline
         
         ;set the line interrupt to fire at line 10 (top of the screen),
         ;we will then set another interrupt to fire where we want the split to occur
-        ld      A`vdpData,	10
-        out     [sms.ports.vdp.control],	A`vdpData
-        ld      A`vdpControl,	!VDP_REGISTER_10
-        out     [sms.ports.vdp.control],	A`vdpControl
+        ld      A`vdpData,			10
+        out     [sms.ports.vdp_control],	A`vdpData
+        ld      A`vdpControl,			SMS_VDP_REGISTER_10
+        out     [sms.ports.vdp_control],	A`vdpControl
         
         ;enable line interrupt IRQs (bit 5 of VDP register 0)
-        ld      A`vdpData,	[VDPREGISTER_0]
+        ld      A`vdpData, [VDPREGISTER_0]
         or      %00010000                                       ;set bit 5
-        out     [sms.ports.vdp.control],	A`vdpData
-        ld      A`vdpControl,	!VDP_REGISTER_0
-        out     [sms.ports.vdp.control],	A`vdpControl
+        out     [sms.ports.vdp_control],	A`vdpData
+        ld      A`vdpControl,			SMS_VDP_REGISTER_0
+        out     [sms.ports.vdp_control],	A`vdpControl
         
         ;initialise the step counter for the water line raster split
-        ld      A`counter,	3
+        ld      A`counter,		3
         ld      [RASTERSPLIT_STEP],	A`counter
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -149,27 +149,27 @@ interruptHandler:                                                               
 	push	IY
         
         ;remember the current page 1 & 2 banks
-        ld      HL`banks,	[SLOT1]
+        ld      HL`banks, [SLOT1]
         push    HL`banks
         
         ;if the main thread is not held up at the `waitForInterrupt` routine
         bit     0,	[IY`vars+Vars.flags0]
-        call    nz,	_LABEL_1A0_18                          	;continue to maintain the water-line raster split
+        call    nz,	_01A0                          	;continue to maintain the water-line raster split
         ;and if it is...
         bit     0,	[IY`vars+Vars.flags0]
-        call    z,	@_LABEL_F7_25
+        call    z,	@_00f7
         
         ;interrupts are re-enabled before the interrupt handler is finished so that should the remainder of this
         ;handler take too long, the water-line raster split can still interrupt at the correct scan line.
-        ;-- with thanks to Valley Bell and Calindro for pointing this out `;
+        ;-- with thanks to Valley Bell and Calindro for pointing this out
         ei
         
 	;we can compile with or without audio:
-	.IFDEF OPTION_AUDIO
+	.IFDEF 	OPTION_AUDIO
 		;switch in the music engine & data
-		ld	A`bank,	:audio.update
+		ld	A`bank,			:audio.update
 		ld      [sms.mapper.slot1],	A`bank
-		ld      [SLOT1],	A`bank
+		ld      [SLOT1],		A`bank
 		;process the audio for this frame
 		call    audio.update
 	.ENDIF
@@ -178,10 +178,10 @@ interruptHandler:                                                               
         bit     4,	[IY`vars+Vars.joypad]                  	;joypad button 1?
         call    z,	@setJoypadButtonB                       ;set joypad button 2 too
         
-        call    \\math\_LABEL_625_57
+        call    _0625
         
         ;check for the reset button
-        in      A`reset, [sms.ports.joy.b]              	;read 2nd joypad port which has extra
+        in      A`reset, [sms.ports.joy_b]              	;read 2nd joypad port which has extra
                                                                 ;bits for lightgun / reset button
         and     %00010000                                       ;check bit 4
         jp      z,	start                                  	;reset!
@@ -191,7 +191,7 @@ interruptHandler:                                                               
         ;return pages 1 & 2 to the banks before we started messing around here
         pop     HL`banks
         ld      [sms.mapper.slot1],	HL`banks
-        ld      [SLOT1],	HL`banks
+        ld      [SLOT1],		HL`banks
         
         ;pull everything off the stack so that the code that
         ;was running before the interrupt doesn't explode
@@ -208,61 +208,61 @@ interruptHandler:                                                               
         res     5,	[IY`vars+Vars.joypad]                  ;set joypad button 2 as on
         ret
 	
-@_LABEL_F7_25:                                                                                                  ;$00F7
+@_00f7:                                                                                                  	;$00F7
         ;===============================================================================================================
         ;blank the screen (remove bit 6 of VDP register 1)
         ld      A`vdpData,	[VDPREGISTER_1]               	;get our cache value from RAM
         and     %10111111                                       ;remove bit 6
-        out     [sms.ports.vdp.control],	A`vdpData       ;write the value,
-        ld      A`vdpControl,			!VDP_REGISTER_1 ;followed by the register number
-        out     [sms.ports.vdp.control],	A`vdpControl
+        out     [sms.ports.vdp_control],	A`vdpData       ;write the value,
+        ld      A`vdpControl,			SMS_VDP_REGISTER_1 
+        out     [sms.ports.vdp_control],	A`vdpControl	;followed by the register number
         
         ;horizontal scroll:
         ld      A`vdpData,	[VDPSCROLL_HORZ]
         neg                                                     ;I don't understand the reason for this
-        out     [sms.ports.vdp.control],	A`vdpData
-        ld      A`vdpControl,	!VDP_REGISTER_8
-        out     [sms.ports.vdp.control],	A`vdpControl
+        out     [sms.ports.vdp_control],	A`vdpData
+        ld      A`vdpControl,			SMS_VDP_REGISTER_8
+        out     [sms.ports.vdp_control],	A`vdpControl
         
         ;vertical scroll:
         ld      A`vdpData,	[VDPSCROLL_VERT]
-        out     [sms.ports.vdp.control],	A`vdpData
-        ld      A`vdpControl,	!VDP_REGISTER_9
-        out     [sms.ports.vdp.control],	A`vdpControl
+        out     [sms.ports.vdp_control],	A`vdpData
+        ld      A`vdpControl,			SMS_VDP_REGISTER_9
+        out     [sms.ports.vdp_control],	A`vdpControl
         
         bit     5,	[IY`vars+Vars.flags0]                    
-        call    nz,	\\floors\fillScrollTiles
+        call    nz,	fillScrollTiles
         
         bit     5,	[IY`vars+Vars.flags0]
         call    nz,	loadPaletteFromInterrupt
 	
         ;turn the screen back on 
         ;(or if it was already blank before this function, leave it blank)
-        ld      A`vdpData,	[VDPREGISTER_1]
-        out     [sms.ports.vdp.control],	A`vdpData
-        ld      A`vdpControl,	!VDP_REGISTER_1
-        out     [sms.ports.vdp.control],	A`vdpControl
+        ld      A`vdpData,			[VDPREGISTER_1]
+        out     [sms.ports.vdp_control],	A`vdpData
+        ld      A`vdpControl,			SMS_VDP_REGISTER_1
+        out     [sms.ports.vdp_control],	A`vdpControl
         
         ;TODO: set these bank numbers according to the data location
-        ld      A`bank,	8                       ;Sonic sprites?
+        ld      A`bank,			8                       ;Sonic sprites?
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	9
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			9
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ;does the Sonic sprite need updating?
         ;(the particular frame of animation is copied to the VRAM)
         bit     7,	[IY`vars+Vars.timeLightningFlags]
-        call    nz,	:mobsupdateSonicSpriteFrame
+        call    nz,	updateSonicSpriteFrame
         
         ;TODO: set these bank numbers according to the data location
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	2
-        ld      [$sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			2
+        ld      [sms.mapper.slot2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ;update sprite table?
         bit     1,	[IY`vars+Vars.flags0]
@@ -273,9 +273,9 @@ interruptHandler:                                                               
         
         ld      A,	[D2AB+1]
         and     %10000000
-        call    z,	:mobs_LABEL_38B0_51
+        call    z,	_38b0
         
-        ld      A,	$FF
+        ld      A,		$FF
         ld      [D2AB+1],	A
         
         set     0,	[IY`vars+Vars.flags0]
@@ -291,16 +291,16 @@ loadPaletteFromInterrupt:                                                       
 ;       LOADPALETTE_FLAGS     	: flags to load tile / sprite palettes or both
         ;---------------------------------------------------------------------------------------------------------------
         
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	2
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			2
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ;if the level is underwater then skip loading the palette as the palettes
         ;are handled by the code that does the raster split
-        bit     7,	[IY`vars+Vars.flags6]                  ;underwater flag
+        bit     7,	[IY`vars+Vars.flags6]                  	;underwater flag
         jr      nz,	@_1
         
         ;get the palette loading parameters that were assigned by the main thread
@@ -308,9 +308,9 @@ loadPaletteFromInterrupt:                                                       
         ld      HL`addr,	[LOADPALETTE_ADDRESS]
         ld      A`flags,	[LOADPALETTE_FLAGS]
         
-        bit     3,	[IY`vars+Vars.flags0]                  ;check flag to specify loading palette
-        call    nz,	\\gfx\loadPalette                      ;load the palette if flag is set
-        res     3,	[IY`vars+Vars.flags0]                  ;unset flag so it doesn't happen again
+        bit     3,	[IY`vars+Vars.flags0]                  	;check flag to specify loading palette
+        call    nz,	loadPalette                      	;load the palette if flag is set
+        res     3,	[IY`vars+Vars.flags0]                  	;unset flag so it doesn't happen again
         ret
         
         ;when the level is underwater, different logic controls loading the palette
@@ -319,22 +319,22 @@ loadPaletteFromInterrupt:                                                       
         ret
 	;
 	
-_LABEL_1A0_18:                                                                                                  ;$01A0
+_01A0:                                                                                                  	;$01A0
 ;-----------------------------------------------------------------------------------------------------------------------
 ;params IY`vars         : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
         
-        bit     7,	[IY`vars+Vars.flags6]                  ;check the underwater flag
+        bit     7,	[IY`vars+Vars.flags6]                  	;check the underwater flag
         ret     z                                               ;if off, leave now
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ;TODO: set these bank numbers according to the data location
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	2
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			2
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ;this seems quite pointless but could do with
         ;killing a specific amount of time
@@ -373,28 +373,28 @@ loadPaletteFromInterrupt_water:                                                 
         jr      z,	@_1
         ld      HL`addr,	underwaterPalette_Boss
         
-@_1:    ld      A`flags         %00000011                       ;"load tile & sprite palettes"
-        call    \\gfx\loadPalette                              ;load the relevant underwater palette
+@_1:    ld      A`flags,         %00000011                      ;"load tile & sprite palettes"
+        call    loadPalette                              	;load the relevant underwater palette
         ret
         
         ;above water:
         ;---------------------------------------------------------------------------------------------------------------
-@_2:    ld      A                   [CYCLEPALETTE_INDEX]
-        add     A,	A                           ;x2
-        add     A,	A                           ;x4
-        add     A,	A                           ;x8
-        add     A,	A                           ;x16
+@_2:    ld      A,	[CYCLEPALETTE_INDEX]
+        add     A,	A                           		;x2
+        add     A,	A                           		;x4
+        add     A,	A                           		;x8
+        add     A,	A                           		;x16
         ld      E,	A
         ld      D,	$00
         ld      HL,	[CYCLEPALETTE_POINTER]
         add     HL,	DE
         ld      A,	%00000001
-        call    \\gfx\loadPalette
+        call    loadPalette
         
         ;load the sprite palette specifically for Labyrinth
         ld      HL,	\\levels.palettes\paletteData.labyrinth+16
         ld      A,	%00000010
-        call    \\gfx\loadPalette
+        call    loadPalette
         
         ret
 	;
@@ -424,9 +424,9 @@ doRasterSplit:                                                                  
         
         ;set VDP register 10 with the scanline number to interrupt at next
         ;(that is, set the next interrupt to occur at the water line)
-        out     [sms.ports.vdp.control],	A`scanline
-        ld      A`register,	!VDP_REGISTER_10
-        out     [sms.ports.vdp.control],	A`register
+        out     [sms.ports.vdp_control],	A`scanline
+        ld      A`register,			SMS_VDP_REGISTER_10
+        out     [sms.ports.vdp_control],	A`register
         
         jp      @_3
         
@@ -443,10 +443,10 @@ doRasterSplit:                                                                  
         ld      [RASTERSPLIT_STEP],	A`step
         
         ;set the VDP to point at the palette
-        ld      A,	$00
-        out     [sms.ports.vdp.control],	A
-        ld      A,	%11000000
-        out     [sms.ports.vdp.control],	A
+        ld      A,				$00
+        out     [sms.ports.vdp_control],	A
+        ld      A,				%11000000
+        out     [sms.ports.vdp_control],	A
         
         ld      B,	16
         ld      HL,	underwaterPalette
@@ -460,22 +460,22 @@ doRasterSplit:                                                                  
         ld      HL,	underwaterPalette_Boss
 
         ;copy the palette into the VDP
-@loop:  ld      A                       [HL]
-        out     [sms.ports.vdp.data],	A
+@loop:  ld      A,			[HL]
+        out     [sms.ports.vdp_data],	A
         inc     HL
         
         nop
         
-        ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        ld      A,			[HL]
+        out     [sms.ports.vdp_data],	A
         inc     HL
         djnz    @loop
         
         ld      A,	[VDPREGISTER_0]
         and     %11101111                                       ;remove bit 4: disable line interrupts
-        out     [sms.ports.vdp.control],	A
-        ld      A,	!VDP_REGISTER_0
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
+        ld      A,				SMS_VDP_REGISTER_0
+        out     [sms.ports.vdp_control],	A
         
 @_3:    pop     BC
 	pop	DE
@@ -487,17 +487,15 @@ doRasterSplit:                                                                  
 	
 underwaterPalette:                                                                                           	;$024B
 ;=======================================================================================================================
-        byte x,	16
-@tile:  $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:$00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
+@tile:  .DB	$10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite:.DB	$00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
 	;
 	
 underwaterPalette_Boss:                                                                                      	;$026B
 ;=======================================================================================================================
 ;TODO: this should be provided by the mob, not the interrupts (i.e. it can be excluded if no underwater used)
-        byte x,	16
-@tile:  $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:$10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
+@tile:  .DB	$10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite:.DB	$10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
 	;
 
 init:                                                                                                           ;$028B
@@ -508,26 +506,26 @@ init:                                                                           
         ;---------------------------------------------------------------------------------------------------------------
         
         ;tell the SMS the cartridge has no RAM and to use ROM banking
-        ld      A,	%10000000               ;sms.mapper.control.writeProtect@mask
+        ld      A,			%10000000               ;sms.mapper.control.writeProtect@mask
         ld      [sms.mapper.control],	A
         ;load banks 0, 1 & 2 of the ROM into the address space
         ;($0000-$BFFF of the address space will be mapped to $0000-$BFFF of this ROM)
-        ld      A`bank,	0
+        ld      A`bank,			0
         ld      [sms.mapper.slot0],	A`bank
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      A`bank,	2
+        ld      A`bank,			2
         ld      [sms.mapper.slot2],	A`bank
         
         ;empty the RAM!
-        ld      HL,	FLOORLAYOUT                   ;starting from $C000,
-        ld      DE,	FLOORLAYOUT+1                 ;and copying one byte to the next byte,
-        ld      BC,	$1FEF                           ;copy 8'175 bytes ($C000-$DFEF),
-        ld      [HL],	L                               ;using a value of 0 (the #$00 from the $C000)
+        ld      HL,	FLOORLAYOUT                   		;starting from $C000,
+        ld      DE,	FLOORLAYOUT+1                 		;and copying one byte to the next byte,
+        ld      BC,	$1FEF                           	;copy 8'175 bytes ($C000-$DFEF),
+        ld      [HL],	L                               	;using a value of 0 (the #$00 from the $C000)
         ldir                                                    ;--it's faster to read a register than RAM
         
-        ld      SP,	HL                              ;place the stack at the top of RAM ($DFEF)
-                                                                ;(note that LDIR increased the HL register)
+        ld      SP,	HL                              	;place the stack at the top of RAM ($DFEF)
+                                                                ;(note that `ldir` increased the HL register)
         
         ;initialize the VDP:
         ld      HL,	initVDPRegisterValues
@@ -535,15 +533,15 @@ init:                                                                           
         ld      B,	11
         ld      C,	$8B
         
-@loop:  ld      A               [HL]                            ;read the low-byte for the VDP
-        ld      [DE],	A                               ;copy to RAM
+@loop:  ld      A,	[HL]                            	;read the low-byte for the VDP
+        ld      [DE],	A                               	;copy to RAM
         inc     HL                                              ;move to the next byte
         inc     DE
-        out     [sms.ports.vdp.control],	A               ;send the VDP lo-byte
-        ld      A,	C                               ;Load A with #$8B
+        out     [sms.ports.vdp_control],	A               ;send the VDP lo-byte
+        ld      A,	C                               	;Load A with #$8B
         sub     B                                               ;subtract B from A (B is decreasing),
                                                                 ;so A will count from #$80 to #8A
-        out     [sms.ports.vdp.control],	A               ;send the VDP hi-byte
+        out     [sms.ports.vdp_control],	A               ;send the VDP hi-byte
         djnz    @loop                                           ;loop until B has reached 0
         
         ;move all sprites off the bottom of the screen!
@@ -551,19 +549,19 @@ init:                                                                           
         ld      HL,	$3F00
         ld      BC,	64
         ld      A,	224
-        call    \\gfx\clearVRAM
+        call    clearVRAM
         
 	;if the sound module is being included,
 	;mute any current sound (e.g. after soft-reset)
-	.IFDEF OPTION_AUDIO
+	.IFDEF 	OPTION_AUDIO
 		call	call_muteSound
 	.ENDIF
         
         ;IY is used as a shorthand to some common variables throughout,
         ;though this is in practice slower than just using an absolute address
         ;TODO: we could remove use of IY as the common variables address entirely and perhaps use it for other things
-        ld      IY`vars,	VARS                          ;variable space starts here
-        jp      \screens.temp\_LABEL_1C49_62
+        ld      IY`vars,	VARS                          	;variable space starts here
+        jp      _1c49
 	;
 
 call_playMusic:													;$02D7
@@ -577,14 +575,14 @@ call_playMusic:													;$02D7
         push    AF`songIndex
         
         ;switch page 1 (Z80:$4000-$7FFF) to bank 3 ($C000-$FFFF)
-        ld      A`bank,	:audio.playMusic
+        ld      A`bank,			:audio.playMusic
         ld      [sms.mapper.slot1],	A`bank			;TODO: get slot number from module?
         
         pop     AF`songIndex
         ld      [PREVIOUS_MUSIC],	A`songIndex
         call    audio.playMusic
         
-        ld      A`bank,	[SLOT1]
+        ld      A`bank,			[SLOT1]
         ld      [sms.mapper.slot1],	A`bank			;TODO: get slot number from module?
         
         ei                                                      ;enable interrupts
@@ -600,10 +598,10 @@ call_muteSound:                                                                 
         di                                                      ;disable interrupts
         
         ;switch page 1 (Z80:$4000-$7FFF) to bank 3 (ROM:$0C000-$0FFFF)
-        ld      A`bank,	:audio.stop
+        ld      A`bank,			:audio.stop
         ld      [sms.mapper.slot1],	A`bank
         call    audio.stop
-        ld      A`bank,	[SLOT1]
+        ld      A`bank,			[SLOT1]
         ld      [sms.mapper.slot1],	A`bank
         
         ei                                                      ;enable interrupts
@@ -620,13 +618,13 @@ call_playSFX:                                                                   
         di      
         push    AF`SFXIndex
         
-        ld      A`bank,	:audio.playSFX
+        ld      A`bank,			:audio.playSFX
         ld      [sms.mapper.slot1],	A`bank
         
         pop     AF`SFXIndex
         call    audio.playSFX
         
-        ld      A`bank,	[SLOT1]
+        ld      A`bank,			[SLOT1]
         ld      [sms.mapper.slot1],	A`bank
         
         ei
@@ -635,28 +633,27 @@ call_playSFX:                                                                   
 
 initVDPRegisterValues:                                                                                          ;$031B
 ;=======================================================================================================================
-        byte                                                                                                    ;cache:
-        
-        %00100110       ;VDP Reg#0:                                                                             `[$D218]
-        ;......x.       `stretch screen (33 columns)
-        ;.....x..       `unknown
-        ;..x.....       `hide left column (for scrolling)
+														;cache:
+        .DB	%00100110       	;VDP Reg#0:                                                             ;[$D218]
+		;......x.       	;stretch screen (33 columns)
+		;.....x..       	;unknown
+		;..x.....       	;hide left column (for scrolling)
 
-        %10100010       ;VDP Reg#1: (original ROM)                                                              `[$D219]
-        ;......x.       `enable 8x16 sprites
-        ;..x.....       `enable vsync interrupt
-        ;.x......       `disable screen (no display)                    
-        ;x.......       `unknown                                                                         `these caches
-                                                                                                         ;are not used!
-        %11111111       ;VDP Reg#2: place screen at VRAM:$3800                                                  `[$D21A]
-        %11111111       ;VDP Reg#3: unused                                                                      `[$D21B]
-        %11111111       ;VDP Reg#4: unused                                                                      `[$D21C]
-        %11111111       ;VDP Reg#5: set sprites at VRAM:$3F00                                                   `[$D21D]
-        %11111111       ;VDP Reg#6: set sprites to use tiles from VRAM:$2000                                    `[$D21E]
-        %00000000       ;VDP Reg#7: set border colour from the sprite palette                                   `[$D21F]
-        %00000000       ;VDP Reg#8: horizontal scroll offset                                                    `[$D220]
-        %00000000       ;VDP Reg#9: vertical scroll offset                                                      `[$D221]
-        %11111111       ;VDP Reg#10: disable line interrupts                                                    `[$D222]
+        .DB	%10100010       	;VDP Reg#1: (original ROM)                                              ;[$D219]
+		;......x.       	;enable 8x16 sprites
+		;..x.....       	;enable vsync interrupt
+		;.x......       	;disable screen (no display)                    
+		;x.......       	;unknown							;these caches
+                                                                                                        ;are not used!
+        .DB	%11111111       	;VDP Reg#2: place screen at VRAM:$3800                                  ;[$D21A]
+        .DB	%11111111       	;VDP Reg#3: unused                                                      ;[$D21B]
+        .DB	%11111111       	;VDP Reg#4: unused                                                      ;[$D21C]
+        .DB	%11111111       	;VDP Reg#5: set sprites at VRAM:$3F00                                   ;[$D21D]
+        .DB	%11111111       	;VDP Reg#6: set sprites to use tiles from VRAM:$2000                    ;[$D21E]
+        .DB	%00000000       	;VDP Reg#7: set border colour from the sprite palette                   ;[$D21F]
+        .DB	%00000000       	;VDP Reg#8: horizontal scroll offset                                    ;[$D220]
+        .DB	%00000000       	;VDP Reg#9: vertical scroll offset                                      ;[$D221]
+        .DB	%11111111       	;VDP Reg#10: disable line interrupts                                    ;[$D222]
 	;
 
 waitForInterrupt:                                                                                               ;$031C
@@ -680,9 +677,9 @@ unused_0323:                                                                    
 ;params IY`vars         : Address of the common variables (used throughout)        
         ;---------------------------------------------------------------------------------------------------------------
         set     2,	[IY`vars+Vars.flags0]
-        ld      [UNUSED_D225],	HL                      ;unused RAM location!
-        ld      [UNUSED_D227],	DE                      ;unused RAM location!
-        ld      [UNUSED_D229],	BC                      ;unused RAM location!
+        ld      [UNUSED_D225],	HL                      	;unused RAM location!
+        ld      [UNUSED_D227],	DE                      	;unused RAM location!
+        ld      [UNUSED_D229],	BC                      	;unused RAM location!
         ret
 	;
 
@@ -708,14 +705,14 @@ updateVDPSprites:                                                               
         ;sprite Y positions:
         
         ;set the VDP address to $3F00 (Sprite Attribute Table, Y-positions)
-        ld      A`yPositionsLO,	?< sms.vram.sprites.yPositions ;=$3F00
-        out     [sms.ports.vdp.control],	A`yPositionsLO  ;write the low-byte first
-        ld      A`yPositionsHI,	?> sms.vram.sprites.yPositions ;=$3F00
+        ld      A`yPositionsLO, <sms.vram.sprites.yPositions 	;=$3F00
+        out     [sms.ports.vdp_control], 	A`yPositionsLO  ;write the low-byte first
+        ld      A`yPositionsHI, >sms.vram.sprites.yPositions 	;=$3F00
         or      %01000000                                       ;add bit 6 to mark a VRAM address being given
-        out     [sms.ports.vdp.control],	A`yPositionsHI  ;write the high-byte, with the 'address flag'
+        out     [sms.ports.vdp_control],	A`yPositionsHI  ;write the high-byte, with the 'address flag'
         
         ld      B,	[IY`vars+Vars.spriteUpdateCount]
-        ld      HL,	SPRITETABLE+1                         ;Y-position of the first sprite
+        ld      HL,	SPRITETABLE+1                         	;Y-position of the first sprite
         ld      DE,	3                                       ;sprite table is 3 bytes per sprite
         
         ld      A,	B
@@ -723,14 +720,14 @@ updateVDPSprites:                                                               
         jr      z,	@_1                                     ;if so skip over setting the Y-positions
 
         ;set sprite Y-positions:
-@yLoop: ld      A       [HL]                                    ;get the sprite's Y-position from RAM
-        out     [sms.ports.vdp.data],	A                       ;set the sprite's Y-position in the hardware
+@yLoop: ld      A,			[HL]                    ;get the sprite's Y-position from RAM
+        out     [sms.ports.vdp_data],	A                       ;set the sprite's Y-position in the hardware
         add     HL,	DE                                      ;move to the next sprite
         djnz    @yLoop
         
         ;if the number of sprites to update is >= than the existing number of active
         ;sprites, skip ahead to setting the X-positions and indexes
-@_1:    ld      A       [ACTIVESPRITECOUNT]
+@_1:    ld      A,      [ACTIVESPRITECOUNT]
         ld      B,	A
         ld      A,	[IY`vars+Vars.spriteUpdateCount]
         ld      C,	A
@@ -745,32 +742,32 @@ updateVDPSprites:                                                               
         ld      B,	A
         
         ;move remaining sprites off screen
-@yOff:  ld      A                       !SMS.SCREEN.HEIGHT      ;=224
-        out     [sms.ports.vdp.data],	A
+@yOff:  ld      A,	SMS_SCREEN_HEIGHT      			;=224
+        out     [sms.ports.vdp_data],	A
         djnz    @yOff
         
         ;sprite X positions / indexes:
         ;---------------------------------------------------------------------------------------------------------------
-@_2:    ld      A       C
+@_2:    ld      A,	C
         and     A
         ret     z
         
-        ld      HL,	SPRITETABLE                           ;first X-position in the sprite table
+        ld      HL,	SPRITETABLE                           	;first X-position in the sprite table
         ld      B,	[IY`vars+Vars.spriteUpdateCount]
         
         ;set the VDP address to $3F80 (sprite info table, X-positions & indexes)
-        ld      A,	?< $3F80
-        out     [sms.ports.vdp.control],	A
-        ld      A,	?> $3F80
+        ld      A,	<$3F80
+        out     [sms.ports.vdp_control],	A
+        ld      A,	>$3F80
         or      %01000000                                       ;add bit 6 to mark an address is given
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
-@xLoop: ld      A       [HL]                                    ;set the sprite X-position
-        out     [sms.ports.vdp.data],	A
+@xLoop: ld      A,			[HL]			;set the sprite X-position
+        out     [sms.ports.vdp_data],	A
         inc     L                                               ;skip Y-position
         inc     L                               
-        ld      A,	[HL]                                    ;set the sprite index number
-        out     [sms.ports.vdp.data],	A
+        ld      A,			[HL]			;set the sprite index number
+        out     [sms.ports.vdp_data],	A
         inc     L
         djnz    @xLoop
 
@@ -792,14 +789,14 @@ unused_0397:                                                                    
         ;---------------------------------------------------------------------------------------------------------------
         di      
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ei      
 
-@loop:  ld      A                       [HL]
-        out     [sms.ports.vdp.data],	A
+@loop:  ld      A,	[HL]
+        out     [sms.ports.vdp_data],	A
         inc     HL
         
         dec     BC
@@ -821,10 +818,10 @@ unused_03ac:                                                                    
 
         ;set the VDP address using DE
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         pop     AF
         ld      DE,	[SLOT1]
@@ -837,14 +834,14 @@ unused_03ac:                                                                    
         ld      [SLOT2],	A
         ei
 
-@_1:    ld      A       [HL]
+@_1:    ld      A,	[HL]
         cpl     
         ld      E,	A
 
-@_2:    ld      A       [HL]
+@_2:    ld      A,	[HL]
         cp      E
         jr      z,	@_3
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         ld      E,	A
         inc     HL
         dec     BC
@@ -853,7 +850,7 @@ unused_03ac:                                                                    
         jp      nz,	@_2
         jr      @_5
 
-@_3:    ld      D       A
+@_3:    ld      D,	A
         inc     HL
         dec     BC
         ld      A,	B
@@ -862,7 +859,7 @@ unused_03ac:                                                                    
         ld      A,	D
         ld      E,	[HL]
 
-@_4:    out     [sms.ports.vdp.data]   A
+@_4:    out     [sms.ports.vdp_data],	A
         dec     E
         nop     
         nop     
@@ -879,10 +876,10 @@ unused_03ac:                                                                    
         
         ;restore bank numbers
         pop     DE`banks
-        ld      [SLOT1],	DE`banks                ;restore our copy of the bank numbers
-        ld      A`banks,	E`banks
+        ld      [SLOT1],		DE`banks                ;restore our copy of the bank numbers
+        ld      A`banks,		E`banks
         ld      [sms.mapper.slot1],	A`banks                 ;restore Slot 1
-        ld      A`banks,	D`banks
+        ld      A`banks,		D`banks
         ld      [sms.mapper.slot2],	A`banks                 ;restore Slot 2
                                              
         
@@ -890,9 +887,6 @@ unused_03ac:                                                                    
         ei
         ret
 	;
-
-	
-.BANK 1
 
 decompressArt:                                                                                                  ;$0405
 ;=======================================================================================================================
@@ -914,11 +908,11 @@ decompressArt:                                                                  
         ;is the HL parameter address below the $40xx range?
         ;-- that is, does the relative address extend into the second page?
         ld      A`dataAddr,	H`dataAddr
-        cp      ?>,	sms.slot1@size                              ;=$4000
+        cp      >_sizeof_sms.slot1				;=$4000
         jr      c,	@_2
         
         ;remove $40xx (e.g. so $562B becomes $162B)
-        sub     ?>,	sms.slot1@size                              ;=$4000
+        sub     >_sizeof_sms.slot1				;=$4000
         ld      H`dataAddr,	A`dataAddr
         
         ;restore the A parameter (the starting bank number) and increase it so that
@@ -931,13 +925,13 @@ decompressArt:                                                                  
         ;configure the VDP:
         ;---------------------------------------------------------------------------------------------------------------
         
-@_2:    ld      A       E                                       ;VDP value byte from the E parameter
-        out     [sms.ports.vdp.control],	A               ;send to the VDP
+@_2:    ld      A,	E                                       ;VDP value byte from the E parameter
+        out     [sms.ports.vdp_control],	A               ;send to the VDP
         
         ld      A,	D
         or      %01000000                                       ;add bit 7 (that is, convert A to
                                                                 ;a VDP control register number)
-        out     [sms.ports.vdp.control],	A               ;send it to the VDP
+        out     [sms.ports.vdp_control],	A               ;send it to the VDP
         
         ;switch banks:
         ;---------------------------------------------------------------------------------------------------------------
@@ -954,10 +948,10 @@ decompressArt:                                                                  
         
         ;change pages 1 & 2 (Z80:$4000-$BFFF) to banks A & A+1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
+        ld      [SLOT1],		A`bank
         inc     A`bank
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ;read art header:
         ;---------------------------------------------------------------------------------------------------------------
@@ -966,7 +960,7 @@ decompressArt:                                                                  
         jr      nz,	@_3
         ei
         
-@_3:    ld      [TEMP4]       HL
+@_3:    ld      [TEMP4],	HL
         
         ;begin reading the compressed art header:
         ;see <info.sonicretro.org/SCHG:Sonic_the_Hedgehog_(8-bit)#Header> for details on the format
@@ -1010,7 +1004,7 @@ decompressArt:                                                                  
         ld      D'baseAddr,	B'baseAddr
         
         pop     HL'                                             ;pull the ArtData value from the stack
-        add     HL',	BC'                             ;get the absolute address of ArtData
+        add     HL',	BC'                             	;get the absolute address of ArtData
         ld      [TEMP1],	HL'                             ;and store that in $D20E
         ;copy it to BC. this will be used to produce a counter from 0 to RowCount
         ld      C',	L'
@@ -1031,7 +1025,7 @@ decompressArt:                                                                  
         ;process row:
         ;---------------------------------------------------------------------------------------------------------------
 @processRow:
-        ld      HL,	[TEMP3]                               ;load HL with original row count
+        ld      HL,	[TEMP3]                               	;load HL with original row count
                                                                 ;($0400 for sprites, $0800 for tiles)
         xor     A`zero                                          ;set A to 0 (Carry is reset)
         sbc     HL,	BC                                      ;subtract counter from row count
@@ -1059,7 +1053,7 @@ decompressArt:                                                                  
         srl     D
         rr      E
         
-        ld      HL,	[TEMP6]                               ;the absolute address where the
+        ld      HL,	[TEMP6]                               	;the absolute address where the
                                                                 ;UniqueRows list begins
         add     HL,	DE                                      ;add the counter, so move along to the
                                                                 ;DE'th byte in the UniqueRows list
@@ -1080,22 +1074,22 @@ decompressArt:                                                                  
         
         ;write 1 row of pixels (4 bytes) to the VDP
         ld      A,	[BC']
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     BC'
         nop
         nop
         ld      A,	[BC']
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     BC'
         nop
         nop
         ld      A,	[BC']
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     BC'
         nop
         nop
         ld      A,	[BC']
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     BC'
         
         ;swap BC/DE/HL back again
@@ -1140,31 +1134,31 @@ decompressArt:                                                                  
         
         ;multiply the duplicate row's index number to the art data by 4
         ;--each row of art data is 4 bytes
-@_4:    ld      L                   A
+@_4:    ld      L,	A
         add     HL,	HL
         add     HL,	HL
         
-        ld      DE,	[TEMP1]                   ;get absolute address to the art data
-        add     HL,	DE                          ;add the index from duplicate row list
+        ld      DE,	[TEMP1]                   		;get absolute address to the art data
+        add     HL,	DE                          		;add the index from duplicate row list
         
         ;write 1 row of pixels (4 bytes) to the VDP
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     HL
         nop
         nop
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     HL
         nop
         nop
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     HL
         nop
         nop
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     HL
         
         ;decrease the remaining row count
@@ -1180,11 +1174,11 @@ decompressArt:                                                                  
         di
 @_6:    ;restore the pages to the original banks at the beginning of the procedure
         pop     DE`banks
-        ld      [SLOT1],	DE`banks
+        ld      [SLOT1],		DE`banks
         ld      [sms.mapper.slot1],	DE`banks
         
         ei
-        res     1,	[IY`vars + Vars.flags9]
+        res     1,	[IY`vars+Vars.flags9]
         ret
 
 @rowIndexTable:
@@ -1212,13 +1206,13 @@ decompressScreen:                                                               
         di                                                      ;disable interrupts
         
         ;configure the VDP based on the DE parameter
-        ld      A`vdpValue,	E`vdpValue
-        out     [sms.ports.vdp.control],	A`vdpValue
+        ld      A`vdpValue,			E`vdpValue
+        out     [sms.ports.vdp_control],	A`vdpValue
         
         ;add bit 7 (that is, convert A to a VDP control register number)
         ld      A`vdpRegister,	D`vdpRegister
         or      %01000000
-        out     [sms.ports.vdp.control],	A`vdpRegister
+        out     [sms.ports.vdp_control],	A`vdpRegister
         
         ei                                                      ;enable interrupts
         
@@ -1232,24 +1226,24 @@ decompressScreen:                                                               
         
 @_2:    ld      A`nextByte      [HL]                            ;read current byte from screen data
         cp      E`prevByte                                      ;is this equal to the previous byte?
-        jr      z,	@_3                                         ;if yes, decompress the byte
+        jr      z,	@_3                                     ;if yes, decompress the byte
         
         cp      $FF                                             ;is this tile $FF?
         jr      z,	@skip
         
         ;uncompressed byte:
         ;---------------------------------------------------------------------------------------------------------------
-        out     [sms.ports.vdp.data],	A                       ;send the tile to the VDP
+        out     [sms.ports.vdp_data],	A                       ;send the tile to the VDP
         ld      E,	A                       		;update the current byte being compared
         ld      A,	[TEMP1]               			;get the upper byte for the tiles
                                                                 ;(foreground / background / flip)
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         
         inc     HL                                              ;move to the next byte
         dec     BC                                              ;decrease the remaining bytes to read
         ld      A,	B                                       ;check if remaining bytes is zero
         or      C
-        jp      nz,	@_2                                         ;if remaining bytes, loop
+        jp      nz,	@_2                                     ;if remaining bytes, loop
         jr      @_6                                             ;otherwise end
         
         ;decompress byte:
@@ -1268,10 +1262,10 @@ decompressScreen:                                                               
         jr      z,	@multiSkip
         
         ;repeat the byte
-@_4:    out     [sms.ports.vdp.data]   A
+@_4:    out     [sms.ports.vdp_data],	A
         push    AF
         ld      A,	[TEMP1]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         pop     AF
         dec     E
         jp      nz,	@_4
@@ -1283,7 +1277,7 @@ decompressScreen:                                                               
         ;any remaining bytes?
         ld      A,	B
         or      C
-        jp      nz,	@_1                                         ;start checking duplicate bytes again
+        jp      nz,	@_1                                     ;start checking duplicate bytes again
         
         ;all bytes processed - we're done!
 @_6:    ret
@@ -1291,11 +1285,11 @@ decompressScreen:                                                               
         ;---------------------------------------------------------------------------------------------------------------
 @skip:
         ld      E,	A
-        in      A,	[sms.ports.vdp.data]
+        in      A,	[sms.ports.vdp_data]
         nop
         inc     HL
         dec     BC
-        in      A,	[sms.ports.vdp.data]
+        in      A,	[sms.ports.vdp_data]
         
         ld      A,	B
         or      C
@@ -1307,10 +1301,10 @@ decompressScreen:                                                               
         ;---------------------------------------------------------------------------------------------------------------
         
 @multiSkip:
-        in      A,	[sms.ports.vdp.data]
+        in      A,	[sms.ports.vdp_data]
         push    AF
         pop     AF
-        in      A,	[sms.ports.vdp.data]
+        in      A,	[sms.ports.vdp_data]
         nop
         dec     E
         jp      nz,	@multiSkip
@@ -1359,9 +1353,9 @@ loadPalette:                                                                    
         
 @sendPalette:
         ld      A,	C                                       ;send palette index number to begin at
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	%11000000                               ;specify palette operation (bits 7 & 6)
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
 	;TODO: this can be unrolled into `outi`s to go faster
 	ld      C,	$BE                                     ;send the colours to the palette
@@ -1379,15 +1373,15 @@ clearVRAM:                                                                      
 ;       BC`size         : length
 ;       A`value         : value
         ;---------------------------------------------------------------------------------------------------------------
-        ld      E`value,	A`value                     ;temporarily shift the value to E
+        ld      E`value,	A`value                     	;temporarily shift the value to E
         ld      A,	L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
 @loop:  ld      A`value         E`value                         ;return the value to A
-        out     [sms.ports.vdp.data],	A`value                 ;send it to the VDP
+        out     [sms.ports.vdp_data],	A`value                 ;send it to the VDP
         
         dec     BC`size
         ld      A`size,	B`size
@@ -1402,7 +1396,7 @@ readJoypad:                                                                     
 ;return VARS.joypad
         ;---------------------------------------------------------------------------------------------------------------
         
-        in      A`joypad,	[sms.ports.joy.a]              ;read the joypad port
+        in      A`joypad,	[sms.ports.joy_a]              	;read the joypad port
         or      %11000000                                       ;mask out bits 7 & 6 -
                                                                 ;these are joypad 2 down / up
         ld      [IY`vars+Vars.joypad],	A                       ;store the joypad value in $D203
@@ -1448,10 +1442,10 @@ print:                                                                          
         ;set the VDP to point to the screen address calculated
         di
         ld      A,	L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ei
 
         ;read bytes from memory until hitting $FF
@@ -1459,12 +1453,12 @@ print:                                                                          
         cp      $FF
         ret     z
         
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         push    AF                                              ;kill time?
         pop     AF
-        ld      A,	[TEMP1]                               ;what to use as the tile upper bits
+        ld      A,	[TEMP1]                               	;what to use as the tile upper bits
                                                                 ;(front/back, flip &c.)
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         djnz    @loop
         
@@ -1483,7 +1477,7 @@ hideSprites:                                                                    
         ld      D`table,	H`table
         ld      BC`count,	189                             ;size of SPRITETABLE - 3?
         ;set the first two bytes as 224 (X&Y position)
-        ld      A`pos,	224
+        ld      A`pos,		224
         ld      [DE`table],	A`pos
         inc     DE`table
         ld      [DE`table],	A`pos
@@ -1519,8 +1513,8 @@ multiply:                                                                       
         ;---------------------------------------------------------------------------------------------------------------
         
         xor     A`zero                                          ;set A to 0
-        ld      B`loop,	7                               ;we will process all 8-bits of C
-        ex      DE,	HL`result                       ;transfer the HL parameter to DE
+        ld      B`loop,		7                               ;we will process all 8-bits of C
+        ex      DE,		HL`result                       ;transfer the HL parameter to DE
         ld      L`result,	A`zero                          ;set HL as $0000
         ld      H`result,	A`zero
         
@@ -1570,9 +1564,9 @@ _LABEL_60F_111:                                                                 
         ;D:11000000 E:00000000 C:0A A:00000100 H:11000000 L:00000000 B:04
         ;D:10000000 E:00000000 C:0A A:00001001 H:10000000 L:00000000 B:03
         ;D:00000000 E:00000000 C:0A A:00010011 H:00000000 L:00000000 B:02
-        `
+        ;
         ;D:00000000 E:00000000 C:0A A:00001001 H:00000000 L:00000000 B:02
-        `
+        ;
         ;D:00000000 E:00111100 C:0A A:00100110 H:00000000 L:00000000 B:01
         ;D:00000000 E:00111100 C:0A A:01001100 H:00000000 L:00000000 B:00
         ;D:00000000 E:01111000 C:0A A:00000010 H:00000000 L:00000000 B:00
@@ -1596,7 +1590,7 @@ _LABEL_60F_111:                                                                 
         ret
 	;
 
-_LABEL_625_57:                                                                                                  ;$0625
+_0625:                                                                                                  	;$0625
 ;=======================================================================================================================
         ;random number generator?
         
@@ -1639,7 +1633,7 @@ updateVDPscroll:                                                                
         ;has the camera moved horizontally?
         ;---------------------------------------------------------------------------------------------------------------
         ld      HL`cameraX,	[CAMERA_X]
-        ld      DE,	[CAMERA_X_PREV]
+        ld      DE,		[CAMERA_X_PREV]
         and     A`clearCarry                                    ;clear carry flag
         sbc     HL`cameraX,	DE                              ;RAM_CAMERA_X_LEFT` > `RAM_CAMERA_X`?
         jr      c,	@_1                                     ;jump if the camera has moved left
@@ -1663,7 +1657,7 @@ updateVDPscroll:                                                                
         ;---------------------------------------------------------------------------------------------------------------
         
 @_2:    ld      HL`cameraY      [CAMERA_Y]
-        ld      DE,	[CAMERA_Y_PREV]
+        ld      DE,		[CAMERA_Y_PREV]
         and     A`clearCarry                                    ;clear carry flag
         sbc     HL`cameraY,	DE                              ;RAM_CAMERA_Y_UP` > `RAM_CAMERA_Y`?
         jr      c,	@_4                                     ;jump if the camera has moved up
@@ -1671,10 +1665,10 @@ updateVDPscroll:                                                                
         ;camera moved down:
         ld      A,	L
         add     A,	B
-        cp      :system.sms@screen.height                      ;if > 224 (bottom of the screen)
+        cp      SMS_SCREEN_HEIGHT				;if > 224 (bottom of the screen)
         jr      c,	@_3
         
-        add     A,	256 - :system.sms@screen.height        ;add 32 to wrap 224 around 256 back to 0+
+        add     A,	256-SMS_SCREEN_HEIGHT        		;add 32 to wrap 224 around 256 back to 0+
         
 @_3:    ld      B       A
         res     7,	[IY`vars+Vars.flags0]
@@ -1683,10 +1677,10 @@ updateVDPscroll:                                                                
         ;camera moved up:
 @_4:    ld      A       L
         add     A,	B
-        cp      !SMS.SCREEN.HEIGHT                      	;if > 224 (bottom of the screen)
+        cp      SMS_SCREEN_HEIGHT                      		;if > 224 (bottom of the screen)
         jr      c,	@_5
         
-        sub     A,	256 - !SMS.SCREEN.HEIGHT        	;subtract 32 to wrap 0 around 256 back to 224-
+        sub     A,	256-SMS_SCREEN_HEIGHT        		;subtract 32 to wrap 0 around 256 back to 224-
         
 @_5:    ld      B       A
         set     7,	[IY`vars+Vars.flags0]
@@ -1723,9 +1717,9 @@ updateVDPscroll:                                                                
         ld      [BLOCK_X],	BC
         
         ;update the left / up values now that the camera has moved
-        ld      HL,	[CAMERA_X]
+        ld      HL,			[CAMERA_X]
         ld      [CAMERA_X_PREV],	HL
-        ld      HL,	[CAMERA_Y]
+        ld      HL,			[CAMERA_Y]
         ld      [CAMERA_Y_PREV],	HL
         
         ret
@@ -1746,19 +1740,19 @@ fillOverscrollCache:                                                            
         ;interrupts are disabled so that tiles do not get written to the screen between updating them
         di
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 4 & 5 ($10000-$17FFF)
-        ld      A`bank,	:blocksS1_BlockMappings@bank
+        ld      A`bank,			:blockMappings
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	:blocksS1_BlockMappings@bank+1
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			:blockMappings+1
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         ei
         
         ;---------------------------------------------------------------------------------------------------------------
         ;get the address of the solidity data for the level's tilemap:
         ;TODO: we should just store the solidity data adress in the level header, instead of an index
         
-        ld      A,	[LEVEL_SOLIDITY]                      ;get the solidity index for the level
+        ld      A,	[LEVEL_SOLIDITY]                      	;get the solidity index for the level
         add     A,	A                                       ;double it (for a pointer)
         ld      C,	A                                       ;and put it into a 16-bit number (BC)
         ld      B,	$00
@@ -1820,7 +1814,7 @@ fillOverscrollCache:                                                            
         srl     A                                               ;divide by 2 ...
         srl     A                                               ;divide by 4 ...
         srl     A                                               ;divide by 8 (determine tile, 0-3)
-        ld      C,	A                               ;copy the tile number (0-3) into BC
+        ld      C,	A                               	;copy the tile number (0-3) into BC
         ld      B,	$00
         ld      [TEMP1],	BC                              ;stash it away for later
         
@@ -1835,7 +1829,7 @@ fillOverscrollCache:                                                            
         exx
         ld      C',	A
         ld      B',	$00
-        ld      HL',	[TEMP3]                               ;retrieve the solidity data address
+        ld      HL',	[TEMP3]                               	;retrieve the solidity data address
         add     HL',	BC'                                     ;offset block index into solidity data
         
         ;multiply the block index by 16
@@ -1857,9 +1851,9 @@ fillOverscrollCache:                                                            
         rrca
         and     %00010000
         
-        ld      HL',	[TEMP1]                               ;retrieve column number of VDP scroll
+        ld      HL',	[TEMP1]                               	;retrieve column number of VDP scroll
         add     HL',	BC'
-        ld      BC',	[BLOCKMAPPINGS]                       ;get address of level's block mappings
+        ld      BC',	[BLOCKMAPPINGS]                       	;get address of level's block mappings
         add     HL',	BC'
         ld      BC',	4
         ldi                                                     ;copy the first byte
@@ -1893,7 +1887,7 @@ fillOverscrollCache:                                                            
 @vert:  bit     1       [IY`vars+Vars.flags2]
         jp      z,	@exit
         
-        bit     7,	[IY`vars+Vars.flags0]                  ;camera moved up?
+        bit     7,	[IY`vars+Vars.flags0]                  	;camera moved up?
         jr      nz,	@_3
         
         ld      B,	$06
@@ -2004,7 +1998,7 @@ fillScrollTiles:                                                                
         
         ld      A`scrollHorz,	[VDPSCROLL_HORZ]
         
-        bit     6,	[IY`vars+Vars.flags0]                  ;camera moved left?
+        bit     6,	[IY`vars+Vars.flags0]                  	;camera moved left?
         jr      z,	@_1
         
         add     A`scrollHorz,	8                               ;add 8 pixels (left screen border?)
@@ -2046,16 +2040,16 @@ fillScrollTiles:                                                                
         ld      B,	$00
         add     HL,	BC                                      ;add twice to HL
         add     HL,	BC
-        ld      B,	LO $BE32                                ;set BC to $BE32
-        ld      C,	HI $BE32                                ;(purpose unknown)
+        ld      B,	<$BE32                                	;set BC to $BE32
+        ld      C,	>$BE32                                	;(purpose unknown)
         
         ;set the VDP address calculated earlier,
         ;that is, the tile beginning in the top-left corner of the screen
 @_2:    exx
         ld      A,	L'
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H'
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         ;move to the next row
         add     HL',	BC'
@@ -2086,7 +2080,7 @@ fillScrollTiles:                                                                
         srl     A
         srl     A
         
-        bit     7,	[IY`vars+Vars.flags0]                  ;camera moved up?
+        bit     7,	[IY`vars+Vars.flags0]                  	;camera moved up?
         jr      nz,	@_5
         
         add     A,	$18
@@ -2130,11 +2124,11 @@ fillScrollTiles:                                                                
         and     %11000000
         ld      [TEMP1],	A
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         and     %00111111
         ld      E,	A
         ld      A,	D
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      B,	$3E
         ld      C,	$BE
 
@@ -2149,9 +2143,9 @@ fillScrollTiles:                                                                
         ret
 
 @_8:    ld      A                               [TEMP1]
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
 @_9:    outi
         outi
@@ -2321,7 +2315,7 @@ fillScreenWithFloorLayout:                                                      
         
         exx
         ld      E',	A                                       ;copy the block index to E
-        ld      A,	[LEVEL_SOLIDITY]                      ;load A with level's solidity index
+        ld      A,	[LEVEL_SOLIDITY]                      	;load A with level's solidity index
         add     A,	A                                       ;double it (i.e. for a 16-bit pointer)
         ld      C',	A                                       ;put it into BC'
         ld      B',	$00
@@ -2371,52 +2365,52 @@ fillScreenWithFloorLayout:                                                      
         
         ;set the screen name address
 @_3:    ld      A                               L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         
         exx
         ld      A,	C'
         exx
         
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         
         exx
         ld      A,	C'
         exx
         
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         
         exx
         ld      A,	C'
         exx
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         
         exx
         ld      A,	C'
         exx
         
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         ld      A,	B
         ld      BC,	64
         add     HL,	BC
@@ -2445,7 +2439,7 @@ fillScreenWithFloorLayout:                                                      
         dec     B
         jp      nz,	@_1
         
-        ei                                                  ;enable interrupts
+        ei                                                  	;enable interrupts
         ret
 	;
 
@@ -2456,7 +2450,7 @@ loadFloorLayout:                                                                
 ;params HL`addr         : address of Floor Layout data
 ;       BC`size         : length of compressed data
         ;---------------------------------------------------------------------------------------------------------------
-        ld      DE`floor,	FLOORLAYOUT                   ;where in RAM the floor layout will go
+        ld      DE`floor,	FLOORLAYOUT                   	;where in RAM the floor layout will go
 
         ;RLE decompress floor layout:
         ;---------------------------------------------------------------------------------------------------------------
@@ -2469,7 +2463,7 @@ loadFloorLayout:                                                                
         jr      z,	@_3                                     ;if so, decompress it
         
         ;copy byte as normal:
-        ld      [DE],	A                               ;write it to RAM
+        ld      [DE],		A                               ;write it to RAM
         ld      [IY`vars+$01],	A                               ;update the comparison byte
         inc     HL                                              ;move forward
         inc     DE
@@ -2514,17 +2508,17 @@ fadeOut:                                                                        
         ;---------------------------------------------------------------------------------------------------------------
         ;switch in the default set of banks as palette data is primarily in bank 0 & 1, 
         ;though I am not certain about bank 2 (where the majority of the mob code is)
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	2
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			2
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         ld      A,	[IY`vars+Vars.spriteUpdateCount]
         
-        res     0,	[IY`vars+Vars.flags0]                  ;wait for interrupt to occur
-        call    \\interrupt\waitForInterrupt                   ;refresh screen
+        res     0,	[IY`vars+Vars.flags0]                  	;wait for interrupt to occur
+        call    \\interrupt\waitForInterrupt                   	;refresh screen
         
         ;after the interrupt, the sprite update count would be cleared, put it back to its old value
         ld      [IY`vars+Vars.spriteUpdateCount],	A
@@ -2614,7 +2608,7 @@ _aae:                                                                           
         
         ld      HL,	[LOADPALETTE_TILE]
         ld      DE,	PALETTE
-        ld      BC,	sms.palettes@size                      ;=32
+        ld      BC,	sms.palettes@size                      	;=32
         ldir
         
         ld      A`bank,	1
@@ -2658,7 +2652,7 @@ _aae:                                                                           
         
         ld      B,	4
 @_2:    push    BC
-        ld      HL,	[TEMP6]                               ;restore the HL parameter
+        ld      HL,	[TEMP6]                               	;restore the HL parameter
         ld      DE,	PALETTE
         ld      B,	32
 
@@ -2722,10 +2716,10 @@ _b50:                                                                           
 ;params HL`addr         : Address of a palette
         ;---------------------------------------------------------------------------------------------------------------
         ld      [TEMP6],	HL                              ;put the palette parameter aside
-        ld      HL,	PALETTE                               ;RAM cache of current palette
+        ld      HL,		PALETTE                         ;RAM cache of current palette
         
         ;erase the current palette
-        ld      B,	sms.palettes@size                      ;32 colours
+        ld      B,	sms.palettes@size                      	;32 colours
 @loop:  ld      [HL]    $00                                     ;set the palette colour to black
         inc     HL
         djnz    @loop
@@ -2742,7 +2736,7 @@ _b60:                                                                           
         
         ld      HL,	[LOADPALETTE_TILE]
         ld      DE,	PALETTE
-        ld      BC,	sms.palettes@size                      ;32 colours
+        ld      BC,	sms.palettes@size                      	;32 colours
         ldir
         
         ;---------------------------------------------------------------------------------------------------------------
@@ -2902,19 +2896,19 @@ loadPowerUpIcon:                                                                
         
         add     HL,	BC
         ld      A,	L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         ld      B,	4
 @loop:  ld      A       [DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop
         nop
         inc     DE
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         djnz    @loop
         
@@ -3434,24 +3428,24 @@ _f4e:                                                                           
         
         %word   %byte
         
-        _0f84  $00                                             ;Green Hill Act 1
-        _0f93  $00                                             ;Green Hill Act 2
-        _0fde  $01                                             ;Green Hill Act 3
-        _0fa2  $00                                             ;Bridge Act 1
-        _0fb1  $00                                             ;Bridge Act 2
-        _107e  $02                                             ;Bridge Act 3
-        _0fc0  $00                                             ;Jungle Act 1
-        _0fcf  $00                                             ;Jungle Act 2
-        _1088  $03                                             ;Jungle Act 3
-        _100b  $00                                             ;Labyrinth Act 1
-        _101a  $00                                             ;Labyrinth Act 2
-        _1092  $00                                             ;Labyrinth Act 3
-        _1029  $00                                             ;Scrap Brain Act 1
-        _1038  $00                                             ;Scrap Brain Act 2
-        _109c  $00                                             ;Scrap Brain Act 3
-        _1047  $00                                             ;Sky Base Act 1
-        _1056  $00                                             ;Sky Base Act 2
-        _1056  $00                                             ;Sky Base Act 3
+        _0f84  $00                                             	;Green Hill Act 1
+        _0f93  $00                                             	;Green Hill Act 2
+        _0fde  $01                                             	;Green Hill Act 3
+        _0fa2  $00                                             	;Bridge Act 1
+        _0fb1  $00                                             	;Bridge Act 2
+        _107e  $02                                             	;Bridge Act 3
+        _0fc0  $00                                             	;Jungle Act 1
+        _0fcf  $00                                             	;Jungle Act 2
+        _1088  $03                                             	;Jungle Act 3
+        _100b  $00                                             	;Labyrinth Act 1
+        _101a  $00                                             	;Labyrinth Act 2
+        _1092  $00                                             	;Labyrinth Act 3
+        _1029  $00                                             	;Scrap Brain Act 1
+        _1038  $00                                             	;Scrap Brain Act 2
+        _109c  $00                                             	;Scrap Brain Act 3
+        _1047  $00                                             	;Sky Base Act 1
+        _1056  $00                                             	;Sky Base Act 2
+        _1056  $00                                             	;Sky Base Act 3
 	;
 
 _0f84:                                                                                                          ;$0F84
@@ -3872,7 +3866,7 @@ titleScreen:                                                                    
         ld      [SLOT1],	A`bank
         
         ;load the title screen itself
-        ld      HL,	$6000                           ;ROM:$16000
+        ld      HL,	$6000                           	;ROM:$16000
         ld      DE,	sms.vram.screen
         ld      BC,	$012E
         ld      A,	$00
@@ -3900,7 +3894,7 @@ titleScreen:                                                                    
         
         ;initialise the animation parameters?
         xor     A`zero
-        ld      [D216],	A`zero                          ;reset the screen counter
+        ld      [D216],	A`zero                          	;reset the screen counter
         ld      A,	$01
         ld      [TEMP2],	A
         ld      HL,	@_1372
@@ -3917,13 +3911,13 @@ titleScreen:                                                                    
         call    \\interrupt\waitForInterrupt
         
         ;count to 100:
-        ld      A,	[D216]                                ;get the screen counter
+        ld      A,	[D216]                                	;get the screen counter
         inc     A                                               ;add one
         cp      100                                             ;if less than 100,
         jr      c,	@_2                                     ;keep counting,
 	
         xor     A`zero                                          ;otherwise go back to 0
-@_2:    ld      [D216]        A                               ;update screen counter value
+@_2:    ld      [D216],	A                               	;update screen counter value
         
         ld      HL,	@_1352
         cp      $40
@@ -4191,12 +4185,12 @@ _1401:                                                                          
         
 @_14de: $0F $80 $81 $FF                                                                                         ;$14DE
         $10 $90 $91 $FF
-@_14e6: ;text                                                                                                  	`$14E6
+@_14e6: ;text                                                                                                  	;$14E6
         $08 $0C $67 $68 $69 $6A $6B $6C $6D $6E $FF
-@_14f1: ;text                                                                                                  	`$14F1
+@_14f1: ;text                                                                                                  	;$14F1
         $08 $0D $77 $78 $79 $7A $7B $7C $7D $7E $FF
 
-@_14fc: ;this first bit looks like a palette                                                                   	`$14FC
+@_14fc: ;this first bit looks like a palette                                                                   	;$14FC
         $00 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $14 $27 $00 $3F
         $00 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
 
@@ -5205,7 +5199,7 @@ _1bad:                                                                          
         $FF $FF $00
 	;
 
-_LABEL_1C49_62:                                                                                                 ;$1C49
+_1c49:                                                                                                 		;$1C49
 ;=======================================================================================================================
 ;params IY`vars        : Address of the common variables (used throughout)
         ;---------------------------------------------------------------------------------------------------------------
@@ -5226,8 +5220,8 @@ _LABEL_1C49_62:                                                                 
         ld      [D23F],	A
         
         xor     A`zero                                          ;set A to 0
-        ld      [CURRENT_LEVEL],	A`zero          ;set starting level!
-        ld      [FRAMECOUNT],	A`zero
+        ld      [CURRENT_LEVEL],	A`zero          	;set starting level!
+        ld      [FRAMECOUNT],		A`zero
         ld      [IY`vars+Vars.unknown_0D],	A`zero
         
         ld      HL,	D27F
@@ -5332,8 +5326,8 @@ _LABEL_1CED_131:                                                                
         
         ld      A,	[D2D3]
 	
-@_1:    add     A`level	A`level					;double the level number (for an index)
-        ld      L`level,	A`level					;put this into a 16-bit number
+@_1:    add     A`level,	A`level				;double the level number (for an index)
+        ld      L`level,	A`level				;put this into a 16-bit number
         ld      H`level,	$00
         
 	;the level pointers table begins at $15580 (page 1 $4000 + $1580 remainder)
@@ -5360,11 +5354,11 @@ _LABEL_1CED_131:                                                                
         set     1,	[IY`vars+Vars.flags2]
         set     1,	[IY`vars+Vars.flags0]
         set     3,	[IY`vars+Vars.flags6]
-        res     3,	[IY`vars+Vars.timeLightningFlags]      ;unknown
+        res     3,	[IY`vars+Vars.timeLightningFlags]      	;unknown
         res     0,	[IY`vars+Vars.flags9]
         res     6,	[IY`vars+Vars.flags6]
         res     0,	[IY`vars+Vars.unknown0]
-        res     6,	[IY`vars+Vars.flags0]                  ;camera moved left flag
+        res     6,	[IY`vars+Vars.flags0]                  	;camera moved left flag
         
         ;auto scroll right?
         bit     3,	[IY`vars+Vars.scrollRingFlags]
@@ -5397,16 +5391,16 @@ _LABEL_1CED_131:                                                                
         
         ;establish the default zones around the edges of the screen which initiate scrolling.
         ;mobs can provide a temporary override to this
-        ld      HL,	$0060                   ;=96
+        ld      HL,			$0060                   ;=96
         ld      [SCROLLZONE_LEFT],	HL
         
-        ld      HL,	$0088                   ;=136
+        ld      HL,			$0088                   ;=136
         ld      [SCROLLZONE_RIGHT],	HL
         
-        ld      HL,	$0060                   ;=96
+        ld      HL,			$0060                   ;=96
         ld      [SCROLLZONE_TOP],	HL
         
-        ld      HL,	$0070                   ;=112
+        ld      HL,			$0070                   ;=112
         ld      [SCROLLZONE_BOTTOM],	HL
         
         ;animate ring?
@@ -5477,7 +5471,7 @@ _LABEL_1CED_131:                                                                
         
         ;is lightning effect enabled?
         bit     1,	[IY`vars+Vars.timeLightningFlags]
-        call    nz,	_1f49                                  ;if so, handle that
+        call    nz,	_1f49                                  	;if so, handle that
         
 @_4:    bit     1       [IY`vars+Vars.flags6]
         call    nz,	@_7
@@ -5486,10 +5480,10 @@ _LABEL_1CED_131:                                                                
         bit     1,	[IY`vars+Vars.scrollRingFlags]
         jr      z,	@_5                                     ;no, skip ahead
         
-        bit     5,	[IY`vars+Vars.joypad]                  ;is button pressed?
-        jp      z,	_20b8                                  ;if yes, end demo mode
+        bit     5,	[IY`vars+Vars.joypad]                  	;is button pressed?
+        jp      z,	_20b8                                  	;if yes, end demo mode
         
-        call    _1bad                                          ;process demo mode?
+        call    _1bad                                          	;process demo mode?
         
         ;increase the frame counter
 @_5:    ld      HL      [FRAMECOUNT]
@@ -5519,10 +5513,10 @@ _LABEL_1CED_131:                                                                
         ld      [D2DE],	A`zero
         
         ld      [IY`vars+Vars.spriteUpdateCount],	$15
-        ld      HL,	$D03F                   ;lives icon sprite table entry
+        ld      HL,			$D03F                   ;lives icon sprite table entry
         ld      [SPRITETABLE_ADDR],	HL
         
-        ld      HL,	SPRITETABLE+1                         ;sprite Y-value
+        ld      HL,	SPRITETABLE+1                         	;sprite Y-value
         ld      B,	$07
         ld      DE,	$0003
         ld      A,	$E0
@@ -5536,12 +5530,12 @@ _LABEL_1CED_131:                                                                
         djnz    @_6
         
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
-        ld      A`bank,	1
+        ld      A`bank,			1
         ld      [sms.mapper.slot1],	A`bank
-        ld      [SLOT1],	A`bank
-        ld      A`bank,	2
+        ld      [SLOT1],		A`bank
+        ld      A`bank,			2
         ld      [sms.mapper.slot2],	A`bank
-        ld      [SLOT2],	A`bank
+        ld      [SLOT2],		A`bank
         
         call    \game\_2e5a
         call    \game.camera\updateVDPscroll
@@ -5595,7 +5589,7 @@ _1e9e:                                                                          
 		rst     rst_muteSound
 	.ENDIF
         
-@_1:    ld      A       [IY`vars+Vars.spriteUpdateCount]
+@_1:    ld      A,	[IY`vars+Vars.spriteUpdateCount]
         
         res     0,	[IY`vars+Vars.flags0]
         call    \\interrupt\waitForInterrupt
@@ -5709,9 +5703,9 @@ _1f06:                                                                          
         ld      B,	$00
         add     HL,	BC
         add     A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	%11000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	[D2B1]
         and     %00000001
         ld      A,	[HL]
@@ -5719,7 +5713,7 @@ _1f06:                                                                          
         
         ld      A,	[D2B3]
         
-@_2:    out     [sms.ports.vdp.data]   A
+@_2:    out     [sms.ports.vdp_data]   A
         
         ei      
         ret
@@ -5859,7 +5853,7 @@ _1fa9:                                                                          
         call    nz,	disableWaterline
 	
         call    \\gfx.sprites\hideSprites
-        call    _155e                                          ;Act Complete screen?
+        call    _155e                                          	;Act Complete screen?
         
         ld      A,	[CURRENT_LEVEL]
         cp      $1A
@@ -5879,7 +5873,7 @@ _1fa9:                                                                          
         call    _LABEL_1CED_131
         pop     AF
         ld      [CURRENT_LEVEL],	A
-@_2:    ld      HL      CURRENT_LEVEL                         ;note use of HL here
+@_2:    ld      HL,	CURRENT_LEVEL                         	;note use of HL here
         inc     [HL]
         ld      A,	$01
         ret
@@ -5888,7 +5882,7 @@ _1fa9:                                                                          
         ld      A,	$FF
         ret
         
-@_4:    ld      HL      CURRENT_LEVEL                         ;note use of HL here
+@_4:    ld      HL,	CURRENT_LEVEL                         	;note use of HL here
         inc     [HL]
 @_5:    ld      A       $FF
         
@@ -5919,8 +5913,8 @@ addExtraLife:                                                                   
         inc     [HL]
         
 	;(we can compile with, or without, audio)
-	.IFDEF OPTION_AUDIO
-		ld      A`sfx,	$09                                     ;extra life sound?
+	.IFDEF 	OPTION_AUDIO
+		ld      A`sfx,	$09                             ;extra life sound?
 		rst     rst_playSFX
 	.ENDIF
         ret
@@ -5968,7 +5962,7 @@ _2067:                                                                          
         
         di
         
-        res     7,	[IY`vars+Vars.flags6]                  ;underwater?
+        res     7,	[IY`vars+Vars.flags6]                  	;underwater?
         
         xor     A`zero                                          ;set A to 0
         ld      [RASTERSPLIT_LINE],	A`zero
@@ -6021,13 +6015,13 @@ loadLevel:                                                                      
         ld      BC,	40
         ldir
         
-        ld      HL`header,	LEVEL_HEADER                  ;position HL at the start of the header
+        ld      HL`header,	LEVEL_HEADER                  	;position HL at the start of the header
         push    HL`header                                       ;remember the start point
         
         ;read the current Scrolling / Ring HUD value
-        ld      A,	[IY`vars+Vars.scrollRingFlags]         ;take a copy
+        ld      A,	[IY`vars+Vars.scrollRingFlags]         	;take a copy
         ld      [IY`vars+Vars.origScrollRingFlags],	A
-        ld      A,	[IY`vars+Vars.flags6]                  ;read the current underwater flag value
+        ld      A,	[IY`vars+Vars.flags6]                  	;read the current underwater flag value
         ld      [IY`vars+Vars.origFlags6],	A               ;take a copy
         
         ld      A,	$FF
@@ -6079,7 +6073,7 @@ loadLevel:                                                                      
         
         ld      HL,	$0020
         
-@_2:    ld      [D2DC]        HL                              ;either $0800 or $0020
+@_2:    ld      [D2DC],	HL                              	;either $0800 or $0020
         
         ld      HL,	$FFFE
         
@@ -6196,7 +6190,7 @@ loadLevel:                                                                      
         ld      BC,	$0003
         ldir    
         
-        ld      A,	[CURRENT_LEVEL]                       ;get current level number
+        ld      A,	[CURRENT_LEVEL]                       	;get current level number
         add     A,	A                                       ;double it (i.e. for 16-bit tables)
         ld      E,	A                                       ;put it into DE
         ld      D,	$00
@@ -6210,8 +6204,8 @@ loadLevel:                                                                      
         
         ;set starting X position:
 	
-@_6:    ld      [D216]        HL             
-        ld      A,	[HL]                            ;get the value at that RAM address      
+@_6:    ld      [D216],	HL             
+        ld      A,	[HL]                            	;get the value at that RAM address      
         
         ;if the value is less than 3, just use 0
         ;(this is so that if the player starting position is at the left of the level,
@@ -6537,7 +6531,7 @@ loadLevel:                                                                      
         ;MU: Music
 	;---------------------------------------------------------------------------------------------------------------
         inc     HL
-        ld      A,	[PREVIOUS_MUSIC]                      ;check previously played music
+        ld      A,	[PREVIOUS_MUSIC]                      	;check previously played music
         cp      [HL]
         jr      z,	@_11                                    ;if current music is the same, skip ahead
         
@@ -6589,8 +6583,8 @@ loadMobList:                                                                    
         ld      IX`mob,	SONIC
         ld      DE,	Mob@size				;=$001A (length of the mob?)
         ld      C,	$00					;?
-        ld      HL,	[D216]                                ;= D32E + (level number * 2)
-        ld      A,	mobPointers.sonic@index		;=0
+        ld      HL,	[D216]                                	;= D32E + (level number * 2)
+        ld      A,	mobPointers.sonic@index			;=0
         call    loadMobFromList
         
 	;return to the mob layout list originally provided
@@ -6600,7 +6594,7 @@ loadMobList:                                                                    
         ld      A`mobCount,	[HL`mobList]			;first byte is the number of mobs to load
         inc     HL`mobList
         
-        ld      [D2F2],	A`mobCount			;put aside the number of mobs in the layout
+        ld      [D2F2],		A`mobCount			;put aside the number of mobs in the layout
         dec     A`mobCount					;reduce by 1,
         ld      B`mobCount,	A`mobCount			;and set as the loop counter
         
@@ -6612,7 +6606,7 @@ loadMobList:                                                                    
         
         ;---------------------------------------------------------------------------------------------------------------
         
-        ld      A`mobCount,	[D2F2]			;retrieve number of mobs in layout
+        ld      A`mobCount,	[D2F2]				;retrieve number of mobs in layout
         ld      B`mobCount,	A`mobCount
         ld      A,	$20
         sub     B
@@ -6620,7 +6614,7 @@ loadMobList:                                                                    
         
         ;remove the remaining mobs (out of 32)
         ld      B,	A
-@_2:    ld      [IX`mob+Mob.type]      $FF                     ;remove mob?
+@_2:    ld      [IX`mob+Mob.type],	$FF                     ;remove mob?
         add     IX,	DE
         djnz    @_2
         
@@ -6649,11 +6643,11 @@ loadMobFromList:												;$235E
         ld      [IX`mob+Mob.Xsubpixel],	H'zero
         
 	;multiply by 32: (expand Blocks to pixels)
-        add     HL'xpos,	HL'xpos                                 ;x2 ...
-        add     HL'xpos,	HL'xpos                                 ;x4 ...
-        add     HL'xpos,	HL'xpos                                 ;x8 ...
-        add     HL'xpos,	HL'xpos                                 ;x16 ...
-        add     HL'xpos,	HL'xpos                                 ;x32
+        add     HL'xpos,	HL'xpos                         ;x2 ...
+        add     HL'xpos,	HL'xpos                         ;x4 ...
+        add     HL'xpos,	HL'xpos                         ;x8 ...
+        add     HL'xpos,	HL'xpos                         ;x16 ...
+        add     HL'xpos,	HL'xpos                         ;x32
         
 	;set the pixel X-position of the mob on the Floor
 	ld      [IX`mob+Mob.X+0],	L'xpos
@@ -6672,11 +6666,11 @@ loadMobFromList:												;$235E
         ld      [IX`mob+Mob.Ysubpixel],	H'zero
         
 	;multiply by 32: (expand Blocks to pixels)
-	add     HL'ypos,	HL'ypos                              	;x2 ...
-        add     HL'ypos,	HL'ypos                              	;x4 ...
-        add     HL'ypos,	HL'ypos                              	;x8 ...
-        add     HL'ypos,	HL'ypos                              	;x16 ...
-        add     HL'ypos,	HL'ypos                              	;x32
+	add     HL'ypos,	HL'ypos                         ;x2 ...
+        add     HL'ypos,	HL'ypos                         ;x4 ...
+        add     HL'ypos,	HL'ypos                         ;x8 ...
+        add     HL'ypos,	HL'ypos                         ;x16 ...
+        add     HL'ypos,	HL'ypos                         ;x32
         
 	;set the pixel Y-position of the mob on the Floor
 	ld      [IX`mob+Mob.Y+0],	L'ypos
@@ -6930,7 +6924,7 @@ _LABEL_258B_133:                                                                
         djnz    @_1
         
 	;(we can compile with, or without, audio)
-	.IFDEF OPTION_AUDIO
+	.IFDEF 	OPTION_AUDIO
 		ld      A`music,	\\sound\music\pointers.allEmeralds@index
 		rst     rst_playMusic
 	.ENDIF
@@ -7009,14 +7003,14 @@ _LABEL_258B_133:                                                                
         call    \decompressScreen
         
         ld      HL,	_2828
-        call    \\gfx\_aae                                     ;called only by this routine,
+        call    \\gfx\_aae                                     	;called only by this routine,
                                                                 ;appears to fade the screen out
         
         ;---------------------------------------------------------------------------------------------------------------
         
 @_4:    ld      BC      240
         call    \waitFrames
-        call    _155e                                          ;Act Complete screen?
+        call    _155e                                          	;Act Complete screen?
         
         ld      BC,	240
         call    \waitFrames
@@ -7052,29 +7046,29 @@ _LABEL_258B_133:                                                                
         xor     A`zero                                          ;set A to 0
         ;NOTE: These are addresses! See `_275a`
         ld      HL,	D322
-        ld      [HL],	LO _2848                        
+        ld      [HL],	<_2848                        
         inc     HL
-        ld      [HL],	HI _2848
+        ld      [HL],	>_2848
         inc     HL
-        ld      [HL],	A`zero                          ;$2848 = 0
+        ld      [HL],	A`zero                          	;$2848 = 0
         inc     HL
-        ld      [HL],	LO _2857                        
+        ld      [HL],	<_2857                        
         inc     HL
-        ld      [HL],	HI _2857
+        ld      [HL],	>_2857
         inc     HL
-        ld      [HL],	A`zero                          ;$2857 = 0
+        ld      [HL],	A`zero                          	;$2857 = 0
         inc     HL
-        ld      [HL],	LO _2869
+        ld      [HL],	<_2869
         inc     HL
-        ld      [HL],	HI _2869
+        ld      [HL],	>_2869
         inc     HL
-        ld      [HL],	A`zero                          ;$2869 = 0
+        ld      [HL],	A`zero                          	;$2869 = 0
         inc     HL
-        ld      [HL],	LO _2872
+        ld      [HL],	<_2872
         inc     HL
-        ld      [HL],	HI _2872
+        ld      [HL],	>_2872
         inc     HL
-        ld      [HL],	A`zero                          ;$2872 = 0
+        ld      [HL],	A`zero                          	;$2872 = 0
         
         ld      BC,	1
         call    _2718
@@ -7083,7 +7077,7 @@ _LABEL_258B_133:                                                                
         call    \\gfx\_b50
         
 	;(we can compile with, or without, audio)
-	.IFDEF OPTION_AUDIO
+	.IFDEF 	OPTION_AUDIO
 		ld      A,	\\sound\music\pointers.ending@index
 		rst     rst_playMusic
 	.ENDIF
@@ -7290,24 +7284,24 @@ _2795:                                                                          
         
 @_5:    di      
         ld      A,	L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         push    IX
         pop     IX
-        in      A,	[sms.ports.vdp.data] 
+        in      A,	[sms.ports.vdp_data] 
         ld      C,	A
         push    IX
         pop     IX
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
         or      $40
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         push    IX
         pop     IX
         ld      A,	C
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         push    IX
         pop     IX
         ei      
@@ -7899,10 +7893,10 @@ refresh:													;$2E5A
         ld      A`lives,	[LIVES]
         cp      9                                               ;9 lives?
         jr      c,	@_1                                     ;if more than 9 lives,
-        ld      A`lives,	9                                       ;we will display as 9 lives
+        ld      A`lives,	9                               ;we will display as 9 lives
         
 @_1:    add     A`lives A`lives                                 ;double for the 8x16 sprite lookup                     
-        add     A`lives,	$80                                     ;numeral sprites begin at index $80
+        add     A`lives,	$80                             ;numeral sprites begin at index $80
         ld      [LAYOUT_BUFFER+3],	A`lives                 ;put number of lives into the buffer
         
         ld      C`xpos,	!HUD_LIVES_X                            ;X-position of lives display
@@ -7927,15 +7921,15 @@ refresh:													;$2E5A
         ;---------------------------------------------------------------------------------------------------------------
         
         ld      DE,	$0060
-        ld      HL,	SCROLLZONE_OVERRIDE_LEFT              ;gets set by moving platforms, e.g. $20
+        ld      HL,	SCROLLZONE_OVERRIDE_LEFT              	;gets set by moving platforms, e.g. $20
         ld      A,	[HL]                                    ;[$D267]
         inc     HL                                              ;$D268
         or      [HL]                                            ;[$D268]
-        call    z,	updateCamera._311a                     ;=0?
-       ;ld      [HL]                D                           `[$D268] = $60  `write $6000?
-       ;dec     HL                                              `$D267          `is this an address?
-       ;ld      [HL]    E                                       `[$D267] = $00
-       ;inc     HL                                              `$D268
+        call    z,	updateCamera._311a                     	;=0?
+       ;ld      [HL]                D                           ;[$D268] = $60  `write $6000?
+       ;dec     HL                                              ;$D267          `is this an address?
+       ;ld      [HL]    E                                       ;[$D267] = $00
+       ;inc     HL                                              ;$D268
         
         inc     HL
         ld      DE,	$0088
@@ -7965,7 +7959,7 @@ refresh:													;$2E5A
         
         ;is Sonic alive?
         bit     0,	[IY`vars+Vars.scrollRingFlags]    
-        call    z,	updateCamera                           ;handle camera movement
+        call    z,	updateCamera                           	;handle camera movement
         
         ld      HL`zero,	$0000
         ld      [SCROLLZONE_OVERRIDE_LEFT],	HL`zero
@@ -7997,12 +7991,12 @@ displayRingCount:                                                               
         rrca    
         and     %00001111
         add     A,	A
-        add     A,	$80                     ;TODO: numeral 0 tile index
+        add     A,	$80                     		;TODO: numeral 0 tile index
         ld      [LAYOUT_BUFFER],	A
         ld      A,	C
         and     %00001111
         add     A,	A
-        add     A,	$80                     ;TODO: numeral 0 tile index
+        add     A,	$80                     		;TODO: numeral 0 tile index
         ld      [LAYOUT_BUFFER+1],	A
         ld      A,	$FF
         ld      [LAYOUT_BUFFER+2],	A
@@ -8035,11 +8029,11 @@ displayTime:                                                                    
         ld      A`minutes,	[TIME_MINUTES]
         and     %00001111
         add     A`tileIndex,	A`minutes
-        add     A`tileIndex,	$80                         ;TODO: numeral 0 tile index
+        add     A`tileIndex,	$80                         	;TODO: numeral 0 tile index
         
         ld      [HL`buffer],	A`tileIndex
         inc     HL`buffer
-        ld      [HL`buffer],	$B0                         ;TODO: colon tile index
+        ld      [HL`buffer],	$B0                         	;TODO: colon tile index
         inc     HL`buffer
         
         ;TODO: a look-up table has to be faster than this...
@@ -8052,8 +8046,8 @@ displayTime:                                                                    
         srl     A
         
         ;convert this to a sprite tile index --
-        add     A,	A                           ;doubled because 8x16 sprites
-        add     A,	$80                         ;TODO: base offset of the numeral tiles
+        add     A,	A                           		;doubled because 8x16 sprites
+        add     A,	$80                         		;TODO: base offset of the numeral tiles
         
         ld      [HL`buffer],	A`tileIndex
         inc     HL`buffer
@@ -8061,10 +8055,10 @@ displayTime:                                                                    
         ld      A,	C
         and     %00001111
         add     A,	A
-        add     A,	$80                         ;TODO: base offset of the numeral tiles
+        add     A,	$80                         		;TODO: base offset of the numeral tiles
         ld      [HL],	A
         inc     HL  
-        ld      [HL`buffer],	$FF                         ;terminate the buffer
+        ld      [HL`buffer],	$FF                         	;terminate the buffer
         
         ld      C`xpos,	24
         ld      B`ypos,	16
@@ -8419,7 +8413,7 @@ mobs_updateCamera:                                                              
         and     A
         jr      nz,	@_14
         
-        bit     6,	[IY`vars+Vars.scrollRingFlags]         ;up-down wave scrolling?
+        bit     6,	[IY`vars+Vars.scrollRingFlags]         	;up-down wave scrolling?
         call    nz,	@_311f
         ld      A,	L
         cp      C
@@ -8429,7 +8423,7 @@ mobs_updateCamera:                                                              
         ld      L,	C
         ld      H,	$00
         
-@_15:   bit     4       [IY`vars+Vars.scrollRingFlags]         ;auto scroll up?
+@_15:   bit     4       [IY`vars+Vars.scrollRingFlags]         	;auto scroll up?
         jr      nz,	@levelTopLimit
         
         ld      DE`cameraY,	[CAMERA_Y]
@@ -8507,7 +8501,7 @@ mobs_updateCamera:                                                              
         and     A                                               ;reset carry so it doesn't affect `sbc`
         sbc     HL,	DE
         ret     z                                               ;if HL = DE then return -- no change
-        jr      c,	@_1a                                        ;is DE > HL?
+        jr      c,	@_1a                                    ;is DE > HL?
         
         inc     DE
         ld      [LEVEL_LEFT],	DE
@@ -9928,13 +9922,13 @@ updateSonicSpriteFrame:                                                         
         
         ;---------------------------------------------------------------------------------------------------------------
         ld      A`low,	E`vram                          ;=$80
-        out     [sms.ports.vdp.control],	A`low
+        out     [sms.ports.vdp_control],	A`low
         ld      A`hi,	D`vram                          ;=$36
         or      %01000000                                       ;set bit 6 to specify a VDP address
-        out     [sms.ports.vdp.control],	A`hi
+        out     [sms.ports.vdp_control],	A`hi
         
         xor     A`zero                                          ;set A to 0
-        ld      C,	sms.ports.vdp.data
+        ld      C,	sms.ports.vdp_data
         ld      E,	24
         
         ;by nature of the way the VDP stores image colours across bit-planes, and that the Sonic sprite only uses
@@ -9943,19 +9937,19 @@ updateSonicSpriteFrame:                                                         
 @_1:    outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A`zero
+        out     [sms.ports.vdp_data],	A`zero
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A`zero
+        out     [sms.ports.vdp_data],	A`zero
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A`zero
+        out     [sms.ports.vdp_data],	A`zero
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A`zero
+        out     [sms.ports.vdp_data],	A`zero
         
         dec     E
         jp      nz,	@_1
@@ -9970,10 +9964,10 @@ updateSonicSpriteFrame:                                                         
         add     HL,	BC
         
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         exx
         push    BC
@@ -9986,22 +9980,22 @@ updateSonicSpriteFrame:                                                         
 @_3:    outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         add     HL,	DE
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         add     HL,	DE
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         add     HL,	DE
         outi
         outi
         outi
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         add     HL,	DE
         exx
         dec     B
@@ -10033,26 +10027,26 @@ animateFloorRing:                                                               
         
         di      
         ld      A,	E
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	D
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      B,	$20
         
 @loop:  ld      A       [HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop     
         inc     HL
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop     
         inc     HL
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         nop     
         inc     HL
         ld      A,	[HL]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     HL
         djnz    @loop
         
@@ -10062,7 +10056,7 @@ animateFloorRing:                                                               
         ret
 	;
 
-_LABEL_38B0_51:                                                                                                 ;$38B0
+_38b0:                                                                                                 		;$38B0
 ;=======================================================================================================================
         ld      HL,	[D2AB]
         ld      A,	L
@@ -10149,28 +10143,28 @@ _LABEL_38B0_51:                                                                 
         ld      B,	$02
 
 @loop:  ld      A       L
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         ld      A,	H
         or      %01000000
-        out     [sms.ports.vdp.control],	A
+        out     [sms.ports.vdp_control],	A
         
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         nop
         nop
         ld      A,	[DE]
-        out     [sms.ports.vdp.data],	A
+        out     [sms.ports.vdp_data],	A
         inc     DE
         
         ld      A,	B
@@ -11793,7 +11787,7 @@ sonic_process:                                                                  
         jr      z,	@_37
         ld      HL,	D2F7
 @_37:   push    HL
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         pop     HL
         and     $0F
         ld      [HL],	A
@@ -13637,16 +13631,16 @@ powerUps_ring_process:                                                          
         
 @_5b34: call    \loadPowerUpIcon
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_5bbf
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_5bbf
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_5bbf
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_5bbf
         
         ld      A,	[FRAMECOUNT]
         and     %00000111
         cp      $05
         ret     nc
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_5bcc
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_5bcc
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_5bcc
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_5bcc
         ld      L,	[IX`mob+Mob.Xsubpixel]
         ld      H,	[IX`mob+Mob.X+0]
         ld      A,	[IX`mob+Mob.X+1]
@@ -14182,8 +14176,8 @@ powerUps_emerald_process:                                                       
         rrca    
         jr      c,	@_3
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_5f10
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_5f10
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_5f10
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_5f10
 @_3:    ld      L       [IX`mob+Mob.Yspeed+0]
         ld      H,	[IX`mob+Mob.Yspeed+1]
         ld      A,	[IX`mob+Mob.Ydirection]
@@ -15362,8 +15356,8 @@ platform_sinking_process:                                                       
         
         ld      [IX`mob+Mob.width],	26
         ld      [IX`mob+Mob.height],	16
-        ld      [IX`mob+Mob.spriteLayout+0],	LO \spriteLayouts._6911
-        ld      [IX`mob+Mob.spriteLayout+1],	HI \spriteLayouts._6911
+        ld      [IX`mob+Mob.spriteLayout+0],	<\spriteLayouts._6911
+        ld      [IX`mob+Mob.spriteLayout+1],	>\spriteLayouts._6911
         
         ld      A,	[SONIC.Ydirection]
         and     A
@@ -16653,8 +16647,8 @@ boss_capsule_process:                                                           
         cp      $03
         ret     nz
 	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_7540
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_7540
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_7540
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_7540
         bit     1,	[IY`vars+Vars.flags6]
         jr      nz,	@_9
 	
@@ -16705,7 +16699,7 @@ boss_capsule_process:                                                           
         and     $0F
         ret     nz
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00000001
         add     A,	$23
         call    @_74b6
@@ -16746,9 +16740,9 @@ boss_capsule_process:                                                           
         add     HL,	BC
         ld      [IX`mob+Mob.Y+0],	L
         ld      [IX`mob+Mob.Y+1],	H
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      [IX`mob+Mob.Yspeed+0],	A	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00000001
         inc     A
         inc     A
@@ -17162,8 +17156,8 @@ _77be:                                                                          
         ld      [IX`mob+Mob.Yspeed+0],	$60
         ld      [IX`mob+Mob.Yspeed+1],	$FF
         ld      [IX`mob+Mob.Ydirection],	$FF
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_7922
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_7922
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_7922
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_7922
         ld      L,	[IX`mob+Mob.X+0]
         ld      H,	[IX`mob+Mob.X+1]
         ld      DE,	[CAMERA_X]
@@ -17293,12 +17287,12 @@ _7a3a:                                                                          
         ret     c
         
         push    HL
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00011111
         ld      L,	A
         ld      H,	$00
         ld      [TEMP1],	HL
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00011111
         ld      L,	A
         ld      H,	$00
@@ -17784,8 +17778,8 @@ badnick_chopper_process:                                                        
         jr      z,	@_6
         
         dec     [IX`mob+Mob.unknown11]
-        ld      [IX`mob+Mob.spriteLayout+0],	(LO @_7df7)
-        ld      [IX`mob+Mob.spriteLayout+1],	(HI @_7df7)
+        ld      [IX`mob+Mob.spriteLayout+0],	(<@_7df7)
+        ld      [IX`mob+Mob.spriteLayout+1],	(>@_7df7)
         
 @_6:    ld      HL              $0204
         ld      [TEMP6],	HL
@@ -17827,8 +17821,8 @@ mob_platform_fallVert:                                                          
         
         ld      [IX`mob+Mob.width],	$0C
         ld      [IX`mob+Mob.height],	$10
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_7e89
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_7e89
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_7e89
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_7e89
         bit     0,	[IX`mob+Mob.flags]
         jr      nz,	@_7e3c
         ld      A,	[IX`mob+Mob.Y+0]
@@ -17895,8 +17889,8 @@ mob_platform_fallHoriz:                                                         
         
         ld      [IX`mob+Mob.width],	$1A
         ld      [IX`mob+Mob.height],	$10
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @layout
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @layout
+        ld      [IX`mob+Mob.spriteLayout+0],	<@layout
+        ld      [IX`mob+Mob.spriteLayout+1],	>@layout
         bit     0,	[IX`mob+Mob.flags]
         jp      nz,	mob_platform_fallVert._7e3c
         ld      A,	[IX`mob+Mob.Y+0]
@@ -18036,8 +18030,8 @@ mob_platform_roll:                                                              
 mob_platform_roll_continue:                                                                                     ;$8003
 ;=======================================================================================================================
         ;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
-@_8003: ld      [IX`mob+Mob.spriteLayout+0]    LO @_8022
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8022
+@_8003: ld      [IX`mob+Mob.spriteLayout+0]    <@_8022
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8022
 @_800b: inc     [IX`mob+Mob.unknown11]
         ld      A,	[IX`mob+Mob.unknown11]
         cp      $28
@@ -18123,8 +18117,8 @@ boss_jungle_process:                                                            
         bit     0,	[IX`mob+Mob.unknown11]
         jr      nz,	@_2
 	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_81f4
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_81f4
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_81f4
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_81f4
         ld      [IX`mob+Mob.Yspeed+0],	$80
         ld      [IX`mob+Mob.Yspeed+1],	$00
         ld      [IX`mob+Mob.Ydirection],	$00
@@ -18148,8 +18142,8 @@ boss_jungle_process:                                                            
         bit     1,	[IX`mob+Mob.unknown11]
         jr      nz,	@_3
 	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_81f4
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_81f4
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_81f4
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_81f4
         res     1,	[IX`mob+Mob.flags]
         ld      [IX`mob+Mob.Xspeed+0],	$00
         ld      [IX`mob+Mob.Xspeed+1],	$FF
@@ -18162,8 +18156,8 @@ boss_jungle_process:                                                            
         ld      [IX`mob+Mob.unknown12],	$67
         jp      @_8
         
-@_3:    ld      [IX`mob+Mob.spriteLayout+0]	LO @_8206
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8206
+@_3:    ld      [IX`mob+Mob.spriteLayout+0]	<@_8206
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8206
         set     1,	[IX`mob+Mob.flags]
         ld      [IX`mob+Mob.Xspeed+0],	$00
         ld      [IX`mob+Mob.Xspeed+1],	$01
@@ -18239,7 +18233,7 @@ boss_jungle_process:                                                            
         ld      [IX`mob+Mob.unknown11],	A`zero
         ld      [IX`mob+Mob.unknown16],	A`zero
         ld      [IX`mob+Mob.unknown17],	A`zero
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     $3F
         add     A,	$64
         ld      [IX`mob+Mob.unknown12],	A
@@ -18462,7 +18456,7 @@ platform_bridge_process:                                                        
         bit     1,	[IX`mob+Mob.flags]
         jr      nz,	@_1
         
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00011111
         inc     A
         ld      [IX`mob+Mob.unknown11],	A
@@ -18493,8 +18487,8 @@ platform_bridge_process:                                                        
 		rst     rst_playSFX
 	.ENDIF
 	
-@_2:    ld      [IX`mob+Mob.spriteLayout+0]	LO @_8481
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8481
+@_2:    ld      [IX`mob+Mob.spriteLayout+0]	<@_8481
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8481
         ld      L,	[IX`mob+Mob.Yspeed+0]
         ld      H,	[IX`mob+Mob.Yspeed+1]
         ld      A,	[IX`mob+Mob.Ydirection]
@@ -18552,8 +18546,8 @@ mob_boss_bridge:                                                                
         ld      [IX`mob+Mob.width],	30
         ld      [IX`mob+Mob.height],	28
         call    _7ca6
-        ld      [IX`mob+Mob.spriteLayout+0],	LO _865a
-        ld      [IX`mob+Mob.spriteLayout+1],	HI _865a
+        ld      [IX`mob+Mob.spriteLayout+0],	<_865a
+        ld      [IX`mob+Mob.spriteLayout+1],	>_865a
         bit     0,	[IX`mob+Mob.flags]
         jr      nz,	@_1
         
@@ -18584,7 +18578,7 @@ mob_boss_bridge:                                                                
         and     A
         jr      nz,	@_2
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00000001
         add     A,	A
         add     A,	A
@@ -19077,7 +19071,7 @@ badnick_jaws_process:                                                           
         ret     nz
         
         inc     [IX`mob+Mob.unknown11]
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     $1E
         call    z,	\\_91eb
         
@@ -19161,8 +19155,8 @@ trap_spikeball_process:                                                         
         call    \\detectCollisionWithSonic
         call    nc,	hitPlayer._35fd
 	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_8987
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8987
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_8987
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8987
         inc     [IX`mob+Mob.unknown11]
         ld      A,	[IX`mob+Mob.unknown11]
         cp      $B4
@@ -19554,15 +19548,15 @@ trap_fireball_process:                                                          
         ld      [IX`mob+Mob.Xspeed+0],	$00
         ld      [IX`mob+Mob.Xspeed+1],	$FF
         ld      [IX`mob+Mob.Xdirection],	$FF
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_8d39
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8d39
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_8d39
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8d39
         jr      @_6
         
 @_5:    ld      [IX`mob+Mob.Xspeed+0]		A
         ld      [IX`mob+Mob.Xspeed+1],	$01
         ld      [IX`mob+Mob.Xdirection],	A	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_8d41
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_8d41
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_8d41
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_8d41
 @_6:    ld      [IX`mob+Mob.Yspeed+0]		A
         ld      [IX`mob+Mob.Yspeed+1],	A
         ld      [IX`mob+Mob.Ydirection],	A	
@@ -19764,7 +19758,7 @@ powerUps_bubbles_process:                                                       
         and     %01111111					;=$7F
         jr      nz,	@_1
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00000111
         ld      E,	A
         ld      D,	$00
@@ -19824,7 +19818,7 @@ _8eca:                                                                          
         and     $0F
         jr      nz,	@_2
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      BC,	$0020
         ld      D,	$00
         and     $3F
@@ -20047,8 +20041,8 @@ platform_float_process:                                                         
         set     5,	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+Mob.width],	30
         ld      [IX`mob+Mob.height],	28
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_91de
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_91de
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_91de
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_91de
         bit     1,	[IX`mob+Mob.flags]
         jr      nz,	@_1
 	
@@ -20202,7 +20196,7 @@ _91eb:                                                                          
         jr      nz,	@_1
 	
         push    HL
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     $0F
         ld      E,	A
         ld      D,	$00
@@ -20221,7 +20215,7 @@ _91eb:                                                                          
         ld      [IX`mob+Mob.type],	A
         xor     A`zero                                          ;set A to 0
         ld      [IX`mob+Mob.Xsubpixel],	A`zero
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     $0F
         ld      L,	A
         ld      H,	$00
@@ -20229,7 +20223,7 @@ _91eb:                                                                          
         ld      [IX`mob+Mob.X+0],	L
         ld      [IX`mob+Mob.X+1],	H
         ld      [IX`mob+Mob.Ysubpixel],	$00
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     $0F
         ld      L,	A
         xor     A`zero
@@ -20257,8 +20251,8 @@ mob_boss_labyrinth:                                                             
         ld      [IX`mob+Mob.width],	32
         ld      [IX`mob+Mob.height],	28
         call    _7ca6
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9493
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9493
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9493
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9493
         bit     0,	[IX`mob+Mob.flags]
         jr      nz,	@_1
         
@@ -20942,7 +20936,7 @@ unknown_96f8_process:                                                           
         and     $0F
         jr      nz,	@_7
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      BC,	$0020
         ld      D,	$00
         and     $3F
@@ -21008,8 +21002,8 @@ platform_flipper_process:                                                       
 ;params IX`mob          : Address of the current mob being processed
         ;---------------------------------------------------------------------------------------------------------------
         set     5,	[IX`mob+Mob.flags]             	;mob does not collide with the floor
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9a7e
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9a7e
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9a7e
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9a7e
         bit     5,	[IY`vars+Vars.joypad]
         jr      nz,	@_1
 	
@@ -21057,8 +21051,8 @@ platform_flipper_process:                                                       
         
 @_3:    cp      $04
         jp      nc,	@_4
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9a90
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9a90
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9a90
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9a90
         ld      HL,	$080f
         ld      [TEMP6],	HL
         ld      [IX`mob+Mob.width],	$1E
@@ -21125,8 +21119,8 @@ platform_flipper_process:                                                       
         ld      [SONIC.Xdirection],	A	
         ret
         
-@_4:    ld      [IX`mob+Mob.spriteLayout+0]	LO @_9aa2
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9aa2
+@_4:    ld      [IX`mob+Mob.spriteLayout+0]	<@_9aa2
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9aa2
         ld      HL,	$021A
         ld      [TEMP6],	HL
         ld      [IX`mob+Mob.width],	$1E
@@ -21236,8 +21230,8 @@ platform_bumper_process:                                                        
         set     5,	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         ld      [IX`mob+Mob.width],	$1C
         ld      [IX`mob+Mob.height],	$06
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9b6e
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9b6e
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9b6e
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9b6e
         ld      HL,	$0001
         ld      A,	[IX`mob+Mob.unknown12]
         cp      $60
@@ -21372,8 +21366,8 @@ unknown_9be8_process:                                                           
         ld      [IX`mob+Mob.Xspeed+0],	$80
         ld      [IX`mob+Mob.Xspeed+1],	$01
         ld      [IX`mob+Mob.Xdirection],	$00
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9c69
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9c69
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9c69
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9c69
         
 @_9bfc: set     5	[IX`mob+Mob.flags]               	;mob does not collide with the floor
         bit     0,	[IX`mob+Mob.flags]
@@ -21448,8 +21442,8 @@ _9c70:                                                                          
         ld      [IX`mob+Mob.Xspeed+0],	$80
         ld      [IX`mob+Mob.Xspeed+1],	$FE
         ld      [IX`mob+Mob.Xdirection],	$FF
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_9c87
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_9c87
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_9c87
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_9c87
         jp      \unknown.9be8\process._9bfc
 
         ;sprite layout
@@ -21479,7 +21473,7 @@ mob_trap_flameThrower:                                                          
         add     HL,	DE
         ld      [IX`mob+Mob.Y+0],	L
         ld      [IX`mob+Mob.Y+1],	H
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      [IX`mob+Mob.unknown11],	A
         set     0,	[IX`mob+Mob.flags]
 @_1:    ld      L       [IX`mob+Mob.X+0]
@@ -22323,14 +22317,14 @@ door_switch_process:                                                            
         and     A
         jp      m,	@_3
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_a48b
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_a48b
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_a48b
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_a48b
         ld      A,	[LEVEL_SOLIDITY]
         cp      $03
         jr      nz,	@_2
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_a49b
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_a49b
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_a49b
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_a49b
         
 @_2:    ld      BC      $0006
         ld      DE,	$0000
@@ -22357,14 +22351,14 @@ door_switch_process:                                                            
         ;-------------------------------------------------------------------------------------------
         
 @_3:    res     1  	[IX`mob+Mob.flags]
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_a493
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_a493
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_a493
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_a493
         ld      A,	[LEVEL_SOLIDITY]
         cp      $03
         jr      nz,	@_4
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_a4a3	;TODO: invalid address??
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_a4a3
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_a4a3	;TODO: invalid address??
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_a4a3
         
 @_4:    xor     A`zero
         ld      [IX`mob+Mob.Yspeed+0],	A`zero
@@ -22785,8 +22779,8 @@ boss_scrapbrain_process:                                                        
         ld      [IX`mob+Mob.Xsubpixel],	$00
         ld      [IX`mob+Mob.X+0],	L
         ld      [IX`mob+Mob.X+1],	H
-        ld      [IX`mob+Mob.spriteLayout+0],	LO \boss.running\_baf9
-        ld      [IX`mob+Mob.spriteLayout+1],	HI \boss.running\_baf9
+        ld      [IX`mob+Mob.spriteLayout+0],	<\boss.running\_baf9
+        ld      [IX`mob+Mob.spriteLayout+1],	>\boss.running\_baf9
         inc     [IX`mob+Mob.unknown11]
         ld      A,	[IX`mob+Mob.unknown11]
         cp      $C0
@@ -22980,7 +22974,7 @@ meta_clouds_process:                                                            
         sbc     HL,	DE
         jr      nc,	@_2
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      B,	$00
         add     A,	A
         ld      C,	A
@@ -23142,8 +23136,8 @@ mob_badnick_bomb:                                                               
         call    _7c41
         jp      @_7
         
-@_3:    ld      [IX`mob+Mob.spriteLayout+0]    LO _ad53
-        ld      [IX`mob+Mob.spriteLayout+1],	HI _ad53
+@_3:    ld      [IX`mob+Mob.spriteLayout+0]    <_ad53
+        ld      [IX`mob+Mob.spriteLayout+1],	>_ad53
         cp      $67
         jp      nz,	@_7
 	
@@ -23377,7 +23371,7 @@ trap_cannon_process:                                                            
         add     HL,	DE
         ld      [IX`mob+Mob.X+0],	L
         ld      [IX`mob+Mob.X+1],	H
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         ld      [IX`mob+Mob.unknown11],	A	
         set     0,	[IX`mob+Mob.flags]
 @_1:    ld      A	[IX`mob+Mob.unknown11]
@@ -23479,8 +23473,8 @@ trap_cannonball_process:                                                        
         ld      [IX`mob+Mob.Yspeed+0],	A`zero
         ld      [IX`mob+Mob.Yspeed+1],	A`zero
         ld      [IX`mob+Mob.Ydirection],	A`zero
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_ae81
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_ae81
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_ae81
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_ae81
         ret
         
 	;sprite layout
@@ -23511,8 +23505,8 @@ badnick_unidos_process:                                                         
         ld      [IX`mob+Mob.Xspeed+0],	$F8
         ld      [IX`mob+Mob.Xspeed+1],	$FF
         ld      [IX`mob+Mob.Xdirection],	$FF
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_b0d5
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_b0d5
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_b0d5
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_b0d5
         
         ;set speed + direction of shot?
         ld      HL,	$FF80
@@ -23527,8 +23521,8 @@ badnick_unidos_process:                                                         
 @_2:    ld      [IX`mob+Mob.Xspeed+0]          $08
         ld      [IX`mob+Mob.Xspeed+1],	$00
         ld      [IX`mob+Mob.Xdirection],	$00
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_b0e7
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_b0e7
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_b0e7
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_b0e7
         
         ;set speed + direction of shot?
         ld      HL,	$0080
@@ -23809,7 +23803,7 @@ trap_turretRotating_process:                                                    
         bit     0,	[IX`mob+Mob.flags]
         jr      nz,	@_1
 	
-        call    \\math\_LABEL_625_57
+        call    \\math\_0625
         and     %00000111
         ld      [IX`mob+Mob.unknown11],	A
         set     0,	[IX`mob+Mob.flags]
@@ -24017,8 +24011,8 @@ platform_flyingRight_process:                                                   
 @_3:    pop     BC
         djnz    @loop
         
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_b37b
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_b37b
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_b37b
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_b37b
         ld      A,	[IX`mob+Mob.unknown11]
         add     A,	$04
         ld      [IX`mob+Mob.unknown11],	A
@@ -24053,8 +24047,8 @@ trap_spikewall_process:													;$B398
         set     0,	[IX`mob+Mob.flags]
 @_1:    ld      [IX`mob+Mob.width]	12
         ld      [IX`mob+Mob.height],	46
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_b45b
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_b45b
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_b45b
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_b45b
         ld      HL,	$0202
         ld      [TEMP6],	HL
 
@@ -24466,8 +24460,8 @@ boss_skybase_process:                                                           
         add     HL,	DE
         ld      [IX`mob+Mob.X+0],	L
         ld      [IX`mob+Mob.X+1],	H
-        ld      [IX`mob+Mob.spriteLayout+0],	LO _bb1d
-        ld      [IX`mob+Mob.spriteLayout+1],	HI _bb1d
+        ld      [IX`mob+Mob.spriteLayout+0],	<_bb1d
+        ld      [IX`mob+Mob.spriteLayout+1],	>_bb1d
         jp      @_8
         
 @_5:    dec     A
@@ -24489,8 +24483,8 @@ boss_skybase_process:                                                           
 @_6:    ld      [IX`mob+Mob.Yspeed+0]		L
         ld      [IX`mob+Mob.Yspeed+1],	H
         ld      [IX`mob+Mob.Ydirection],	C
-        ld      [IX`mob+Mob.spriteLayout+0],	LO _bb1d
-        ld      [IX`mob+Mob.spriteLayout+1],	HI _bb1d
+        ld      [IX`mob+Mob.spriteLayout+0],	<_bb1d
+        ld      [IX`mob+Mob.spriteLayout+1],	>_bb1d
         ld      L,	[IX`mob+Mob.Y+0]
         ld      H,	[IX`mob+Mob.Y+1]
         dec     HL
@@ -24792,8 +24786,8 @@ boss_skybase_process:                                                           
         cp      $2C
         ret     c
 	
-        ld      [IX`mob+Mob.spriteLayout+0],	LO _bb77
-        ld      [IX`mob+Mob.spriteLayout+1],	HI _bb77
+        ld      [IX`mob+Mob.spriteLayout+0],	<_bb77
+        ld      [IX`mob+Mob.spriteLayout+1],	>_bb77
         ret
         
 @_22:   xor     A`zero
@@ -25353,8 +25347,8 @@ cutscene_final_process:                                                         
 	
         inc     DE
         ld      [CAMERA_X],	DE
-@_3:    ld      [IX`mob+Mob.spriteLayout+0]	LO @_bf21
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_bf21
+@_3:    ld      [IX`mob+Mob.spriteLayout+0]	<@_bf21
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_bf21
         bit     0,	[IX`mob+Mob.flags]
         jr      nz,	@_4
 	
@@ -25395,8 +25389,8 @@ cutscene_final_process:                                                         
         ld      [IX`mob+Mob.Yspeed+0],	$40
         ld      [IX`mob+Mob.Yspeed+1],	A`zero
         ld      [IX`mob+Mob.Ydirection],	A`zero
-        ld      [IX`mob+Mob.spriteLayout+0],	LO @_bf33
-        ld      [IX`mob+Mob.spriteLayout+1],	HI @_bf33
+        ld      [IX`mob+Mob.spriteLayout+0],	<@_bf33
+        ld      [IX`mob+Mob.spriteLayout+1],	>@_bf33
         dec     [IX`mob+Mob.unknown11]
         ret     nz
         
@@ -26124,9 +26118,9 @@ doUpdate:
         ld      C,	A
         ld      B,	$00
         add     HL,	BC
-        ld      [HL],	(LO track4vars)
+        ld      [HL],	(<track4vars)
         inc     HL
-        ld      [HL],	(HI track4vars)
+        ld      [HL],	(>track4vars)
 @_1:    ld      IX      [channel0trackPointer]
         call    doProcessTrack
         ;TODO: Why not just use `inc IX`?
