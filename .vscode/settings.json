@@ -1,0 +1,15 @@
+{
+    "[wla-dx-asm]": {
+        "editor.renderIndentGuides": false,
+        "editor.tabSize": 8,
+        "editor.rulers": [
+            8,
+            16,
+            24,
+            40,
+            72,
+            80
+        ]
+        //"editor.rulers": [80]
+    }
+}
