@@ -11,9 +11,9 @@ start:                                                                  ;$0000
                                         ; $0038 will be called at 50/60Hz
 
 @wait:  ; wait for the scanline to reach 176 (no idea why)
-        in      A,  [sms.ports.scanline]
+        in      A,      [sms.ports.scanline]
         cp      176
-        jr      nz, @wait
+        jr      nz,     @wait
 
         jp      init
         ;
@@ -59,7 +59,7 @@ copyright:                                                              ;$003B
 ; a short copyright message is wedged between the IRQ and NMI routines
 ; in the original ROM.
 
-        .DB     "Developed By (C) 1991 Ancient - S", $A5, "Hayashi.", $00
+        .BYTE   "Developed By (C) 1991 Ancient - S", $A5, "Hayashi.", $00
 
 pause:                                                                  ;$0066
 ;===============================================================================
@@ -69,7 +69,7 @@ pause:                                                                  ;$0066
 ;-------------------------------------------------------------------------------
 .ORG    $0066
 
-        di                      ; disable interrupts
+        di      ; disable interrupts
         push    AF
 
         ; level time HUD / lightning flags
@@ -80,7 +80,7 @@ pause:                                                                  ;$0066
         ld      [IY+Vars.timeLightningFlags],   A
 
         pop     AF
-        ei                      ; enable interrupts
+        ei      ; enable interrupts
 
         ret
         ;
@@ -90,7 +90,7 @@ interruptHandler:                                                       ;$0073
 ; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
 
-        di                      ; disable interrupts during interrupt!
+        di      ; disable interrupts during interrupt!
 
         ; push everything we're going to use to the stack so that when we
         ; return from the interrupt we don't find that our registers have
@@ -112,9 +112,10 @@ interruptHandler:                                                       ;$0073
         ; is used to remember at which step the procedure is at. a value of 0
         ; means that it needs to be initialised, and then it counts down from 3
 
-        ld      A,  [RASTERSPLIT_STEP]  ; read current step value
+        ; read current step value
+        ld      A,      [RASTERSPLIT_STEP]
         and     A                       ; keep value, but update flags
-        jp      nz, doRasterSplit       ; not 0?, deal with particulars
+        jp      nz,     doRasterSplit   ; not 0?, deal with particulars
 
         ; initialise raster split:
         ;-----------------------------------------------------------------------
@@ -135,19 +136,19 @@ interruptHandler:                                                       ;$0073
         ; set the line interrupt to fire at line 10 (top of the screen).
         ; we will then set another interrupt to fire where we want the
         ; split to occur. first send the data ("10") to the VDP...
-        ld      A,                              10
-        out     [sms.ports.vdp_control],        A
+        ld      A,                      10
+        out     [sms.ports.vdp_control],A
         ; and then the control command (VDP register 10)
-        ld      A,                              SMS_VDP_REGISTER_10
-        out     [sms.ports.vdp_control],        A
+        ld      A,                      SMS_VDP_REGISTER_10
+        out     [sms.ports.vdp_control],A
 
         ; enable line interrupt IRQs (bit 5 of VDP register 0)
-        ld      A,                              [VDPREGISTER_0]
-        or      %00010000                       ; set bit 5
-        out     [sms.ports.vdp_control],        A
+        ld      A,                      [VDPREGISTER_0]
+        or      %00010000               ; set bit 5
+        out     [sms.ports.vdp_control],A
         ; write to VDP register 0
-        ld      A,                              SMS_VDP_REGISTER_0
-        out     [sms.ports.vdp_control],        A
+        ld      A,                      SMS_VDP_REGISTER_0
+        out     [sms.ports.vdp_control],A
 
         ; initialise the step counter for the water line raster split
         ld      A,                      3
@@ -212,6 +213,7 @@ interruptHandler:                                                       ;$0073
         pop     DE
         pop     HL
         pop     AF
+
         ret
 
 @setJoypadButtonB:                                                      ;$00F2
@@ -295,7 +297,7 @@ interruptHandler:                                                       ;$0073
 
 loadPaletteFromInterrupt:                                               ;$0174
 ;===============================================================================
-; loads a palette using the parameters set first by 'loadPaletteOnInterrupt'.
+; loads a palette using the parameters set first by `loadPaletteOnInterrupt`.
 ;
 ; in    IY                      address of common variables (used throughout)
 ;       LOADPALETTE_ADDRESS     address to the palette data
@@ -393,10 +395,10 @@ loadPaletteFromInterrupt_water:                                         ;$01BA
         ; above water:
         ;-----------------------------------------------------------------------
 @_2:    ld      A,      [CYCLEPALETTE_INDEX]
-        add     A,      A       ; x2
-        add     A,      A       ; x4
-        add     A,      A       ; x8
-        add     A,      A       ; x16
+        add     A,      A               ; x2
+        add     A,      A               ; x4
+        add     A,      A               ; x8
+        add     A,      A               ; x16
         ld      E,      A
         ld      D,      $00
         ld      HL,     [CYCLEPALETTE_POINTER]
@@ -596,7 +598,7 @@ call_playMusic:                                                         ;$02D7
         ld      [PREVIOUS_MUSIC],       A
         call    audio.playMusic
 
-        ld      A,                 [SLOT1]
+        ld      A,                      [SLOT1]
         ld      [sms.mapper.slot1],     A
 
         ei      ; enable interrupts
@@ -612,10 +614,10 @@ call_muteSound:                                                         ;$02ED
 
         ; switch page 1 (Z80:$4000-$7FFF)
         ; to bank 3 (ROM:$0C000-$0FFFF)
-        ld      A,                 :audio.stop
+        ld      A,                      :audio.stop
         ld      [sms.mapper.slot1],     A
         call    audio.stop
-        ld      A,                 [SLOT1]
+        ld      A,                      [SLOT1]
         ld      [sms.mapper.slot1],     A
 
         ei      ; enable interrupts
@@ -638,7 +640,7 @@ call_playSFX:                                                           ;$02FE
         pop     AF
         call    audio.playSFX
 
-        ld      A,                 [SLOT1]
+        ld      A,                      [SLOT1]
         ld      [sms.mapper.slot1],     A
 
         ei
@@ -672,10 +674,10 @@ initVDPRegisterValues:                                                  ;$031B
 
 waitForInterrupt:                                                       ;$031C
 ;===============================================================================
-; a commonly used routine to essentially 'refresh the screen' by halting main
-; execution until the interrupt handler has done its work.
+; a commonly used routine to essentially 'refresh the screen' by halting
+; main execution until the interrupt handler has done its work.
 ;
-; in    IY         address of the common variables (used throughout)
+; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
 
         ; test bit 0 of the IY parameter (IY=$D200)
@@ -688,7 +690,7 @@ waitForInterrupt:                                                       ;$031C
 
 unused_0323:                                                            ;$0323
 ;===============================================================================
-; in    IY         address of the common variables (used throughout)
+; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         set     2,      [IY+Vars.flags0]
         ld      [UNUSED_D225],  HL      ; unused RAM location!
@@ -701,7 +703,7 @@ loadPaletteOnInterrupt:                                                 ;$0333
 ;===============================================================================
 ; implementation can be found in the interrupt module
 ;
-; in    IY         address of the common variables (used throughout)
+; in    IY      address of the common variables (used throughout)
 ;       A
 ;       HL
 ;-------------------------------------------------------------------------------
@@ -715,7 +717,7 @@ loadPaletteOnInterrupt:                                                 ;$0333
 
 updateVDPSprites:                                                       ;$033E
 ;===============================================================================
-; in    IY         address of the common variables (used throughout)
+; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ; sprite Y positions:
 
@@ -805,9 +807,9 @@ unused_0397:                                                            ;$0397
 ;===============================================================================
 ; fill VRAM from memory?
 ;
-; in    BC              number of bytes to copy
-;       DE              VDP address
-;       HL              memory location to copy from
+; in    BC      number of bytes to copy
+;       DE      VDP address
+;       HL      memory location to copy from
 ;-------------------------------------------------------------------------------
         di
         ld      A,      E
@@ -951,12 +953,12 @@ decompressArt:                                                          ;$0405
 @_2:    ; VDP value byte from the E parameter
         ld      A,      E
         ; send to the VDP
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
 
         ld      A,      D
         or      %01000000               ; add bit 7 (that is, convert A to
         ; send it to the VDP            ; a VDP control register number)
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
 
         ; switch banks:
         ;-----------------------------------------------------------------------
@@ -1225,8 +1227,8 @@ decompressArt:                                                          ;$0405
 decompressScreen:                                                       ;$0501
 ;===============================================================================
 ; a screen layout is compressed using RLE (run-length-encoding). any byte that
-; there are multiple of in a row are listed as two repeating bytes, followed by
-; another byte specifying the remaining number of times to repeat
+; there are multiple of in a row are listed as two repeating bytes, followed
+; by another byte specifying the remaining number of times to repeat
 ;
 ; in    BC      length of the compressed data
 ;       DE      VDP register number (D) and value byte (E) to send to the VDP
@@ -1423,7 +1425,7 @@ clearVRAM:                                                              ;$0595
 readJoypad:                                                             ;$05A7
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
-; out   VARS.joypad
+; out   Vars.joypad
 ;-------------------------------------------------------------------------------
 
         in      A, [sms.ports.joy_a]    ; read the joypad port
@@ -1567,9 +1569,9 @@ _LABEL_60F_111:                                                         ;$060F
 ;===============================================================================
 ; convert to decimal? (used by Map & Act Complete screens for the lives number)
 ;
-; in    C               ;always 10 - base?
-;       HL              ;always number of lives
-;       DE              ;e.g. 60 ($3C)
+; in    C               ; always 10 - base?
+;       HL              ; always number of lives
+;       DE              ; e.g. 60 ($3C)
 ;
 ; out   DE
 ;       HL
@@ -1665,7 +1667,7 @@ updateVDPscroll:                                                        ;$063E
 ;-------------------------------------------------------------------------------
 
         ; fill B with vertical and C with horizontal VDP scroll values
-        ld      BC,   [VDPSCROLL_HORZ]
+        ld      BC,     [VDPSCROLL_HORZ]
 
         ; has the camera moved horizontally?
         ;-----------------------------------------------------------------------
@@ -1770,7 +1772,7 @@ fillOverscrollCache:                                                    ;$06BD
 ; This fills the overscroll cache so that when the screen scrolls onto new
 ; tiles they can be copied across in a fast and straight-forward fashion.
 ;
-; in    IY        Address of the common variables (used throughout)
+; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ; scrolling enabled??
         ; TODO: this could be located at the call site (macro?)
@@ -2011,7 +2013,7 @@ fillScrollTiles:                                                        ;$07DB
 ;===============================================================================
 ; Fills in new tiles when the screen has scrolled.
 ;
-; in    IY        Address of the common variables (used throughout)
+; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         bit     0,      [IY+Vars.flags2]
         jp      z,      @_4
@@ -2505,8 +2507,8 @@ loadFloorLayout:                                                        ;$0A10
 ;===============================================================================
 ; NOTE: called only by `loadLevel`
 ;
-; in    HL        address of Floor Layout data
-;       BC        length of compressed data
+; in    HL      address of Floor Layout data
+;       BC      length of compressed data
 ;-------------------------------------------------------------------------------
         ld      DE,       FLOORLAYOUT   ; where in RAM the floor layout will go
 
@@ -3142,7 +3144,7 @@ _LABEL_C52_106:                                                         ;$0C52
         add     A,      A
         ld      C,      A
         ld      B,      $00
-        ld      HL,     S1_ZoneTitles
+        ld      HL,     zoneTitles
         add     HL,     BC
         ld      A,      [HL]
         inc     HL
@@ -3344,24 +3346,29 @@ _0e4b:                                                                  ;$04EB
 
 _0e72:                                                                  ;$0E72
 ;===============================================================================
-        .WORD _1129     .BYTE $04, $01
-        .WORD _113b     .BYTE $04, $00
+        .WORD _1129
+        .BYTE $04, $01
+        .WORD _113b
+        .BYTE $04, $00
         ;
 
 _0e7a:                                                                  ;$0E7A
 ;===============================================================================
-        .WORD _114d     .BYTE $04, $01
-        .WORD _115f     .BYTE $04, $00
+        .WORD _114d
+        .BYTE $04, $01
+        .WORD _115f
+        .BYTE $04, $00
         ;
 
 _0e82:                                                                  ;$0E82
 ;===============================================================================
-        .WORD _1183     .BYTE $04, $00
+        .WORD _1183
+        .BYTE $04, $00
         ;
 
 _LABEL_E86_110:                                                         ;$0E86
 ;===============================================================================
-;in     IY      Address of the common variables (used throughout)
+; in    IY      Address of the common variables (used throughout)
 ;       TEMP1
 ;-------------------------------------------------------------------------------
         push    HL
@@ -3375,7 +3382,7 @@ _LABEL_E86_110:                                                         ;$0E86
         call    waitForInterrupt
 
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      A,        [LIVES]
+        ld      A,      [LIVES]
         ld      L,      A
         ld      H,      $00
         ld      C,      $0A
@@ -3402,8 +3409,8 @@ _LABEL_E86_110:                                                         ;$0E86
         ld      A,      $FF
         ld      [LAYOUT_BUFFER+2],      A
 
-        ld      B, 167
-        ld      C, 40
+        ld      B,      167
+        ld      C,      40
         ld      HL,     SPRITETABLE
         ld      DE,     LAYOUT_BUFFER
         call    layoutSpritesHorizontal
@@ -3471,7 +3478,7 @@ _0edd:                                                                  ;$0EDD
 
 map1Palette:                                                            ;$0F0E
 ;===============================================================================
-        ;sms.palettes
+;sms.palettes
 
         .BYTE   $35, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $25, $2B, $00, $3F
         .BYTE   $2B, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $00, $3C, $00, $3F
@@ -3479,7 +3486,7 @@ map1Palette:                                                            ;$0F0E
 
 map2Palette:                                                            ;$0F2E
 ;===============================================================================
-        ;sms.palettes
+;sms.palettes
 
         .BYTE   $25, $01, $06, $0B, $04, $18, $2C, $35, $2B, $10, $2A, $14, $15, $1F, $00, $3F
         .BYTE   $2B, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $07, $2D, $00, $3F
@@ -3489,167 +3496,244 @@ _f4e:                                                                   ;$0F4E
 ;===============================================================================
 ; TODO: these rows need to be appended by the level definitons
 
-        .WORD _0f84     .BYTE $00       ; Green Hill Act 1
-        .WORD _0f93     .BYTE $00       ; Green Hill Act 2
-        .WORD _0fde     .BYTE $01       ; Green Hill Act 3
-        .WORD _0fa2     .BYTE $00       ; Bridge Act 1
-        .WORD _0fb1     .BYTE $00       ; Bridge Act 2
-        .WORD _107e     .BYTE $02       ; Bridge Act 3
-        .WORD _0fc0     .BYTE $00       ; Jungle Act 1
-        .WORD _0fcf     .BYTE $00       ; Jungle Act 2
-        .WORD _1088     .BYTE $03       ; Jungle Act 3
-        .WORD _100b     .BYTE $00       ; Labyrinth Act 1
-        .WORD _101a     .BYTE $00       ; Labyrinth Act 2
-        .WORD _1092     .BYTE $00       ; Labyrinth Act 3
-        .WORD _1029     .BYTE $00       ; Scrap Brain Act 1
-        .WORD _1038     .BYTE $00       ; Scrap Brain Act 2
-        .WORD _109c     .BYTE $00       ; Scrap Brain Act 3
-        .WORD _1047     .BYTE $00       ; Sky Base Act 1
-        .WORD _1056     .BYTE $00       ; Sky Base Act 2
-        .WORD _1056     .BYTE $00       ; Sky Base Act 3
+        .WORD _0f84
+        .BYTE $00       ; Green Hill Act 1
+        .WORD _0f93
+        .BYTE $00       ; Green Hill Act 2
+        .WORD _0fde
+        .BYTE $01       ; Green Hill Act 3
+        .WORD _0fa2
+        .BYTE $00       ; Bridge Act 1
+        .WORD _0fb1
+        .BYTE $00       ; Bridge Act 2
+        .WORD _107e
+        .BYTE $02       ; Bridge Act 3
+        .WORD _0fc0
+        .BYTE $00       ; Jungle Act 1
+        .WORD _0fcf
+        .BYTE $00       ; Jungle Act 2
+        .WORD _1088
+        .BYTE $03       ; Jungle Act 3
+        .WORD _100b
+        .BYTE $00       ; Labyrinth Act 1
+        .WORD _101a
+        .BYTE $00       ; Labyrinth Act 2
+        .WORD _1092
+        .BYTE $00       ; Labyrinth Act 3
+        .WORD _1029
+        .BYTE $00       ; Scrap Brain Act 1
+        .WORD _1038
+        .BYTE $00       ; Scrap Brain Act 2
+        .WORD _109c
+        .BYTE $00       ; Scrap Brain Act 3
+        .WORD _1047
+        .BYTE $00       ; Sky Base Act 1
+        .WORD _1056
+        .BYTE $00       ; Sky Base Act 2
+        .WORD _1056
+        .BYTE $00       ; Sky Base Act 3
         ;
 
 _0f84:                                                                  ;$0F84
 ;===============================================================================
         ; Green Hill Act 1
-        .WORD _10bd     .BYTE $50, $68, $1E
-        .WORD _10ab     .BYTE $50, $68, $1E
-        .WORD _0f84     .BYTE $00, $00, $00
+        .WORD _10bd
+        .BYTE $50, $68, $1E
+        .WORD _10ab
+        .BYTE $50, $68, $1E
+        .WORD _0f84
+        .BYTE $00, $00, $00
         ;
 
 _0f93:                                                                  ;$0F93
 ;===============================================================================
         ; Green Hill Act 2
-        .WORD _10cf     .BYTE $50, $60, $1E
-        .WORD _10ab     .BYTE $50, $60, $1E
-        .WORD _0f93     .BYTE $00, $00, $00
+        .WORD _10cf
+        .BYTE $50, $60, $1E
+        .WORD _10ab
+        .BYTE $50, $60, $1E
+        .WORD _0f93
+        .BYTE $00, $00, $00
         ;
 _0fa2:                                                                  ;$0FA2
 ;===============================================================================
         ; Bridge Act 1
-        .WORD _10e1     .BYTE $60, $60, $1E
-        .WORD _10ab     .BYTE $60, $60, $1E
-        .WORD _0fa2     .BYTE $00, $00, $00
+        .WORD _10e1
+        .BYTE $60, $60, $1E
+        .WORD _10ab
+        .BYTE $60, $60, $1E
+        .WORD _0fa2
+        .BYTE $00, $00, $00
         ;
 
 _0fb1:                                                                  ;$0FB1
 ;===============================================================================
         ; Bridge Act 2
-        .WORD _10f3     .BYTE $80, $50, $1E
-        .WORD _10ab     .BYTE $80, $50, $1E
-        .WORD _0fb1     .BYTE $00, $00, $00
+        .WORD _10f3
+        .BYTE $80, $50, $1E
+        .WORD _10ab
+        .BYTE $80, $50, $1E
+        .WORD _0fb1
+        .BYTE $00, $00, $00
         ;
 
 _0fc0:                                                                  ;$0FC0
 ;===============================================================================
         ; Jungle Act 1
-        .WORD _1105     .BYTE $70, $48, $1E
-        .WORD _10ab     .BYTE $70, $48, $1E
-        .WORD _0fc0     .BYTE $00, $00, $00
+        .WORD _1105
+        .BYTE $70, $48, $1E
+        .WORD _10ab
+        .BYTE $70, $48, $1E
+        .WORD _0fc0
+        .BYTE $00, $00, $00
         ;
 
 _0fcf:                                                                  ;$0FCF
 ;===============================================================================
         ; Jungle Act 2
-        .WORD _1117     .BYTE $70, $38, $1E
-        .WORD _10ab     .BYTE $70, $38, $1E
-        .WORD _0fcf     .BYTE $00, $00, $00
+        .WORD _1117
+        .BYTE $70, $38, $1E
+        .WORD _10ab
+        .BYTE $70, $38, $1E
+        .WORD _0fcf
+        .BYTE $00, $00, $00
         ;
 
 _0fde:                                                                  ;$0FDE
 ;===============================================================================
         ; Green Hill Act 3
-        .WORD _1183     .BYTE $58, $58, $08
-        .WORD _1183     .BYTE $58, $58, $08
-        .WORD _1183     .BYTE $58, $56, $08
-        .WORD _1183     .BYTE $58, $56, $08
-        .WORD _1183     .BYTE $58, $55, $08
-        .WORD _1183     .BYTE $58, $55, $08
-        .WORD _1183     .BYTE $58, $56, $08
-        .WORD _1183     .BYTE $58, $56, $08
-        .WORD _0fde     .BYTE $00, $00, $00
+        .WORD _1183
+        .BYTE $58, $58, $08
+        .WORD _1183
+        .BYTE $58, $58, $08
+        .WORD _1183
+        .BYTE $58, $56, $08
+        .WORD _1183
+        .BYTE $58, $56, $08
+        .WORD _1183
+        .BYTE $58, $55, $08
+        .WORD _1183
+        .BYTE $58, $55, $08
+        .WORD _1183
+        .BYTE $58, $56, $08
+        .WORD _1183
+        .BYTE $58, $56, $08
+        .WORD _0fde
+        .BYTE $00, $00, $00
         ;
 
 _100b:                                                                  ;$100B
 ;===============================================================================
         ; Labyrinth Act 1
-        .WORD _1195     .BYTE $58, $68, $1E
-        .WORD _10ab     .BYTE $58, $68, $1E
-        .WORD _100b     .BYTE $00, $00, $00
+        .WORD _1195
+        .BYTE $58, $68, $1E
+        .WORD _10ab
+        .BYTE $58, $68, $1E
+        .WORD _100b
+        .BYTE $00, $00, $00
         ;
 
 _101a:                                                                  ;$101A
 ;===============================================================================
         ; Labyrinth Act 2
-        .WORD _11a7     .BYTE $68, $78, $1E
-        .WORD _10ab     .BYTE $68, $78, $1E
-        .WORD _101a     .BYTE $00, $00, $00
+        .WORD _11a7
+        .BYTE $68, $78, $1E
+        .WORD _10ab
+        .BYTE $68, $78, $1E
+        .WORD _101a
+        .BYTE $00, $00, $00
         ;
 
 _1029:                                                                  ;$1029
 ;===============================================================================
         ; Scrap Brain Act 1
-        .WORD _11b9     .BYTE $70, $58, $1E
-        .WORD _10ab     .BYTE $70, $58, $1E
-        .WORD _1029     .BYTE $00, $00, $00
+        .WORD _11b9
+        .BYTE $70, $58, $1E
+        .WORD _10ab
+        .BYTE $70, $58, $1E
+        .WORD _1029
+        .BYTE $00, $00, $00
         ;
 
 _1038:                                                                  ;$1038
 ;===============================================================================
         ; Scrap Brain Act 2
-        .WORD _11cb     .BYTE $78, $48, $1E
-        .WORD _10ab     .BYTE $78, $48, $1E
-        .WORD _1038     .BYTE $00, $00, $00
+        .WORD _11cb
+        .BYTE $78, $48, $1E
+        .WORD _10ab
+        .BYTE $78, $48, $1E
+        .WORD _1038
+        .BYTE $00, $00, $00
         ;
 
 _1047:                                                                  ;$1047
 ;===============================================================================
         ; Sky Base Act 1
-        .WORD _11dd     .BYTE $68, $28, $1E
-        .WORD _10ab     .BYTE $68, $28, $1E
-        .WORD _1047     .BYTE $00, $00, $00
+        .WORD _11dd
+        .BYTE $68, $28, $1E
+        .WORD _10ab
+        .BYTE $68, $28, $1E
+        .WORD _1047
+        .BYTE $00, $00, $00
         ;
 
 _1056:                                                                  ;$1056
 ;===============================================================================
         ; Sky Base Act 2 / 3
-        .WORD _11ef     .BYTE $80, $28, $1E
-        .WORD _11ef     .BYTE $80, $26, $08
-        .WORD _11ef     .BYTE $80, $26, $08
-        .WORD _11ef     .BYTE $80, $25, $08
-        .WORD _11ef     .BYTE $80, $25, $08
-        .WORD _11ef     .BYTE $80, $26, $08
-        .WORD _11ef     .BYTE $80, $26, $08
-        .WORD _1056     .BYTE $00, $00, $00
+        .WORD _11ef
+        .BYTE $80, $28, $1E
+        .WORD _11ef
+        .BYTE $80, $26, $08
+        .WORD _11ef
+        .BYTE $80, $26, $08
+        .WORD _11ef
+        .BYTE $80, $25, $08
+        .WORD _11ef
+        .BYTE $80, $25, $08
+        .WORD _11ef
+        .BYTE $80, $26, $08
+        .WORD _11ef
+        .BYTE $80, $26, $08
+        .WORD _1056
+        .BYTE $00, $00, $00
         ;
 
 _107e:                                                                  ;$107E
 ;===============================================================================
         ; Bridge Act 3
-        .WORD _1183     .BYTE $80, $48, $08
-        .WORD _107e     .BYTE $00, $00, $00
+        .WORD _1183
+        .BYTE $80, $48, $08
+        .WORD _107e
+        .BYTE $00, $00, $00
         ;
 
 _1088:                                                                  ;$1088
 ;===============================================================================
         ; Jungle Act 3
-        .WORD _1183     .BYTE $78, $30, $08
-        .WORD _1088     .BYTE $00, $00, $00
+        .WORD _1183
+        .BYTE $78, $30, $08
+        .WORD _1088
+        .BYTE $00, $00, $00
         ;
 
 _1092:                                                                  ;$1092
 ;===============================================================================
         ; Labyrinth Act 3
-        .WORD _1183     .BYTE $70, $60, $08
-        .WORD _1092     .BYTE $00, $00, $00
+        .WORD _1183
+        .BYTE $70, $60, $08
+        .WORD _1092
+        .BYTE $00, $00, $00
         ;
 
 _109c:                                                                  ;$109C
 ;===============================================================================
         ; Scrap Brain Act 3
-        .WORD _1129     .BYTE $68, $40, $08
-        .WORD _113b     .BYTE $68, $40, $08
-        .WORD _109c     .BYTE $00, $00, $00
+        .WORD _1129
+        .BYTE $68, $40, $08
+        .WORD _113b
+        .BYTE $68, $40, $08
+        .WORD _109c
+        .BYTE $00, $00, $00
         ;
 
 
@@ -3818,7 +3902,7 @@ _1201:                                                                  ;$1201
         .WORD   _0dd9
         ;
 
-S1_ZoneTitles:                                                          ;$1209
+zoneTitles:                                                             ;$1209
 ;===============================================================================
         .WORD   @greenHill              ; Green Hill Act 1
         .WORD   @greenHill              ; Green Hill Act 2
@@ -4002,31 +4086,56 @@ titleScreen:                                                            ;$1287
         .BYTE   $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $F1, $FF
 
 @_1372: ; wagging finger animation data:                                ;$1372
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-        .WORD @_13bd    .BYTE $08
-        .WORD @_13cf    .BYTE $08
-@_13b4: .WORD @_13bd    .BYTE $FF                                       ;$13B4
-        .WORD @_13bd    .BYTE $FF
-        .WORD @_13b4    .BYTE $00
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+        .WORD @_13bd
+        .BYTE $08
+        .WORD @_13cf
+        .BYTE $08
+@_13b4: .WORD @_13bd
+        .BYTE $FF                                       ;$13B4
+        .WORD @_13bd
+        .BYTE $FF
+        .WORD @_13b4
+        .BYTE $00
 
 @_13bd: ; frame 1 sprite layout                                         ;$13BD
         .BYTE   $00, $02, $04, $FF, $FF, $FF
@@ -4198,14 +4307,14 @@ _1401:                                                                  ;$1401
         ;-----------------------------------------------------------------------
 
 
-@_14de: .BYTE   $0F, $80, $81, $FF ;$14DE
+@_14de: .BYTE   $0F, $80, $81, $FF                                      ;$14DE
         .BYTE   $10, $90, $91, $FF
-@_14e6: ;text                                                           ;$14E6
+@_14e6: ; text                                                          ;$14E6
         .BYTE   $08, $0C, $67, $68, $69, $6A, $6B, $6C, $6D, $6E, $FF
-@_14f1: ;text                                                           ;$14F1
+@_14f1: ; text                                                          ;$14F1
         .BYTE   $08, $0D, $77, $78, $79, $7A, $7B, $7C, $7D, $7E, $FF
 
-@_14fc: ;this first bit looks like a palette                            ;$14FC
+@_14fc: ; this first bit looks like a palette                           ;$14FC
         .BYTE   $00, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $14, $27, $00, $3F
         .BYTE   $00, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $00, $3C, $00, $3F
 
@@ -4218,10 +4327,10 @@ _1401:                                                                  ;$1401
 
 _155e:                                                                  ;$155E
 ;===============================================================================
-        ;Act Complete screen?
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; Act Complete screen?
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ld      A,      [CURRENT_LEVEL]
         cp      19
         jp      z,      _172f
@@ -4484,8 +4593,8 @@ _1711:                                                                  ;$1711
 
 _1719:                                                                  ;$1719
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         xor     A                                          ;set A to 0
         ld      [RINGS],        A                          ;set ring-count to 0
 
@@ -4497,10 +4606,10 @@ _1719:                                                                  ;$1719
 
 _1726:                                                                  ;$1726
 ;===============================================================================
-        ;called by Act Complete screen?
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; called by Act Complete screen?
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ld      HL,     D284
         inc     [HL]
         res     3,      [IY+Vars.flags9]
@@ -4509,9 +4618,10 @@ _1726:                                                                  ;$1726
 
 _172f:                                                                  ;$172F
 ;===============================================================================
-        ;jumped to from $155E
+; jumped to from $155E
 
-        ;when adding the final bonuses, don't award an extra life for every 5 thousand
+        ; when adding the final bonuses, don't
+        ; award an extra life for every 5 thousand
         ld      A,      $FF
         ld      [SCORE_1UP],    A
 
@@ -4688,8 +4798,8 @@ _172f:                                                                  ;$172F
 
 _1860:                                                                  ;$1860
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         push    BC
 
         res     0,      [IY+Vars.flags0]
@@ -4844,7 +4954,7 @@ _197a:                                                                  ;$197A
 _197e:                                                                  ;$197E
 ;===============================================================================
         
-        ;"CHAOS EMERALD"
+        ; "CHAOS EMERALD"
         .BYTE   $08, $0A
         .BYTE   $36, $47, $34, $61, $70, $EB, $44, $50, $44, $62, $34, $43, $37
         .BYTE   $FF
@@ -4853,7 +4963,7 @@ _197e:                                                                  ;$197E
 _198e:                                                                  ;$198E
 ;===============================================================================
         
-        ;"SONIC LEFT"
+        ; "SONIC LEFT"
         .BYTE   $08, $0A
         .BYTE   $70, $52, $51, $40, $36, $EB, $43, $44, $45, $80, $EB, $EB, $EB
         .BYTE   $FF
@@ -4862,7 +4972,7 @@ _198e:                                                                  ;$198E
 _199e:                                                                  ;$199E
 ;===============================================================================
         
-        ;"SPECIAL BONUS"
+        ; "SPECIAL BONUS"
         .BYTE   $08, $0A
         .BYTE   $70, $60, $44, $36, $40, $34, $43, $EB, $35, $52, $51, $81, $70
         .BYTE   $FF
@@ -4960,8 +5070,8 @@ _1a14:                                                                  ;$1A14
 
 _1a18:                                                                  ;$1A18
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ld      [IY+Vars.spriteUpdateCount],       $00
         ld      HL,     SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
@@ -5168,10 +5278,10 @@ S1_ActComplete_Palette:                                                 ;$1B8D
 
 _1bad:                                                                  ;$1BAD
 ;===============================================================================
-        ;Demo playback??
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; Demo playback??
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ld      HL,     [D2B5]
         ld      DE,     @_1bc6
         add     HL,     DE
@@ -5187,7 +5297,7 @@ _1bad:                                                                  ;$1BAD
         ret
 
 @_1bc6: ; joystick data? (lines are high by default)                    ;$1BC6
-
+        ;-----------------------------------------------------------------------
         .BYTE   $F7, $F7, $F7, $F7, $DF, $F7, $FF, $FF, $D7, $F7, $F7, $F7, $FF, $DF, $F7, $F7
         .BYTE   $DF, $F7, $F7, $F7, $F7, $FF, $FF, $DF, $F7, $FF, $FF, $FF, $FB, $F7, $F7, $F5
         .BYTE   $FF, $FF, $FF, $FF, $FB, $FB, $F9, $FF, $FF, $FF, $FF, $F7, $F7, $F7, $F7, $D7
@@ -5201,8 +5311,8 @@ _1bad:                                                                  ;$1BAD
 
 _1c49:                                                                  ;$1C49
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ;set bit 0 of the parameter address (IY=$D200);
         ;`waitForInterrupt` will pause until an interrupt event switches bit 0 of $D200 on
         set     0,      [IY+Vars.flags0]
@@ -5297,10 +5407,10 @@ _1c49:                                                                  ;$1C49
 
 fillMemoryWithValue:                                                    ;$1CE8
 ;===============================================================================
-;params HL      memory address
+; in    HL      memory address
 ;       B       number of bytes to fill
 ;       A       which value to fill with
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      [HL],      A
         inc     HL
         djnz    fillMemoryWithValue
@@ -5310,25 +5420,26 @@ fillMemoryWithValue:                                                    ;$1CE8
 
 _LABEL_1CED_131:                                                        ;$1CED
 ;===============================================================================
-        ;start level? (could be main gameplay loop)
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        ;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
-        ld      A, 5
+; start level? (could be main gameplay loop)
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ; load page 1 (Z80:$4000-$7FFF)
+        ; with bank 5 (ROM:$14000-$17FFF)
+        ld      A,                      5
         ld      [sms.mapper.slot1],     A
-        ld      [SLOT1],        A
+        ld      [SLOT1],                A
 
-        ld      A,        [CURRENT_LEVEL]
+        ld      A,      [CURRENT_LEVEL]
 
         bit     4,      [IY+Vars.flags6]
         jr      z,      @_1
 
         ld      A,      [D2D3]
 
-@_1:    add     A,        A                         ;double the level number (for an index)
-        ld      L,        A                         ;put this into a 16-bit number
-        ld      H,        $00
+@_1:    add     A,      A               ; double the level number (for an index)
+        ld      L,      A               ; put this into a 16-bit number
+        ld      H,      $00
 
         ;the level pointers table begins at $15580 (page 1 $4000 + $1580 remainder)
         ;TODO: must confirm that this gets correctly calculated automatically
@@ -5446,7 +5557,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         call    nz,     animateFloorRing
 
         bit     3,      [IY+Vars.flags6]
-        call    nz,     :mobsupdateTime
+        call    nz,     updateTime
 
         ;every other frame?
         ld      A,      [FRAMECOUNT]
@@ -5577,10 +5688,10 @@ _LABEL_1CED_131:                                                        ;$1CED
 
 _1e9e:                                                                  ;$1E9E
 ;===============================================================================
-        ;demo mode?
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; demo mode?
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         bit     1,      [IY+Vars.scrollRingFlags]
         ret     nz
 
@@ -5611,9 +5722,9 @@ _1e9e:                                                                  ;$1E9E
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A, :audio.unpause
+                ld      A,                      :audio.unpause
                 ld      [sms.mapper.slot1],     A
-                ld      [SLOT1],        A
+                ld      [SLOT1],                A
                 call    audio.unpause
         .ENDIF
 
@@ -5622,9 +5733,9 @@ _1e9e:                                                                  ;$1E9E
 
 lockCameraHorizontal:                                                   ;$1ED8
 ;===============================================================================
-        ;lock the screen -- prevents the screen scrolling left or right
-        ;(i.e. during boss battles)
-        ;-----------------------------------------------------------------------
+; lock the screen -- prevents the screen scrolling left or right
+; (i.e. during boss battles)
+;-------------------------------------------------------------------------------
         ld      HL,     [CAMERA_X]
         ld      [LEVEL_LEFT],   HL
         ld      [LEVEL_RIGHT],  HL
@@ -5633,8 +5744,8 @@ lockCameraHorizontal:                                                   ;$1ED8
 
 autoscrollRight:                                                        ;$1EE2
 ;===============================================================================
-        ;move the left-hand side of the level across -- i.e. Bridge Act 2
-        ;-----------------------------------------------------------------------
+; move the left-hand side of the level across -- i.e. Bridge Act 2
+;-------------------------------------------------------------------------------
         ld      A,      [FRAMECOUNT]
         rrca
         ret     nc
@@ -5652,8 +5763,8 @@ autoscrollRight:                                                        ;$1EE2
 
 autoscrollUp:                                                           ;$1EF2
 ;===============================================================================
-        ;autoscroll upwards -- unused by the game, but working
-        ;-----------------------------------------------------------------------
+; autoscroll upwards -- unused by the game, but working
+;-------------------------------------------------------------------------------
         ;ensure there's a pause before starting to scroll upwards, otherwise the player won't have time to react!
         ld      A,      [FRAMECOUNT]
         rrca
@@ -5668,8 +5779,9 @@ autoscrollUp:                                                           ;$1EF2
 
 dontScrollDown:                                                         ;$1EFF
 ;===============================================================================
-/*      Fixes the bottom of the level to the current screen position, i.e. Jungle Act 2
-        */
+; Fixes the bottom of the level to the current screen position,
+; i.e. Jungle Act 2
+;-------------------------------------------------------------------------------
         ld      HL,     [CAMERA_Y]
         ld      [LEVEL_BOTTOM], HL
         ret
@@ -5787,23 +5899,26 @@ _1f49:                                                                  ;$1F49
 
 _1f9d:                                                                  ;$1F9D
 ;===============================================================================
-        .BYTE $02, $04   .WORD paletteData@skyBase_cycles
+        .BYTE $02, $04
+        .WORD paletteData@skyBase_cycles
         ;
 
 _1fa1:                                                                  ;$1FA1
 ;===============================================================================
-        .BYTE $02, $04   .WORD paletteData@skyBase_cycles_Lightning1
+        .BYTE $02, $04
+        .WORD paletteData@skyBase_cycles_Lightning1
         ;
 
 _1fa5:                                                                  ;$1FA5
 ;===============================================================================
-        .BYTE $02, $04   .WORD paletteData@skyBase_cycles_Lightning2
+        .BYTE $02, $04
+        .WORD paletteData@skyBase_cycles_Lightning2
         ;
 
 _1fa9:                                                                  ;$1FA9
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         dec     A
         ld      [D289], A
         jr      z,      @_1
@@ -5893,7 +6008,7 @@ _2023:                                                                  ;$2023
 
 _202d:                                                                  ;$202D
 ;===============================================================================
-;TODO: should be a macro so as to exclude entirely without audio
+; TODO: should be a macro so as to exclude entirely without audio
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
@@ -5927,8 +6042,8 @@ add10Rings:                                                             ;$2039
 
 _203f:                                                                  ;$203F
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
                 ld      A,      $07
@@ -5949,8 +6064,8 @@ _2047:                                                                  ;$2047
 
 _2067:                                                                  ;$2067
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ;wait until the water raster effect has finished its work (it requires three interrupts to produce)
         ld      A,      [RASTERSPLIT_STEP]
         and     A
@@ -5972,9 +6087,9 @@ _20b8:                                                                  ;$20B8
 ;===============================================================================
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A, :audio.fadeOut
+                ld      A,                      :audio.fadeOut
                 ld      [sms.mapper.slot1],     A
-                ld      [SLOT1],        A
+                ld      [SLOT1],                A
         .ENDIF
 
         ld      HL,     $0028
@@ -5992,9 +6107,9 @@ _20b8:                                                                  ;$20B8
 
 loadLevel:                                                              ;$20CB
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
+; in    IY      Address of the common variables (used throughout)
 ;       HL      Address of the level header
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
 
         ld      A,      [VDPREGISTER_1]
@@ -6566,10 +6681,10 @@ loadLevel:                                                              ;$20CB
 
 loadMobList:                                                            ;$232B
 ;===============================================================================
-/*      Reads in a list of mob IDs and their positions within the level.
-        */
-;params HL      Address of a mob layout list
-        ;-----------------------------------------------------------------------
+; Reads in a list of mob IDs and their positions within the level.
+;
+; in    HL      Address of a mob layout list
+;-------------------------------------------------------------------------------
         ;NOTE: D2F2 is used only here -- perhaps a regular temp variable could be used
 
         ;immediately put aside a copy of the mob layout list address
@@ -6619,13 +6734,13 @@ loadMobList:                                                            ;$232B
 
 loadMobFromList:                                                        ;$235E
 ;===============================================================================
-;params IX      Address of the mob structure to be setup
+; in    IX      Address of the mob structure to be setup
 ;       A       Mob type
-;       HL      address with the X & Y byte Block-positions of the mob on the Floor
+;       HL      address with the X & Y byte Block-offsets of the mob on the Floor
 ;       DE      size of the mob structure (to skip to the next one)
-;return IX      IX will be updated to be pointing to the next mob structure in RAM
+; out   IX      IX will be updated to be pointing to the next mob structure in RAM
 ;       HL      The pointer to the mob layout list will have been moved forward to the next mob in the list
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.type],      A               ;set the mob type
 
         ;x position:
@@ -6702,7 +6817,7 @@ loadMobFromList:                                                        ;$235E
 
 _239c:                                                                  ;$239C
 ;===============================================================================
-        ;animate ring
+; animate ring
 
         ;ld      (SCROLLZONE_LEFT) = $0060
         ;ld      (SCROLLZONE_RIGHT) = $0088
@@ -6851,8 +6966,8 @@ _2405:                                                                  ;$2405
 
 _LABEL_258B_133:                                                        ;$258B
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ld      A,      [VDPREGISTER_1]
         and     %10111111
         ld      [VDPREGISTER_1],        A
@@ -7089,8 +7204,8 @@ _LABEL_258B_133:                                                        ;$258B
 
 _2718:                                                                  ;$2718
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         push    AF
         push    HL
         push    DE
@@ -7127,11 +7242,11 @@ _2718:                                                                  ;$2718
 
 waitFrames:                                                             ;$2745
 ;===============================================================================
-/*      Wait a given number of frames.
-        */
-;params IY      Address of the common variables (used throughout)
+; Wait a given number of frames.
+;
+; in    IY      Address of the common variables (used throughout)
 ;       BC      Number of frames to wait
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         push    BC
 
         ;refresh the screen
@@ -7155,10 +7270,10 @@ waitFrames:                                                             ;$2745
 
 _275a:                                                                  ;$275A
 ;===============================================================================
-        ;called only by _2718
-
-;params HL
-        ;-----------------------------------------------------------------------
+; called only by _2718
+;
+; in    HL
+;-------------------------------------------------------------------------------
         ld      E,      [HL]                                    ;E = D322 ($48)
         inc     HL
         ld      D,      [HL]                                    ;D = D323 ($28)
@@ -7329,8 +7444,8 @@ _2825:                                                                  ;$2825
 
 _2828:                                                                  ;$2828
 ;===============================================================================
-/*      Credits screen palette.
-        */
+; Credits screen palette.
+;
         ;sms.palettes
         .BYTE   $35, $01, $06, $0B, $04, $08, $0C, $3D, $1F, $39, $2A, $14, $25, $2B, $00, $3F
         .BYTE   $35, $20, $35, $1B, $16, $2A, $00, $3F, $03, $0F, $01, $15, $00, $3C, $00, $3F
@@ -7339,50 +7454,79 @@ _2828:                                                                  ;$2828
 _2848:                                                                  ;$2848
 ;===============================================================================
 
-        .BYTE $96       .WORD _2902
-        .BYTE $86       .WORD _289F
-        .BYTE $E9       .WORD _2902
-        .BYTE $6F       .WORD _289F
-        .BYTE $FF       .WORD _2848
+        .BYTE $96
+        .WORD _2902
+        .BYTE $86
+        .WORD _289F
+        .BYTE $E9
+        .WORD _2902
+        .BYTE $6F
+        .WORD _289F
+        .BYTE $FF
+        .WORD _2848
         ;
 
 _2857:                                                                  ;$2857
 ;===============================================================================
         
-        .BYTE $36       .WORD _28B1
-        .BYTE $48       .WORD _28BA
-        .BYTE $54       .WORD _28A8
-        .BYTE $1E       .WORD _28B1
-        .BYTE $44       .WORD _28BA
-        .BYTE $FF       .WORD _2857
+        .BYTE $36
+        .WORD _28B1
+        .BYTE $48
+        .WORD _28BA
+        .BYTE $54
+        .WORD _28A8
+        .BYTE $1E
+        .WORD _28B1
+        .BYTE $44
+        .WORD _28BA
+        .BYTE $FF
+        .WORD _2857
         ;
 
 _2869:                                                                  ;$2869
 ;===============================================================================
         
-        .BYTE $23       .WORD _28C3
-        .BYTE $23       .WORD _28CC
-        .BYTE $FF       .WORD _2869
+        .BYTE $23
+        .WORD _28C3
+        .BYTE $23
+        .WORD _28CC
+        .BYTE $FF
+        .WORD _2869
         ;
 
 _2872:                                                                  ;$2872
 ;===============================================================================
         
-        .BYTE $E4       .WORD _28F3
-        .BYTE $19       .WORD _28E4
-        .BYTE $19       .WORD _28D5
-        .BYTE $19       .WORD _28E4
-        .BYTE $19       .WORD _28D5
-        .BYTE $FA       .WORD _28F3
-        .BYTE $85       .WORD _28E4
-        .BYTE $E8       .WORD _28F3
-        .BYTE $19       .WORD _28E4
-        .BYTE $19       .WORD _28D5
-        .BYTE $19       .WORD _28E4
-        .BYTE $19       .WORD _28D5
-        .BYTE $19       .WORD _28E4
-        .BYTE $19       .WORD _28D5
-        .BYTE $FF       .WORD _2872
+        .BYTE $E4
+        .WORD _28F3
+        .BYTE $19
+        .WORD _28E4
+        .BYTE $19
+        .WORD _28D5
+        .BYTE $19
+        .WORD _28E4
+        .BYTE $19
+        .WORD _28D5
+        .BYTE $FA
+        .WORD _28F3
+        .BYTE $85
+        .WORD _28E4
+        .BYTE $E8
+        .WORD _28F3
+        .BYTE $19
+        .WORD _28E4
+        .BYTE $19
+        .WORD _28D5
+        .BYTE $19
+        .WORD _28E4
+        .BYTE $19
+        .WORD _28D5
+        .BYTE $19
+        .WORD _28E4
+        .BYTE $19
+        .WORD _28D5
+        .BYTE $FF
+        .WORD _2872
         ;
 
 ;looks like the sprite layouts for the singing Sonic on the credits screen
@@ -7582,25 +7726,35 @@ creditsPalette:                                                         ;$2AD6
 
 mobPointers:                                                            ;$2AF6
 ;===============================================================================
-/*      This is the list of mobs defined in the game, with the order of this table providing the mob IDs.
-        */
-@sonic:                                 ;#00
+; this is the list of mobs defined in the game,
+; with the order of this table providing the mob IDs
+;
+@sonic:                                 ; Sonic
+        .DEFINE MOB_ID_SONIC            $00
         .WORD   sonic_process           
-@powerUp_ring:                          ;#01
+@powerUp_ring:                          ; 10 rings monitor
+        .DEFINE MOB_ID_RINGS            $01
         .WORD   powerups_ring_process   
-@powerUp_speed:                         ;#02
+@powerUp_speed:                         ; speed shoes monitor
+        .DEFINE MOB_ID_SPEEDUP          $02
         .WORD   powerups_speed_process  
-@powerUp_life:                          ;#03
+@powerUp_life:                          ; extra life monitor
+        .DEFINE MOB_ID_1UP              $03
         .WORD   powerups_life_process   
-@powerUp_shield:                        ;#04
+@powerUp_shield:                        ; sheild monitor
+        .DEFINE MOB_ID_SHIELD           $04
         .WORD   powerups_shield_process 
-@powerUp_invincibility:                 ;#05: monitor - invincibility
+@powerUp_invincibility:                 ; invincibility monitor
+        .DEFINE MOB_ID_INVINCIBILITY    $05
         .WORD   powerups_invincibility_process
-@powerUp_emerald:                       ;#06: chaos emerald
+@powerUp_emerald:                       ; chaos emerald
+        .DEFINE MOB_ID_EMERALD          $06
         .WORD   powerups_emerald_process
-@boss_endSign:                          ;#07: end sign
+@boss_endSign:                          ; end sign
+        .DEFINE MOB_ID_ENDSIGN          $07
         .WORD   boss_endSign_process
-@badnick_crabMeat:                      ;#08: badnick - crabmeat
+@badnick_crabMeat:                      ; badnick - crabmeat
+        .DEFINE MOB_ID_CRABMEAT         $08
         .WORD   badnick_crabMeat_process
 @platform_swinging:                     ;#09: wooden platform - swinging (Green Hill)
         .WORD   platform_swinging_process
@@ -7857,23 +8011,25 @@ mobBounds:                                                              ;$2BA2
 
 hudRingLayout:                                                          ;$2E52
 ;===============================================================================
-        ;ring count HUD layout
+; ring count HUD layout
+;
         .BYTE   $A6, $A8, $FF
         ;
 
 hudLivesLayout:                                                         ;$2E55
 ;===============================================================================
-        ;this is the sprite-layout for the lives display on levels
+; this is the sprite-layout for the lives display on levels
+;
         .BYTE   $A0, $A2, $A4, $00, $FF
         ;
 
 refresh:                                                                ;$2E5A
 ;===============================================================================
-/*      Updates the game display -- refreshes the lives & time display,
-        updates the,    camera and processes all the mobs in the level.
-        */
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+; Updates the game display -- refreshes the lives & time display,
+; updates the camera and processes all the mobs in the level
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
         ;do not update the Sonic sprite frame (upon Interrupt)
         res     7,      [IY+Vars.timeLightningFlags]
 
@@ -7970,12 +8126,11 @@ refresh:                                                                ;$2E5A
 
 displayRingCount:                                                       ;$2EE6
 ;===============================================================================
-        ;TODO: it'll be faster to layout the sprites when the level loads,
-        ;      and just update the indices here
-
-/*      Update the player's ring-count on the screen.
-        */
-        ;-----------------------------------------------------------------------
+; Update the player's ring-count on the screen.
+;
+; TODO: it'll be faster to layout the sprites when the level loads,
+;       and just update the indices here
+;-------------------------------------------------------------------------------
         ld      A,        [RINGS]
         ld      C,        A
         rrca
@@ -8012,11 +8167,11 @@ displayRingCount:                                                       ;$2EE6
 
 displayTime:                                                            ;$2F1F
 ;===============================================================================
-/*      Draws the level time on the screen.
-        */
-        ;TODO: It'll be faster to layout the sprites at level load and just update the indices
-        ;      here instead of redoing the layout every time
-        ;-----------------------------------------------------------------------
+; Draws the level time on the screen.
+;
+; TODO: It'll be faster to layout the sprites at level load and just update
+; the indices here instead of redoing the layout every time
+;-------------------------------------------------------------------------------
         ld      HL,      LAYOUT_BUFFER
 
         ld      A,      [TIME_MINUTES]
@@ -8076,47 +8231,49 @@ displayTime:                                                            ;$2F1F
 
 mobs_updateCamera:                                                      ;$2F66
 ;===============================================================================
-        ;called only by "refresh"
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        ;if scrolling is locked, do nothing
-        ;TODO: we could do this test at the call site instead and avoid the wasted call/ret?
+; called only by "refresh"
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ; if scrolling is locked, do nothing
+        ; TODO: we could do this test at the call site
+        ; instead and avoid the wasted call/ret?
         bit     6,      [IY+Vars.timeLightningFlags]
         ret     nz
 
-        ;does the camera need to be moved horizontally toward a target?
-        ld      HL,       [CAMERA_X_GOTO]
+        ; does the camera need to be moved horizontally toward a target?
+        ld      HL,     [CAMERA_X_GOTO]
         ld      A,      L
         or      H
         call    nz,     @scrollCameraTo_horizontal
 
-        ;does the camera need to be moved vertically toward a target?
-        ld      HL,       [CAMERA_Y_GOTO]
+        ; does the camera need to be moved vertically toward a target?
+        ld      HL,     [CAMERA_Y_GOTO]
         ld      A,      L
         or      H
         call    nz,     @scrollCameraTo_vertical
 
-        ;coalesce scroll zones:
+        ; coalesce scroll zones:
         ;-----------------------------------------------------------------------
         ;
         ;       .-------------------------.
-        ;       |  +-------------------+  |     The default Scroll Zone (1) expands or contracts
-        ;       |  |2.+-------------+  |  |     to fit the temporary override Scroll Zone (2)
-        ;       |  |  |1.           |  |  |
-        ;       |  |<-|             |->|  |
+        ;       |  +-------------------+  |     The default Scroll Zone (1)
+        ;       |  |2.+-------------+  |  |     expands or contracts to fit
+        ;       |  |  |1.           |  |  |     the temporary override
+        ;       |  |<-|             |->|  |     Scroll Zone (2)
         ;       |  |  |             |  |  |
         ;       |  |  +-------------+  |  |
         ;       |  +-------------------+  |
         ;       '-------------------------'
 
-        ;manage the region within which Sonic can be before scrolling the screen?
+        ; manage the region within which Sonic
+        ; can be before scrolling the screen?
 
-        ld      HL,  [SCROLLZONE_OVERRIDE_LEFT]      ;=32
-        ld      DE,      [SCROLLZONE_LEFT]               ;=96
-        and     A                                    ;clear flags, particularly carry
-        sbc     HL,  DE
-        ;cause the DE value to head towards equality with HL?
+        ld      HL,     [SCROLLZONE_OVERRIDE_LEFT]      ;=32
+        ld      DE,     [SCROLLZONE_LEFT]               ;=96
+        and     A       ; clear flags, particularly carry
+        sbc     HL,     DE
+        ; cause the DE value to head towards equality with HL?
         call    nz,     @_315e
         ;---------------v
         ;       jr      c       @_1
@@ -8149,7 +8306,7 @@ mobs_updateCamera:                                                      ;$2F66
         call    nz,     @_315e
         ld      [SCROLLZONE_BOTTOM],    DE
 
-        ;check left-hand scroll zone:
+        ; check left-hand scroll zone:
         ;-----------------------------------------------------------------------
         ;
         ;       > CameraX  > ScrollZoneX
@@ -8163,12 +8320,12 @@ mobs_updateCamera:                                                      ;$2F66
         ;       |   Zone   |              |
         ;       '----------+--------------'
 
-        ld      BC,    [SCROLLZONE_LEFT]
-        ld      DE,      [SONIC.X]
+        ld      BC,     [SCROLLZONE_LEFT]
+        ld      DE,     [SONIC.X]
         ld      HL,     [CAMERA_X]
         add     HL,     BC
         and     A                                    ;clear flags, particularly carry
-        sbc     HL, DE
+        sbc     HL,     DE
         ;if the player is outside of the left-hand scroll zone, skip forward --
         ;(we'll have to check the right-hand scroll zone next)
         jr      c,      @scrollZoneRight
@@ -8179,45 +8336,46 @@ mobs_updateCamera:                                                      ;$2F66
         ;HL > 255?
         ;TODO: we could use `XOR A` instead of `AND A` above to reset A,
         ;      allowing us to use just `AND H` below to do the zero-check quicker
-        ld      A,   H
+        ld      A,      H
         and     A
         jr      nz,     @limitScrollLeft
 
-        ld      A,   L
+        ld      A,      L
         cp      9                                               ;TODO: shouldn't this be 8?
         jr      c,      @_2
 
 @limitScrollLeft:
-        ;limit scroll speed to 8
-        ld      HL, $0008
+        ; limit scroll speed to 8 pixels / frame
+        ; -- we can only introduce one column of tiles per-frame!
+        ld      HL,     $0008
 
         ;-----------------------------------------------------------------------
 
-        ;is the camera auto-scrolling to the right?
+        ; is the camera auto-scrolling to the right?
 @_2:    bit     3,      [IY+Vars.scrollRingFlags]
         jr      nz,     @levelLeftLimit
 
-        ;is camera set to smooth scrolling?
+        ; is camera set to smooth scrolling?
         bit     5,      [IY+Vars.scrollRingFlags]
-        jr      z,      @_3                                     ;if not, skip ahead
+        jr      z,      @_3             ; if not, skip ahead
 
-        ;smooth scrolling: scroll only 1 pixel at a time
+        ; smooth scrolling: scroll only 1 pixel at a time
         ld      HL, $0001
 
 @_3:    ex      DE,     HL
-        ;move camera X position
+        ; move camera X position
         ld      HL,     [CAMERA_X]
         and     A
         sbc     HL,     DE
-        ;skip if moving the camera would under/overflow
+        ; skip if moving the camera would under/overflow
         jr      c,      @levelLeftLimit
-        ;commit the new camera position
+        ; commit the new camera position
         ld      [CAMERA_X],     HL
 
-        ;TODO: this could be a `jr`
+        ; TODO: this could be a `jr`
         jp      @levelLeftLimit
 
-        ;check right-hand scroll zone:
+        ; check right-hand scroll zone:
         ;-----------------------------------------------------------------------
 @scrollZoneRight:
         ;       * CameraX       * ScrollZoneX
@@ -8231,17 +8389,18 @@ mobs_updateCamera:                                                      ;$2F66
         ;       |               |   Zone  |
         ;       '---------------+---------'
 
-        ld      BC,    [SCROLLZONE_RIGHT]
+        ld      BC,     [SCROLLZONE_RIGHT]
         ld      HL,     [CAMERA_X]
         add     HL,     BC
-        and     A                                    ;clear the carry flag
-        sbc     HL, DE
-        ;if the player is outside of the right-hand scroll zone, skip forward
+        and     A       ; clear the carry flag
+        sbc     HL,     DE
+        ; if the player is outside of the right-hand
+        ; scroll zone, skip forward
         jr      nc,     @levelLeftLimit
 
-        ;within right-hand scroll zone:
-        ;flip all the bits in HL?
-        ;TODO: WHY??? Why wouldn't a simple zero check suffice?
+        ; within right-hand scroll zone:
+        ; flip all the bits in HL?
+        ; TODO: WHY??? Why wouldn't a simple zero check suffice?
         ld      A,      L
         cpl
         ld      L,      A
@@ -8259,36 +8418,37 @@ mobs_updateCamera:                                                      ;$2F66
         jr      c,      @_6
 
 @limitScrollRight:
-        ;limit scroll speed to 8
+        ; limit scroll speed to 8
         ld      HL, $0008
 
-        ;is the camera auto-scrolling to the right?
+        ; is the camera auto-scrolling to the right?
 @_6:    bit     3,      [IY+Vars.scrollRingFlags]
-        ;yes? skip ahead
+        ; yes? skip ahead
         jr      nz,     @levelLeftLimit
 
-        ;is camera set to smooth scrolling?
+        ; is camera set to smooth scrolling?
         bit     5,      [IY+Vars.scrollRingFlags]
         jr      z,      @checkOverflow
 
-        ;smooth scrolling: scroll only 1 pixel at a time
+        ; smooth scrolling: scroll only 1 pixel at a time
         ld      HL, $0001
 
 @checkOverflow:
-        ;ensure that the camera position won't under/overflow
+        ; ensure that the camera position won't under/overflow
         ld      DE,     [CAMERA_X]
         add     HL, DE
         jr      c,      @levelLeftLimit
 
         ld      [CAMERA_X],     HL
 
-        ;camera cannot go past left edge of level:
+        ; camera cannot go past left edge of level:
         ;-----------------------------------------------------------------------
-        ;note that a Level is a sub-portion of a Floor Layout (more than one Level can be packed on a Floor Layout),
-        ;therefore the left-hand edge of the level is not necessarily 0
+        ; note that a Level is a sub-portion of a Floor Layout (more than one
+        ; Level can be packed on a Floor Layout), therefore the left-hand edge
+        ; of the level is not necessarily 0
 @levelLeftLimit:
         ld      HL,     [CAMERA_X]
-        ld      DE,   [LEVEL_LEFT]
+        ld      DE,     [LEVEL_LEFT]
         and     A
         sbc     HL,     DE
         jr      nc,     @levelRightLimit
@@ -8297,44 +8457,44 @@ mobs_updateCamera:                                                      ;$2F66
         ld      [CAMERA_X],     DE
         jr      @cameraY
 
-        ;camera cannot go past right edge of level:
+        ; camera cannot go past right edge of level:
         ;-----------------------------------------------------------------------
 @levelRightLimit:
         ld      HL,     [CAMERA_X]
-        ld      DE,  [LEVEL_RIGHT]
+        ld      DE,     [LEVEL_RIGHT]
         and     A
         sbc     HL,     DE
         jr      c,      @cameraY
 
-        ;stop the camera at the level boundary
+        ; stop the camera at the level boundary
         ld      [CAMERA_X],     DE
 
 @cameraY:
         ;-----------------------------------------------------------------------
-        ;is the camera waving up and down?
+        ; is the camera waving up and down?
         bit     6,      [IY+Vars.scrollRingFlags]
         call    nz,     @_3164
 
-        ld      BC,       [SCROLLZONE_TOP]
-        ld      DE,      [SONIC.Y]
+        ld      BC,     [SCROLLZONE_TOP]
+        ld      DE,     [SONIC.Y]
         ld      HL,     [CAMERA_Y]
 
-        ;is the camera waving up and down?
+        ; is the camera waving up and down?
         bit     6,      [IY+Vars.scrollRingFlags]
-        ;-- if so, the top scroll zone is set to a fixed value
+        ; -- if so, the top scroll zone is set to a fixed value
         call    nz,     @updateCamera_scrollZone_waving         ;=`ld BC $0020`
 
-        ;is the camera prevented from scrolling down?
+        ; is the camera prevented from scrolling down?
         bit     7,      [IY+Vars.scrollRingFlags]
-        ;-- if so, the top scroll zone is set to a fixed value
+        ; -- if so, the top scroll zone is set to a fixed value
         call    nz,     @updateCamera_scrollZone_noDown         ;=`ld BC $0070`
 
-        ;get the absolute position of the top scroll zone on the Floor Layout
+        ; get the absolute position of the top scroll zone on the Floor Layout
         add     HL,     BC
 
-        ;is the camera prevented from scrolling down?
+        ; is the camera prevented from scrolling down?
         bit     7,      [IY+Vars.scrollRingFlags]
-        ;-- if so, increase the scroll zone further
+        ; -- if so, increase the scroll zone further
         call    z,      @updateCamera_scrollZone_increase
 
         and     A
@@ -8347,7 +8507,7 @@ mobs_updateCamera:                                                      ;$2F66
         and     A
         jr      nz,     @_10
 
-        ;is the camera waving up and down?
+        ; is the camera waving up and down?
         bit     6,      [IY+Vars.scrollRingFlags]
         call    nz,     @_311f
 
@@ -8359,7 +8519,7 @@ mobs_updateCamera:                                                      ;$2F66
         ld      L,      C
         ld      H,      $00
 
-        ;is the camera prevented from scrolling down?
+        ; is the camera prevented from scrolling down?
 @_11:   bit     7,      [IY+Vars.scrollRingFlags]
         jr      z,      @_12
 
@@ -8385,9 +8545,9 @@ mobs_updateCamera:                                                      ;$2F66
         ld      HL,     [CAMERA_Y]
         add     HL,     BC
 
-        ;is the camera prevented from scrolling down?
+        ; is the camera prevented from scrolling down?
         bit     7,      [IY+Vars.scrollRingFlags]
-        ;- if so, increase the scroll zone further
+        ; if so, increase the scroll zone further
         call    z,      @updateCamera_scrollZone_increase
 
         and     A
@@ -8425,7 +8585,7 @@ mobs_updateCamera:                                                      ;$2F66
 
         ld      [CAMERA_Y],     HL
 
-        ;camera cannot go past top edge of level:
+        ; camera cannot go past top edge of level:
         ;-----------------------------------------------------------------------
 @levelTopLimit:
         ld      HL,     [CAMERA_Y]
@@ -8433,10 +8593,10 @@ mobs_updateCamera:                                                      ;$2F66
         and     A
         sbc     HL,     DE
         jr      nc,     @levelBottomLimit
-        ;stop the camera at the level boundary
+        ; stop the camera at the level boundary
         ld      [CAMERA_Y],     DE
 
-        ;camera cannot go past bottom edge of level:
+        ; camera cannot go past bottom edge of level:
         ;-----------------------------------------------------------------------
 @levelBottomLimit:
         ld      HL,     [CAMERA_Y]
@@ -8444,16 +8604,16 @@ mobs_updateCamera:                                                      ;$2F66
         and     A
         sbc     HL,     DE
         jr      c,      @ret                                    ;TODO: use `ret c`?
-        ;stop the camera at the level boundary
+        ; stop the camera at the level boundary
         ld      [CAMERA_Y],     DE
 
 @ret:   ret
 
-        ;ancillary functions:
+        ; ancillary functions:
 
 @_311a:                                                                 ;$311A
         ;=======================================================================
-        ;TODO: this seems very inefficient and should be a macro instead
+        ; TODO: this seems very inefficient and should be a macro instead
         ld      [HL],   D
         dec     HL
         ld      [HL],   E
@@ -8462,26 +8622,26 @@ mobs_updateCamera:                                                      ;$2F66
 
 @_311f:                                                                 ;$311F
         ;=======================================================================
-        ;TODO: this seems very inefficient and should be a macro instead
+        ; TODO: this seems very inefficient and should be a macro instead
         ld      C,      $08
         ret
 
 @scrollCameraTo_vertical:                                               ;$3122
         ;=======================================================================
-        ;scroll vertically towards the locked camera position
+        ; scroll vertically towards the locked camera position
         ld      DE,        [LEVEL_TOP]
         and     A
         sbc     HL,     DE
         ret     z
         jr      c,      @up
 
-        ;scroll downwards
+        ; scroll downwards
         inc     DE
         ld      [LEVEL_TOP],    DE
         ld      [LEVEL_BOTTOM], DE
         ret
 
-        ;scroll upwards
+        ; scroll upwards
 @up:    dec     DE
         ld      [LEVEL_TOP],    DE
         ld      [LEVEL_BOTTOM], DE
@@ -8489,7 +8649,7 @@ mobs_updateCamera:                                                      ;$2F66
 
 @scrollCameraTo_horizontal:                                             ;$3140
         ;=======================================================================
-        ;scroll horizontally towards the locked camera position
+        ; scroll horizontally towards the locked camera position
         ld      DE,     [LEVEL_LEFT]
         and     A                                               ;reset carry so it doesn't affect `sbc`
         sbc     HL,     DE
@@ -8564,7 +8724,7 @@ mobs_updateCamera:                                                      ;$2F66
         ld      [TIME], HL
         ret
 
-@_4c:   ld      HL,      [D2A2]
+@_4c:   ld      HL,     [D2A2]
         ld      BC,     $0020
         and     A
         sbc     HL,     BC
@@ -8575,22 +8735,22 @@ mobs_updateCamera:                                                      ;$2F66
 
 @updateCamera_scrollZone_waving:                                        ;$31CF
         ;=======================================================================
-        ld      BC,       $0020
+        ld      BC,     $0020
         ret
 
 @updateCamera_scrollZone_noDown:                                        ;$31D3
         ;=======================================================================
-        ld      BC,       $0070
+        ld      BC,      $0070
         ret
 
 @unused_31d7:                                                           ;$31D7
         ;=======================================================================
-        ld      BC,      $0070
+        ld      BC,     $0070
         ret
 
 @updateCamera_scrollZone_increase:                                      ;$31DB
         ;=======================================================================
-        ;not applicable with up-down wave scrolling
+        ; not applicable with up-down wave scrolling
         bit     6,      [IY+Vars.scrollRingFlags]
         ret     nz
 
@@ -8602,77 +8762,78 @@ mobs_updateCamera:                                                      ;$2F66
 
 checkMobsOutOfBounds:                                                   ;$31E6
 ;===============================================================================
-/*      Check active mobs to see if they have moved too far off-screen and need to be despawned.
-        To avoid,       slow down, only four mobs are checked per frame.
-        */
-        ;called only by `refresh`, could be inlined?
+; Check active mobs to see if they have moved too far off-screen and need to be
+; despawned. To avoid slow down, only four mobs are checked per frame.
+;
+; called only by `refresh`, could be inlined?
+;-------------------------------------------------------------------------------
+        ; check only 4 mobs per frame:
+
+        ld      A,      [FRAMECOUNT]
+        and     %00000111               ; "MOD 8"
+        ; TODO: a look-up table for this multiplication should be faster
+        ld      C,      A
+        ld      HL,     $0068           ;=104 (size of 4 mob structures)
+                                        ; TODO: calculate this dynamically
+        call    multiply                ; multiply 104 by the frame number 0-7
+
+        ld      DE,     SONIC           ; address of first mob's data
+        add     HL,     DE              ; offset to the chosen group of 4 mobs
+        ex      DE,     HL              ; put this aside for now
+
+        ; skips through the list of current mobs 4 at a time
+        ; i.e. mob number 0, 4, 8, 12, 16, 20, 24, 28
+
+        ; TODO: Could transfer the "A MOD 8" result via register I
+        ;       to avoid having to redo this calculation
+        ld      A,      [FRAMECOUNT]
+        and     %00000111               ; "MOD 8"
+        add     A,      A               ; x 2
+        add     A,      A               ; x 4
+        add     A,      A               ; x 8
+
+        ld      C,      A
+        ld      B,      $00
+        ld      HL,     ACTIVEMOBS      ; list of current mob pointers
+        add     HL,     BC
+
+        ld      C,      B               ; this will be used to remove mobs
+        ld      B,      4               ; load loop counter for 4 mobs
+
+        ; fetch the mob's boundary data:
         ;-----------------------------------------------------------------------
-        ;check only 4 mobs per frame:
+@loop:  ld      A,      [DE]            ; get the mob ID (which type it is)
+        cp      $56                     ; > length of the mob code pointers list?
+        jp      nc,     @removeMob      ; skip this loop
 
-        ld      A,        [FRAMECOUNT]
-        and     %00000111                                       ;"MOD 8"
-        ;TODO: a look-up table for this multiplication should be faster
-        ld      C,     A
-        ld      HL,    $0068                       ;=104 (size of 4 mob structures)
-                                                                ;TODO: calculate this dynamically
-        call    multiply                                ;multiply 104 by the frame number 0-7
-
-        ld      DE,     SONIC                     ;address of first mob's data
-        add     HL,    DE                  ;offset to the chosen group of 4 mobs
-        ex      DE,     HL                 ;put this aside for now
-
-        ;skips through the list of current mobs 4 at a time
-        ;i.e. mob number 0, 4, 8, 12, 16, 20, 24, 28
-
-        ;TODO: Could transfer the "A MOD 8" result via register I to avoid having to redo this calculation
-        ld      A,        [FRAMECOUNT]
-        and     %00000111                                       ;"MOD 8"
-        add     A,     A                  ;x 2
-        add     A,     A                  ;x 4
-        add     A,     A                  ;x 8
-
-        ld      C,    A
-        ld      B,    $00
-        ld      HL,  ACTIVEMOBS                ;list of current mob pointers
-        add     HL,  BC
-
-        ld      C, B                      ;this will be used to remove mobs
-        ld      B,      4                           ;load loop counter for 4 mobs
-
-        ;fetch the mob's boundary data:
-        ;-----------------------------------------------------------------------
-
-@loop:  ld      A, [DE]                            ;get the mob ID (which type it is)
-        cp      $56                                             ;> length of the mob code pointers list?
-        jp      nc,     @removeMob                              ;skip this loop
-
-        ;switch the mob address to IX
+        ; switch the mob address to IX
         push    DE
         pop     IX
 
-        ;swap BC/DE/HL with their shadow values
+        ; swap BC/DE/HL with their shadow values
         exx
 
-        ;TODO: perhaps a lookup table could be faster here
-        add     A,   A                     ;double the mob ID
-        ld      L',   A                ;put this into HL'
-        ld      H',   $00
-        add     HL',  HL'               ;ID x 4
-        add     HL',  HL'               ;ID x 8, i.e. 8 bytes per ID
+        ; TODO: perhaps a lookup table could be faster here
+        add     A,      A               ; double the mob ID
+        ld      L',     A               ; put this into HL'
+        ld      H',     $00
+        add     HL',    HL'             ; ID x 4
+        add     HL',    HL'             ; ID x 8, i.e. 8 bytes per ID
 
-        ld      DE',   mobBounds
-        add     HL',  DE'                ;offset into the table, 8 bytes per ID
+        ld      DE',    mobBounds
+        add     HL',    DE'             ; offset into the table, 8 bytes per ID
 
-        ;load BC with the first WORD, the maxmimum distance left of the camera the mob can go before despawning
-        ld      C',    [HL']
+        ; load BC with the first WORD, the maxmimum distance
+        ; left of the camera the mob can go before despawning
+        ld      C',     [HL']
         inc     HL'
-        ld      B',    [HL']
+        ld      B',     [HL']
 
-        ;copy the remaining data into the temporary space
+        ; copy the remaining data into the temporary space
         inc     HL'
-        ld      DE',        TEMP1
-        ;BUG: this reduces BC' by 6, likely unintended as the leftLimit value
-        ;does not already factor this in and does not benefit from it
+        ld      DE',    TEMP1
+        ; BUG: this reduces BC' by 6, likely unintended as the leftLimit value
+        ;      does not already factor this in and does not benefit from it
         ldi
         ldi
         ldi
@@ -8680,118 +8841,119 @@ checkMobsOutOfBounds:                                                   ;$31E6
         ldi
         ldi
 
-        ;left & right bounds:
+        ; left & right bounds:
         ;-----------------------------------------------------------------------
-
-        ;if the camera is near the left edge of the Floor Layout then the mob's area of off-screen allowance will
-        ;overhang void-space. we check for this to avoid miscalculation further down the line
-        ld      HL',     [CAMERA_X]
-        xor     A                                          ;reset carry flag
-        sbc     HL',     BC'
+        ; if the camera is near the left edge of the Floor Layout then the mob's
+        ; area of off-screen allowance will overhang void-space. we check for
+        ; this to avoid miscalculation further down the line
+        ld      HL',    [CAMERA_X]
+        xor     A                       ; reset carry flag
+        sbc     HL',    BC'
         jr      nc,     @x
 
-        ;the camera is at the left-most side of the floor,
-        ;so don't underflow and believe the camera is at the far-right instead
-        ld      L',      A
-        ld      H',      A
+        ; the camera is at the left-most side of the floor,
+        ; so don't underflow and believe the camera is at the far-right instead
+        ld      L',     A
+        ld      H',     A
         xor     A
 
-        ;has the mob gone too far left of the camera?
-@x:     ld      E',      [IX+Mob.X+0]
-        ld      D',      [IX+Mob.X+1]
-        sbc     HL',   DE'
-        jp      nc,     @removeMobExx                               ;if so, remove it
+        ; has the mob gone too far left of the camera?
+@x:     ld      E',     [IX+Mob.X+0]
+        ld      D',     [IX+Mob.X+1]
+        sbc     HL',    DE'
+        jp      nc,     @removeMobExx   ; if so, remove it
 
-        ;the next WORD is how far right of the camera the mob can go before despawning.
-        ;note that this value has the width of the screen included
-        ;TODO: would adding 256 to the left limit be faster / good enough?
-        ld      HL',  [TEMP1]
-        ld      BC',     [CAMERA_X]
-        add     HL',  BC'
-        xor     A                                          ;reset carry flag
-        sbc     HL',  DE'                  ;has the mob gone too far right?
-        jp      c,      @removeMobExx                               ;if so, remove it
+        ; the next WORD is how far right of the camera the mob can go before
+        ; despawning. note that this value has the width of the screen included
+        ; TODO: would adding 256 to the left limit be faster / good enough?
+        ld      HL',    [TEMP1]
+        ld      BC',    [CAMERA_X]
+        add     HL',    BC'
+        xor     A                       ; reset carry flag
+        sbc     HL',    DE'             ; has the mob gone too far right?
+        jp      c,      @removeMobExx   ; if so, remove it
 
         ;top & bottom bounds:
         ;-----------------------------------------------------------------------
 
-        ;if the camera is near the top edge of the Floor Layout then the mob's area of off-screen allowance will
-        ;overhang void-space. we check for this to avoid miscalculation further down the line
-        ld      HL',     [CAMERA_Y]
+        ; if the camera is near the top edge of the Floor Layout then the mob's
+        ; area of off-screen allowance will overhang void-space. we check for
+        ; this to avoid miscalculation further down the line
+        ld      HL',    [CAMERA_Y]
         ld      BC',    [TEMP3]
-        sbc     HL',     BC'
+        sbc     HL',    BC'
         jr      nc,     @y
 
-        ;the camera is at the top-most side of the floor,
-        ;so don't underflow and believe the camera is at the bottom instead
-        ld      L',      A
-        ld      H',      A
+        ; the camera is at the top-most side of the floor,
+        ; so don't underflow and believe the camera is at the bottom instead
+        ld      L',     A
+        ld      H',     A
         xor     A
 
-@y:     ;has the mob gone too far above the camera?
-        ld      E',      [IX+Mob.Y+0]
-        ld      D',      [IX+Mob.Y+1]
+@y:     ; has the mob gone too far above the camera?
+        ld      E',     [IX+Mob.Y+0]
+        ld      D',     [IX+Mob.Y+1]
         sbc     HL',    DE'
-        jp      nc,     @removeMobExx                               ;if so, remove it
+        jp      nc,     @removeMobExx   ; if so, remove it
 
-        ;the next WORD is how far below the camera the mob can go before despawning.
-        ;note that this value has the height of the screen included
+        ; the next WORD is how far below the camera the mob can go before
+        ; despawning. note that this value has the height of the screen included
 
-        ;TODO: would adding 192 to the bottom limit be faster / good enough?
-        ;      also this would help with dynamically supporting 224-lines
+        ; TODO: would adding 192 to the bottom limit be faster / good enough?
+        ;       also this would help with dynamically supporting 224-lines
 
-        ld      HL', [TEMP4]
-        ld      BC',     [CAMERA_Y]
-        add     HL', BC'
+        ld      HL',    [TEMP4]
+        ld      BC',    [CAMERA_Y]
+        add     HL',    BC'
         xor     A
-        sbc     HL', DE'
+        sbc     HL',    DE'
         jp      c,      @removeMobExx
 
         ;-----------------------------------------------------------------------
 
-        ;return to the non-shadow BC/DE/HL values
+        ; return to the non-shadow BC/DE/HL values
         exx
 
-        ;TODO: why do we need to write the same pointer back again?
-        ld      [HL],        E
+        ; TODO: why do we need to write the same pointer back again?
+        ld      [HL],   E
         inc     HL
-        ld      [HL],        D
+        ld      [HL],   D
         inc     HL
 
-        ;move on to the next mob to process
+        ; move on to the next mob to process
         push    HL
-        ld      HL,    $001A                       ;=26, size of a mob structure
-        add     HL,    DE
-        ex      DE,    HL
+        ld      HL,     $001A           ;=26, size of a mob structure
+        add     HL,     DE
+        ex      DE,     HL
         pop     HL
 
         djnz    @loop
 
         ret
 
-        ;remove the out-of-bounds mob!
+        ; remove the out-of-bounds mob!
         ;-----------------------------------------------------------------------
 
 @removeMobExx:
-        ;return to the non-shadow BC/DE/HL values
+        ; return to the non-shadow BC/DE/HL values
         exx
 
 @removeMob:
-        ;zero out the pointer to the mob in the active mob list
-        ld      [HL],        C
+        ; zero out the pointer to the mob in the active mob list
+        ld      [HL],   C
         inc     HL
-        ld      [HL],        C
+        ld      [HL],   C
         inc     HL
 
-        ;move on to the next mob to process
+        ; move on to the next mob to process
         push    HL
-        ld      HL,    $001A                       ;=26, size of a mob structure
-        add     HL,    DE
-        ex      DE,    HL
+        ld      HL,     $001A           ;=26, size of a mob structure
+        add     HL,     DE
+        ex      DE,     HL
         pop     HL
 
-        ;TODO: djnz cannot be used here probably because of >-128 relative jump.
-        ;      reorganisation of code might solve this
+        ; TODO: djnz cannot be used here probably because of >-128 relative
+        ;       jump. reorganisation of code might solve this
         dec     B
         jp      nz,     @loop
 
@@ -8800,27 +8962,28 @@ checkMobsOutOfBounds:                                                   ;$31E6
 
 processMobs:                                                            ;$392B
 ;===============================================================================
-/*      Runs the code for each of the mobs in memory.
-        */
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        ;starting from $D37E (we skip Sonic), read pointers until a non-zero one is found,
-        ;or 31 pointers have been read
+; Runs the code for each of the mobs in memory.
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ; starting from $D37E (we skip Sonic), read pointers until a non-zero
+        ; one is found, or 31 pointers have been read
         ld      HL,     ACTIVEMOBS+2
         ld      B,      31
 
-        ;read the pointer into DE
-@loop:  ld      E,                   [HL]
+        ; read the pointer into DE
+@loop:  ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
 
-        ;is the pointer non-zero?
+        ; is the pointer non-zero?
         ld      A,      E
         or      D
-        call    nz,     processMob                                      ;if so process as a mob
+        call    nz,     processMob      ; if so process as a mob
 
-        ;keep reading memory until either something non-zero is found or we hit $D3BC
+        ; keep reading memory until either something
+        ; non-zero is found or we hit $D3BC
         djnz    @loop
 
         ;-----------------------------------------------------------------------
@@ -8831,8 +8994,8 @@ processMobs:                                                            ;$392B
         push    AF
         push    HL
 
-        ;process the player:
-        ld      HL,     $D024                       ;TODO: Sonic's sprite table entry (VRAM)
+        ; process the player:
+        ld      HL,     $D024           ; TODO: Sonic's sprite table entry (VRAM)
         ld      [SPRITETABLE_ADDR],     HL
         ld      DE,     SONIC
         call    processMob
@@ -8847,288 +9010,293 @@ processMobs:                                                            ;$392B
 
 processMob:                                                             ;$32C8
 ;===============================================================================
-;params DE      Address of a mob structure
-        ;-----------------------------------------------------------------------
-        ld      A, [DE]                            ;get mob from the list
-        cp      $FF                                             ;ignore mob type $FF
+; in    DE      Address of a mob structure
+;-------------------------------------------------------------------------------
+        ld      A,      [DE]            ; get mob from the list
+        cp      $FF                     ; ignore mob type $FF
         ret     z
 
         push    BC
         push    HL
 
-        ;transfer DE (address of the mob) to IX
+        ; transfer DE (address of the mob) to IX
         push    DE
         pop     IX
 
-        ;double the mob type number and put it into DE
+        ; double the mob type number and put it into DE
         add     A,      A
         ld      E,      A
         ld      D,      $00
 
-        ;offset into the mob code pointers table
+         ;offset into the mob code pointers table
         ld      HL,     mobPointers
         add     HL,     DE
 
-        ;get the mob's code address into HL
+        ; get the mob's code address into HL
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
 
-        ;once the mob's own code has been run, handle the common actions for all mobs
+        ; once the mob's own code has been run,
+        ; handle the common actions for all mobs
         ld      DE,     postProcessMob
         push    DE
 
-        ;run the mob's code
+        ; run the mob's code
         jp      [HL]
         ;
 
 postProcessMob:                                                         ;$32E2
 ;===============================================================================
-/*      Once a mob has run its personal code, this routine handles things that all mobs share,
-        such as,        moving the mob and collision with Sonic.
-        */
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; Once a mob has run its personal code, this routine handles things that all
+; mobs share, such as moving the mob and collision with Sonic.
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ;move mob:
 
-        ;TODO: could have a mob flag to mark as stationary and skip this bit,
-        ;      alternatively, the callback set up before processing the mob could be selected based on the mob's flags
+        ; TODO: could have a mob flag to mark as stationary and skip this bit,
+        ;       alternatively, the callback set up before processing the mob
+        ;       could be selected based on the mob's flags
 
-        ;move the mob horizontally
-        ld      E,        [IX+Mob.Xspeed+0]
-        ld      D,        [IX+Mob.Xspeed+1]
-        ld      C,  [IX+Mob.Xdirection]
-        ld      L, [IX+Mob.Xsubpixel]
-        ld      H, [IX+Mob.X+0]
-        ld      A, [IX+Mob.X+1]
-        add     HL,        DE
-        adc     A, C
+        ; move the mob horizontally
+        ld      E,      [IX+Mob.Xspeed+0]
+        ld      D,      [IX+Mob.Xspeed+1]
+        ld      C,      [IX+Mob.Xdirection]
+        ld      L,      [IX+Mob.Xsubpixel]
+        ld      H,      [IX+Mob.X+0]
+        ld      A,      [IX+Mob.X+1]
+        add     HL,     DE
+        adc     A,      C
 
-        ld      [IX+Mob.Xsubpixel], L
-        ld      [IX+Mob.X+0],       H
-        ld      [IX+Mob.X+1],       A
+        ld      [IX+Mob.Xsubpixel],     L
+        ld      [IX+Mob.X+0],           H
+        ld      [IX+Mob.X+1],           A
 
-        ;move the mob vertically
-        ld      E,        [IX+Mob.Yspeed+0]
-        ld      D,        [IX+Mob.Yspeed+1]
-        ld      C,  [IX+Mob.Ydirection]
-        ld      L, [IX+Mob.Ysubpixel]
-        ld      H, [IX+Mob.Y+0]
-        ld      A, [IX+Mob.Y+1]
-        add     HL,        DE
-        adc     A, C
+        ; move the mob vertically
+        ld      E,      [IX+Mob.Yspeed+0]
+        ld      D,      [IX+Mob.Yspeed+1]
+        ld      C,      [IX+Mob.Ydirection]
+        ld      L,      [IX+Mob.Ysubpixel]
+        ld      H,      [IX+Mob.Y+0]
+        ld      A,      [IX+Mob.Y+1]
+        add     HL,     DE
+        adc     A,      C
 
-        ld      [IX+Mob.Ysubpixel], L
-        ld      [IX+Mob.Y+0],       H
-        ld      [IX+Mob.Y+1],       A
+        ld      [IX+Mob.Ysubpixel],     L
+        ld      [IX+Mob.Y+0],           H
+        ld      [IX+Mob.Y+1],           A
 
-        ;does the mob interact with the floor?
+        ; does the mob interact with the floor?
         bit     5,      [IX+Mob.flags]
-        jp      nz,     @_34e6                                  ;if not skip over collision handling
+        jp      nz,     @_34e6          ; if not skip over collision handling
 
-        ;find the 'nose' of the mob, according to its direction:
+        ; find the 'nose' of the mob, according to its direction:
         ;-----------------------------------------------------------------------
 
-        ;divide the mob height by 2 to find its vertical middle point
-        ;TODO: would it be worthwhile storing this with the mob or using a lookup table?
-        ld      B, $00
+        ; divide the mob height by 2 to find its vertical middle point
+        ; TODO: would it be worthwhile storing this with the mob
+        ;       or using a lookup table?
+        ld      B,      $00
         ld      D,      B
         ld      E,      [IX+Mob.height]
-        srl     E                                       ;divide height by 2
+        srl     E                       ; divide height by 2
 
-        ;moving left or right?
+        ; moving left or right?
         bit     7,      [IX+Mob.Xspeed+1]
         jr      nz,     @facingLeft
 
 @facingRight:
         ;- collision will be checked with the right side of the mob
         ld      C,      [IX+Mob.width]
-        ld      HL,       Unknown._411E
+        ld      HL,     Unknown._411E
         jp      @_2
 
 @facingLeft:
-        ;- collision will be checked with the left side of the mob
-        ld      C,      $00                         ;TODO: B & D are already zero, could use those
-        ld      HL,       Unknown._4020
+        ; - collision will be checked with the left side of the mob
+        ld      C,      $00             ; TODO: B & D are already zero, could use those
+        ld      HL,     Unknown._4020
 
-        ;put aside the 'nose' x-position of the mob
-@_2:    ld      [TEMP3],        BC
+        ; put aside the 'nose' x-position of the mob
+@_2:    ld      [TEMP3],BC
 
-        ;clear the flag for mob-collision-with-floor
+        ; clear the flag for mob-collision-with-floor
         res     6,      [IX+Mob.flags]
 
         push    DE
         push    HL
 
-        ;check for mob collision with Floor:
+        ; check for mob collision with Floor:
         ;-----------------------------------------------------------------------
 
-        ;lookup the Block the mob is within
-        ;NOTE: `BC` is the pixel x-offset to apply, `DE` is the y-offset
+        ; lookup the Block the mob is within
+        ; NOTE: `BC` is the pixel x-offset to apply, `DE` is the y-offset
         call    getFloorLayoutRAMAddressForMob
-        ;read the Block index from the address returned,
-        ;this tells us which Block the mob is within, though a Block is 4x4 Tiles / 32x32 pixels
+        ; read the Block index from the address returned. this tells us which
+        ; Block the mob is within, though a Block is 4x4 Tiles / 32x32 pixels
         ld      E,        [HL]
         ld      D,        $00
-        ;TODO: all this solidity pointer lookup could be done away with by storing this result
-        ;      in RAM somewhere (or in the level header)
-        ld      A,   [LEVEL_SOLIDITY]          ;solidity index for the level
-        add     A,   A                ;double it for a table look-up
-        ld      C,        A                ;transfer value to BC
-        ld      B,        D
-        ;offset into the solidity table
-        ld      HL,       solidityBlocks
-        add     HL,       BC
-        ;get the level's solidity pointer from the table
+        ; TODO: all this solidity pointer lookup could be done away with by
+        ;       storing this result in RAM somewhere (or in the level header)
+        ld      A,      [LEVEL_SOLIDITY]; solidity index for the level
+        add     A,      A               ; double it for a table look-up
+        ld      C,      A               ; transfer value to BC
+        ld      B,      D
+        ; offset into the solidity table
+        ld      HL,     solidityBlocks
+        add     HL,     BC
+        ; get the level's solidity pointer from the table
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
-        ;look up the block in the level's block solidity table
+        ; look up the block in the level's block solidity table
         add     HL,     DE
-        ld      A,        [HL]
+        ld      A,      [HL]
 
-        ;the top two bits of the line-solidity are used as flags
-        ;- bit 7 : "totally solid", for faster collision checks
-        ;- bit 6 : water?
+        ; the top two bits of the line-solidity are used as flags
+        ; - bit 7 : "totally solid", for faster collision checks
+        ; - bit 6 : water?
         and     %00111111
-        ;put aside the solidity flags for the Block that the mob is within
-        ld      [TEMP6],        A
+        ; put aside the solidity flags for the Block that the mob is within
+        ld      [TEMP6],A
 
         pop     HL
         pop     DE
 
-        and     %00111111                                       ;air (or water), and nothing else?
-        ;if there's no flags remaining for this Block, no kind of collision can be possible, so skip ahead
+        and     %00111111               ; air (or water), and nothing else?
+        ; if there's no flags remaining for this Block,
+        ; no kind of collision can be possible, so skip ahead
         jp      z,      @_7
 
-        ;TODO: could we not have used B/C instead of [TEMP6] here?
-        ld      A,     [TEMP6]
-        add     A,     A                  ;double it for a look-up table
-        ld      C,        A                  ;transfer to BC
-        ld      B,        $00
+        ; TODO: could we not have used B/C instead of [TEMP6] here?
+        ld      A,      [TEMP6]
+        add     A,      A               ; double it for a look-up table
+        ld      C,      A               ; transfer to BC
+        ld      B,      $00
 
-        ;TODO: this might not be necessary, D could already be 0?
+        ; TODO: this might not be necessary, D could already be 0?
         ld      D,      B
 
-        ;offset into the lookup table, either "Unknown._411e" (facing right)
-        ;or "Unknown._4020" (facing left)
-        add     HL,       BC
+        ; offset into the lookup table, either "Unknown._411e" (facing right)
+        ; or "Unknown._4020" (facing left)
+        add     HL,     BC
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
 
-        ;the data is a per-line solidity lookup!
-        ld      A, [IX+Mob.Y+0]
-        add     A, E                   ;get the vertical middle point
-        and     %00011111                                       ;"MOD 32", i.e. position within the Block
-        ld      E, A
-        add     HL,     DE                     ;find the data for that particuar Block row
+        ; the data is a per-line solidity lookup!
+        ld      A,      [IX+Mob.Y+0]
+        add     A,      E               ; get the vertical middle point
+        and     %00011111               ; "MOD 32", i.e. position within the Block
+        ld      E,      A
+        add     HL,     DE              ; find the data for that particuar Block row
 
-        ;bit 7 implies a solid line, collision is unavoidable
-        ld      A, [HL]
+        ; bit 7 implies a solid line, collision is unavoidable
+        ld      A,      [HL]
         cp      $80
         jp      z,      @_7
 
-        ;if the line is not solid, a collision may or may not occur depending on the exact position of the mob
+        ; if the line is not solid, a collision may or may not
+        ; occur depending on the exact position of the mob
 
         ld      E, A
         and     A
-        jp      p,      @_3                                     ;skip if bit 7 is unset
+        jp      p,      @_3             ; skip if bit 7 is unset
 
         ld      D,      $FF
 
-        ;here, D is $00 or $FF?
+        ; here, D is $00 or $FF?
 
-@_3:    ld      L,              [IX+Mob.X+0]
-        ld      H, [IX+Mob.X+1]
-        ;retrieve the 'nose' position of the mob
+@_3:    ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
+        ; retrieve the 'nose' position of the mob
         ld      BC,     [TEMP3]
-        add     HL,        BC
+        add     HL,     BC
 
-        ;facing left or right?
+        ; facing left or right?
         bit     7,      [IX+Mob.Xdirection]
         jr      nz,     @_4
 
-        ;facing left:
+        ; facing left:
         and     A
-        jp      m,      @_5                                     ;skip if bit 7 is set
+        jp      m,      @_5             ; skip if bit 7 is set
 
-        ld      A, L
-        and     %00011111                                       ;"MOD 32"
+        ld      A,      L
+        and     %00011111               ; "MOD 32"
         cp      E
         jr      nc,     @_5
 
         jp      @_7
 
-        ;facing right:
+        ; facing right:
 @_4:    and     A
-        jp      m,      @_5                                         ;skip if bit 7 is set
+        jp      m,      @_5             ; skip if bit 7 is set
 
-        ld      A, L
-        and     %00011111                                       ;"MOD 32"
+        ld      A,      L
+        and     %00011111               ; "MOD 32"
         cp      E
         jr      nc,     @_7
 
-        ;collision:
-        ;...............................................................................................................
+        ; collision:
+        ;.......................................................................
 
-        ;set the flag for mob collision with the Floor,
-        ;this can simply mean that the mob is standing on the floor rather than "in air"/
+        ; set the flag for mob collision with the Floor. this can simply mean
+        ; that the mob is standing on the floor rather than "in air"
 @_5:    set     6,      [IX+Mob.flags]
 
-        ;clip xPos to whole counts of 32 -- convert xPos to the left-nearest block
-        ;(effectively "INT(xPos / 32) * 32")
-        ld      A, L
+        ; clip xPos to whole counts of 32 -- convert xPos to the left-nearest
+        ; block (effectively "INT(xPos / 32) * 32")
+        ld      A,      L
         and     %11100000
 
-        ld      L, A
-        add     HL,        DE
-        and     A                                         ;clear carry flag
-        sbc     HL,        BC
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
+        ld      L,      A
+        add     HL,     DE
+        and     A                       ; clear carry flag
+        sbc     HL,     BC
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
 
-        ld      A,     [TEMP6]
-        ld      E,     A
-        ld      D, $00
+        ld      A,      [TEMP6]
+        ld      E,      A
+        ld      D,      $00
         ld      HL,     UnknownCollision._3FBF
         add     HL,     DE
         ld      C,      [HL]
 
-        ld      [IX+Mob.Xspeed+0],  D
-        ld      [IX+Mob.Xspeed+1],  D
-        ld      [IX+Mob.Xdirection],        D
+        ld      [IX+Mob.Xspeed+0],      D
+        ld      [IX+Mob.Xspeed+1],      D
+        ld      [IX+Mob.Xdirection],    D
         ld      A,      D
         ld      B,      D
 
         bit     7,      C
         jr      z,      @_6
 
-        ;unused because of the data!?
+        ; unused because of the data!?
         dec     A
         dec     B
 
-@_6:    ld      L,                   [IX+Mob.Yspeed+0]
+@_6:    ld      L,      [IX+Mob.Yspeed+0]
         ld      H,      [IX+Mob.Yspeed+1]
         add     HL,     BC
         adc     A,      [IX+Mob.Ydirection]
-        ld      [IX+Mob.Yspeed+0],  L
-        ld      [IX+Mob.Yspeed+1],  H
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.Yspeed+0],      L
+        ld      [IX+Mob.Yspeed+1],      H
+        ld      [IX+Mob.Ydirection],    A
 
-        ;no collision?
-        ;...............................................................................................................
+        ; no collision?
+        ;.......................................................................
 
-        ;zero the upper bytes of two sixteen bit words
+        ; zero the upper bytes of two sixteen bit words
 @_7:    ld      B,      $00
         ld      D, B
 
-        ;negative speed? i.e. is moving up
+        ; negative speed? i.e. is moving up
         bit     7,      [IX+Mob.Yspeed+1]
-        jr      nz,     @_8                                     ;skip the next bit if speed is negative
+        jr      nz,     @_8             ; skip the next bit if speed is negative
 
         ld      C,      [IX+Mob.width]
         srl     C
@@ -9136,12 +9304,12 @@ postProcessMob:                                                         ;$32E2
         ld      HL,     Unknown._448A
         jp      @_9
 
-@_8:    ld      C,                   [IX+Mob.width]
+@_8:    ld      C,      [IX+Mob.width]
         srl     C
         ld      E,      $00
         ld      HL,     Unknown._41EC
 
-@_9:    ld      [TEMP3],        DE
+@_9:    ld      [TEMP3],DE
         res     7,      [IX+Mob.flags]
         push    BC
         push    HL
@@ -9161,7 +9329,7 @@ postProcessMob:                                                         ;$32E2
         add     HL,     DE
         ld      A,      [HL]
         and     $3F
-        ld      [TEMP6],        A
+        ld      [TEMP6],A
         pop     HL
         pop     BC
         and     $3F
@@ -9188,14 +9356,14 @@ postProcessMob:                                                         ;$32E2
         and     A
         jp      p,      @_10
         ld      B,      $FF
-@_10:   ld      L,                   [IX+Mob.Y+0]
+@_10:   ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     [TEMP3]
         add     HL,     DE
         bit     7,      [IX+Mob.Ydirection]
         jr      nz,     @_11
         and     A
-        jp      m,      @_12                                        ;skip if bit 7 is set
+        jp      m,      @_12            ; skip if bit 7 is set
         ld      A,      L
         and     %00011111
         exx
@@ -9211,7 +9379,7 @@ postProcessMob:                                                         ;$32E2
         jp      @_12
 
 @_11:   and     A
-        jp      m,      @_12                                        ;skip if bit 7 is set
+        jp      m,      @_12            ; skip if bit 7 is set
         ld      A,      L
         and     %00011111
         exx
@@ -9229,49 +9397,50 @@ postProcessMob:                                                         ;$32E2
         add     HL,     BC
         and     A
         sbc     HL,     DE
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
+        ld      [IX+Mob.Y+0],   L
+        ld      [IX+Mob.Y+1],   H
         ld      A,      [TEMP6]
         ld      E,      A
         ld      D,      $00
-        ld      HL,     $3F90                       ;data?
+        ld      HL,     $3F90           ; data?
         add     HL,     DE
         ld      C,      [HL]
-        ld      [IX+Mob.Yspeed+0],  D
-        ld      [IX+Mob.Yspeed+1],  D
-        ld      [IX+Mob.Ydirection],        D
+        ld      [IX+Mob.Yspeed+0],      D
+        ld      [IX+Mob.Yspeed+1],      D
+        ld      [IX+Mob.Ydirection],    D
         ld      A,      D
         ld      B,      D
         bit     7,      C
         jr      z,      @_13
         dec     A
         dec     B
-@_13:   ld      L,                   [IX+Mob.Xspeed+0]
+@_13:   ld      L,      [IX+Mob.Xspeed+0]
         ld      H,      [IX+Mob.Xspeed+1]
         add     HL,     BC
         adc     A,      [IX+Mob.Xdirection]
-        ld      [IX+Mob.Xspeed+0],  L
-        ld      [IX+Mob.Xspeed+1],  H
-        ld      [IX+Mob.Xdirection],        A
+        ld      [IX+Mob.Xspeed+0],      L
+        ld      [IX+Mob.Xspeed+1],      H
+        ld      [IX+Mob.Xdirection],    A
 
-        ;is the mob on-screen?
+        ; is the mob on-screen?
         ;-----------------------------------------------------------------------
 
-@_34e6: ld      L,              [IX+Mob.Y+0]
-        ld      H, [IX+Mob.Y+1]
+@_34e6: ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
         ld      BC,     [CAMERA_Y]
-        and     A                                    ;clear Carry before subtracting
-        sbc     HL,        BC
+        and     A                       ; clear Carry before subtracting
+        sbc     HL,     BC
 
         ex      DE,     HL
 
-        ld      L, [IX+Mob.X+0]
-        ld      H, [IX+Mob.X+1]
+        ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
         ld      BC,     [CAMERA_X]
-        and     A                                    ;clear Carry before subtracting
+        and     A                       ; clear Carry before subtracting
         sbc     HL,     BC
 
-        ;if the mob has a sprite layout, update the mob's position on the screen
+        ; if the mob has a sprite layout,
+        ; update the mob's position on the screen
         ld      C,      [IX+Mob.spriteLayout+0]
         ld      B,      [IX+Mob.spriteLayout+1]
         ld      A,      C
@@ -9286,122 +9455,125 @@ postProcessMob:                                                         ;$32E2
 
 processSpriteLayout:                                                    ;$350F
 ;===============================================================================
-/*      Puts a mob on screen, combining multiple hardware sprites using a Sprite Layout - a list of sprites to arrange
-        in a,   maximum 6 x 4 layout (note that each hardware sprite is 8 x 16, giving a maximum mob size of 48 x 64)
-        */
-;params IY      Address of the common variables (used throughout)
+; Puts a mob on screen, combining multiple hardware sprites using a Sprite
+; Layout - a list of sprites to arrange in a maximum 6 x 4 layout (note that
+; each hardware sprite is 8 x 16, giving a maximum mob size of 48 x 64 px)
+;
+; in    IY      Address of the common variables (used throughout)
 ;       HL      X-position to place sprite layout on screen
 ;       D       ?? (some kind of control flag)
 ;       E       Y-position to place sprite layout on screen
 ;       BC      Address of a sprite layout
-        ;-----------------------------------------------------------------------
-        ;store the X-position of the sprite for aligning the rows
+;-------------------------------------------------------------------------------
+        ; store the X-position of the sprite for aligning the rows
         ld      [TEMP6],        HL
 
-        ;copy BC (address of a sprite layout) to its shadow value BC'
+        ; copy BC (address of a sprite layout)
+        ; to its shadow value BC'
         push    BC
         exx
         pop     BC'
         exx
 
-        ;rows:
+        ; rows:
         ;-----------------------------------------------------------------------
-        ;there will be 3 rows of double-high (16px) sprites
-        ld      B, 0
-        ld      C, 3
+        ; there will be 3 rows of double-high (16px) sprites
+        ld      B,      0
+        ld      C,      3
 
-@_1:    exx     ;-->                                            ;switch to BC/DE/HL shadow values
+@_1:    exx     ;-->                    ; switch to BC/DE/HL shadow values
 
-        ld      HL',        [TEMP6]                               ;get the starting X-position
-                                                                ;(original HL parameter)
+        ld      HL',    [TEMP6]         ; get the starting X-position
+                                        ; (original HL parameter)
 
-        ;if a row begins with $FF, the data ends early.
-        ;begin a row with $FE to provide a space without ending the data early
+        ; if a row begins with $FF, the data ends early.
+        ; begin a row with $FE to provide a space without ending the data early
 
-        ld      A,      [BC']                         ;get a byte from the sprite layout data
+        ld      A,      [BC']           ; get a byte from the sprite layout data
 
-        exx     ;<--                                            ;switch to original BC/DE/HL values
+        exx     ;<--                    ; switch to original BC/DE/HL values
 
-        cp      $FF                                             ;is the byte $FF?
-        ret     z                                               ;if so leave
+        cp      $FF                     ; is the byte $FF?
+        ret     z                       ; if so leave
 
-        ;DE is the Y-position, but if D is $FF then something else unknown happens
+        ; DE is the Y-position, but if D is $FF
+        ; then something else unknown happens
 
-        ld      A,      D                                       ;check the D parameter
-        cp      $FF                                             ;if D is not $FF
-        jr      nz,     @_2                                     ;then skip ahead a little
+        ld      A,      D               ; check the D parameter
+        cp      $FF                     ; if D is not $FF
+        jr      nz,     @_2             ; then skip ahead a little
 
-        ld      A,      E                                       ;check the E parameter
-        cp      $F0                                             ;if it's less than $F0,
-        jr      c,      @_5                                     ;then skip ahead
+        ld      A,      E               ; check the E parameter
+        cp      $F0                     ; if it's less than $F0,
+        jr      c,      @_5             ; then skip ahead
         jp      @_3
 
-@_2:    and     A                                               ;is the sprite byte 0?
+@_2:    and     A                       ; is the sprite byte 0?
         jr      nz,     @_5
 
-        ;exit if the row Y-position is below the screen
+        ; exit if the row Y-position is below the screen
         ld      A,      E
         cp      192
         ret     nc
 
-        ;columns:
+        ; columns:
         ;-----------------------------------------------------------------------
-@_3:    ;begin 6 columns of single-width (8px) sprites
+@_3:    ; begin 6 columns of single-width (8px) sprites
         ld      B, 6
 
-@loop:  exx                                                     ;switch to BC/DE/HL shadow values
+@loop:  exx                             ; switch to BC/DE/HL shadow values
 
-        ;has the X-position gone over 255?
-        ld      A,      H'                                      ;check the H parameter
-        and     A                                               ;is it >0? i.e. HL = $0100
-        jr      nz,     @_4                                     ;if so skip
+        ; has the X-position gone over 255?
+        ld      A,      H'              ; check the H parameter
+        and     A                       ; is it >0? i.e. HL = $0100
+        jr      nz,     @_4             ; if so skip
 
-        ld      A,      [BC']                                   ;check the current byte of the layout data
-        cp      $FE                                             ;is it >= than $FE?
-        jr      nc,     @_4                                     ;if so, skip
+        ld      A,      [BC']           ; check the current byte of the layout data
+        cp      $FE                     ; is it >= than $FE?
+        jr      nc,     @_4             ; if so, skip
 
-        ;get the address of the sprite table entry
+        ; get the address of the sprite table entry
         ld      DE',    [SPRITETABLE_ADDR]
-        ld      A,      L'                                      ;take the current X-position
-        ld      [DE'],  A                                       ;and set the sprite's X-position
+        ld      A,      L'              ; take the current X-position
+        ld      [DE'],  A               ; and set the sprite's X-position
         inc     E'
         exx
-        ld      A,      E                                       ;get the current Y-position
+        ld      A,      E               ; get the current Y-position
         exx
-        ld      [DE'],  A                                       ;set the sprite's Y-position
+        ld      [DE'],  A               ; set the sprite's Y-position
         inc     E'
-        ld      A,      [BC']                                   ;read the layout byte
-        ld      [DE'],  A                                       ;set the sprite index number
+        ld      A,      [BC']           ; read the layout byte
+        ld      [DE'],  A               ; set the sprite index number
 
-        ;move to the next sprite table entry
+        ; move to the next sprite table entry
         inc     E'
         ld      [SPRITETABLE_ADDR],     DE'
         inc     [IY+Vars.spriteUpdateCount]
 
-        ;move across 8 pixels
+        ; move across 8 pixels
 @_4:    inc     BC'
         ld      DE',    $0008
         add     HL',    DE'
 
-        ;return B to the column count and decrement
+        ; return B to the column count and decrement
         exx
         djnz    @loop
 
-        ;move down 16-pixels
+        ; move down 16-pixels
         ld      A,      C
         ex      DE,     HL
         ld      C,      16
         add     HL,     BC
         ex      DE,     HL
 
-        ;any rows remaining?
+        ; any rows remaining?
         ld      C,      A
         dec     C
         jr      nz,     @_1
         ret
 
         ;-----------------------------------------------------------------------
-        ;TODO: need to work this out (when D is $FF)
+        ; TODO: need to work this out (when D is $FF)
 @_5:    exx
         ex      DE,     HL
         ld      HL,     $0006
@@ -9424,12 +9596,12 @@ processSpriteLayout:                                                    ;$350F
 
 _3581:                                                                  ;$3581
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
+; in    IY      Address of the common variables (used throughout)
 ;       TEMP3   y-position of some kind
 ;       TEMP6   y-position of some kind
 ;       TEMP1   x-position of some kind
 ;       TEMP4   x-position of some kind
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      HL,     [TEMP3]
         ld      BC,     [TEMP6]
         add     HL,     BC
@@ -9481,45 +9653,47 @@ _3581:                                                                  ;$3581
 
 layoutSpritesHorizontal:                                                ;$35CC
 ;===============================================================================
-/*      Places a set of sprites next to each other, dictated by a small data stream of indices, with $FE to leave a
-        blank space,    and $FF to terminate. This routine is typically used to place text and numbers on screen.
-        */
-;params IY      Address of the common variables (used throughout)
+; Places a set of sprites next to each other, dictated by a small data
+; stream of indices, with $FE to leave a blank space and $FF to terminate.
+; This routine is typically used to place text and numbers on screen.
+;
+; in    IY      Address of the common variables (used throughout)
 ;       B
 ;       C
 ;       HL      (SPRITETABLE_ADDR)
 ;       DE      LAYOUT_BUFFER : $A0, $A2, $A4, ($80 + LIVES * 2), $FF
-        ;-----------------------------------------------------------------------
-        ld      A,      [DE]                               ;check the current byte in the list
-        cp      $FF                                             ;is it an end marker? ($FF)
-        ret     z                                               ;if so, return
+;-------------------------------------------------------------------------------
+        ld      A,      [DE]            ; check the current byte in the list
+        cp      $FF                     ; is it an end marker? ($FF)
+        ret     z                       ; if so, return
 
-        cp      $FE                                             ;special case for $FE command
-        jr      z,      @skip                                   ;(skip ahead)
+        cp      $FE                     ; special case for $FE command
+        jr      z,      @skip           ; (skip ahead)
 
-        ld      [HL],      C
+        ld      [HL],   C
         inc     L
-        ld      [HL],      B
+        ld      [HL],   B
         inc     L
-        ld      [HL],      A
+        ld      [HL],   A
         inc     L
 
         inc     [IY+Vars.spriteUpdateCount]
 
-@skip:  inc     DE                                         ;move to the next data byte
-        ;move right 8 pixels
-        ld      A, C
-        add     A, 8
-        ld      C, A
+@skip:  inc     DE                      ; move to the next data byte
+        ; move right 8 pixels
+        ld      A,      C
+        add     A,      8
+        ld      C,      A
         jp      layoutSpritesHorizontal ; process more sprites in the list
         ;
 
 hitPlayer:                                                              ;$35E5
 ;===============================================================================
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        bit     0,      [IY+Vars.scrollRingFlags]             ;is the player already dead?
-        ret     nz                                              ;if so, leave now
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ; is the player already dead?
+        bit     0,      [IY+Vars.scrollRingFlags]
+        ret     nz      ; if so, leave now
 
         bit     0,      [IY+Vars.unknown0]
         jp      nz,     _36be
@@ -9536,8 +9710,9 @@ hitPlayer:                                                              ;$35E5
         bit     0,      [IY+Vars.flags9]
         ret     nz
 
-        bit     6,      [IY+Vars.flags6]                      ;is player in damage-state?
-        ret     nz                                              ;if so, do not continue
+        ; is player in damage-state?
+        bit     6,      [IY+Vars.flags6]
+        ret     nz      ; if so, do not continue
 
         bit     0,      [IY+Vars.unknown0]
         ret     nz
@@ -9545,34 +9720,34 @@ hitPlayer:                                                              ;$35E5
         bit     5,      [IY+Vars.flags6]
         jr      nz,     dropRings._367e
 
-        ;has the player any rings?
+        ; has the player any rings?
         ld      A,        [RINGS]
         and     A
-        jr      nz,     dropRings                                  ;if so, drop them
+        jr      nz,     dropRings       ; if so, drop them
 
 @kill:  ; kill the player!                                              ;$3618
         ;-----------------------------------------------------------------------
         set     0,      [IY+Vars.scrollRingFlags]
 
-        ;set flag 7 on the mob (mob death state?)
+        ; set flag 7 on the mob (mob death state?)
         ld      HL,     SONIC.flags
         set     7,      [HL]
 
         ld      HL,     $FFFA
-        xor     A                                          ;set A to zero
+        xor     A       ; set A to zero
         ld      [SONIC.Yspeed+0],       A
         ld      [SONIC.Yspeed+1],       HL
 
         ld      A,      $60
         ld      [D287], A
 
-        res     6,      [IY+Vars.flags6]                      ;turn off damage-state flag
-        res     5,      [IY+Vars.flags6]                      ;remove shield
-        res     6,      [IY+Vars.flags6]                      ;TODO: bug or oversight?
-        res     0,      [IY+Vars.unknown0]                    ;the 0 byte from the level header
+        res     6,      [IY+Vars.flags6]        ; turn off damage-state flag
+        res     5,      [IY+Vars.flags6]        ; remove shield
+        res     6,      [IY+Vars.flags6]        ; TODO: bug or oversight?
+        res     0,      [IY+Vars.unknown0]      ; the 0 byte from the level header
 
-        ;play the death sound effect:
-        ;(we can compile with, or without, audio)
+        ; play the death sound effect:
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
                 ld      A,      MUSIC_DEATH
                 rst     $18     ;=rst_playMusic
@@ -9583,17 +9758,17 @@ hitPlayer:                                                              ;$35E5
 
 dropRings:                                                              ;$3644
 ;===============================================================================
-        ;lose rings!
-
-;params IX      Address of the current mob being processed
+; lose rings!
+;
+; in    IX      Address of the current mob being processed
 ;       IY      Address of the common variables (used throughout)
 ;       HL      ?
-        ;-----------------------------------------------------------------------
-        ;set player's ring-count to 0
+;-------------------------------------------------------------------------------
+        ; set player's ring-count to 0
         xor     A
         ld      [RINGS],        A
 
-        ;find an available unused mob-slot
+        ; find an available unused mob-slot
         call    findEmptyMob
         jr      c,      @_367e
 
@@ -9601,18 +9776,18 @@ dropRings:                                                              ;$3644
         push    HL
         pop     IX
 
-        ld      [IX+Mob.type],$55                          ;"make Sonic blink"?
-        ld      [IX+Mob.unknown11],$06
-        ld      [IX+Mob.unknown12],$00
+        ld      [IX+Mob.type],          $55     ; "make Sonic blink"?
+        ld      [IX+Mob.unknown11],     $06
+        ld      [IX+Mob.unknown12],     $00
         ld      HL,     [SONIC.X]
-        ld      [IX+Mob.X+0],L
-        ld      [IX+Mob.X+1],H
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
         ld      HL,     [SONIC.Y]
-        ld      [IX+Mob.Y+0],L
-        ld      [IX+Mob.Y+1],H
-        ld      [IX+Mob.Yspeed+0],$00
-        ld      [IX+Mob.Yspeed+1],$fc
-        ld      [IX+Mob.Ydirection],$ff
+        ld      [IX+Mob.Y+0],   L
+        ld      [IX+Mob.Y+1],   H
+        ld      [IX+Mob.Yspeed+0],      $00
+        ld      [IX+Mob.Yspeed+1],      $fc
+        ld      [IX+Mob.Ydirection],    $ff
         pop     IX
 
 @_367e: ld      HL,     SONIC.flags
@@ -9623,13 +9798,13 @@ dropRings:                                                              ;$3644
         jr      z,      @_1
 
         ld      DE,     $fffe
-@_1:    ld      [SONIC.Yspeed+0],A
-        ld      [SONIC.Yspeed+1],DE
+@_1:    ld      [SONIC.Yspeed+0],       A
+        ld      [SONIC.Yspeed+1],       DE
         bit     1,      [HL]
         jr      z,      @_2
-        ld      A,[HL]
+        ld      A,      [HL]
         or      $12
-        ld      [HL],A
+        ld      [HL],   A
         xor     A
         ld      DE,     $0002
         jr      @_3
@@ -9637,13 +9812,13 @@ dropRings:                                                              ;$3644
 @_2:    res     1,      [HL]
         xor     A
         ld      DE,     $FFFE
-@_3:    ld      [SONIC.Xspeed+0],A
-        ld      [SONIC.Xspeed+1],DE
+@_3:    ld      [SONIC.Xspeed+0],       A
+        ld      [SONIC.Xspeed+1],       DE
         res     5,      [IY+Vars.flags6]
         set     6,      [IY+Vars.flags6]
-        ld      [IY+Vars.joypad],$FF
+        ld      [IY+Vars.joypad],       $FF
 
-        ;(we can compile with, or without, audio)
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
                 ld      A,      $11
                 rst     $28     ;=rst_playSFX
@@ -9654,47 +9829,47 @@ dropRings:                                                              ;$3644
 
 _36be:                                                                  ;$36BE
 ;===============================================================================
-;params IX      Address of the current mob being processed
-;       ;TODO: could we use BC/DE as parameters instead of RAM addresses?
+; in    IX      Address of the current mob being processed
+;       TODO: could we use BC/DE as parameters instead of RAM addresses?
 ;       TEMP1   An X-offset to place the explosion in the right place
 ;       TEMP2   A Y-offset to place the explosion in the right place
-        ;-----------------------------------------------------------------------
-        ld      [IX+Mob.type],      $0A                         ;change mob to explosion
+;-------------------------------------------------------------------------------
+        ld      [IX+Mob.type],  $0A     ; change mob to explosion
 
-        ;get the X-offset given in the parameter
-        ld      A,     [TEMP1]
-        ld      E,     A
-        ld      D,     $00
+        ; get the X-offset given in the parameter
+        ld      A,      [TEMP1]
+        ld      E,      A
+        ld      D,      $00
 
-        ld      L,     [IX+Mob.X+0]
-        ld      H,     [IX+Mob.X+1]
-        add     HL,    DE
+        ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
+        add     HL,     DE
 
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
 
-        ;get the Y-offset given in the parameter
-        ld      A,     [TEMP2]
-        ld      E,     A                      ;note that D is still zero
+        ; get the Y-offset given in the parameter
+        ld      A,      [TEMP2]
+        ld      E,      A               ; note that D is still zero
 
-        ld      L,     [IX+Mob.Y+0]
-        ld      H,     [IX+Mob.Y+1]
-        add     HL,    DE
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
+        ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
+        add     HL,     DE
+        ld      [IX+Mob.Y+0],   L
+        ld      [IX+Mob.Y+1],   H
 
         xor     A
         ld      [IX+Mob.spriteLayout+0],A
         ld      [IX+Mob.spriteLayout+1],A
 
-        ;play the explosion sound:
-        ;(we can compile with, or without, audio)
+        ; play the explosion sound:
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,  $01
+                ld      A,      $01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-        ;give the player 100 points
+        ; give the player 100 points
         ld      DE,    $0100
         ld      C,    $00
         call    increaseScore
@@ -9704,18 +9879,21 @@ _36be:                                                                  ;$36BE
 
 getFloorLayoutRAMAddressForMob:                                         ;$36F9
 ;===============================================================================
-        ;TODO: This whole thing seems highly inefficient
-
-/*      Retrieves an address in the Floor Layout in RAM based on the given mob's position.
-        Note that,      each byte in the Floor Layout represents a 32x32 block (4x4 tiles).
-        */
-;params IX      Address of the mob to process
+; TODO: This whole thing seems highly inefficient
+;
+; Retrieves an address in the Floor Layout in RAM based on the given mob's
+; position. Note that each byte in the Floor Layout represents a 32x32 Block
+; (4x4 tiles).
+;
+; in    IX      Address of the mob to process
 ;       BC      Horizontal pixel offset to add to the mob's X position before locating tile
 ;       DE      Vertical pixel offset to add to the mob's Y position before locating tile
-;return HL      An address within the Floor Layout in RAM
-        ;-----------------------------------------------------------------------
-        ;how wide is the floor layout?
-        ;TODO: we could do this check when loading a level and store the exact label to jump-to in RAM
+;
+; out   HL      An address within the Floor Layout in RAM
+;-------------------------------------------------------------------------------
+        ; how wide is the floor layout?
+        ; TODO: we could do this check when loading
+        ; a level and store the exact label to jump-to in RAM
         ld      A,   [LEVEL_FLOORWIDTH]
         cp      128
         jr      z,      @width128
@@ -9728,13 +9906,13 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
 
         jp      @width256
 
-        ;-----------------------------------------------------------------------
-        ;128 block wide level:
-
 @width128:
-        ld      L,     [IX+Mob.Y+0]
-        ld      H,     [IX+Mob.Y+1]
-        add     HL,    DE
+        ;-----------------------------------------------------------------------
+        ; 128 block wide level:
+        ;
+        ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
+        add     HL,     DE
         ld      A,      L
         add     A,      A
         rl      H
@@ -9760,10 +9938,10 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         add     HL,     DE
         ret
 
-        ;-----------------------------------------------------------------------
-        ;64 block wide level:
-
 @width64:
+        ;-----------------------------------------------------------------------
+        ; 64 block wide level:
+        ;
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     DE
@@ -9790,10 +9968,10 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         add     HL,     DE
         ret
 
-        ;-----------------------------------------------------------------------
-        ;32 block wide level:
-
 @width32:
+        ;-----------------------------------------------------------------------
+        ; 32 block wide level:
+        ;
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     DE
@@ -9818,10 +9996,10 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         add     HL,     DE
         ret
 
-        ;-----------------------------------------------------------------------
-        ;16 block wide level:
-
 @width16:
+        ;-----------------------------------------------------------------------
+        ; 16 block wide level:
+        ;
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     DE
@@ -9850,40 +10028,40 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
 
 @width256:
         ;-----------------------------------------------------------------------
-        ;level is 256 blocks wide:
+        ; level is 256 blocks wide:
+        ;
+        ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
+        ; add the offset we've been given to aim at the "feet" of the mob
+        add     HL,     DE
 
-        ld      L,     [IX+Mob.Y+0]
-        ld      H,     [IX+Mob.Y+1]
-        ;add the offset we've been given to aim at the "feet" of the mob
-        add     HL,    DE
-
-        ;16-bit multiply by 8
+        ; 16-bit multiply by 8
         ld      A, L
-        rlca                                                    ;x2 ...
-        rl      H                                          ;carries overflow into H
-        rlca                                                    ;x4 ...
+        rlca    ;x2 ...
         rl      H
-        rlca                                                    ;x8
+        rlca    ; x4 ...
+        rl      H
+        rlca    ; x8
         rl      H
 
-        ;put Y-position aside into DE
-        ex      DE,        HL
+        ; put Y-position aside into DE
+        ex      DE,     HL
 
-        ld      L,     [IX+Mob.X+0]
-        ld      H,     [IX+Mob.X+1]
-        ;add the offset we've been given to aim at the "feet" of the mob
-        add     HL,    BC
+        ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
+        ; add the offset we've been given to aim at the "feet" of the mob
+        add     HL,     BC
 
-        ;16-bit multiply by 8
+        ; 16-bit multiply by 8
         ld      A, L
-        rlca                                                    ;x2 ...
+        rlca    ; x2 ...
         rl      H
-        rlca                                                    ;x4 ...
+        rlca    ; x4 ...
         rl      H
-        rlca                                                    ;x8
+        rlca    ; x8
         rl      H
 
-        ld      L, H
+        ld      L,      H
         ld      H,      $00
         ld      E,      H
         add     HL,     DE
@@ -9894,39 +10072,42 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
 
 updateSonicSpriteFrame:                                                 ;$37E0
 ;===============================================================================
-/*      Copy the current Sonic animation frame into VRAM.
-        */
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        ld      DE,        [SONIC_CURRENT_FRAME]
-        ld      HL,   [SONIC_PREVIOUS_FRAME]
+; Copy the current Sonic animation frame into VRAM.
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ld      DE,     [SONIC_CURRENT_FRAME]
+        ld      HL,     [SONIC_PREVIOUS_FRAME]
 
-        ;has the animation advanced a frame?
-        and     A                                         ;ANDing A with itself resets the flags
-        sbc     HL,   DE                 ;check the difference in frame counts
-        ret     z                                               ;exit if no progress
+        ; has the animation advanced a frame?
+        and     A                       ; ANDing A with itself resets the flags
+        sbc     HL,     DE              ; check the difference in frame counts
+        ret     z                       ; exit if no progress
 
-        ld      HL,        $3680                           ;location in VRAM of the Sonic sprite
-        ex      DE,        HL                    ;TODO: make this dynamic, somehow
+        ld      HL,     $3680           ; location in VRAM of the Sonic sprite
+        ex      DE,     HL              ; TODO: make this dynamic, somehow
 
-        ;I can't find an instance where bit 0 of IY+$06 is set, this may be dead code
+        ; I can't find an instance where bit 0 of IY+$06 is set,
+        ; this may be dead code
         bit     0,      [IY+Vars.flags6]
         jp      nz,     @_2
 
         ;-----------------------------------------------------------------------
-        ld      A,  E                          ;=$80
-        out     [sms.ports.vdp_control],        A
-        ld      A,   D                          ;=$36
-        or      %01000000                                       ;set bit 6 to specify a VDP address
-        out     [sms.ports.vdp_control],        A
+        ld      A,      E               ;=$80
+        out     [sms.ports.vdp_control],A
+        ld      A,      D               ;=$36
+        or      %01000000               ; set bit 6 to specify a VDP address
+        out     [sms.ports.vdp_control],A
 
-        xor     A                                          ;set A to 0
+        xor     A       ; set A to 0
         ld      C,      sms.ports.vdp_data
         ld      E,      24
 
-        ;by nature of the way the VDP stores image colours across bit-planes, and that the Sonic sprite only uses
-        ;palette indexes <8, the fourth byte for a tile row is always 0. this is used as a very simple form of
-        ;compression on the Sonic sprites in the ROM as the fourth byte is excluded from the data
+        ; by nature of the way the VDP stores image colours across bit-planes,
+        ; and that the Sonic sprite only uses palette indices < 8, the fourth
+        ; byte for a tile row is always 0. this is used as a very simple form
+        ; of compression on the Sonic sprites in the ROM as the fourth byte is
+        ; always excluded from the data
 @_1:    outi
         outi
         outi
@@ -9952,15 +10133,15 @@ updateSonicSpriteFrame:                                                 ;$37E0
         ret
 
         ;-----------------------------------------------------------------------
-        ;adds 285 to the frame address. purpose unknown...
+        ; adds 285 to the frame address. purpose unknown...
 @_2:    ld      BC,     $011D
         add     HL,     BC
 
         ld      A,      E
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
 
         exx
         push    BC
@@ -10005,9 +10186,8 @@ updateSonicSpriteFrame:                                                 ;$37E0
 
 animateFloorRing:                                                       ;$3879
 ;===============================================================================
-/*      Updates the rings in the level (Floor Layout) with their next frame of animation.
-        */
-        ;-----------------------------------------------------------------------
+; Updates the rings in the Floor Layout with their next frame of animation.
+;-------------------------------------------------------------------------------
         ld      DE,     [RING_CURRENT_FRAME]
         ld      HL,     [RING_PREVIOUS_FRAME]
 
@@ -10015,7 +10195,8 @@ animateFloorRing:                                                       ;$3879
         sbc     HL,     DE
         ret     z
 
-        ld      HL,     $1F80                                   ;TODO: location in VRAM of the ring graphics
+        ; TODO: location in VRAM of the ring graphics
+        ld      HL,     $1F80
         ex      DE,     HL
 
         di
@@ -10026,7 +10207,7 @@ animateFloorRing:                                                       ;$3879
         out     [sms.ports.vdp_control],        A
         ld      B,      $20
 
-@loop:  ld      A,       [HL]
+@loop:  ld      A,      [HL]
         out     [sms.ports.vdp_data],   A
         nop
         inc     HL
@@ -10061,15 +10242,15 @@ _38b0:                                                                  ;$38B0
         and     %11111000
         ld      E,      A
 
-        xor     A                                          ;set A to 0
-        sbc     HL,     DE                                      ;is DE > HL?
+        xor     A                       ; set A to 0
+        sbc     HL,     DE              ; is DE > HL?
         ret     c
 
-        or      H                                               ;is H > 0?
+        or      H                       ; is H > 0?
         ret     nz
 
         ld      A,      L
-        cp      $08                                             ;is L < 8?
+        cp      $08                     ; is L < 8?
         ret     c
 
         ld      D,      A
@@ -10136,10 +10317,10 @@ _38b0:                                                                  ;$38B0
         ld      B,      $02
 
 @loop:  ld      A,      L
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
 
         ld      A,      [DE]
         out     [sms.ports.vdp_data],   A
@@ -10171,178 +10352,177 @@ _38b0:                                                                  ;$38B0
 
 detectCollisionWithSonic:                                               ;$3956
 ;===============================================================================
-/*      Tests to see if the given mob has collided with Sonic.
-        */
-;params IX      Address of the current mob being processed
+; Tests to see if the given mob has collided with Sonic.
+;
+; in    IX      Address of the current mob being processed
 ;       IY      Address of the common variables (used throughout)
 ;       TEMP6   Left indent of the mob, in pixels
 ;       TEMP7   Top indent of the mob, in pixels
-;return AF      Carry flag is clear if collision, otherwise set
-        ;-----------------------------------------------------------------------
-        ;is Sonic dead? (no collision detection)
+; out   AF      Carry flag is clear if collision, otherwise set
+;-------------------------------------------------------------------------------
+        ; is Sonic dead? (no collision detection)
         bit     0,      [IY+Vars.scrollRingFlags]
-        scf                                                     ;return carry flag set (no-collision)
-        ret     nz                                              ;if Sonic-dead flag on, leave now
+        scf                             ; return carry flag set (no-collision)
+        ret     nz                      ; if Sonic-dead flag on, leave now
 
         ;-----------------------------------------------------------------------
 
-        ;calculate the right-hand edge of the mob
-        ;(mob X-position + mob width)
-        ld      L,     [IX+Mob.X+0]
-        ld      H,     [IX+Mob.X+1]
-        ld      C,    [IX+Mob.width]
-        ld      B,    $00
-        add     HL,    BC
+        ; calculate the right-hand edge of the mob
+        ; (mob X-position + mob width)
+        ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
+        ld      C,      [IX+Mob.width]
+        ld      B,      $00
+        add     HL,     BC
 
-        ld      DE,  [SONIC.X]
+        ld      DE,     [SONIC.X]
 
-        ;is Sonic to the right of the mob?
-        xor     A                                          ;set A to 0, clearing the carry flag
-        sbc     HL,        DE
-        ret     c                                               ;return carry-set for no-collision
-
-        ;-----------------------------------------------------------------------
-
-        ;calculate the mob's left edge:
-        ;note that the mob provides an 'indent'. the sprite may well begin at
-        ;a certain X-position but the graphic within may be indented a little
-        ld      L,     [IX+Mob.X+0]
-        ld      H,     [IX+Mob.X+1]
-        ld      A,     [TEMP6]                       ;get the mob's left indent
-        ld      C,     A
-        add     HL,    BC                     ;combine the two
-
-        ;now swap the mob's X-position with the previous calculation of Sonic's
-        ;X-position. HL will be Sonic's X-position and DE will be the mob's
-        ex      DE,    HL
-
-        ;calculate Sonic's right edge:
-        ld      A,  [SONIC.width]
-        ld      C,  A                   ;note that B is still 0
-        add     HL,  BC
-
-        ;is Sonic to the left of the mob?
-        xor     A                                          ;set A to 0, clearing the carry flag
+        ; is Sonic to the right of the mob?
+        xor     A                       ; set A to 0, clearing the carry flag
         sbc     HL,     DE
-        ret     c                                               ;return carry-set for no-collision
+        ret     c                       ; return carry-set for no-collision
 
         ;-----------------------------------------------------------------------
 
-        ;calculate the mob's bottom edge
-        ld      L,     [IX+Mob.Y+0]
-        ld      H,     [IX+Mob.Y+1]
-        ld      C,   [IX+Mob.height]
-        add     HL,    BC
+        ; calculate the mob's left edge:
+        ; note that the mob provides an 'indent'. the sprite may well begin at
+        ; a certain X-position but the graphic within may be indented a little
+        ld      L,      [IX+Mob.X+0]
+        ld      H,      [IX+Mob.X+1]
+        ld      A,      [TEMP6]         ; get the mob's left indent
+        ld      C,      A
+        add     HL,     BC              ; combine the two
 
-        ld      DE,  [SONIC.Y]
-        xor     A                                          ;set A to 0, clearing the carry flag
-        sbc     HL,        DE
-        ret     c                                               ;return carry-set for no-collision
+        ; now swap the mob's X-position with the previous calculation of Sonic's
+        ; X-position. HL will be Sonic's X-position and DE will be the mob's
+        ex      DE,     HL
 
-        ;calculate the mob's top edge (including the indent)
-        ld      L,     [IX+Mob.Y+0]
-        ld      H,     [IX+Mob.Y+1]
+        ; calculate Sonic's right edge:
+        ld      A,      [SONIC.width]
+        ld      C,      A               ; note that B is still 0
+        add     HL,     BC
+
+        ; is Sonic to the left of the mob?
+        xor     A                       ; set A to 0, clearing the carry flag
+        sbc     HL,     DE
+        ret     c                       ; return carry-set for no-collision
+
+        ;-----------------------------------------------------------------------
+
+        ; calculate the mob's bottom edge
+        ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
+        ld      C,      [IX+Mob.height]
+        add     HL,     BC
+
+        ld      DE,     [SONIC.Y]
+        xor     A                       ; set A to 0, clearing the carry flag
+        sbc     HL,     DE
+        ret     c                       ; return carry-set for no-collision
+
+        ; calculate the mob's top edge
+        ; (including the indent)
+        ld      L,      [IX+Mob.Y+0]
+        ld      H,      [IX+Mob.Y+1]
         ld      A,      [TEMP7]
         ld      C,      A
-        add     HL,    BC
+        add     HL,     BC
 
         ex      DE,     HL
 
         ld      A,      [SONIC.height]
         ld      C,      A
         add     HL,     BC
-        xor     A                                          ;set A to 0, clearing the carry flag
+        xor     A                       ; set A to 0, clearing the carry flag
         sbc     HL,     DE
 
-        ret                                                     ;return carry-set for no-collision
+        ret     ; return carry-set for no-collision
         ;
 
 increaseRings:                                                          ;$39AC
 ;===============================================================================
-        ;NOTE: why does this not just use DAA?
+; NOTE: why does this not just use DAA?
+;
+; in    A       Number of rings to add
+;-------------------------------------------------------------------------------
+        ; add the given number to the total ring count
+        ld      C,      A
+        ld      A,      [RINGS]
+        add     A,      C
+        ld      C,      A               ; move the new total to C
 
-;params A       Number of rings to add
-        ;-----------------------------------------------------------------------
-        ;add the given number to the total ring count
-        ld      C,        A
-        ld      A,        [RINGS]
-        add     A,        C
-        ld      C,        A                         ;move the new total to C
-
-        and     %00001111                                       ;look at the last digit $0-$F
-        cp      10                                              ;is it above $A? (11-16)
+        and     %00001111               ; look at the last digit $0-$F
+        cp      10                      ; is it above $A? (11-16)
         jr      c,      @is100rings
 
-        ld      A,        C
-        add     A,        $06                             ;TODO: WHY????
-        ld      C,        A
-
-        ;-----------------------------------------------------------------------
+        ld      A,      C
+        add     A,      $06             ; TODO: WHY????
+        ld      C,      A
 
 @is100rings:
-        ld      A,        C
+        ;-----------------------------------------------------------------------
+        ld      A,      C
         cp      $A0
-        jr      c,      @pickupRing                                   ;if not yet 100, keep going
+        jr      c,      @pickupRing     ; if not yet 100, keep going
 
-        ;subtract 100 rings
+        ; subtract 100 rings
         sub     $A0
         ld      [RINGS],        A
 
-        ;add 1 to the lives count
-        ld      A,        [LIVES]
+        ; add 1 to the lives count
+        ld      A,      [LIVES]
         inc     A
         ld      [LIVES],        A
 
-        ;play the 1-up sound effect:
-        ;(we can compile with, or without, audio)
+        ; play the 1-up sound effect:
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,  $09
-                rst     $28     ;=rst_playSFX
+                ld      A,              $09
+                rst     $28             ;=rst_playSFX
         .ENDIF
         ret
 
-        ;-----------------------------------------------------------------------
-
 @pickupRing:
-        ;update the ring total
+        ;-----------------------------------------------------------------------
+        ; update the ring total
         ld      [RINGS],        A
-        ;play the pickup-ring sound:
-        ;(we can compile with, or without, audio)
+        ; play the pickup-ring sound:
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,  $02
-                rst     $28     ;=rst_playSFX
+                ld      A,              $02
+                rst     $28             ;=rst_playSFX
         .ENDIF
         ret
         ;
 
 increaseScore:                                                          ;$39D8
 ;===============================================================================
-;params C       Thousands to add to the score
+; in    C       Thousands to add to the score
 ;       D       Hundreds to add to the score
 ;       E       Tens to add to the score
-        ;-----------------------------------------------------------------------
-        ld      HL,       SCORE_TENS                    ;read the tens unit of the score
-        ld      A, E                          ;handle the amount to add
-        add     A, [HL]                      ;add the tens to the score
-        daa                                                     ;adjust to binary-coded-decimal
-        ld      [HL],     A                          ;save the new tens value
+;-------------------------------------------------------------------------------
+        ld      HL,     SCORE_TENS      ; read the tens unit of the score
+        ld      A,      E               ; handle the amount to add
+        add     A,      [HL]            ; add the tens to the score
+        daa                             ; adjust to binary-coded-decimal
+        ld      [HL],   A               ; save the new tens value
 
-        dec     HL                                        ;move down to hundreds units
-        ld      A,     D                      ;handle the amount to add
-        adc     A,     [HL]                      ;add the hundreds to the score
-        daa                                                     ;adjust to binary-coded-decimal
-        ld      [HL],     A                      ;save the new hundreds value
+        dec     HL                      ; move down to hundreds units
+        ld      A,      D               ; handle the amount to add
+        adc     A,      [HL]            ; add the hundreds to the score
+        daa                             ; adjust to binary-coded-decimal
+        ld      [HL],   A               ; save the new hundreds value
 
-        dec     HL                                        ;move down to thousands units
-        ld      A,    C                     ;handle the amount to add
-        adc     A,    [HL]                      ;add the thousands to the score
-        daa                                                     ;adjust to binary-coded-decimal
-        ld      [HL],     A                     ;save the new thousands value
+        dec     HL                      ; move down to thousands units
+        ld      A,      C               ; handle the amount to add
+        adc     A,      [HL]            ; add the thousands to the score
+        daa                             ; adjust to binary-coded-decimal
+        ld      [HL],   A               ; save the new thousands value
 
-        ;push the current thousands value to the side
+        ; push the current thousands value to the side
         ld      C,    A
 
-        dec     HL                                        ;move down to millions units
+        dec     HL                      ; move down to millions units
         ld      A,     $00
         adc     A,     [HL]
         daa
@@ -10350,74 +10530,75 @@ increaseScore:                                                          ;$39D8
 
         ;-----------------------------------------------------------------------
 
-        ;check if current score qualifies for an extra life
+        ; check if current score qualifies for an extra life
         ld      HL,   SCORE_1UP
         ld      A,    C
         cp      [HL]
         ret     c
 
-        ;increase the score requirement for an extra life to the next multiple
+        ; increase the score requirement
+        ; for an extra life to the next multiple
         ld      A,    !SCORE_1UP
         add     A,    [HL]
-        daa                                                     ;adjust to binary-coded-decimal
+        daa                             ; adjust to binary-coded-decimal
         ld      [HL], A
 
-        ;add an extra life
+        ; add an extra life
         ld      HL,       LIVES
         inc     [HL]
 
-        ;play extra life sound effect:
-        ;(we can compile with, or without, audio)
+        ; play extra life sound effect:
+        ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,  $09
-                rst     $28     ;=rst_playSFX
+                ld      A,              $09
+                rst     $28             ;=rst_playSFX
         .ENDIF
         ret
         ;
 
 updateTime:                                                             ;$3A03
 ;===============================================================================
-        ;called only by `_LABEL_1CED_131`; main game loop?
-
-;params IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
-        ;is Sonic dead? if so, exit now
+; called only by `_LABEL_1CED_131`; main game loop?
+;
+; in    IY      Address of the common variables (used throughout)
+;-------------------------------------------------------------------------------
+        ; is Sonic dead? if so, exit now
         bit     0,      [IY+Vars.scrollRingFlags]
         ret     nz
 
-        ;address of level time?
+        ; address of level time?
         ld      HL,     TIME_FRAMES
 
-        ;is the time counting down? (special stages)
+        ; is the time counting down? (special stages)
         bit     0,      [IY+Vars.timeLightningFlags]
         jr      nz,     @countdown
 
-        ;time is counting up:
+        ; time is counting up:
         ;-----------------------------------------------------------------------
+        ; wait 60 frames for a second
+        ; (TODO: detect PAL/NTSC and use the correct frame rate?)
+        ;
+        ld      A,       [HL]           ; load the current frame-count
+        inc     A                       ; add another frame
+        cp      60                      ; is it 60 or less?
+        jr      c,      @_1             ; if so, keep going
+        xor     A                       ; otherwise, set frame-count to 0
+@_1:    ld      [HL],   A               ; update the frame counter
 
-        ;wait 60 frames for a second
-        ;(TODO: detect PAL/NTSC and use the correct frame rate)
-        ld      A,       [HL]                       ;load the current frame-count
-        inc     A                                        ;add another frame
-        cp      60                                              ;is it 60 or less?
-        jr      c,      @_1                                           ;if so, keep going
-        xor     A                                          ;otherwise, set frame-count to 0
-@_1:    ld      [HL],   A                        ;update the frame counter
+        ; increase seconds counter:
+        dec     HL                      ; move down to the seconds counter
+        ccf                             ; flip the carry flag
+        ld      A,      [HL]            ; read the number of seconds
+        adc     A,      $00             ; if frame count hit 60, add a second
+        daa                             ; adjust up to binary-coded-decimal
+        cp      $60                     ; 60 seconds? (BCD)
+        jr      c,      @_2             ; if not, keep going
+        xor     A                       ; otherwise, set A to 0
+@_2:    ld      [HL],   A               ; update the seconds counter
 
-        ;increase seconds counter:
-        dec     HL                                         ;move down to the seconds counter
-        ccf                                                     ;flip the carry flag
-        ld      A,      [HL]                       ;read the number of seconds
-        adc     A,      $00                             ;if frame count hit 60, add a second
-        daa                                                     ;adjust up to binary-coded-decimal
-        cp      $60                                             ;60 seconds? (BCD)
-        jr      c,      @_2                                           ;if not, keep going
-        xor     A                                          ;otherwise, set A to 0
-@_2:    ld      [HL],   A                       ;update the seconds counter
-
-        ;increase minutes counter:
-        dec     HL                                         ;move down to the minute counter
-        ccf                                                     ;flip the carry flag
+        ; increase minutes counter:
+        dec     HL                      ; move down to the minute counter
+        ccf                             ; flip the carry flag
         ld      A,      [HL]            ; read the number of minutes
         adc     A,      $00             ; if seconds hit 60, add a minute
         daa                             ; adjust up to binary-coded-decimal
@@ -10425,14 +10606,14 @@ updateTime:                                                             ;$3A03
         jr      c,      @_3             ; if not, keep going
 
         push    HL                      ; put the minute counter addr aside
-        call    hitPlayer.kill          ; go do out-of-time
+        call    hitPlayer@kill          ; go do out-of-time
         pop     HL                      ; go back to the minute counter addr
         xor     A                       ; reset to 0
 
 @_3:    ld      [HL],   A               ; update the minute counter
         ret                             ; exit!
 
-        ;time is counting down:
+        ; time is counting down:
         ;-----------------------------------------------------------------------
 @countdown:
         ; wait 60 frames for a second
@@ -10476,13 +10657,14 @@ updateTime:                                                             ;$3A03
 
 _3a62:                                                                  ;$3A62
 ;===============================================================================
-        ;seemingly unused?
+        ; seemingly unused?
         .BYTE   $01, $30, $00
         ;
 
 solidityBlocks:                                                         ;$3A65
 ;===============================================================================
-        ;solidity pointer table
+; solidity pointer table
+;
         ;TODO: this should be populated by the tilesets
         .WORD   @greenHill,     @bridge,        @jungle
         .WORD   @labyrinth,     @scrapBrain,    @skyBaseInterior
@@ -10597,6 +10779,7 @@ solidityBlocks:                                                         ;$3A65
         .BYTE   $00, $10, $10, $16, $00, $10, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
         .BYTE   $16, $00, $00, $00, $00, $00, $00, $00, $00, $10, $00, $00, $00, $00, $00, $00
         .BYTE   $00, $1E, $00, $00, $00, $1E, $1E, $10, $00, $00, $10, $10, $1E, $1E, $16, $16
+;OVERFLOW!
         .BYTE   $1E, $1E, $1E, $1E, $1E, $00, $10, $1E, $1E, $10, $10, $1E, $00, $02, $0A, $16
         .BYTE   $00, $00, $00, $00, $00, $00, $10, $1E, $16, $1E, $00, $10, $10, $10, $10, $10
         .BYTE   $1E, $00, $10, $00, $00, $10, $10, $10, $10, $1E, $90, $00, $00, $00, $00, $00
@@ -10629,20 +10812,19 @@ solidityBlocks:                                                         ;$3A65
 
 UnknownCollision:                                                       ;$3FBF
 ;===============================================================================
-        
-        ; 47 entries, according to number of solidity types
-@_3FBF:                                                                 ;$3FBF
+@_3FBF: ; 47 entries, according to number of solidity types             ;$3FBF
         .BYTE   $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
         .BYTE   $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
         .BYTE   $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 
-        ;junk data?
+        ; junk data?
         .BYTE   $00, $00
-
-        ; 47 entries, according to number of solidity types
-@_3FF0: .BYTE   $00, $08, $08, $08, $08, $06, $06, $06, $06, $06, $06, $03, $03, $03, $03, $03
+        
+@_3FF0: ; 47 entries, according to number of solidity types             ;$3FF0
+        .BYTE   $00, $08, $08, $08, $08, $06, $06, $06, $06, $06, $06, $03, $03, $03, $03, $03
 
 .BANK   1       SLOT    1
+.ORG    $0000
                                                                         ;$4000
         .BYTE   $03, $08, $03, $03, $03, $03, $03, $03, $00, $00, $00, $00, $00, $00, $00, $00 
         .BYTE   $00, $00, $00, $00, $00, $00, $00, $03, $03, $04, $04, $03, $03, $03, $03
@@ -10657,7 +10839,7 @@ UnknownCollision:                                                       ;$3FBF
 Unknown:                                                                ;$4020
 ;===============================================================================
 
-        ;this is a lookup table using block solidity as index
+        ; this is a lookup table using block solidity as index
 @_4020: .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E  ;$4020
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_409E, @_407E
@@ -10890,9 +11072,9 @@ Unknown:                                                                ;$4020
 
 sonic_process:                                                          ;$49C8
 ;===============================================================================
-;params IX      Address of the current mob being processed
+; in    IX      Address of the current mob being processed
 ;       IY      Address of the common variables (used throughout)
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         res     1,      [IY+Vars.unknown0]
 
         bit     7,      [IX+Mob.flags]
@@ -11733,7 +11915,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4e88: set     1,      [IY+Vars.unknown0]                 ;$4E88
+@_4e88: set     1,      [IY+Vars.unknown0]                              ;$4E88
         ret
 
         ;-----------------------------------------------------------------------
@@ -11781,8 +11963,8 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
         ;is Sonic moving?
-@_4edd: ld      HL,        [SONIC.Xspeed]                          ;$4EDD
-        ld      A,        H
+@_4edd: ld      HL,     [SONIC.Xspeed]                                  ;$4EDD
+        ld      A,      H
         or      L
         ret     nz
 
@@ -11806,7 +11988,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4f01: res     1,      [IX+Mob.flags]                              ;$4F01
+@_4f01: res     1,      [IX+Mob.flags]                                  ;$4F01
         bit     7,      B
         jr      nz,     @_39
         ld      DE,     [TEMP1]
@@ -11934,7 +12116,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4fd3: bit     0,      [IX+Mob.flags]                             ;$4FD3
+@_4fd3: bit     0,      [IX+Mob.flags]                                  ;$4FD3
         ret     nz
 
         ld      HL,     [D2B7]
@@ -11956,7 +12138,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4fec: dec     [IX+Mob.unknown15]                                 ;$4FEC
+@_4fec: dec     [IX+Mob.unknown15]                                      ;$4FEC
         ret
 
         ;-----------------------------------------------------------------------
@@ -11967,7 +12149,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4ff5: ld      A,       [FRAMECOUNT]                                  ;$4FF5
+@_4ff5: ld      A,      [FRAMECOUNT]                                    ;$4FF5
         and     %00000011
         ret     nz
 
@@ -11978,7 +12160,7 @@ sonic_process:                                                          ;$49C8
         res     0,      [IY+Vars.unknown0]
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      [LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -12023,7 +12205,7 @@ sonic_process:                                                          ;$49C8
 
         ;drowned!
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      MUSIC_DEATH
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -12049,7 +12231,7 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_43
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $1A
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -12081,15 +12263,15 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 
-@_5097: .BYTE   $01, $07, $0F, $1F, $3F, $7F                                         ;$5097
+@_5097: .BYTE   $01, $07, $0F, $1F, $3F, $7F                            ;$5097
 
         ;-----------------------------------------------------------------------
 
-@_509d: ld      A,      $10                                     ;$509D
+@_509d: ld      A,      $10                                             ;$509D
         ld      [D28E], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $00
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -12097,7 +12279,7 @@ sonic_process:                                                          ;$49C8
 
         ;--- UNUSED! (8 bytes) -----------------------------------------------------------------------------------------
 
-        xor     A                                                  ;$50A6
+        xor     A                                                       ;$50A6
         ld      [SONIC.Xsubpixel],      A
         ld      [SONIC.X],      DE
         ret
@@ -12117,7 +12299,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
         ;joypad up is pressed...
 
-@_50c1: bit     2,      [IX+Mob.flags]                             ;$50C1
+@_50c1: bit     2,      [IX+Mob.flags]                                  ;$50C1
         ret     nz
 
         bit     0,      [IX+Mob.flags]
@@ -12135,7 +12317,7 @@ sonic_process:                                                          ;$49C8
         jr      z,      @_44
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $06
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -12145,12 +12327,12 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_50e3: res     2,      [IY+Vars.timeLightningFlags]               ;$50E3
+@_50e3: res     2,      [IY+Vars.timeLightningFlags]                    ;$50E3
         ret
 
         ;-----------------------------------------------------------------------
 
-@_50e8: ld      HL,      [D2DC]                                        ;$50E8
+@_50e8: ld      HL,     [D2DC]                                          ;$50E8
         ld      DE,     [SONIC.Y]
         and     A
         sbc     HL,     DE
@@ -12164,7 +12346,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_5100: set     2,      [IX+Mob.flags]                              ;$5100
+@_5100: set     2,      [IX+Mob.flags]                                  ;$5100
         ret
 
         ;-----------------------------------------------------------------------
@@ -12263,7 +12445,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_5193: xor     A                                          ;set A to 0                                    `$5319
+@_5193: xor     A       ;set A to 0                                     ;$5319
         ld      L, A
         ld      H, A
         ld      [SONIC.Yspeed], HL
@@ -12307,7 +12489,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_51dd: ld      A,       [SONIC.flags]                                 ;$51DD
+@_51dd: ld      A,      [SONIC.flags]                                   ;$51DD
         and     $FA
         ld      [SONIC.flags],  A
         ld      [IX+Mob.unknown14], $14
@@ -12320,7 +12502,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_51f3: ld      A,       [SONIC.unknown16]                             ;$51F3
+@_51f3: ld      A,       [SONIC.unknown16]                              ;$51F3
         and     A
         ret     nz
 
@@ -12369,7 +12551,8 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_5224: bit     4,      [IX+Mob.flags]                     ;mob underwater?                                 `$5224
+        ; mob underwater?
+@_5224: bit     4,      [IX+Mob.flags]                                  ;$5224
         ret     z
 
         ld      A,      [FRAMECOUNT]
@@ -12417,7 +12600,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_526e: .BYTE   $00, $02, $04, $06, $FF, $FF                                         ;$526E
+@_526e: .BYTE   $00, $02, $04, $06, $FF, $FF                            ;$526E
         .BYTE   $20, $22, $24, $26, $FF, $FF
         .BYTE   $FF, $FF, $FF, $FF, $FF, $FF
 
@@ -12433,7 +12616,7 @@ sonic_process:                                                          ;$49C8
         ret     nz
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      [LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -12522,7 +12705,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_532e: ld      A,       [IX+Mob.height]                            ;$532E
+@_532e: ld      A,      [IX+Mob.height]                                 ;$532E
         cp      $18
         jr      z,      @_55
 
@@ -12641,7 +12824,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_5407: bit     7,      [IX+Mob.flags]                             ;$5407
+@_5407: bit     7,      [IX+Mob.flags]                                  ;$5407
         jr      z,      @_65
 
         bit     3,      [IX+Mob.flags]
@@ -12736,7 +12919,7 @@ sonic_process:                                                          ;$49C8
         ld      [SONIC.Xdirection],     A
 
 @_54aa:                                                                 ;$54AA
-        ld      [IX+Mob.unknown14], $0B
+        ld      [IX+Mob.unknown14],     $0B
 
         bit     3,      [IY+Vars.unknown0]
         jp      z,      @_4c39
@@ -12748,7 +12931,7 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $00
         ;air
 
-@_54bc: ;check if the player is underwater                                                                      `$54BC
+@_54bc: ; check if the player is underwater                             ;$54BC
         bit     7,      [IY+Vars.flags6]                  ;underwater flag
         ret     nz                                              ;this solidity is not valid underwater
 
@@ -12759,7 +12942,8 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $01
         ;spikes?
 
-@_54c6: bit     0,      [IY+Vars.scrollRingFlags]          ;is the player dead?                            `$54C6
+        ; is the player dead?
+@_54c6: bit     0,      [IY+Vars.scrollRingFlags]                       ;$54C6
         jp      z,      hitPlayer._35fd                         ;if not, damage them
         ret
 
@@ -12767,7 +12951,7 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $02
         ;jump ramp?
 
-@_54ce: ld      A,       [IX+Mob.X+0]                               ;$54CE
+@_54ce: ld      A,      [IX+Mob.X+0]                                    ;$54CE
         add     A,      $0C
         and     %00011111
         cp      $1A
@@ -12817,7 +13001,7 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $03
         ;horizontal spring? (facing left)
 
-@_550f: ld      A,       [IX+Mob.X+0]                               ;$550F
+@_550f: ld      A,      [IX+Mob.X+0]                                    ;$550F
         add     A,      $0C
         and     %00011111
         cp      $10
@@ -12841,7 +13025,7 @@ sonic_process:                                                          ;$49C8
         ;vertical spring?
 
 @_552d:
-        ld      A,      [IX+Mob.X+0]                               ;$552D
+        ld      A,      [IX+Mob.X+0]                                    ;$552D
         add     A,      $0C
         and     %00011111
         cp      $10
@@ -12870,7 +13054,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $05
 
-@_5556: ld      A,       [IX+Mob.X+0]                               ;$5556
+@_5556: ld      A,       [IX+Mob.X+0]                                   ;$5556
         add     A,      $0C
         and     %00011111
         cp      $10
@@ -12893,7 +13077,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $06
 
-@_5578: bit     7,      [IX+Mob.flags]                              ;$5578
+@_5578: bit     7,      [IX+Mob.flags]                                  ;$5578
         ret     z
 
         ld      HL,     [SONIC.Xsubpixel]
@@ -12908,7 +13092,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $07
 
-@_5590: bit     7,      [IX+Mob.flags]                              ;$5590
+@_5590: bit     7,      [IX+Mob.flags]                                  ;$5590
         ret     z
 
         ld      HL,     [SONIC.Xsubpixel]
@@ -12940,7 +13124,7 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $09
         ;vertical spring? (up-centre)
 
-@_55b6: ld      A,       [IX+Mob.X+0]                               ;$55B6
+@_55b6: ld      A,      [IX+Mob.X+0]                                    ;$55B6
         add     A,      $0C
         and     %00011111
         cp      $08
@@ -12972,7 +13156,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0A
 
-@_55e2: bit     7,      [IX+Mob.Ydirection]                        ;$55E2
+@_55e2: bit     7,      [IX+Mob.Ydirection]                             ;$55E2
         ret     nz
 
         ;(we can compile with, or without, audio)
@@ -12986,7 +13170,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0B
 
-@_55eb: bit     4,      [IY+Vars.flags6]                          ;$55EB
+@_55eb: bit     4,      [IY+Vars.flags6]                                ;$55EB
         ret     nz
 
         ld      A,      [SONIC.X]
@@ -13038,7 +13222,7 @@ sonic_process:                                                          ;$49C8
         ld      [D28A], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $06
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13054,14 +13238,13 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-
 @_5643: .BYTE   $34, $3C, $34, $2F, $00, $19, $3A, $19, $04, $00, $0E, $3A, $00, $00, $16, $1B ;$5643
         .BYTE   $32, $00, $00, $17, $2F, $0C, $00, $00, $FF
 
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0C
 
-@_565c: ld      HL,      [SONIC.Xspeed]                                ;$565C
+@_565c: ld      HL,     [SONIC.Xspeed]                                  ;$565C
         ld      A,      [SONIC.Xdirection]
         ld      DE,     $FFF8
         add     HL,     DE
@@ -13073,7 +13256,7 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_77
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $12
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13084,7 +13267,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0D
 
-@_567c: xor     A                                          ;set A to 0                                     `$567C
+@_567c: xor     A       ; set A to 0                                    ;$567C
         ld      HL,     $0005
         ld      [SONIC.Xspeed+0],       A
         ld      [SONIC.Xspeed+1],       HL
@@ -13096,7 +13279,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_568f: ld      A,       [IY+Vars.joypad]                          ;$568F
+@_568f: ld      A,      [IY+Vars.joypad]                                ;$568F
         or      $0F
         ld      [IY+Vars.joypad],  A
 
@@ -13110,7 +13293,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0E
 
-@_56a6: xor     A                                                  ;$56A6
+@_56a6: xor     A                                                       ;$56A6
         ld      HL,     $0006
         ld      [SONIC.Xspeed+0],A
         ld      [SONIC.Xspeed+1],HL
@@ -13120,7 +13303,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0F
 
-@_56b6: xor     A                                                  ;$56B6
+@_56b6: xor     A                                                       ;$56B6
         ld      HL,     $FFFB
         ld      [SONIC.Xspeed+0],       A
         ld      [SONIC.Xspeed+1],       HL
@@ -13132,7 +13315,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $10
 
-@_56c6: xor     A                                                  ;$56C6
+@_56c6: xor     A                                                       ;$56C6
         ld      HL,     $FFFA
         ld      [SONIC.Xspeed+0],       A
         ld      [SONIC.Xspeed+1],       HL
@@ -13144,7 +13327,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $11
 
-@_56d6: ld      A,       [D2E1]                                        ;$56D6
+@_56d6: ld      A,      [D2E1]                                          ;$56D6
         cp      $08
         ret     nc
 
@@ -13188,7 +13371,7 @@ sonic_process:                                                          ;$49C8
         ld      [D2E1], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $07
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13198,7 +13381,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
         ;called by functions referenced by `_58e5`
 
-@_5727: ld      HL,      [SONIC.Xspeed]                                ;$5727
+@_5727: ld      HL,      [SONIC.Xspeed]                                 ;$5727
         ld      A,      [SONIC.Xdirection]
         ld      C,      A
         and     $80
@@ -13239,12 +13422,12 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $12
 
-@_5761: ld      [IX+Mob.Yspeed+0],      $00                     ;$5761
+@_5761: ld      [IX+Mob.Yspeed+0],      $00                             ;$5761
         ld      [IX+Mob.Yspeed+1],      $F6
         ld      [IX+Mob.Ydirection],    $FF
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $04
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13254,12 +13437,12 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $13
 
-@_5771: ld      [IX+Mob.Yspeed+0],      $00                     ;$5771
+@_5771: ld      [IX+Mob.Yspeed+0],      $00                             ;$5771
         ld      [IX+Mob.Yspeed+1],      $F4
         ld      [IX+Mob.Ydirection],    $FF
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $04
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13269,12 +13452,12 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $14
 
-@_5781: ld      [IX+Mob.Yspeed+0],      $00                     ;$5781
+@_5781: ld      [IX+Mob.Yspeed+0],      $00                             ;$5781
         ld      [IX+Mob.Yspeed+1],      $F2
         ld      [IX+Mob.Ydirection],    $FF
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $04
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13284,7 +13467,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $15
 
-@_5791: ld      A,       [D2B1]                                        ;$5791
+@_5791: ld      A,      [D2B1]                                          ;$5791
         and     A
         ret     nz
 
@@ -13318,7 +13501,7 @@ sonic_process:                                                          ;$49C8
         ld      [HL],   $3F
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $07
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13354,7 +13537,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $17
 
-@_57f6: ld      HL,      [D2E9]                                        ;$57F6
+@_57f6: ld      HL,     [D2E9]                                          ;$57F6
         ld      DE,     $0082
         and     A
         sbc     HL,     DE
@@ -13367,7 +13550,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $18
 
-@_5808: ld      A,       [SONIC.flags]                                 ;$5808
+@_5808: ld      A,      [SONIC.flags]                                   ;$5808
         rlca
         ret     nc
 
@@ -13412,7 +13595,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $19
 
-@_584b: ld      HL,      [SONIC.X]                                     ;$584B
+@_584b: ld      HL,     [SONIC.X]                                       ;$584B
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13451,7 +13634,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $1A
 
-@_5883: ld      HL,      [SONIC.X]                                     ;$5883
+@_5883: ld      HL,     [SONIC.X]                                       ;$5883
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13497,7 +13680,7 @@ sonic_process:                                                          ;$49C8
         ;===============================================================================================================
         ;referenced by table at `_58e5` - index $1B
 
-@_58d0: bit     7,      [IX+Mob.flags]                             ;$58D0
+@_58d0: bit     7,      [IX+Mob.flags]                                  ;$58D0
         ret     z
 
         ;is Sonic on the screen (vertically)
@@ -13594,14 +13777,14 @@ powerUps_ring_process:                                                  ;$5B09
 @_5b24: ld      A,      $10
         call    increaseRings
 
-@_5b29: xor     A                                          ;set A to 0
+@_5b29: xor     A       ;set A to 0
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
         ret
 
         ;-----------------------------------------------------------------------
 
-@_1:    ld      HL,     $5180                                   ;$15180 - blinking items art
+@_1:    ld      HL,     $5180           ;$15180 - blinking items art
 
 @_5b34: call    loadPowerUpIcon
 
@@ -13678,8 +13861,8 @@ powerUps_ring_process:                                                  ;$5B09
 
 powerUps_speed_process:                                                 ;$5BD9
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13695,7 +13878,7 @@ powerUps_speed_process:                                                 ;$5BD9
         ld      [SONIC.unknown15],      A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $02
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -13708,8 +13891,8 @@ powerUps_speed_process:                                                 ;$5BD9
 
 powerUps_life_process:                                                  ;$5C05
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13833,8 +14016,8 @@ powerUps_life_process:                                                  ;$5C05
 
 powerUps_shield_process:                                                ;$5CD7
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13854,10 +14037,10 @@ powerUps_shield_process:                                                ;$5CD7
         jp      powerups_ring_process@_5b34
         ;
 
-powerUps_invincibility_process:                                                                ;$5CFF
+powerUps_invincibility_process:                                         ;$5CFF
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13876,7 +14059,7 @@ powerUps_invincibility_process:                                                 
         ld      [D28D], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      MUSIC_INVINCIBILITY
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -13887,10 +14070,10 @@ powerUps_invincibility_process:                                                 
         jp      powerups_ring_process@_5b34
         ;
 
-powerUps_checkpoint_process:                                                                ;$5D2F
+powerUps_checkpoint_process:                                            ;$5D2F
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13938,10 +14121,10 @@ powerUps_checkpoint_process:                                                    
         jp      powerups_ringprocess@_5b34
         ;
 
-powerUps_continue_process:                                                                ;$5D80
+powerUps_continue_process:                                              ;$5D80
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -13963,8 +14146,8 @@ powerUps_continue_process:                                                      
 
 _5da8:                                                                  ;$5DA8
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         bit     0,      [IX+Mob.flags]
         ret     nz
 
@@ -14003,8 +14186,8 @@ _5da8:                                                                  ;$5DA8
 
 _5deb:                                                                  ;$5DEB
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      HL,     $0804
         ld      [TEMP1],        HL
 
@@ -14101,10 +14284,10 @@ _5deb:                                                                  ;$5DEB
         ret
         ;
 
-powerUps_emerald_process:                                                                ;$5EA2
+powerUps_emerald_process:                                               ;$5EA2
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      HL,     D30B
         call    getLevelBitFlag
         ld      A,      [HL]
@@ -14136,7 +14319,7 @@ powerUps_emerald_process:                                                       
         ld      [D28B], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      MUSIC_EMERALD
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -14168,10 +14351,10 @@ powerUps_emerald_process:                                                       
         .BYTE   $FF
         ;
 
-boss_endSign_process:                                                                   ;$5F17
+boss_endSign_process:                                                   ;$5F17
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     24
         ld      [IX+Mob.height],    48
 
@@ -14358,7 +14541,7 @@ boss_endSign_process:                                                           
         res     3,      [IY+Vars.flags6]
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $0B
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -14599,43 +14782,43 @@ boss_endSign_process:                                                           
 palettePointers:                                                        ;$627C
 ;===============================================================================
 @greenHill:
-        .WORD   paletteData.greenHill
+        .WORD   paletteData@greenHill
 @bridge:
-        .WORD   paletteData.bridge
+        .WORD   paletteData@bridge
 @jungle:
-        .WORD   paletteData.jungle
+        .WORD   paletteData@jungle
 @labyrinth:
-        .WORD   paletteData.labyrinth
+        .WORD   paletteData@labyrinth
 @scrapBrain:
-        .WORD   paletteData.scrapBrain
+        .WORD   paletteData@scrapBrain
 @skyBaseExt:
-        .WORD   paletteData.skyBaseExt
+        .WORD   paletteData@skyBaseExt
 @skyBaseInt:
-        .WORD   paletteData.skyBaseInt
+        .WORD   paletteData@skyBaseInt
 @specialStage:
-        .WORD   paletteData.specialStage
+        .WORD   paletteData@specialStage
         ;
 
 paletteCyclePointers:                                                   ;$628C
 ;===============================================================================
 @greenHill:
-        .WORD   paletteData.greenHill_cycles
+        .WORD   paletteData@greenHill_cycles
 @bridge:
-        .WORD   paletteData.bridge_cycles
+        .WORD   paletteData@bridge_cycles
 @jungle:
-        .WORD   paletteData.jungle_cycles
+        .WORD   paletteData@jungle_cycles
 @labyrinth:
-        .WORD   paletteData.labyrinth_cycles
+        .WORD   paletteData@labyrinth_cycles
 @scrapBrain:
-        .WORD   paletteData.scrapBrain_cycles
+        .WORD   paletteData@scrapBrain_cycles
 @skyBase1:
-        .WORD   paletteData.skyBase_cycles
+        .WORD   paletteData@skyBase_cycles
 @skyBaseInt:
-        .WORD   paletteData.skyBaseInt_cycles
+        .WORD   paletteData@skyBaseInt_cycles
 @specialStage:
-        .WORD   paletteData.specialStage_cycles
+        .WORD   paletteData@specialStage_cycles
 @skyBaseExt:
-        .WORD   paletteData.skyBaseExt_cycles
+        .WORD   paletteData@skyBaseExt_cycles
         ;
 
 ;the regular and cycle palettes are lumped together in one data-block,
@@ -14791,8 +14974,8 @@ paletteData:                                                            ;$629E
 
 badnick_crabmeat_process:                                               ;$65EE
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
         ld      [IX+Mob.width],     16
@@ -14965,7 +15148,7 @@ badnick_crabmeat_process:                                               ;$65EE
         .BYTE   $FF
         ;
 
-platform_swinging_process:                                                              ;$673C
+platform_swinging_process:                                              ;$673C
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15080,119 +15263,119 @@ platform_swinging_process:                                                      
         ret
 
 @_682f: ;this is swinging position data
-        .BYTE   $B3     $00
-        .BYTE   $B3     $01
-        .BYTE   $B3     $02
-        .BYTE   $B3     $02
-        .BYTE   $B3     $03
-        .BYTE   $B3     $04
-        .BYTE   $B3     $05
-        .BYTE   $B3     $06
-        .BYTE   $B4     $07
-        .BYTE   $B4     $08
-        .BYTE   $B4     $09
-        .BYTE   $B4     $0B
-        .BYTE   $B4     $0C
-        .BYTE   $B4     $0D
-        .BYTE   $B5     $0E
-        .BYTE   $B5     $0F
-        .BYTE   $B5     $11
-        .BYTE   $B5     $12
-        .BYTE   $B6     $13
-        .BYTE   $B6     $15
-        .BYTE   $B7     $16
-        .BYTE   $B7     $18
-        .BYTE   $B8     $19
-        .BYTE   $B8     $1B
-        .BYTE   $B9     $1D
-        .BYTE   $B9     $1E
-        .BYTE   $BA     $20
-        .BYTE   $BB     $22
-        .BYTE   $BC     $23
-        .BYTE   $BD     $25
-        .BYTE   $BE     $27
-        .BYTE   $BF     $29
-        .BYTE   $C0     $2B
-        .BYTE   $C2     $2D
-        .BYTE   $C3     $2F
-        .BYTE   $C4     $31
-        .BYTE   $C6     $32
-        .BYTE   $C8     $34
-        .BYTE   $CA     $36
-        .BYTE   $CC     $38
-        .BYTE   $CE     $3A
-        .BYTE   $D0     $3C
-        .BYTE   $D2     $3E
-        .BYTE   $D4     $3F
-        .BYTE   $D7     $41
-        .BYTE   $DA     $43
-        .BYTE   $DC     $44
-        .BYTE   $DF     $45
-        .BYTE   $E2     $47
-        .BYTE   $E5     $48
-        .BYTE   $E8     $49
-        .BYTE   $EC     $4A
-        .BYTE   $EF     $4B
-        .BYTE   $F2     $4C
-        .BYTE   $F6     $4C
-        .BYTE   $F9     $4C
-        .BYTE   $FC     $4D
-        .BYTE   $00     $4D
-        .BYTE   $03     $4D
-        .BYTE   $07     $4C
-        .BYTE   $0A     $4C
-        .BYTE   $0E     $4C
-        .BYTE   $11     $4B
-        .BYTE   $14     $4A
-        .BYTE   $18     $49
-        .BYTE   $1B     $48
-        .BYTE   $1E     $47
-        .BYTE   $21     $45
-        .BYTE   $24     $44
-        .BYTE   $27     $42
-        .BYTE   $29     $41
-        .BYTE   $2C     $3F
-        .BYTE   $2E     $3D
-        .BYTE   $31     $3B
-        .BYTE   $33     $3A
-        .BYTE   $35     $38
-        .BYTE   $37     $36
-        .BYTE   $39     $34
-        .BYTE   $3A     $32
-        .BYTE   $3C     $30
-        .BYTE   $3E     $2E
-        .BYTE   $3F     $2C
-        .BYTE   $40     $2A
-        .BYTE   $41     $28
-        .BYTE   $43     $26
-        .BYTE   $44     $24
-        .BYTE   $45     $23
-        .BYTE   $45     $21
-        .BYTE   $46     $1F
-        .BYTE   $47     $1D
-        .BYTE   $48     $1C
-        .BYTE   $48     $1A
-        .BYTE   $49     $18
-        .BYTE   $49     $17
-        .BYTE   $4A     $15
-        .BYTE   $4A     $14
-        .BYTE   $4B     $12
-        .BYTE   $4B     $11
-        .BYTE   $4B     $0F
-        .BYTE   $4B     $0E
-        .BYTE   $4C     $0D
-        .BYTE   $4C     $0C
-        .BYTE   $4C     $0A
-        .BYTE   $4C     $09
-        .BYTE   $4C     $08
-        .BYTE   $4C     $07
-        .BYTE   $4D     $06
-        .BYTE   $4D     $05
-        .BYTE   $4D     $04
-        .BYTE   $4D     $03
-        .BYTE   $4D     $02
-        .BYTE   $4D     $01
-        .BYTE   $4D     $00
+        .BYTE   $B3, $00
+        .BYTE   $B3, $01
+        .BYTE   $B3, $02
+        .BYTE   $B3, $02
+        .BYTE   $B3, $03
+        .BYTE   $B3, $04
+        .BYTE   $B3, $05
+        .BYTE   $B3, $06
+        .BYTE   $B4, $07
+        .BYTE   $B4, $08
+        .BYTE   $B4, $09
+        .BYTE   $B4, $0B
+        .BYTE   $B4, $0C
+        .BYTE   $B4, $0D
+        .BYTE   $B5, $0E
+        .BYTE   $B5, $0F
+        .BYTE   $B5, $11
+        .BYTE   $B5, $12
+        .BYTE   $B6, $13
+        .BYTE   $B6, $15
+        .BYTE   $B7, $16
+        .BYTE   $B7, $18
+        .BYTE   $B8, $19
+        .BYTE   $B8, $1B
+        .BYTE   $B9, $1D
+        .BYTE   $B9, $1E
+        .BYTE   $BA, $20
+        .BYTE   $BB, $22
+        .BYTE   $BC, $23
+        .BYTE   $BD, $25
+        .BYTE   $BE, $27
+        .BYTE   $BF, $29
+        .BYTE   $C0, $2B
+        .BYTE   $C2, $2D
+        .BYTE   $C3, $2F
+        .BYTE   $C4, $31
+        .BYTE   $C6, $32
+        .BYTE   $C8, $34
+        .BYTE   $CA, $36
+        .BYTE   $CC, $38
+        .BYTE   $CE, $3A
+        .BYTE   $D0, $3C
+        .BYTE   $D2, $3E
+        .BYTE   $D4, $3F
+        .BYTE   $D7, $41
+        .BYTE   $DA, $43
+        .BYTE   $DC, $44
+        .BYTE   $DF, $45
+        .BYTE   $E2, $47
+        .BYTE   $E5, $48
+        .BYTE   $E8, $49
+        .BYTE   $EC, $4A
+        .BYTE   $EF, $4B
+        .BYTE   $F2, $4C
+        .BYTE   $F6, $4C
+        .BYTE   $F9, $4C
+        .BYTE   $FC, $4D
+        .BYTE   $00, $4D
+        .BYTE   $03, $4D
+        .BYTE   $07, $4C
+        .BYTE   $0A, $4C
+        .BYTE   $0E, $4C
+        .BYTE   $11, $4B
+        .BYTE   $14, $4A
+        .BYTE   $18, $49
+        .BYTE   $1B, $48
+        .BYTE   $1E, $47
+        .BYTE   $21, $45
+        .BYTE   $24, $44
+        .BYTE   $27, $42
+        .BYTE   $29, $41
+        .BYTE   $2C, $3F
+        .BYTE   $2E, $3D
+        .BYTE   $31, $3B
+        .BYTE   $33, $3A
+        .BYTE   $35, $38
+        .BYTE   $37, $36
+        .BYTE   $39, $34
+        .BYTE   $3A, $32
+        .BYTE   $3C, $30
+        .BYTE   $3E, $2E
+        .BYTE   $3F, $2C
+        .BYTE   $40, $2A
+        .BYTE   $41, $28
+        .BYTE   $43, $26
+        .BYTE   $44, $24
+        .BYTE   $45, $23
+        .BYTE   $45, $21
+        .BYTE   $46, $1F
+        .BYTE   $47, $1D
+        .BYTE   $48, $1C
+        .BYTE   $48, $1A
+        .BYTE   $49, $18
+        .BYTE   $49, $17
+        .BYTE   $4A, $15
+        .BYTE   $4A, $14
+        .BYTE   $4B, $12
+        .BYTE   $4B, $11
+        .BYTE   $4B, $0F
+        .BYTE   $4B, $0E
+        .BYTE   $4C, $0D
+        .BYTE   $4C, $0C
+        .BYTE   $4C, $0A
+        .BYTE   $4C, $09
+        .BYTE   $4C, $08
+        .BYTE   $4C, $07
+        .BYTE   $4D, $06
+        .BYTE   $4D, $05
+        .BYTE   $4D, $04
+        .BYTE   $4D, $03
+        .BYTE   $4D, $02
+        .BYTE   $4D, $01
+        .BYTE   $4D, $00
         ;
 
 spriteLayouts:                                                          ;$6911
@@ -15212,7 +15395,7 @@ spriteLayouts:                                                          ;$6911
         .BYTE   $FF, $FF
         ;
 
-explosion_process:                                                              ;$693F
+explosion_process:                                                      ;$693F
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15307,7 +15490,7 @@ explosion_process:                                                              
         .BYTE   $FF
         ;
 
-platform_sinking_process:                                                               ;$69E9
+platform_sinking_process:                                               ;$69E9
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15357,7 +15540,7 @@ platform_sinking_process:                                                       
         ret
         ;
 
-platform_falling_process:                                                               ;$6A47
+platform_falling_process:                                               ;$6A47
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15415,7 +15598,7 @@ platform_falling_process:                                                       
         ret
         ;
 
-unknown_6ac1_process:                                                           ;$6AC1
+unknown_6ac1_process:                                                   ;$6AC1
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15504,7 +15687,7 @@ unknown_6ac1_process:                                                           
 @_6b72: .BYTE   $34, $36
         ;
 
-badnick_buzzbomber_process:                                                             ;$6B74
+badnick_buzzbomber_process:                                             ;$6B74
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15719,7 +15902,7 @@ badnick_buzzbomber_process:                                                     
         .BYTE   $30, $34, $FF, $FF, $FF, $FF
         ;
 
-platform_moving_process:                                                                ;$6D65
+platform_moving_process:                                                ;$6D65
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -15809,7 +15992,7 @@ platform_moving_process:                                                        
         ret
         ;
 
-badnick_motobug_process:                                                                ;$6E0C
+badnick_motobug_process:                                                ;$6E0C
 ;===============================================================================
 /*      AI for the Motobug Badnick
         */
@@ -15833,8 +16016,8 @@ badnick_motobug_process:                                                        
         ;code is not an AI action itself, we use it to define the zero value enum:
         ;'.actions.loop@index' used as the list-terminator
 
-@actions.loop:                                                  ;@index = $00
-        ;===============================================================================================================
+@@loop:                                 ;index = $00
+        ;=======================================================================
         ;NOTE: this row MUST be index 0 as the assembly code works on that basis
         ;
         ;params IX      Address of the current mob being processed
@@ -15847,48 +16030,48 @@ badnick_motobug_process:                                                        
                 ld      [TEMP6],        HL
                 ld      A,      [HL]
                 and     A
-                jr      nz,     @moveLeft
+                jr      nz,     @@moveLeft
 
                 ;we've hit the end of the animation list, start over
                 ld      [IX+$12],   A                       ;set the mob's counter to 0
                 ld      E,      A                       ;and likewise with the working copy
-                jp      @loop                                   ;proceed with next frame of animation
+                jp      @@loop                                   ;proceed with next frame of animation
 
 
 
         ;this is the mob's first AI action, "move left":
 
-@actions.moveLeft:                                              ;@index = $01
+@@moveLeft:                                              ;@index = $01
         ;===============================================================================================================
         ;return A
         ;       C
         ;       HL
                 ;-------------------------------------------------------------------------------------------------------
                 dec     A
-                jr      nz,     @moveRight
+                jr      nz,     @@moveRight
 
                 ld      C,    $FF                     ;set direction: left
                 ld      HL,       $FF00                   ;set speed: -256
-                jp      @apply
+                jp      @@apply
 
-@actions.moveRight:                                             ;@index = $02
+@@moveRight:                                             ;@index = $02
         ;===============================================================================================================
         ;return C
         ;       HL
                 ;-------------------------------------------------------------------------------------------------------
                 dec     A
-                jr      nz,     @idleLeft
+                jr      nz,     @@idleLeft
 
                 ld      C,    $00                     ;set direction: right
                 ld      HL,       $0100                   ;set speed: +256
-                jp      @apply
+                jp      @@apply
 
         ;the AI code handles "idleLeft" and "idleRight" actions the same, they only differ in the animation displayed.
         ;therefore we define the "idleLeft" index but provide no code, the "idleRight" index will share the same ROM
         ;address but have a higher index
 
-@actions.idleLeft:                                              ;@index = $03
-@actions.idleRight:                                             ;@index = $04
+@@idleLeft:                                              ;@index = $03
+@@idleRight:                                             ;@index = $04
         ;===============================================================================================================
         ;return C       direction is set to $00 (default facing right)
         ;       HL      speed is set to $0000
@@ -15900,7 +16083,7 @@ badnick_motobug_process:                                                        
                 ;fall through to the ".apply" action below:
                 ;...
 
-@actions.apply:                                                 ;@index = $05
+@@apply:                                                 ;@index = $05
         ;===============================================================================================================
         ;params IX      Address of the current mob being processed
         ;       HL
@@ -15952,34 +16135,34 @@ badnick_motobug_process:                                                        
         ret
         ;
 
-badnick_motobug_behaviour:                                                              ;$6E96
+badnick_motobug_behaviour:                                              ;$6E96
 ;===============================================================================
 
-        .DSB    9, process.actions.left@index
-        .DSB    4, process.actions.idle@index
-        .DSB    9, process.actions.right@index
-        .DSB    4, process.actions.apply@index
-        .DB        process.actions.loop@index
+        .DSB    9, 1    ;=badnick_motobug_process@actions@moveLeft
+        .DSB    4, 3    ;=badnick_motobug_process@actions@idleLeft?
+        .DSB    9, 2    ;=badnick_motobug_process@actions@moveRight
+        .DSB    4, 5    ;=badnick_motobug_process@actions@apply
+        .DB        0    ;=badnick_motobug_process@actions@loop
         ;
 
-badnick_motobobug_actions:                                                                ;$6EB1
+badnick_motobobug_actions:                                              ;$6EB1
 ;===============================================================================
         ;the "actions" table pairs an AI action with an animation,
         ;for each action we create we need to push a pointer on to this table
 
         ;since the "loop" action is just a list-terminator, the following is a dummy entry
-        .WORD   animations.moveLeft
+        .WORD   badnick_motobug_animations@moveLeft
         ;here we map the "moveLeft" action to the "moveLeft" animation
-        .WORD   animations.moveLeft
+        .WORD   badnick_motobug_animations@moveLeft
         ;here we map the "moveRight" action to the "moveRight" animation
-        .WORD   animations.moveRight
+        .WORD   badnick_motobug_animations@moveRight
         ;the "idleLeft" action has to be added to the actions table
-        .WORD   animations.idleLeft
+        .WORD   badnick_motobug_animations@idleLeft
         ;here we map the "idleRight" action to the "idleRight" animation
-        .WORD   animations.idleRight
+        .WORD   badnick_motobug_animations@idleRight
         ;
 
-badnick_motobug_animations:                                                             ;$6EBB
+badnick_motobug_animations:                                             ;$6EBB
 ;===============================================================================
 /*      Maps actions to a set of animation timings.
         */
@@ -15988,25 +16171,25 @@ badnick_motobug_animations:                                                     
         ;sprite layout to use                   ;frame length
         ;($FF terminates)                       ;($FF for infinite)
 @moveLeft:                                                      ;@index = $00                                  `$6EBB
-        .BYTE   spriteLayout.leftIdle@index,    8
-        .BYTE   spriteLayout.leftMove@index,    8
+        .BYTE   0,      8       ;=badnick_motobug_spriteLayout@leftIdle
+        .BYTE   1,      8       ;=badnick_motobug_spriteLayout@leftMove
         .BYTE   $FF
 
 @moveRight:                                                     ;@index = $01                                  `$6EC0
-        .BYTE   spriteLayout.rightIdle@index,   8
-        .BYTE   spriteLayout.rightMove@index,   8
+        .BYTE   2,      8       ;=badnick_motobug_spriteLayout@rightIdle
+        .BYTE   3,      8       ;=badnick_motobug_spriteLayout@rightMove
         .BYTE   $FF
 
 @idleLeft:                                                      ;@index = $02                                  `$6EC5
-        .BYTE   spriteLayout.leftIdle@index,    $FF
+        .BYTE   0,      $FF     ;=badnick_motobug_spriteLayout@leftIdle
         .BYTE   $FF
 
 @idleRight:                                                     ;@index = $03                                  `$6EC8
-        .BYTE   spriteLayout.rightIdle@index,   $FF
+        .BYTE   2,      $FF     ;=badnick_motobug_spriteLayout@rightIdle
         .BYTE   $FF
         ;
 
-badnick_motobug_spriteLayout:                                                           ;$6ECB
+badnick_motobug_spriteLayout:                                           ;$6ECB
 ;===============================================================================
 /*      The Sprite Layouts (sprite composition of each animation frame) for the Motobug Badnick.
         */
@@ -16036,7 +16219,7 @@ badnick_motobug_spriteLayout:                                                   
         .BYTE   $FF
         ;
 
-badnick_newtron_process:                                                                ;$6F08
+badnick_newtron_process:                                                ;$6F08
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -16114,7 +16297,7 @@ badnick_newtron_process:                                                        
         pop     BC
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $0A
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -16159,7 +16342,7 @@ badnick_newtron_process:                                                        
         .BYTE   $62, $FF, $FF, $FF, $FF, $FF
         ;
 
-boss_greenHill_process:                                                                 ;$700C
+boss_greenHill_process:                                                 ;$700C
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -16188,7 +16371,7 @@ boss_greenHill_process:                                                         
         call    loadPaletteOnInterrupt
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      MUSIC_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -16452,7 +16635,7 @@ bossPalette:                                                            ;$731C
         .BYTE   $38, $20, $35, $1B, $16, $2A, $00, $3F, $15, $3A, $0F, $03, $01, $02, $3E, $00
         ;
 
-boss_capsule_process:                                                                   ;$732C
+boss_capsule_process:                                                   ;$732C
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -16629,7 +16812,7 @@ boss_capsule_process:                                                           
         ld      [D289], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      MUSIC_ACTCOMPLETE
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -16657,7 +16840,7 @@ boss_capsule_process:                                                           
 
         ;-----------------------------------------------------------------------
 
-@_74b6: ld      [D216], A                                       ;$74B6
+@_74b6: ld      [D216], A                                               ;$74B6
         call    findEmptyMob
         ret     c
 
@@ -16716,7 +16899,7 @@ boss_capsule_process:                                                           
         .BYTE   $00, $00, $00, $00, $4D, $19, $4F, $19
         ;
 
-boss_freeBird_process:                                                                  ;$7594
+boss_freeBird_process:                                                  ;$7594
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -16815,7 +16998,7 @@ boss_freeBird_process:                                                          
         .BYTE   $FF
         ;
 
-boss_freeRabbit_process:                                                                ;$7699
+boss_freeRabbit_process:                                                ;$7699
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -16994,7 +17177,7 @@ _77be:                                                                  ;$77BE
         ld      [D2B3], A
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $01
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -17076,7 +17259,7 @@ _77be:                                                                  ;$77BE
         ld      [HL],   $5B
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,       [LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
@@ -17267,14 +17450,15 @@ _7a3a:                                                                  ;$7A3A
         pop     IX
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $01
                 rst     $28     ;=rst_playSFX
         .ENDIF
+
         ret
         ;
 
-meta_trip_process:                                                              ;$7AA7
+meta_trip_process:                                                      ;$7AA7
 ;===============================================================================
 ;params IX       Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -17307,14 +17491,14 @@ meta_trip_process:                                                              
         ld      [IY+Vars.joypad],  $FF
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $11
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
         ;
 
-flower_process:                                                                 ;$7AED
+flower_process:                                                         ;$7AED
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -17383,7 +17567,7 @@ flower_process:                                                                 
 @_7b85: .BYTE   $00, $01, $08, $00, $02, $03, $78, $00, $01, $04, $08, $00, $02, $03, $78, $00
         ;
 
-meta_blink_process:                                                             ;$7B95
+meta_blink_process:                                                     ;$7B95
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -17449,12 +17633,18 @@ meta_blink_process:                                                             
         ld      [IX+Mob.unknown12], $00
         ret
 
-@_7c17: .WORD   @_7c29  .BYTE   $1C
-        .WORD   @_7c31  .BYTE   $1C
-        .WORD   @_7c39  .BYTE   $1C
-        .WORD   @_7c29  .BYTE   $1D
-        .WORD   @_7c31  .BYTE   $1D
-        .WORD   @_7c39  .BYTE   $1D
+@_7c17: .WORD   @_7c29
+        .BYTE   $1C
+        .WORD   @_7c31
+        .BYTE   $1C
+        .WORD   @_7c39
+        .BYTE   $1C
+        .WORD   @_7c29
+        .BYTE   $1D
+        .WORD   @_7c31
+        .BYTE   $1D
+        .WORD   @_7c39
+        .BYTE   $1D
 
         ;sprite layout
 @_7c29: .BYTE   $B4, $B6, $FF, $FF, $FF, $FF
@@ -17609,7 +17799,7 @@ _LABEL_7CC1_12:                                                         ;$7CC1
         ret
         ;
 
-badnick_chopper_process:                                                                ;$7CF6
+badnick_chopper_process:                                                ;$7CF6
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -17661,7 +17851,7 @@ badnick_chopper_process:                                                        
         set     0,      [IX+Mob.flags]
 
         ;(we can compile with, or without, audio)
-        .IFDEF OPTION_AUDIO
+        .IFDEF  OPTION_AUDIO
                 ld      A,      $12
                 rst     $28     ;=rst_playSFX
         .ENDIF
@@ -17956,6 +18146,9 @@ mob_platform_roll:                                                      ;$7EE6
 
 ;ROM header goes here
 
+.BANK   2       SLOT    2
+.ORG    $0003
+
 mob_platform_roll_continue:                                             ;$8003
 ;===============================================================================
         ;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
@@ -17985,7 +18178,7 @@ mob_platform_roll_continue:                                             ;$8003
         .BYTE   $FF
         ;
 
-boss_jungle_process:                                                            ;$8053
+boss_jungle_process:                                                    ;$8053
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -18180,7 +18373,7 @@ boss_jungle_process:                                                            
         .BYTE   $6A, $5A, $5C, $5E, $72, $FF
         ;
 
-unknown_8218_process:                                                           ;$8218
+unknown_8218_process:                                                   ;$8218
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -18278,7 +18471,7 @@ unknown_8218_process:                                                           
         .BYTE   $FF
         ;
 
-badnick_yadrin_process:                                                                 ;$82E6
+badnick_yadrin_process:                                                 ;$82E6
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -18358,7 +18551,7 @@ badnick_yadrin_process:                                                         
         .BYTE   $FF
         ;
 
-platform_bridge_process:                                                                ;$83C1
+platform_bridge_process:                                                ;$83C1
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -18708,7 +18901,7 @@ _865a:                                                                  ;$865A
         .BYTE   $60, $62, $64, $66, $68, $FF
         ;
 
-platform_balance_process:                                                               ;$866C
+platform_balance_process:                                               ;$866C
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -18937,7 +19130,7 @@ platform_balance_process:                                                       
 @_8834: .BYTE   $3C, $3E, $FF
         ;
 
-badnick_jaws_process:                                                                   ;$8837
+badnick_jaws_process:                                                   ;$8837
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -19016,7 +19209,7 @@ badnick_jaws_process:                                                           
         .BYTE   $FF
         ;
 
-trap_spikeball_process:                                                                 ;$88FB
+trap_spikeball_process:                                                 ;$88FB
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -25688,36 +25881,63 @@ initTrackValues_words:
 initTrackValues_bytes:
 ;===============================================================================
         ;-----------------------------------------------------------------------
-        .WORD   track0vars.channelFrequencyPSG        .BYTE     %10000000
-        .WORD   track0vars.channelVolumePSG           .BYTE     %10010000
-        .WORD   track1vars.channelFrequencyPSG        .BYTE     %10100000
-        .WORD   track1vars.channelVolumePSG           .BYTE     %10110000
-        .WORD   track2vars.channelFrequencyPSG        .BYTE     %11000000
-        .WORD   track2vars.channelVolumePSG           .BYTE     %11010000
-        .WORD   track3vars.channelFrequencyPSG        .BYTE     %11100000
-        .WORD   track3vars.channelVolumePSG           .BYTE     %11110000
-        .WORD   track0vars.flags                      .BYTE     %00000010
-        .WORD   track1vars.flags                      .BYTE     %00000010
-        .WORD   track2vars.flags                      .BYTE     %00000010
-        .WORD   track3vars.flags                      .BYTE     %00000010
-        .WORD   track4vars.flags                      .BYTE     %00000000
+        .WORD   track0vars.channelFrequencyPSG        
+        .BYTE     %10000000
+        .WORD   track0vars.channelVolumePSG           
+        .BYTE     %10010000
+        .WORD   track1vars.channelFrequencyPSG        
+        .BYTE     %10100000
+        .WORD   track1vars.channelVolumePSG           
+        .BYTE     %10110000
+        .WORD   track2vars.channelFrequencyPSG        
+        .BYTE     %11000000
+        .WORD   track2vars.channelVolumePSG           
+        .BYTE     %11010000
+        .WORD   track3vars.channelFrequencyPSG        
+        .BYTE     %11100000
+        .WORD   track3vars.channelVolumePSG           
+        .BYTE     %11110000
+        .WORD   track0vars.flags                      
+        .BYTE     %00000010
+        .WORD   track1vars.flags                      
+        .BYTE     %00000010
+        .WORD   track2vars.flags                      
+        .BYTE     %00000010
+        .WORD   track3vars.flags                      
+        .BYTE     %00000010
+        .WORD   track4vars.flags                      
+        .BYTE     %00000000
 
         ;TODO: is there a reason this var is not set using the WORD table above
         ;      instead of two separate bytes as is the case here?
-        .WORD   track0vars.initModulationDelay+0      .BYTE     $00
-        .WORD   track1vars.initModulationDelay+0      .BYTE     $00
-        .WORD   track2vars.initModulationDelay+0      .BYTE     $00
-        .WORD   track3vars.initModulationDelay+0      .BYTE     $00
-        .WORD   track0vars.initModulationDelay+1      .BYTE     $00
-        .WORD   track1vars.initModulationDelay+1      .BYTE     $00
-        .WORD   track2vars.initModulationDelay+1      .BYTE     $00
-        .WORD   track3vars.initModulationDelay+1      .BYTE     $00
-        .WORD   track0vars.id                         .BYTE     $00
-        .WORD   track1vars.id                         .BYTE     $01
-        .WORD   track2vars.id                         .BYTE     $02
-        .WORD   track3vars.id                         .BYTE     $03
-        .WORD   SFXpriority                           .BYTE     $00
-        .WORD   playbackMode                          .BYTE     %00000000
+        .WORD   track0vars.initModulationDelay+0      
+        .BYTE     $00
+        .WORD   track1vars.initModulationDelay+0      
+        .BYTE     $00
+        .WORD   track2vars.initModulationDelay+0      
+        .BYTE     $00
+        .WORD   track3vars.initModulationDelay+0      
+        .BYTE     $00
+        .WORD   track0vars.initModulationDelay+1      
+        .BYTE     $00
+        .WORD   track1vars.initModulationDelay+1      
+        .BYTE     $00
+        .WORD   track2vars.initModulationDelay+1      
+        .BYTE     $00
+        .WORD   track3vars.initModulationDelay+1      
+        .BYTE     $00
+        .WORD   track0vars.id                         
+        .BYTE     $00
+        .WORD   track1vars.id                         
+        .BYTE     $01
+        .WORD   track2vars.id                         
+        .BYTE     $02
+        .WORD   track3vars.id                         
+        .BYTE     $03
+        .WORD   SFXpriority                           
+        .BYTE     $00
+        .WORD   playbackMode                          
+        .BYTE     %00000000
 
         .WORD   $FFFF
         ;
@@ -29672,7 +29892,9 @@ music_emerald_data:                                                     ;$FA26
 sfx_fb27_data:                                                          ;$FB27
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $83, $03, $01, $FA, $F0, $FF
@@ -29684,7 +29906,9 @@ sfx_fb27_data:                                                          ;$FB27
 sfx_fb43_data:                                                          ;$FB43
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $8A, $01
@@ -29700,7 +29924,9 @@ sfx_fb43_data:                                                          ;$FB43
 sfx_fb74_data:                                                          ;$FB74
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
         
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F, $34, $04, $37, $04, $40, $04, $8C, $8C, $40, $04, $8C, $8C, $40, $04
@@ -29711,7 +29937,9 @@ sfx_fb74_data:                                                          ;$FB74
 sfx_fb98_data:                                                          ;$FB98
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -29727,7 +29955,9 @@ sfx_fb98_data:                                                          ;$FB98
 sfx_fbbf_data:                                                          ;$FBBF
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -29743,7 +29973,9 @@ sfx_fbbf_data:                                                          ;$FBBF
 sfx_fbe6_data:                                                          ;FBE6
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $83, $01, $01, $FA, $F2, $FF
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -29765,7 +29997,9 @@ sfx_fbe6_data:                                                          ;FBE6
 sfx_fc18_data:                                                          ;$FC18
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $83, $01, $01, $FA, $FE, $FF
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -29785,7 +30019,9 @@ sfx_fc18_data:                                                          ;$FC18
 sfx_fc42_data:                                                          ;$FC42
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -29800,7 +30036,9 @@ sfx_fc42_data:                                                          ;$FC42
 sfx_fc5e_data:                                                          ;$FC5E
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $83, $01, $01, $FA, $BF, $FF
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -29818,7 +30056,9 @@ sfx_fc5e_data:                                                          ;$FC5E
 sfx_fc8e_data:                                                          ;$FC8E
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $8A, $04
@@ -29834,7 +30074,9 @@ sfx_fc8e_data:                                                          ;$FC8E
 sfx_fcb7_data:                                                          ;FCB7
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -29849,7 +30091,9 @@ sfx_fcb7_data:                                                          ;FCB7
 sfx_fcd8_data:                                                          ;$FCD8
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $8A, $01
@@ -29865,7 +30109,9 @@ sfx_fcd8_data:                                                          ;$FCD8
 sfx_fcfd_data:                                                          ;$FCFD
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $1E, $C8, $1E, $0A, $01
         .BYTE   $83, $01, $01, $FA, $F0, $FF
@@ -29881,7 +30127,9 @@ sfx_fcfd_data:                                                          ;$FCFD
 sfx_fd24_data:                                                          ;FD24
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $00, $0A
         .BYTE   $83, $01, $01, $FA, $C4, $FF
@@ -29911,7 +30159,9 @@ sfx_fd24_data:                                                          ;FD24
 sfx_fd62_data:                                                          ;FD62
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FF, $00, $0A, $01
         .BYTE   $81, $0F
@@ -29931,7 +30181,9 @@ sfx_fd62_data:                                                          ;FD62
 sfx_fd88_data:                                                          ;$FD88
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $03 .WORD $0001, $0001 .BYTE $00
+        .BYTE $03
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $81, $0D
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -29951,7 +30203,9 @@ sfx_fd88_data:                                                          ;$FD88
 sfx_fdb1_data:                                                          ;$FDB1
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -29972,7 +30226,9 @@ sfx_fdb1_data:                                                          ;$FDB1
 sfx_fde6_data:                                                          ;$FDE6
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $03 .WORD $0001, $0001 .BYTE $00
+        .BYTE $03
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $81, $07
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -29993,7 +30249,9 @@ sfx_fde6_data:                                                          ;$FDE6
 sfx_fe0c_data:                                                          ;$FE0C
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $03 .WORD $0001, $0001 .BYTE $00
+        .BYTE $03
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $81, $0F
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
@@ -30010,7 +30268,9 @@ sfx_fe0c_data:                                                          ;$FE0C
 sfx_fe2f_data:                                                          ;$FE2F
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $00, $0A
         .BYTE   $81, $0E
@@ -30024,7 +30284,9 @@ sfx_fe2f_data:                                                          ;$FE2F
 sfx_fe48_data:                                                          ;$FE48
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0D, $49, $03
@@ -30035,7 +30297,9 @@ sfx_fe48_data:                                                          ;$FE48
 sfx_fe5c_data:                                                          ;$FE5C
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $03 .WORD $0001, $0001 .BYTE $00
+        .BYTE $03
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $81, $0F
         .BYTE   $82, $FF, $0A, $96, $14, $50, $0A
@@ -30049,7 +30313,9 @@ sfx_fe5c_data:                                                          ;$FE5C
 sfx_fe74_data:                                                          ;$FE74
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $8A, $01
@@ -30066,7 +30332,9 @@ sfx_fe74_data:                                                          ;$FE74
 sfx_fea4_data:                                                          ;$FEA4
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
         
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -30083,7 +30351,9 @@ sfx_fea4_data:                                                          ;$FEA4
 sfx_fecc_data:                                                          ;$FECC
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -30098,7 +30368,9 @@ sfx_fecc_data:                                                          ;$FECC
 sfx_fee8_data:                                                          ;$FEE8
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $03 .WORD $0001, $0001 .BYTE $00
+        .BYTE $03
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $8A, $03
@@ -30115,7 +30387,9 @@ sfx_fee8_data:                                                          ;$FEE8
 sfx_ff08_data:                                                          ;$FF08
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
         
         .BYTE   $82, $FF, $00, $FA, $00, $32, $0A
         .BYTE   $81, $0F
@@ -30135,7 +30409,9 @@ sfx_ff08_data:                                                          ;$FF08
 sfx_ff4e_data:                                                          ;$FF4E
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $82, $FF, $00, $FA, $00, $00, $0A
         .BYTE   $81, $0B
@@ -30152,7 +30428,9 @@ sfx_ff4e_data:                                                          ;$FF4E
 sfx_ff83_data:                                                          ;$FF83
 ;===============================================================================
         ;%sfxHeader
-        .BYTE $02 .WORD $0001, $0001 .BYTE $00
+        .BYTE $02
+        .WORD $0001, $0001
+        .BYTE $00
 
         .BYTE   $83, $01, $01, $FA, $F2, $FF
         .BYTE   $82, $FF, $00, $FA, $00, $00, $0A
