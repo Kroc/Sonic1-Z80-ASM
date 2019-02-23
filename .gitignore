@@ -1,5 +1,6 @@
 # don't accidentally include any ROM files
 *.sms
+*.sym
 
 # don't include any compiled object files,
 # these are binary, will change often,

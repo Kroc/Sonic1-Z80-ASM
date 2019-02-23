@@ -1,4 +1,3 @@
-.INCLUDE "sms.asm"
 
 .STRUCT Vars
 ;===============================================================================
@@ -138,7 +137,6 @@
         unknown19               DB      ;unused?
 .ENDST
 
-
 .RAMSECTION "sonic1"            SLOT 3
 ;===============================================================================
 ; name                          ; size   ; note                         ; addr
@@ -169,7 +167,8 @@ VARS                            INSTANCEOF Vars                         ;[$D200]
 ; these temporary variables are reused throughout, some times for passing extra
 ; parameters to functions and sometimes as extra working space within functions
 TEMP1                           DB                                      ;[$D20F]
-TEMP3                           DW                                      ;[$D210]
+TEMP2                           DB                                      ;[$D210]
+TEMP3                           DB                                      ;[$D211]
 TEMP4                           DB                                      ;[$D212]
 TEMP5                           DB                                      ;[$D213]
 TEMP6                           DB                                      ;[$D214]
@@ -308,7 +307,7 @@ RING_PREVIOUS_FRAME             DW                                      ;[$D295]
 
 D297                            DB      ; UNKNOWN                       ;[$D297]
 D298                            DB      ; UNKNOWN ($D298/9)             ;[$D298]
-IDLE_TIME                       DW      ; UNKNOWN                       ;[$D299]
+IDLE_TIMER                     DW      ; UNKNOWN                       ;[$D299]
 D29B                            DW      ; UNKNOWN                       ;[$D29B]
 D29D                            DW      ; UNKNOWN                       ;[$D29D]
 

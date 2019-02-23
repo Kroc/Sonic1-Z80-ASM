@@ -9,17 +9,15 @@ CLS
 ECHO:
 ECHO * assemble source code:
 ECHO =======================
-ECHO - assemble "ram.asm"
-%WLAZ80% %OPTIONS% -o "build/ram.o" "ram.asm"
 ECHO - assemble "sonic_the_hedgehog.asm"
-%WLAZ80% %OPTIONS% -v -i -o "build/sonic_the_hedgehog.o" "sonic_the_hedgehog.asm"
+%WLAZ80% %OPTIONS% -i -o "build/sonic_the_hedgehog.o" "sonic_the_hedgehog.asm"
 IF ERRORLEVEL 1 (
     ECHO ! Error
     ECHO:
     GOTO:EOF
 )
 ECHO - link "sonic_the_hedgehog.sms"
-%WLALINK% -S -v "link.ini" "sonic_the_hedgehog.sms"
+%WLALINK% -S "link.ini" "sonic_the_hedgehog.sms"
 
 ECHO * OK.
 ECHO:

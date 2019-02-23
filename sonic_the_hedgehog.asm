@@ -1,4 +1,12 @@
-.INCLUDE "sms.asm"
+.INCLUDE "inc.asm"
+
+; position on the screen of the player's lives display
+.DEFINE HUD_LIVES_X     16
+.DEFINE HUD_LIVES_Y     172
+; number of thousands of pts to get an extra life
+.DEFINE SCORE_1UP_PTS   5
+; number of frames to wait before the idle animation kicks in
+.DEFINE IDLE_TIME       6 * 60
 
 .BANK   0       SLOT 0
 
@@ -179,7 +187,7 @@ interruptHandler:                                                       ;$0073
         .IFDEF  OPTION_AUDIO
                 ; switch in the music engine & data
                 ld      A,                      :audio.update
-                ld      [sms.mapper.slot1],     A
+                ld      [SMS_MAPPER_SLOT1],     A
                 ld      [SLOT1],                A
                 ; process the audio for this frame
                 call    audio.update
@@ -202,7 +210,7 @@ interruptHandler:                                                       ;$0073
         ; return pages 1 & 2 to the banks
         ; before we started messing around here
         pop     HL
-        ld      [sms.mapper.slot1],     HL
+        ld      [SMS_MAPPER_SLOT1],     HL
         ld      [SLOT1],                HL
 
         ; pull everything off the stack so that the code that
@@ -259,10 +267,10 @@ interruptHandler:                                                       ;$0073
 
         ; TODO: set these bank numbers according to the data location
         ld      A,                      8       ; Sonic sprites?
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      9
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ; does the Sonic sprite need updating?
@@ -272,10 +280,10 @@ interruptHandler:                                                       ;$0073
 
         ; TODO: set these bank numbers according to the data location
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ; update sprite table?
@@ -305,10 +313,10 @@ loadPaletteFromInterrupt:                                               ;$0174
 ;-------------------------------------------------------------------------------
 
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ; if the level is underwater then skip loading the palette as the
@@ -345,10 +353,10 @@ _01A0:                                                                  ;$01A0
         ; switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ; TODO: set these bank numbers according to the data location
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ; this seems quite pointless but could do with
@@ -518,16 +526,16 @@ init:                                                                   ;$028B
 ;-------------------------------------------------------------------------------
 
         ; tell the SMS the cartridge has no RAM and to use ROM banking
-        ld      A,      %10000000       ; sms.mapper.control.writeProtect@mask
-        ld      [sms.mapper.control],   A
+        ld      A,      %10000000       ; write-protect on/off??
+        ld      [SMS_MAPPER_CONTROL],   A
         ; load banks 0, 1 & 2 of the ROM into the address space ($0000-$BFFF
         ; of the address space will be mapped to $0000-$BFFF of this ROM)
         ld      A,                      0
-        ld      [sms.mapper.slot0],     A
+        ld      [SMS_MAPPER_SLOT0],     A
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
 
         ; empty the RAM!
         ld      HL,     FLOORLAYOUT     ; starting from $C000,
@@ -592,14 +600,14 @@ call_playMusic:                                                         ;$02D7
         ; switch page 1 (Z80:$4000-$7FFF)
         ; to bank 3 ($C000-$FFFF)
         ld      A,                      :audio.playMusic
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         pop     AF
         ld      [PREVIOUS_MUSIC],       A
         call    audio.playMusic
 
         ld      A,                      [SLOT1]
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         ei      ; enable interrupts
         ret
@@ -615,10 +623,10 @@ call_muteSound:                                                         ;$02ED
         ; switch page 1 (Z80:$4000-$7FFF)
         ; to bank 3 (ROM:$0C000-$0FFFF)
         ld      A,                      :audio.stop
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         call    audio.stop
         ld      A,                      [SLOT1]
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         ei      ; enable interrupts
         ret
@@ -635,13 +643,13 @@ call_playSFX:                                                           ;$02FE
         push    AF
 
         ld      A,                      :audio.playSFX
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         pop     AF
         call    audio.playSFX
 
         ld      A,                      [SLOT1]
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         ei
         ret
@@ -723,9 +731,9 @@ updateVDPSprites:                                                       ;$033E
 
         ; set the VDP address to $3F00
         ; (Sprite Attribute Table, Y-positions)
-        ld      A, <sms.vram.sprites.yPositions         ;=$3F00
-        out     [sms.ports.vdp_control],        A       ; write lo-byte first
-        ld      A, >sms.vram.sprites.yPositions         ;=$3F00
+        ld      A, <SMS_VRAM_SPRITES_YPOS
+        out     [sms.ports.vdp_control],        A
+        ld      A, >SMS_VRAM_SPRITES_YPOS
         ; add bit 6 to mark a VRAM address being given
         or      %01000000
         ; write the high-byte, with the 'address flag'
@@ -851,10 +859,10 @@ unused_03ac:                                                            ;$03AC
         ld      DE,     [SLOT1]
         push    DE
 
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         inc     A
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
         ei
 
@@ -902,9 +910,9 @@ unused_03ac:                                                            ;$03AC
         pop     DE
         ld      [SLOT1],        DE      ; restore our copy of the bank numbers
         ld      A,              E       ; restore Slot 1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      A,              D       ; restore Slot 2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
 
         ; enable interrupts and return
         ei
@@ -932,11 +940,11 @@ decompressArt:                                                          ;$0405
         ; is the HL parameter address below the $40xx range?
         ; -- that is, does the relative address extend into the second page?
         ld      A,      H
-        cp      >_sizeof_sms.slot1      ;=$4000
+        cp      >$4000
         jr      c,      @_2
 
         ; remove $40xx (e.g. so $562B becomes $162B)
-        sub     >_sizeof_sms.slot1      ;=$4000
+        sub     >$4000
         ld      H,      A
 
         ; restore the A parameter (the starting bank number) and increase it so
@@ -975,10 +983,10 @@ decompressArt:                                                          ;$0405
 
         ; change pages 1 & 2 (Z80:$4000-$BFFF)
         ; to banks A & A+1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         inc     A
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ; read art header:
@@ -1207,7 +1215,7 @@ decompressArt:                                                          ;$0405
         ; at the beginning of the procedure
         pop     DE
         ld      [SLOT1],                DE
-        ld      [sms.mapper.slot1],     DE
+        ld      [SMS_MAPPER_SLOT1],     DE
 
         ei
         res     1,      [IY+Vars.flags9]
@@ -1468,7 +1476,7 @@ print:                                                                  ;$05AF
         ex      DE,     HL
         sla     C                       ; multiply column by 2 (16-bit values)
         add     HL,     BC
-        ld      BC,     sms.vram.screen
+        ld      BC,     SMS_VRAM_SCREEN
         add     HL,     BC
 
         ; set the VDP to point to the screen address calculated
@@ -1786,10 +1794,10 @@ fillOverscrollCache:                                                    ;$06BD
         ; switch pages 1 & 2 ($4000-$BFFF)
         ; to banks 4 & 5 ($10000-$17FFF)
         ld      A,                      :blockMappings
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      :blockMappings+1
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
         ei
 
@@ -2067,7 +2075,7 @@ fillScrollTiles:                                                        ;$07DB
         ; portion (the screen)
 
         ; add the VRAM base address to make an absolute address in VRAM
-        ld      HL',    sms.vram.screen
+        ld      HL',    SMS_VRAM_SCREEN
         add     HL',    BC'             ; offset to top of the column needed
         set     6,      H'              ; add bit 6 as a VDP VRAM address
 
@@ -2159,7 +2167,7 @@ fillScrollTiles:                                                        ;$07DB
         srl     A
         add     A,      C
         ld      C,      A
-        ld      HL,     sms.vram.screen
+        ld      HL,     SMS_VRAM_SCREEN
         add     HL,     BC
         set     6,      H
         ex      DE,     HL
@@ -2344,25 +2352,25 @@ fillScreenWithFloorLayout:                                              ;$0966
         ; page in the Block Mappings, these are the 4x4 tile combinations that
         ; make up the Floor / Level
         ld      A,                      :blockMappings
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      :blockMappings + 1
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ld      BC,     $0000
         call    getFloorLayoutRAMPosition
 
         ;-----------------------------------------------------------------------
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ; in 192-line mode the screen is 6 blocks tall,
         ; in 224-line mode it's 7 blocks tall
-        ld      B,      SMS.SCREEN.HEIGHT.BLOCKS
+        ld      B,      SMS_SCREEN_HEIGHT / 32
 
 @_1:    push    BC
         push    HL
         push    DE
-        ld      B,      SMS.SCREEN.WIDTH.BLOCKS
+        ld      B,      SMS_SCREEN_WIDTH / 32
 
 @_2:    push    BC
         push    HL
@@ -2570,10 +2578,10 @@ fadeOut:                                                                ;$0A40
         ; bank 0 & 1, though I am not certain about bank 2 (where the majority
         ; of the mob code is)
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ld      A,      [IY+Vars.spriteUpdateCount]
@@ -2675,10 +2683,10 @@ _aae:                                                                   ;$0AAE
         ldir
 
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ;switch to using the temporary palette on screen
@@ -2788,7 +2796,7 @@ _b50:                                                                   ;$0B50
         inc     HL
         djnz    @loop
 
-        jp      _b60._1
+        jp      _b60@_1
         ;
 
 _b60:                                                                   ;$0B60
@@ -2806,10 +2814,10 @@ _b60:                                                                   ;$0B60
         ;-----------------------------------------------------------------------
 
 @_1:    ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
         ld      HL,     PALETTE
@@ -2945,7 +2953,7 @@ loadPowerUpIcon:                                                        ;$0C1D
 ;-------------------------------------------------------------------------------
         di
         ld      A,                      5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
 
         ld      A,      [FRAMECOUNT]
         and     %00001111
@@ -2979,7 +2987,7 @@ loadPowerUpIcon:                                                        ;$0C1D
 
         ; return to the previous bank number
         ld      A, [SLOT1]
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ei
 
         ret
@@ -3054,13 +3062,13 @@ _LABEL_C52_106:                                                         ;$0C52
         ; load page 1 ($4000-$7FFF)
         ; with bank 5 ($14000-$17FFF)
         ld      A,                      5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
 
         ; map 1 background
         ld      HL,     $627E
         ld      BC,     $0178
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $10
         ld      [TEMP1],A
         call    decompressScreen
@@ -3068,7 +3076,7 @@ _LABEL_C52_106:                                                         ;$0C52
         ; map 1 foreground
         ld      HL,     $63F6
         ld      BC,     $0145
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
         ld      [TEMP1],A
         call    decompressScreen
@@ -3108,13 +3116,13 @@ _LABEL_C52_106:                                                         ;$0C52
 
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;map screen 2 background
         ld      HL,     $653B
         ld      BC,     $0170
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $10
         ld      [TEMP1],        A
         call    decompressScreen
@@ -3122,7 +3130,7 @@ _LABEL_C52_106:                                                         ;$0C52
         ;map screen 2 foreground
         ld      HL,     $66AB
         ld      BC,     $0153
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
         ld      [TEMP1],        A
         call    decompressScreen
@@ -3259,7 +3267,7 @@ _0dd9:                                                                  ;$0DD9
 @_1:    call    _LABEL_E86_110
         ld      A,      [IY+Vars.joypad]
         cp      $FF
-        jp      nz,     _LABEL_C52_106._
+        jp      nz,     _LABEL_C52_106@_
 
         push    BC
         ld      BC,     _0e72
@@ -3278,7 +3286,7 @@ _0dd9:                                                                  ;$0DD9
 @_2:    call    _LABEL_E86_110
         ld      A,      [IY+Vars.joypad]
         cp      $FF
-        jp      nz,     _LABEL_C52_106._
+        jp      nz,     _LABEL_C52_106@_
 
         push    BC
         ld      BC,     _0e7a
@@ -3287,7 +3295,7 @@ _0dd9:                                                                  ;$0DD9
         inc     HL
         djnz    @_2
 
-        jp      _LABEL_C52_106._
+        jp      _LABEL_C52_106@_
         ;
 
 _0e24:                                                                  ;$0E24
@@ -3305,7 +3313,7 @@ _0e24:                                                                  ;$0E24
 @loop:  call    _LABEL_E86_110
         ld      A,      [IY+Vars.joypad]
         cp      $FF
-        jp      nz,     _LABEL_C52_106._
+        jp      nz,     _LABEL_C52_106@_
 
         push    BC
         ld      BC,     _0e82
@@ -3314,7 +3322,7 @@ _0e24:                                                                  ;$0E24
         dec     DE
         djnz    @loop
 
-        jp      _LABEL_C52_106._
+        jp      _LABEL_C52_106@_
         ;
 
 _0e4b:                                                                  ;$04EB
@@ -3332,7 +3340,7 @@ _0e4b:                                                                  ;$04EB
 @loop:  call    _LABEL_E86_110
         ld      A,      [IY+Vars.joypad]
         cp      $FF
-        jp      nz,     _LABEL_C52_106._
+        jp      nz,     _LABEL_C52_106@_
 
         push    BC
         ld      BC,     _0e82
@@ -3341,7 +3349,7 @@ _0e4b:                                                                  ;$04EB
         inc     DE
         djnz    @loop
 
-        jp      _LABEL_C52_106._
+        jp      _LABEL_C52_106@_
         ;
 
 _0e72:                                                                  ;$0E72
@@ -3967,12 +3975,12 @@ titleScreen:                                                            ;$1287
 
         ;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;load the title screen itself
         ld      HL,     $6000                                   ;ROM:$16000
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      BC,     $012E
         ld      A,      $00
         ld      [TEMP1],        A
@@ -4179,13 +4187,13 @@ _1401:                                                                  ;$1401
 
         ;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;act complete background
         ld      HL,     $67FE
         ld      BC,     $0032
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
         ld      [TEMP1],        A
         call    decompressScreen
@@ -4356,13 +4364,13 @@ _155e:                                                                  ;$155E
 
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A,      5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;UNKNOWN
         ld      HL,     $612E
         ld      BC,     $00BB
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         ld      A,      [CURRENT_LEVEL]
         cp      28                                              ;special stage?
         jr      c,      @_1
@@ -4370,7 +4378,7 @@ _155e:                                                                  ;$155E
         ;UNKNOWN
         ld      HL,     $61E9                                   ;$161E9?
         ld      BC,     $0095
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
 
 @_1:    xor     A
         ld      [TEMP1],        A
@@ -5323,7 +5331,7 @@ _1c49:                                                                  ;$1C49
         ld      [LIVES],        A
 
         ;set the number of thousands of pts per extra life
-        ld      A,              !SCORE_1UP
+        ld      A,              SCORE_1UP_PTS
         ld      [SCORE_1UP],    A
 
         ld      A,      $1C
@@ -5427,7 +5435,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         ; load page 1 (Z80:$4000-$7FFF)
         ; with bank 5 (ROM:$14000-$17FFF)
         ld      A,                      5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
 
         ld      A,      [CURRENT_LEVEL]
@@ -5493,7 +5501,7 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
         ld      A, 11
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;are rings enabled?
@@ -5519,13 +5527,13 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A, 1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A, 2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
 
-        call    _2e5a
+        call    refresh
         call    updateVDPscroll
         call    fillOverscrollCache
 
@@ -5549,7 +5557,7 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
         ld      A,                      11
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
 
         ;are rings enabled?
@@ -5642,13 +5650,13 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A,                      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
-        call    _2e5a
+        call    refresh
         call    updateVDPscroll
         call    fillOverscrollCache
 
@@ -5708,7 +5716,7 @@ _1e9e:                                                                  ;$1E9E
         ld      [IY+Vars.spriteUpdateCount],       A
 
         ld      A,      11
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;are rings enabled?
@@ -5723,7 +5731,7 @@ _1e9e:                                                                  ;$1E9E
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
                 ld      A,                      :audio.unpause
-                ld      [sms.mapper.slot1],     A
+                ld      [SMS_MAPPER_SLOT1],     A
                 ld      [SLOT1],                A
                 call    audio.unpause
         .ENDIF
@@ -5796,10 +5804,10 @@ _1f06:                                                                  ;$1F06
 
         di
         ld      A,      1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A,      2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
 
         ld      E,      $00
@@ -5962,7 +5970,7 @@ _1fa9:                                                                  ;$1FA9
         .ENDIF
 
         bit     7,      [IY+Vars.flags6]
-        call    nz,     disableWaterline
+        call    nz,     _2067
 
         call    hideSprites
         call    _155e                                           ;Act Complete screen?
@@ -6088,7 +6096,7 @@ _20b8:                                                                  ;$20B8
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
                 ld      A,                      :audio.fadeOut
-                ld      [sms.mapper.slot1],     A
+                ld      [SMS_MAPPER_SLOT1],     A
                 ld      [SLOT1],                A
         .ENDIF
 
@@ -6407,18 +6415,18 @@ loadLevel:                                                              ;$20CB
         ld      H,      A
 
         ld      A, 6
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A, 7
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
         jr      @_10
 
 @_9:    ld      A,                      5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],                A
         ld      A,                      6
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],                A
 
 @_10:   ei                                                      ;enable interrupts
@@ -6511,10 +6519,10 @@ loadLevel:                                                              ;$20CB
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di
         ld      A, 1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A, 2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
         ei
 
@@ -6573,10 +6581,10 @@ loadLevel:                                                              ;$20CB
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di
         ld      A, 1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A, 2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
         ei
 
@@ -6608,7 +6616,7 @@ loadLevel:                                                              ;$20CB
 
         ;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         call    loadMobList
 
@@ -6692,10 +6700,10 @@ loadMobList:                                                            ;$232B
 
         ;add Sonic to the list of active mobs first
         ld      IX, SONIC
-        ld      DE,     Mob@size                                ;=$001A (length of the mob?)
-        ld      C,      $00                                     ;?
-        ld      HL,     [D216]                                  ;= D32E + (level number * 2)
-        ld      A,      mobPointers.sonic@index                 ;=0
+        ld      DE,     _sizeof_Mob     ;=$001A (length of the mob?)
+        ld      C,      $00             ;?
+        ld      HL,     [D216]          ;=$D32E + (level number * 2)
+        ld      A,      MOB_ID_SONIC    ;=0
         call    loadMobFromList
 
         ;return to the mob layout list originally provided
@@ -6992,13 +7000,13 @@ _LABEL_258B_133:                                                        ;$258B
 
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;map 3 screen (end of game)
         ld      HL,     $6830
         ld      BC,     $0179
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         xor     A
         ld      [TEMP1],        A
         call    decompressScreen
@@ -7011,7 +7019,7 @@ _LABEL_258B_133:                                                        ;$258B
         call    waitForInterrupt
 
         ld      A, 1
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
         ld      A,      [D27F]
         cp      $06
@@ -7101,13 +7109,13 @@ _LABEL_258B_133:                                                        ;$258B
         ld      [IY+Vars.spriteUpdateCount],       $00
 
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;UNKNOWN
         ld      HL,     $69A9
         ld      BC,     $0145
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         xor     A
         ld      [TEMP1],        A
         call    decompressScreen
@@ -7142,13 +7150,13 @@ _LABEL_258B_133:                                                        ;$258B
         call    decompressArt
 
         ld      A, 5
-        ld      [sms.mapper.slot1],     A
+        ld      [SMS_MAPPER_SLOT1],     A
         ld      [SLOT1],        A
 
         ;credits screen
         ld      HL,     $6C61
         ld      BC,     $0189
-        ld      DE,     sms.vram.screen
+        ld      DE,     SMS_VRAM_SCREEN
         xor     A
         ld      [TEMP1],        A
         call    decompressScreen
@@ -7755,11 +7763,11 @@ mobPointers:                                                            ;$2AF6
         .WORD   boss_endSign_process
 @badnick_crabMeat:                      ; badnick - crabmeat
         .DEFINE MOB_ID_CRABMEAT         $08
-        .WORD   badnick_crabMeat_process
+        .WORD   badnick_crabmeat_process
 @platform_swinging:                     ;#09: wooden platform - swinging (Green Hill)
         .WORD   platform_swinging_process
 @explosion:                             ;#0A: explosion
-        .WORD   mobs_explosion_process
+        .WORD   explosion_process
 @platform:                              ;#0B: wooden platform (Green Hill)
         .WORD   platform_sinking_process
 @platform_falling:                      ;#0C: wooden platform - falling (Green Hill)
@@ -7767,7 +7775,7 @@ mobPointers:                                                            ;$2AF6
 @_6ac1:                                 ;#0D: UNKNOWN
         .WORD   unknown_6ac1_process
 @badnick_buzzBomber:                    ;#0E: badnick - buzz bomber
-        .WORD   badnick_buzzBomber_process
+        .WORD   badnick_buzzbomber_process
 @platform_leftRight:                    ;#0F: wooden platform - moving (Green Hill)
         .WORD   platform_moving_process
 @badnick_motobug:                       ;#10: badnick - motobug
@@ -7855,7 +7863,7 @@ mobPointers:                                                            ;$2AF6
 @_b398:                                 ;#39: moving spiked wall (Sky Base)
         .WORD   trap_spikewall_process
 @trap_turretFixed:                      ;#3A: fixed turret (Sky Base)
-        .WORD   trap_turret_fixed_process
+        .WORD   trap_turretFixed_process
 @platform_flyingUpDown:                 ;#3B: flying platform - up/down (Sky Base)
         .WORD   platform_flyingUpDown_process
 @badnick_jaws:                          ;#3C: badnick - jaws (Labyrinth)
@@ -7873,7 +7881,7 @@ mobPointers:                                                            ;$2AF6
 @_8eca:                                 ;#42: UNKNOWN
         .WORD   _8eca
 @null:                                  ;#43: NO-CODE
-        .WORD   mobs_null_process
+        .WORD   null_process
 @badnick_burrobot:                      ;#44: badnick - burrobot
         .WORD   badnick_burrobot_process
 @platform_float:                        ;#45: platform - float up (Labyrinth)
@@ -7899,7 +7907,7 @@ mobPointers:                                                            ;$2AF6
 @_0000_2                                ;#4F: RESET!
         .WORD   $0000
 @flower:                                ;#50: flower (Green Hill)
-        .WORD   mobs_flower_process
+        .WORD   flower_process
 @powerUp_checkpoint:                    ;#51: monitor - checkpoint
         .WORD   powerups_checkpoint_process
 @powerUp_continue:                      ;#52: monitor - continue
@@ -8048,11 +8056,12 @@ refresh:                                                                ;$2E5A
         add     A,        $80                             ;numeral sprites begin at index $80
         ld      [LAYOUT_BUFFER+3],      A                 ;put number of lives into the buffer
 
-        ld      C, !HUD_LIVES_X                            ;X-position of lives display
-        ld      B, !HUD_LVIES_Y                            ;Y-position of lives display
+        ld      C,      HUD_LIVES_X     ; x-position of lives display
+        ld      B,      HUD_LIVES_Y     ; y-position of lives display
         ld      HL,     [SPRITETABLE_ADDR]
-        ;TODO: loading DE not needed -- we still have this value from before
-        ld      DE,        LAYOUT_BUFFER
+        ; TODO: loading DE not needed
+        ; -- we still have this value from before
+        ld      DE,     LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
         ld      [SPRITETABLE_ADDR],     HL
@@ -8074,7 +8083,7 @@ refresh:                                                                ;$2E5A
         ld      A,      [HL]                                    ;[$D267]
         inc     HL      ;$D268
         or      [HL]                                            ;[$D268]
-        call    z,      updateCamera._311a                      ;=0?
+        call    z,      updateCamera@_311a                      ;=0?
        ;ld      [HL]                D                           ;[$D268] = $60  `write $6000?
        ;dec     HL      ;$D267          `is this an address?
        ;ld      [HL]    E                                       ;[$D267] = $00
@@ -8085,14 +8094,14 @@ refresh:                                                                ;$2E5A
         ld      A,      [HL]
         inc     HL
         or      [HL]
-        call    z,      updateCamera._311a
+        call    z,      updateCamera@_311a
 
         inc     HL
         ld      DE,     $0060
         ld      A,      [HL]
         inc     HL
         or      [HL]
-        call    z,      updateCamera._311a
+        call    z,      updateCamera@_311a
 
         inc     HL
         ld      DE,     $0070
@@ -8104,7 +8113,7 @@ refresh:                                                                ;$2E5A
 @_2:    ld      A,       [HL]
         inc     HL
         or      [HL]
-        call    z,      updateCamera._311a
+        call    z,      updateCamera@_311a
 
         ;is Sonic alive?
         bit     0,      [IY+Vars.scrollRingFlags]
@@ -8229,7 +8238,7 @@ displayTime:                                                            ;$2F1F
         ret
         ;
 
-mobs_updateCamera:                                                      ;$2F66
+updateCamera:                                                           ;$2F66
 ;===============================================================================
 ; called only by "refresh"
 ;
@@ -9110,13 +9119,13 @@ postProcessMob:                                                         ;$32E2
 @facingRight:
         ;- collision will be checked with the right side of the mob
         ld      C,      [IX+Mob.width]
-        ld      HL,     Unknown._411E
+        ld      HL,     Unknown@_411E
         jp      @_2
 
 @facingLeft:
         ; - collision will be checked with the left side of the mob
         ld      C,      $00             ; TODO: B & D are already zero, could use those
-        ld      HL,     Unknown._4020
+        ld      HL,     Unknown@_4020
 
         ; put aside the 'nose' x-position of the mob
 @_2:    ld      [TEMP3],BC
@@ -9262,7 +9271,7 @@ postProcessMob:                                                         ;$32E2
         ld      A,      [TEMP6]
         ld      E,      A
         ld      D,      $00
-        ld      HL,     UnknownCollision._3FBF
+        ld      HL,     UnknownCollision@_3FBF
         add     HL,     DE
         ld      C,      [HL]
 
@@ -9301,13 +9310,13 @@ postProcessMob:                                                         ;$32E2
         ld      C,      [IX+Mob.width]
         srl     C
         ld      E,      [IX+Mob.height]
-        ld      HL,     Unknown._448A
+        ld      HL,     Unknown@_448A
         jp      @_9
 
 @_8:    ld      C,      [IX+Mob.width]
         srl     C
         ld      E,      $00
-        ld      HL,     Unknown._41EC
+        ld      HL,     Unknown@_41EC
 
 @_9:    ld      [TEMP3],DE
         res     7,      [IX+Mob.flags]
@@ -9369,7 +9378,7 @@ postProcessMob:                                                         ;$32E2
         exx
         ld      HL,     [TEMP6]
         ld      H,      $00
-        ld      DE,     UnknownCollision._3FF0
+        ld      DE,     UnknownCollision@_3FF0
         add     HL,     DE
         add     A,      [HL]
         exx
@@ -9385,7 +9394,7 @@ postProcessMob:                                                         ;$32E2
         exx
         ld      HL,     [TEMP6]
         ld      H,      $00
-        ld      DE,     UnknownCollision._3FF0
+        ld      DE,     UnknownCollision@_3FF0
         add     HL,     DE
         add     A,      [HL]
         exx
@@ -9718,7 +9727,7 @@ hitPlayer:                                                              ;$35E5
         ret     nz
 
         bit     5,      [IY+Vars.flags6]
-        jr      nz,     dropRings._367e
+        jr      nz,     dropRings@_367e
 
         ; has the player any rings?
         ld      A,        [RINGS]
@@ -10311,7 +10320,7 @@ _38b0:                                                                  ;$38B0
         xor     L
         ld      H,      A
         add     HL,     BC
-        ld      BC,     sms.vram.screen
+        ld      BC,     SMS_VRAM_SCREEN
         add     HL,     BC
         ld      DE,     [D2AF]
         ld      B,      $02
@@ -10531,20 +10540,20 @@ increaseScore:                                                          ;$39D8
         ;-----------------------------------------------------------------------
 
         ; check if current score qualifies for an extra life
-        ld      HL,   SCORE_1UP
+        ld      HL,     SCORE_1UP
         ld      A,    C
         cp      [HL]
         ret     c
 
         ; increase the score requirement
         ; for an extra life to the next multiple
-        ld      A,    !SCORE_1UP
-        add     A,    [HL]
+        ld      A,      SCORE_1UP_PTS
+        add     A,      [HL]
         daa                             ; adjust to binary-coded-decimal
-        ld      [HL], A
+        ld      [HL],   A
 
         ; add an extra life
-        ld      HL,       LIVES
+        ld      HL,     LIVES
         inc     [HL]
 
         ; play extra life sound effect:
@@ -10880,7 +10889,7 @@ Unknown:                                                                ;$4020
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_417C, @_407E
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_418C, @_407E
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_41AC
-        .WORD   @_41CC, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
+        .WORD   @_41AC, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
 
 
 @_417C: .BYTE   $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04, $04 ;$417C
@@ -10961,8 +10970,8 @@ Unknown:                                                                ;$4020
 
         ;-----------------------------------------------------------------------
 
-@_448A: .WORD   @_407E, @_44E8, @_4508, @_4528, @_4548, @_4568, @_4588, @_45A8         ;$448A
-        .WORD   @_45C8, @_45E8, @_4608, @_4628, @_4648, @_4668, @_4688, @_46A8
+@_448A: .WORD   @_407E, @_45E8, @_4608, @_4628, @_4648, @_4668, @_4688, @_46A8         ;$448A
+        .WORD   @_46C8, @_46E8, @_4608, @_4628, @_4648, @_4668, @_4688, @_46A8
         .WORD   @_46C8, @_46E8, @_4708, @_4728, @_4748, @_4768, @_4788, @_47A8
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E
         .WORD   @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_407E, @_47C8
@@ -11223,7 +11232,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
         ld      A, 15
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
 
         ;$3F9ED =
@@ -11281,7 +11290,7 @@ sonic_process:                                                          ;$49C8
 
         ;switch back to the regular bank layout (where the mob code is)
         ld      A, 2
-        ld      [sms.mapper.slot2],     A
+        ld      [SMS_MAPPER_SLOT2],     A
         ld      [SLOT2],        A
 
         ;keep a copy of the callback address and jump to the specific solidity routine for the tile under Sonic
@@ -11291,16 +11300,16 @@ sonic_process:                                                          ;$49C8
 @callback:
         ;has Sonic fallen out of the level?
         ;-----------------------------------------------------------------------
-        ld      HL,      [SONIC.Y]
-        ld      DE,      $0024                           ;height of Sonic?
-        add     HL,      DE
+        ld      HL,     [SONIC.Y]
+        ld      DE,     $0024           ; height of Sonic?
+        add     HL,     DE
         ex      DE,     HL
-        ld      HL, [LEVEL_BOTTOM]
-        ld      BC,     $00C0                           ;height of the screen
-        add     HL, BC
-        xor     A                                         ;set A to zero, clearing the carry flag
-        sbc     HL, DE
-        call    c,      hitPlayer.kill                         ;if over, die!
+        ld      HL,     [LEVEL_BOTTOM]
+        ld      BC,     $00C0           ; height of the screen
+        add     HL,     BC
+        xor     A       ; set A to zero, clearing the carry flag
+        sbc     HL,     DE
+        call    c,      hitPlayer@kill  ; if over, die!
 
         ;idle timer:
         ;-----------------------------------------------------------------------
@@ -11320,11 +11329,11 @@ sonic_process:                                                          ;$49C8
         rlca
         jr      nc,     @_7
 
-        ld      HL,       [IDLE_TIME]
+        ld      HL,     [IDLE_TIMER]
         inc     HL
 
         ;update the idle timer
-@_7:    ld      [IDLE_TIME],    HL
+@_7:    ld      [IDLE_TIMER],    HL
 
         ;-----------------------------------------------------------------------
 
@@ -11332,9 +11341,9 @@ sonic_process:                                                          ;$49C8
         call    nz,     @_50e8
 
         ld      [IX+Mob.unknown14], $05
-        ld      HL,    [IDLE_TIME]
-        ld      DE,    !IDLE_TIME                      ;idle time until waiting animation
-        and     A                                          ;clear the carry flag for below
+        ld      HL,     [IDLE_TIMER]
+        ld      DE,     IDLE_TIME       ; idle time until waiting animation
+        and     A                       ; clear the carry flag for below
         sbc     HL,    DE
         call    nc,     @_5105
 
@@ -11646,7 +11655,7 @@ sonic_process:                                                          ;$49C8
         ld      BC,     audio.update
         bit     1,      [IX+Mob.flags]
         jr      z,      @_24
-        ld      BC,     _7000                                   ;immediate $7000 or label?
+        ld      BC,     $7000           ; immediate $7000 or label?
 @_24:   bit     5,      [IY+Vars.flags6]
         call    nz,     @_5206
         ld      A,      [D302]
@@ -11880,7 +11889,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_4e48: ld      D,      A                                               ;$4E48
-        ld      BC,     _7000                                   ;immediate $7000 or label?
+        ld      BC,     $7000           ; immediate $7000 or label?
         ret
 
         ;-----------------------------------------------------------------------
@@ -12692,7 +12701,7 @@ sonic_process:                                                          ;$49C8
 
         set     1,      [IY+Vars.unknown_0D]
         ld      [HL],   $8C
-@_53:   ld      [IX.unknown14], $17
+@_53:   ld      [IX+Mob.unknown14],     $17
         ld      A,      [HL]
         and     A
         jr      z,      @_54
@@ -12944,7 +12953,7 @@ sonic_process:                                                          ;$49C8
 
         ; is the player dead?
 @_54c6: bit     0,      [IY+Vars.scrollRingFlags]                       ;$54C6
-        jp      z,      hitPlayer._35fd                         ;if not, damage them
+        jp      z,      hitPlayer@_35fd ; if not, damage them
         ret
 
         ;===============================================================================================================
@@ -13544,7 +13553,7 @@ sonic_process:                                                          ;$49C8
         ret     c
 
         bit     0,      [IY+Vars.scrollRingFlags]
-        jp      z,      hitPlayer._35fd
+        jp      z,      hitPlayer@_35fd
         ret
 
         ;=======================================================================
@@ -13757,7 +13766,7 @@ sonic_process:                                                          ;$49C8
         .BYTE   $00, $1B, $FF, $00
         ;
 
-powerUps_ring_process:                                                  ;$5B09
+powerups_ring_process:                                                  ;$5B09
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -13859,7 +13868,7 @@ powerUps_ring_process:                                                  ;$5B09
         .BYTE   $FF
         ;
 
-powerUps_speed_process:                                                 ;$5BD9
+powerups_speed_process:                                                 ;$5BD9
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13886,10 +13895,10 @@ powerUps_speed_process:                                                 ;$5BD9
         jp      powerups_ring_process@_5b29
 
 @_1:    ld      HL,     $5200
-        jp      powerups_ringprocess@_5b34
+        jp      powerups_ring_process@_5b34
         ;
 
-powerUps_life_process:                                                  ;$5C05
+powerups_life_process:                                                  ;$5C05
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14014,7 +14023,7 @@ powerUps_life_process:                                                  ;$5C05
         jr      @_3
         ;
 
-powerUps_shield_process:                                                ;$5CD7
+powerups_shield_process:                                                ;$5CD7
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14037,7 +14046,7 @@ powerUps_shield_process:                                                ;$5CD7
         jp      powerups_ring_process@_5b34
         ;
 
-powerUps_invincibility_process:                                         ;$5CFF
+powerups_invincibility_process:                                         ;$5CFF
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14070,7 +14079,7 @@ powerUps_invincibility_process:                                         ;$5CFF
         jp      powerups_ring_process@_5b34
         ;
 
-powerUps_checkpoint_process:                                            ;$5D2F
+powerups_checkpoint_process:                                            ;$5D2F
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14118,10 +14127,10 @@ powerUps_checkpoint_process:                                            ;$5D2F
         jp      powerups_ring_process@_5b29
 
 @_1:    ld      HL,     $5480
-        jp      powerups_ringprocess@_5b34
+        jp      powerups_ring_process@_5b34
         ;
 
-powerUps_continue_process:                                              ;$5D80
+powerups_continue_process:                                              ;$5D80
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14141,7 +14150,7 @@ powerUps_continue_process:                                              ;$5D80
         jp      powerups_ring_process@_5b29
 
 @_1:    ld      HL,     $5500
-        jp      powerups_ringprocess@_5b34
+        jp      powerups_ring_process@_5b34
         ;
 
 _5da8:                                                                  ;$5DA8
@@ -14284,7 +14293,7 @@ _5deb:                                                                  ;$5DEB
         ret
         ;
 
-powerUps_emerald_process:                                               ;$5EA2
+powerups_emerald_process:                                               ;$5EA2
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15608,7 +15617,7 @@ unknown_6ac1_process:                                                   ;$6AC1
         ld      HL,     $0303
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.Yspeed+0]
         ld      H,      [IX+Mob.Yspeed+1]
@@ -16025,9 +16034,9 @@ badnick_motobug_process:                                                ;$6E0C
         ;return TEMP6   Address within the animation table, for the current frame
         ;               (this tells the mob what to do each frame)
                 ;-------------------------------------------------------------------------------------------------------
-                ld      HL,     behaviour
+                ld      HL,     badnick_motobug_behaviour
                 add     HL,     DE
-                ld      [TEMP6],        HL
+                ld      [TEMP6],HL
                 ld      A,      [HL]
                 and     A
                 jr      nz,     @@moveLeft
@@ -16115,12 +16124,12 @@ badnick_motobug_process:                                                ;$6E0C
         add     A,       A
         ld      E,       A
         ld      D,       $00
-        ld      HL,     actions
+        ld      HL,     badnick_motobobug_actions
         add     HL,     DE
         ld      C, [HL]
         inc     HL
         ld      B, [HL]
-        ld      DE,     spriteLayout
+        ld      DE,     badnick_motobug_spriteLayout
         call    animateMob
 
         ld      HL,     $0203
@@ -17087,7 +17096,7 @@ boss_freeRabbit_process:                                                ;$7699
         ld      [IX+Mob.Xspeed+1],  $FE
         ld      [IX+Mob.Xdirection],        $FF
         ld      [IX+Mob.unknown11], $00
-        jp      mob_boss_freeBird._7612
+        jp      boss_freeBird_process@_7612
 
         ;sprite layout
 @_7752: .BYTE   $70, $72, $FF, $FF, $FF, $FF
@@ -17146,7 +17155,7 @@ _77be:                                                                  ;$77BE
         rrca
         jr      c,      @_1
         and     %00000010
-        jp      z,      hitPlayer._35fd
+        jp      z,      hitPlayer@_35fd
 @_1:    ld      DE,     $0001
         ld      HL,     [SONIC.Yspeed]
         ld      A,      L
@@ -17655,7 +17664,7 @@ meta_blink_process:                                                     ;$7B95
         .BYTE   $FF, $FF
         ;
 
-_7c41:                                                                  ;$7C41
+animateMob:                                                                  ;$7C41
 ;===============================================================================
 ;params IX      Address of the current mob being processed
 ;       DE      e.g. $7DE1
@@ -17708,10 +17717,10 @@ findEmptyMob:                                                           ;$7C7B
 ;       HL      address of the empty mob slot selected
         ;-----------------------------------------------------------------------
         ld      HL,     MOBS
-        ld      DE,     Mob.size
+        ld      DE,     _sizeof_Mob
         ld      B,      31                                      ;number of mob slots, less Sonic?
 
-@loop:  ld      A,       [HL]
+@loop:  ld      A,      [HL]
         cp      $FF                                             ;"No Mob" number
         ret     z                                               ;if = $FF then exit, empty slot found
         add     HL,     DE
@@ -18012,14 +18021,14 @@ mob_platform_fallHoriz:                                                 ;$7E9B
         ld      [IX+Mob.spriteLayout+0],    <@layout
         ld      [IX+Mob.spriteLayout+1],    >@layout
         bit     0,      [IX+Mob.flags]
-        jp      nz,     mob_platform_fallVert._7e3c
+        jp      nz,     mob_platform_fallVert@_7e3c
         ld      A,      [IX+Mob.Y+0]
         ld      [IX+Mob.unknown12], A
         ld      A,      [IX+Mob.Y+1]
         ld      [IX+Mob.unknown13], A
         ld      [IX+Mob.unknown14], $C6
         set     0,      [IX+Mob.flags]
-        jp      mob_platform_fallVert._7e3c
+        jp      mob_platform_fallVert@_7e3c
 
         ;sprite layout
 @layout:.BYTE   $FE, $FF, $FF, $FF, $FF, $FF                                         ;$7ED9
@@ -18058,12 +18067,12 @@ mob_platform_roll:                                                      ;$7EE6
 
 @_2:    ld      A,       [SONIC.Ydirection]
         and     A
-        jp      m,      mob_platform_roll_continue._8003
+        jp      m,      mob_platform_roll_continue@_8003
 
         ld      HL,     $0806
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        jp      c,      mob_platform_roll_continue._8003
+        jp      c,      mob_platform_roll_continue@_8003
         ld      BC,     $0010
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
@@ -18134,14 +18143,14 @@ mob_platform_roll:                                                      ;$7EE6
         ld      [IX+Mob.unknown13],     H
         ld      E,      A
         ld      D,      $00
-        ld      HL,     mob_platform_roll_continue._8019
+        ld      HL,     mob_platform_roll_continue@_8019
         add     HL,     DE
         ld      E,      [HL]
-        ld      HL,     mob_platform_roll_continue._8022
+        ld      HL,     mob_platform_roll_continue@_8022
         add     HL,     DE
         ld      [IX+Mob.spriteLayout+0],    L
         ld      [IX+Mob.spriteLayout+1],    H
-        jr      mob_platform_roll_continue._800b
+        jr      mob_platform_roll_continue@_800b
         ;
 
 ;ROM header goes here
@@ -18383,7 +18392,7 @@ unknown_8218_process:                                                   ;$8218
         ld      HL,     $0202
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.Xspeed+0]
         ld      H,      [IX+Mob.Xspeed+1]
@@ -18448,7 +18457,7 @@ unknown_8218_process:                                                   ;$8218
         ld      [IX+Mob.Xdirection],        A
 
         ld      BC,     @_82c6
-        ld      DE,     _a3bb
+        ld      DE,     unknown_a33c_process@_a3bb
         call    animateMob
 
         ld      A,      [IX+Mob.unknown12]
@@ -18480,7 +18489,7 @@ badnick_yadrin_process:                                                 ;$82E6
         ld      HL,     $0408
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    32
@@ -19209,7 +19218,7 @@ badnick_jaws_process:                                                   ;$8837
         .BYTE   $FF
         ;
 
-trap_spikeball_process:                                                 ;$88FB
+trap_spikeBall_process:                                                 ;$88FB
 ;===============================================================================
 ;params IX      Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -19263,7 +19272,7 @@ trap_spikeball_process:                                                 ;$88FB
         ld      HL,     $0204
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      [IX+Mob.spriteLayout+0],    <@_8987
         ld      [IX+Mob.spriteLayout+1],    >@_8987
@@ -19562,7 +19571,7 @@ trap_spear_process:                                                             
         ld      [IX+Mob.width],     $01
         ld      [IX+Mob.height],    A
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      A,      [FRAMECOUNT]
         cp      $80
@@ -19674,7 +19683,7 @@ trap_fireball_process:                                                          
         ld      HL,     $0402
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
@@ -19852,7 +19861,7 @@ meta_water_process:                                                             
         .BYTE   $02, $04, $08, $10, $18, $28, $38, $38, $38, $38, $28, $18, $10, $08, $04, $02
         ;
 
-powerUps_bubbles_process:                                                               ;$8E56
+powerups_bubbles_process:                                                               ;$8E56
 ;===============================================================================
 ;params IX         Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -20624,7 +20633,7 @@ unknown_94a5_process:                                                           
         ld      HL,     $0404
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -21485,7 +21494,7 @@ unknown_9be8_process:                                                           
         ld      HL,     $0400
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
 @_2:    inc     [IX+Mob.unknown13]
         ld      A,      [IX+Mob.unknown13]
@@ -21627,7 +21636,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
         ld      HL,     $0202
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
 @_2:    inc     [IX+Mob.unknown11]
         xor     A
@@ -21941,7 +21950,7 @@ mob_door_right:                                                         ;$9F62
         jr      @_4
 @_3:    call    _9ec4
 @_4:    ld      DE,     @_9fee
-        jp      mob_door_left._9e7e
+        jp      mob_door_left@_9e7e
 
         ;-----------------------------------------------------------------------
 
@@ -22031,12 +22040,12 @@ mob_door:                                                               ;$A025
 
 @_3:    call    _9ec4
 @_4:    ld      DE,     @_a0b1
-        jp      mob_door_left._9e7e
+        jp      mob_door_left@_9e7e
 
         ;-----------------------------------------------------------------------
 
         ;sprite layout
-@_a0b1:                         ;$A0B1
+@_a0b1:                                                                 ;$A0B1
         .BYTE   $38, $FF, $FF, $FF, $FF, $FF
         .BYTE   $3E, $FF, $FF, $FF, $FF, $FF
         .BYTE   $38, $FF, $FF, $FF, $FF, $FF
@@ -22088,11 +22097,11 @@ trap_electric_process:                                                          
 @_2:    ld      HL,     $0000
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      DE,     @_a173
         ld      BC,     @_a167
-        call    _7c41
+        call    animateMob
         jp      @_5
 
 @_3:    cp      $46
@@ -22105,7 +22114,7 @@ trap_electric_process:                                                          
 
 @_4:    ld      DE,     @_a173
         ld      BC,     @_a16e
-        call    _7c41
+        call    animateMob
 @_5:    inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $A0
@@ -22173,7 +22182,7 @@ badnick_ballhog_process:                                                        
         ld      [IX+Mob.unknown16], $00
 @_1:    ld      BC,     @_a2d7
 @_2:    ld      DE,     @_a2da
-        call    _7c41
+        call    animateMob
         ld      A,      [IX+Mob.unknown11]
         cp      $ED
         jp      nz,     @_6
@@ -22221,7 +22230,7 @@ badnick_ballhog_process:                                                        
         ld      [IX+Mob.unknown16], $00
 @_4:    ld      BC,     @_a2d7
 @_5:    ld      DE,     @_a30b
-        call    _7c41
+        call    animateMob
         ld      A,      [IX+Mob.unknown11]
         cp      $ED
         jr      nz,     @_6
@@ -22304,7 +22313,7 @@ unknown_a33c_process:                                                           
         ld      HL,     $0101
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         bit     7,      [IX+Mob.flags]
         jr      z,      @_1
@@ -22327,7 +22336,7 @@ unknown_a33c_process:                                                           
 
         ld      BC,     @_a3b1
         ld      DE,     @_a3bb
-        call    _7c41
+        call    animateMob
         jp      @_4
 
 @_2:    jr      nz,     @_3
@@ -22341,7 +22350,7 @@ unknown_a33c_process:                                                           
 
 @_3:    ld      BC,     @_a3b4
         ld      DE,     @_a3bb
-        call    _7c41
+        call    animateMob
 @_4:    inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $A5
@@ -22533,7 +22542,7 @@ door_switching_process:                                                         
         dec     A
         ld      [IX+Mob.unknown11], A
 @_6:    ld      DE,     @_a51a
-        jp      mob_door_left._9e7e
+        jp      mob_door_left@_9e7e
 
         ;sprite layout
 @_a51a:                                                                 ;$A51A
@@ -22646,7 +22655,7 @@ badnick_caterkiller_process:                                                    
         ld      HL,     $0806
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
         jr      @_9
 
 @_7:    ld      HL,     @_a795
@@ -22672,7 +22681,7 @@ badnick_caterkiller_process:                                                    
         call    detectCollisionWithSonic
         jr      c,      @_8
 
-        call    hitPlayer._35fd
+        call    hitPlayer@_35fd
         jr      @_9
 
 @_8:    ld      [IX+Mob.width], $16
@@ -22768,7 +22777,7 @@ badnick_caterkiller_process:                                                    
         .BYTE   $06, $06, $05, $05, $04, $03, $02, $00
         ;
 
-boss_scrapbrain_process:                                                                ;$A7ED
+boss_scrapBrain_process:                                                                ;$A7ED
 ;===============================================================================
 ;params IX         Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -22815,7 +22824,7 @@ boss_scrapbrain_process:                                                        
         ld      [LEVEL_LEFT],   HL
         ld      DE,     _baf9
         ld      BC,     @_a9b7
-        call    _7c41
+        call    animateMob
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
@@ -23144,7 +23153,7 @@ trap_propeller_process:                                                         
         ld      HL,     $0202
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      [IX+Mob.spriteLayout+0],    $00
         ld      [IX+Mob.spriteLayout+1],    $00
@@ -23203,7 +23212,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      [IX+Mob.Xdirection],        $FF
         ld      DE,     _ad0b
         ld      BC,     _acf1
-        call    _7c41
+        call    animateMob
         jp      @_7
 
 @_2:    ld      A,       [IX+Mob.unknown11]
@@ -23218,7 +23227,7 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ld      DE,     _ad0b
         ld      BC,     _ad01
-        call    _7c41
+        call    animateMob
         jp      @_7
 
 @_3:    ld      [IX+Mob.spriteLayout+0],        <_ad53
@@ -23292,7 +23301,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      [IX+Mob.Xdirection],        A
         ld      DE,     _ad0b
         ld      BC,     _acf6
-        call    _7c41
+        call    animateMob
         jr      @_7
 
 @_5:    ld      A,       [IX+Mob.unknown11]
@@ -23304,7 +23313,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      [IX+Mob.Xdirection],        $00
         ld      DE,     _ad0b
         ld      BC,     _acf9
-        call    _7c41
+        call    animateMob
         jr      @_7
 
 @_6:    ld      [IX+Mob.Xspeed+0],      $00
@@ -23312,7 +23321,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      [IX+Mob.Xdirection],    $00
         ld      DE,     _ad0b
         ld      BC,     _acfe
-        call    _7c41
+        call    animateMob
 
 @_7:    ld      [IX+Mob.Yspeed+0],      $80
         ld      [IX+Mob.Yspeed+1],      $00
@@ -23320,7 +23329,7 @@ mob_badnick_bomb:                                                       ;$AB21
 @_8:    ld      HL,             $0202
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      A,      [FRAMECOUNT]
         and     $3F
@@ -23547,7 +23556,7 @@ trap_cannonball_process:                                                        
 @_1:    ld      HL,     $0202
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         xor     A
         ld      [IX+Mob.Xspeed+0],  $80
@@ -23668,7 +23677,7 @@ badnick_unidos_process:                                                         
         add     A,      $04
         ld      [IX+Mob.height],    A
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
 @_4:    pop     HL
         pop     BC
@@ -23829,7 +23838,7 @@ unknown_b0f4_process:                                                           
         ld      HL,     $0602
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
@@ -24105,7 +24114,7 @@ platform_flyingRight_process:                                                   
         ret
 
         ;sprite layout
-@_b37b:                                                          ;$B37B
+@_b37b:                                                                 ;$B37B
         .BYTE   $FE, $FF, $FF, $FF, $FF, $FF
         .BYTE   $36, $36, $36, $36, $FF, $FF
         .BYTE   $FF
@@ -24135,7 +24144,7 @@ trap_spikewall_process:                                                         
         ld      [TEMP6],        HL
 
         call    detectCollisionWithSonic
-        call    nc,     hitPlayer._35fd
+        call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.Xsubpixel]
         ld      H,      [IX+Mob.X+0]
@@ -24226,8 +24235,8 @@ trap_turretFixed_process:                                                       
         ld      [IX+Mob.unknown11], A
         set     0,      [IX+Mob.flags]
 
-@_1:    inc     [IX+Mobs.unknown12]
-        ld      A,      [IX+Mobs.unknown12]
+@_1:    inc     [IX+Mob.unknown12]
+        ld      A,      [IX+Mob.unknown12]
         bit     6,      A
         ret     nz
 
@@ -24298,7 +24307,7 @@ platform_flyingUpDown_process:                                                  
 ;params IX         Address of the current mob being processed
         ;-----------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
-        ld      HL,     _b37b
+        ld      HL,     platform_flyingRight_process@_b37b
         ld      A,      [LEVEL_SOLIDITY]
         cp      $01
         jr      nz,     @_1
@@ -24453,7 +24462,7 @@ _b5c2:                                                                  ;$B5C2
         ret
         ;
 
-boss_skybase_process:                                                                   ;$B634
+boss_skyBase_process:                                                                   ;$B634
 ;===============================================================================
 ;params IX         Address of the current mob being processed
         ;-----------------------------------------------------------------------
@@ -24843,7 +24852,7 @@ boss_skybase_process:                                                           
         ld      [IX+Mob.Ydirection],    C
         ld      BC,     @_ba28
         ld      DE,     _baf9
-        call    _7c41
+        call    animateMob
         ret
 
 @_20:   ld      [IY+Vars.joypad],       $FF
@@ -25096,7 +25105,7 @@ boss_electricBeam_process:                                                      
         jr      c,      @_2
 
         bit     0,      [IY+Vars.scrollRingFlags]
-        call    z,      hitPlayer._35fd
+        call    z,      hitPlayer@_35fd
 
 @_2:    ld      A,       [D2EC]
         cp      $06
@@ -25219,7 +25228,7 @@ unknown_bcdf_process:                                                           
         jr      c,      @_1
 
         bit     0,      [IY+Vars.scrollRingFlags]
-        call    z,      hitPlayer._35fd
+        call    z,      hitPlayer@_35fd
 
         jp      @_8
 
@@ -25316,7 +25325,7 @@ unknown_bcdf_process:                                                           
 @_6:    inc     [IX+Mob.unknown11]
 @_7:    ld      BC,     @_bdc7
         ld      DE,     @_bdce
-        call    _7c41
+        call    animateMob
         bit     4,      [IY+Vars.unknown0]
         ret     nz
 
@@ -26252,7 +26261,7 @@ doUpdateTrack:
         ld      [IX+Track.tickStep+0],  L
         ld      [IX+Track.tickStep+1],  H
         jr      z,      @trackReadLoop
-        jp      nc,     doNote.x
+        jp      nc,     doNote@x
 
 @trackReadLoop:
         ld      A,      [DE]
@@ -26263,7 +26272,7 @@ doUpdateTrack:
         cp      $7F
         jr      nz,     doNoiseNote
         ld      [IX+Track.effectiveVolume],     $00
-        jp      doNote.doNoteLength
+        jp      doNote@doNoteLength
         ;
 
 doNoiseNote:
@@ -26293,7 +26302,7 @@ doNoiseNote:
         ldi
         ldi
         pop     DE
-        jp      doNote.resetModValues
+        jp      doNote@resetModValues
         ;
 
 doNote:
@@ -26317,7 +26326,7 @@ doNote:
         and     $0F
         ld      [IX+Track.octave],      A
         bit     0,      [IX+Track.flags]
-        jr      nz,     doNote.doNoteLength
+        jr      nz,     doNote@doNoteLength
 
 @resetModValues:
         ld      A,      [IX+Track.initModulationDelay]
@@ -26547,9 +26556,9 @@ cmdFF_stopMusic:
         ld      H,      [IX+Track.masterLoopAddress+1]
         ld      A,      L
         or      H
-        jr      z,      cmdFE_stopSFX.stopTrack
+        jr      z,      cmdFE_stopSFX@stopTrack
         ex      DE,     HL
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmdFE_stopSFX:
@@ -26661,7 +26670,7 @@ cmd80_tempo:
         ld      [tickDivider1+1],       A
         ld      [tickDivider2+1],       A
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd81_volumeSet:
@@ -26674,12 +26683,12 @@ cmd81_volumeSet:
         jr      z,      @_1
         ld      A,      [playbackMode]
         and     %00001000
-        jp      nz,     doUpdateTrack.trackReadLoop
+        jp      nz,     doUpdateTrack@trackReadLoop
 
 @_1:    ld      A,       [IX+Track.channelVolume]
         ld      [IX+Track.fadeTicks+1], A
         ld      [IX+Track.fadeTicks+0], $00
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd82_setADSR:
@@ -26696,7 +26705,7 @@ cmd82_setADSR:
         ldi
         ldi
         ex      DE,     HL
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd83_modulation:
@@ -26712,7 +26721,7 @@ cmd83_modulation:
         ldi
         ldi
         ex      DE,     HL
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd84_detune:
@@ -26723,14 +26732,14 @@ cmd84_detune:
         ld      A,      [DE]
         ld      [IX+Track.detune+1],    A
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd85_dummy:
 ;===============================================================================
         ld      A,      [DE]
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd86_loopStart:
@@ -26742,7 +26751,7 @@ cmd86_loopStart:
         add     HL,     BC
         ld      [IX+Track.loopAddress+0],       L
         ld      [IX+Track.loopAddress+1],       H
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd87_loopEnd:
@@ -26773,21 +26782,21 @@ cmd87_loopEnd:
         ld      B,      [IX+Track.baseAddress+1]
         add     HL,     BC
         ex      DE,     HL
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
 
 @_2:    ld      [IX+Track.loopAddress+0],       L
         ld      [IX+Track.loopAddress+1],       H
         inc     DE
         inc     DE
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd88_masterLoop:
 ;===============================================================================
         ld      [IX+Track.masterLoopAddress+0], E
         ld      [IX+Track.masterLoopAddress+1], D
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd89_noiseMode:
@@ -26795,7 +26804,7 @@ cmd89_noiseMode:
         ld      A,      [DE]
         ld      [IX+Track.noiseMode],   A
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd8A_noteLength:
@@ -26803,7 +26812,7 @@ cmd8A_noteLength:
         ld      A,      [DE]
         ld      [IX+Track.defaultNoteLength],   A
         inc     DE
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd8B_volumeUp:
@@ -26816,10 +26825,10 @@ cmd8B_volumeUp:
 @_1:    ld      [IX+Track.channelVolume],       A
         ld      A,      [playbackMode]
         and     %00001000
-        jp      nz,     doUpdateTrack.trackReadLoop
+        jp      nz,     doUpdateTrack@trackReadLoop
         ld      A,      [IX+Track.channelVolume]
         ld      [IX+Track.fadeTicks+1], A
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd8C_volumeDown:
@@ -26832,16 +26841,16 @@ cmd8C_volumeDown:
 @_1:    ld      [IX+Track.channelVolume],       A
         ld      A,      [playbackMode]
         and     %00001000
-        jp      nz,     doUpdateTrack.trackReadLoop
+        jp      nz,     doUpdateTrack@trackReadLoop
         ld      A,      [IX+Track.channelVolume]
         ld      [IX+Track.fadeTicks+1], A
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 cmd8D_hold:
 ;===============================================================================
         set     0,      [IX+Track.flags]
-        jp      doUpdateTrack.trackReadLoop
+        jp      doUpdateTrack@trackReadLoop
         ;
 
 calcTickTime:
@@ -26967,7 +26976,7 @@ music_pointers:                                                         ;$C716
 
 @invincibility:                         ; index $08
         .DEFINE MUSIC_INVINCIBILITY     $08
-        .WORD   music_invinciblity_data ;=$6704 [$E704]
+        .WORD   music_invincibility_data;=$6704 [$E704]
 
 @actComplete:                           ; index $09
         .DEFINE MUSIC_ACTCOMPLETE       $09
@@ -27340,19 +27349,19 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $86
 @a:     .BYTE   $1B, $18, $1B, $00, $19, $00
         .BYTE   $87, $03
-        .WORD   @a - music_marble_data  ;=$2E, $00
+        .WORD   @a - @header            ;=$2E, $00
         .BYTE   $1B, $00, $19, $00, $14, $00, $10, $00, $17, $18, $19, $00, $15, $30
         .BYTE   $8D, $15, $30, $8D, $15, $30, $7F, $00
         .BYTE   $86
 @b:     .BYTE   $19, $18, $19, $00, $17, $00
         .BYTE   $87, $03
-        .WORD   @b - music_marble_data  ;=$4F, $00
+        .WORD   @b - @header            ;=$4F, $00
         .BYTE   $19, $18, $1B, $18, $15, $24, $14, $30, $8D, $14, $30, $7F, $00, $09, $00
         .BYTE   $0B, $00, $10, $00, $14, $00
         .BYTE   $86
 @c:     .BYTE   $1B, $18, $1B, $00, $19, $00
         .BYTE   $87, $03
-        .WORD   @c - music_marble_data  ;=$6F, $00
+        .WORD   @c - @header            ;=$6F, $00
         .BYTE   $1B, $00, $19, $00, $14, $00, $10, $00, $17, $18, $19, $00, $15, $30
         .BYTE   $8D, $15, $30, $8D, $15, $30, $7F, $00, $19, $30, $8D, $19, $18, $1B, $18
         .BYTE   $18, $30, $8D, $18, $12, $7F, $06, $1B, $00, $7F, $00, $1B, $24, $19, $00
@@ -27362,7 +27371,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $2B, $00, $25, $00, $29, $06, $25, $06, $29, $00, $25, $00, $27, $00, $29, $00
         .BYTE   $2B, $00, $27, $00
         .BYTE   $87, $02
-        .WORD   @d - music_marble_data  ;=$AF, $00
+        .WORD   @d - @header            ;=$AF, $00
         .BYTE   $FF
 
 @channel2:
@@ -27375,36 +27384,36 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $86
 @e:     .BYTE   $0C, $00, $0C, $00, $04, $00, $04, $00, $02, $00, $02, $00, $04, $00, $04, $00
         .BYTE   $87, $02
-        .WORD   @e - music_marble_data  ;=$E9, $00
+        .WORD   @e - @header            ;=$E9, $00
         .BYTE   $86
 @f:     .BYTE   $02, $00, $02, $00, $09, $00, $09, $00, $05, $00, $05, $00, $09, $00, $09, $00
         .BYTE   $87, $02
-        .WORD   @f - music_marble_data  ;=$FE, $00
+        .WORD   @f - @header            ;=$FE, $00
         .BYTE   $86
 @g:     .BYTE   $0E, $00, $0E, $00, $07, $00, $07, $00, $02, $00, $02, $00, $07, $00, $07, $00
         .BYTE   $87, $02
-        .WORD   @g - music_marble_data  ;=$13, $01
+        .WORD   @g - @header            ;=$13, $01
         .BYTE   $00, $00, $00, $00, $07, $00, $07, $00, $04, $00, $04, $00, $07, $00, $07, $00
         .BYTE   $0E, $00, $0E, $00, $05, $00, $05, $00, $04, $00, $04, $00, $0E, $00, $0E, $00
         .BYTE   $86
 @h:     .BYTE   $0C, $00, $0C, $00, $04, $00, $04, $00, $02, $00, $02, $00, $04, $00, $04, $00
         .BYTE   $87, $02
-        .WORD   @h - music_marble_data  ;=$48, $01
+        .WORD   @h - @header            ;=$48, $01
         .BYTE   $86
 @i:     .BYTE   $02, $00, $02, $00, $09, $00, $09, $00, $05, $00, $05, $00, $09, $00, $09, $00
         .BYTE   $87, $02
-        .WORD   @i - music_marble_data  ;=$5D, $01
+        .WORD   @i - @header            ;=$5D, $01
         .BYTE   $0E, $00, $0E, $00, $05, $00, $05, $00, $02, $00, $02, $00, $05, $00, $05, $00
         .BYTE   $04, $00, $04, $00, $0B, $00, $0B, $00, $08, $00, $08, $00, $0B, $00, $0B, $00
         .BYTE   $86
 @j:     .BYTE   $0C, $00, $0C, $00, $04, $00, $04, $00, $02, $00, $02, $00, $04, $00, $04, $00
         .BYTE   $87, $02
-        .WORD   @j - music_marble_data  ;=$92, $01
+        .WORD   @j - @header            ;=$92, $01
         .BYTE   $86
 @k:     .BYTE   $09, $00, $09, $00, $09, $00, $09, $00, $07, $00, $07, $00, $07, $00, $07, $00
         .BYTE   $05, $00, $05, $00, $05, $00, $05, $00, $07, $00, $07, $00, $07, $00, $07, $00
         .BYTE   $87, $02
-        .WORD   @k - music_marble_data  ;=$A7, $01
+        .WORD   @k - @header            ;=$A7, $01
         .BYTE   $FF
 
 @channel3:
@@ -27421,7 +27430,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $86
 @l:     .BYTE   $1B, $18, $1B, $00, $19, $00
         .BYTE   $87, $03
-        .WORD   @l - music_marble_data  ;=$EE, $01
+        .WORD   @l - @header            ;=$EE, $01
         .BYTE   $1B, $00, $19, $00, $14, $00, $10, $00, $17, $18, $19, $00, $15, $00
         .BYTE   $8D, $15, $24
         .BYTE   $8A, $03
@@ -27465,7 +27474,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $86
 @m:     .BYTE   $19, $18, $19, $00, $17, $00
         .BYTE   $87, $03
-        .WORD   @m - music_marble_data  ;=$B8, $02
+        .WORD   @m - @header            ;=$B8, $02
         .BYTE   $19, $18, $1B, $18, $15, $24, $14, $00, $8D, $14, $18
         .BYTE   $84, $00, $00
         .BYTE   $8B, $35, $0C
@@ -27482,7 +27491,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $86
 @n:     .BYTE   $1B, $18, $1B, $00, $19, $00
         .BYTE   $87, $03
-        .WORD   @n - music_marble_data  ;=$00, $03
+        .WORD   @n - @header            ;=$00, $03
         .BYTE   $1B, $00, $19, $00, $14, $00, $10, $00, $17, $18, $19, $00, $15, $00
         .BYTE   $8D, $15, $24
         .BYTE   $8A, $03
@@ -27543,7 +27552,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $24, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @o - music_marble_data  ;=$1D, $04
+        .WORD   @o - @header            ;=$1D, $04
         .BYTE   $81, $0B
         .BYTE   $22, $00
         .BYTE   $8C, $8C, $8C, $19, $00
@@ -27555,7 +27564,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $1B, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @p - music_marble_data  ;=$40, $04
+        .WORD   @p - @header            ;=$40, $04
         .BYTE   $81, $0B, $20, $00
         .BYTE   $8C, $8C, $8C, $17, $00
         .BYTE   $8B, $8B, $8B, $19, $00
@@ -27566,7 +27575,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $19, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @q - music_marble_data  ;=$63, $04
+        .WORD   @q - @header            ;=$63, $04
         .BYTE   $81, $0B, $22, $00
         .BYTE   $8C, $8C, $8C, $19, $00
         .BYTE   $8B, $8B, $8B, $1B, $00
@@ -27577,7 +27586,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $1B, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @r - music_marble_data  ;=$86, $04
+        .WORD   @r - @header            ;=$86, $04
         .BYTE   $81, $0B, $24, $00
         .BYTE   $8C, $8C, $8C, $17, $00
         .BYTE   $8B, $8B, $8B, $20, $00
@@ -27588,7 +27597,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $24, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @s - music_marble_data  ;=$A9, $04
+        .WORD   @s - @header            ;=$A9, $04
         .BYTE   $81, $0B, $22, $00
         .BYTE   $8C, $8C, $8C, $19, $00
         .BYTE   $8B, $8B, $8B, $1B, $00
@@ -27599,7 +27608,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $8C, $8C, $8C, $1B, $00
         .BYTE   $8C
         .BYTE   $87, $02
-        .WORD   @t - music_marble_data  ;=$CC, $04
+        .WORD   @t - @header            ;=$CC, $04
         .BYTE   $81, $0B, $20, $00
         .BYTE   $8C, $8C, $8C, $17, $00
         .BYTE   $8B, $8B, $8B, $19, $00
@@ -27622,13 +27631,13 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $20
-        .WORD   @u - music_marble_data  ;=$13, $05
+        .WORD   @u - @header            ;=$13, $05
         .BYTE   $86
 @v:     .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00, $70, $00
         .BYTE   $81, $0C, $71, $00
         .BYTE   $87, $08
-        .WORD   @v - music_marble_data  ;=$26, $05
+        .WORD   @v - @header            ;=$26, $05
         .BYTE   $FF
 
         .BYTE   $00, $00, $00, $00, $00, $00, $00
@@ -27675,15 +27684,15 @@ music_jungle_data:                                                      ;$D24A
 @a:     .BYTE   $26, $03
         .BYTE   $8C, $29, $03
         .BYTE   $87, $03
-        .WORD   @a - music_jungle_data  ;=$36, $01
+        .WORD   @a - @header            ;=$36, $01
         .BYTE   $86
 @b:     .BYTE   $86
 @c:     .BYTE   $26, $03, $29, $03
         .BYTE   $87, $02
-        .WORD   @c - music_jungle_data  ;=$41, $01
+        .WORD   @c - @header            ;=$41, $01
         .BYTE   $8B
         .BYTE   $87, $05
-        .WORD   @b - music_jungle_data  ;=$40, $01
+        .WORD   @b - @header            ;=$40, $01
         .BYTE   $8C, $8C, $7F, $12, $2B, $03, $27, $03, $7F, $0C, $2B, $03, $27, $03, $7F, $0C
         .BYTE   $29, $03, $22, $03, $7F, $00, $27, $03, $22, $03, $7F, $0C
         .BYTE   $8B, $8B, $27, $00, $7F, $0C, $27, $00, $29, $00, $7F, $0C, $2B, $00, $7F, $0C
@@ -27691,7 +27700,7 @@ music_jungle_data:                                                      ;$D24A
 @d:     .BYTE   $29, $00, $7F, $00, $7F, $00
         .BYTE   $8C, $8C, $8C
         .BYTE   $87, $04
-        .WORD   @d - music_jungle_data  ;=$7B, $01
+        .WORD   @d - @header            ;=$7B, $01
         .BYTE   $81, $0D, $29, $00, $7F, $00, $2B, $00, $7F, $0C, $29, $00, $8D, $29, $24
         .BYTE   $FF
 
@@ -27772,7 +27781,7 @@ music_jungle_data:                                                      ;$D24A
         .BYTE   $81, $0C, $71, $00, $7F, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $1F
-        .WORD   @e - music_jungle_data  ;=$AE, $04
+        .WORD   @e - @header            ;=$AE, $04
         .BYTE   $70, $00, $7F, $00, $70, $00
         .BYTE   $81, $0C, $71, $00, $71, $00, $71, $00
         .BYTE   $86
@@ -27780,16 +27789,16 @@ music_jungle_data:                                                      ;$D24A
         .BYTE   $81, $0C, $71, $00, $7F, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $0C
-        .WORD   @f - music_jungle_data  ;=$D3, $04
+        .WORD   @f - @header            ;=$D3, $04
         .BYTE   $86
 @g:     .BYTE   $70, $00, $7F, $0C
         .BYTE   $87, $04
-        .WORD   @g - music_jungle_data  ;=$EA, $04
+        .WORD   @g - @header            ;=$EA, $04
         .BYTE   $81, $0C
         .BYTE   $86
 @h:     .BYTE   $71, $00
         .BYTE   $87, $0C
-        .WORD   @h - music_jungle_data  ;=$F5, $04
+        .WORD   @h - @header            ;=$F5, $04
         .BYTE   $FF
 
         .BYTE   $00, $00, $00, $00
@@ -27797,11 +27806,12 @@ music_jungle_data:                                                      ;$D24A
 
 music_bridge_data:                                                      ;$D74A
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_bridge_data   ;=$000A
-        .WORD   @channel2 - music_bridge_data   ;=$00FB
-        .WORD   @channel3 - music_bridge_data   ;=$01BC
-        .WORD   @channel4 - music_bridge_data   ;=$03E0
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$00FB
+        .WORD   @channel3 - @header     ;=$01BC
+        .WORD   @channel4 - @header     ;=$03E0
         .WORD   $0000
 
 @channel1:
@@ -27856,17 +27866,17 @@ music_bridge_data:                                                      ;$D74A
 @a:     .BYTE   $86
 @b:     .BYTE   $01, $00, $01, $00, $11, $00, $01, $00
         .BYTE   $87, $02
-        .WORD   @b - music_bridge_data  ;=$89, $01
+        .WORD   @b - @header            ;=$89, $01
         .BYTE   $86
 @c:     .BYTE   $03, $00, $03, $00, $13, $00, $03, $00
         .BYTE   $87, $02
-        .WORD   @c - music_bridge_data  ;=$96, $01
+        .WORD   @c - @header            ;=$96, $01
         .BYTE   $87, $03
-        .WORD   @a - music_bridge_data  ;=$88, $01
+        .WORD   @a - @header            ;=$88, $01
         .BYTE   $86
 @d:     .BYTE   $05, $00, $05, $00, $15, $00, $05, $00
         .BYTE   $87, $03
-        .WORD   @d - music_bridge_data  ;$A7, $01
+        .WORD   @d - @header            ;$A7, $01
         .BYTE   $05, $00, $00, $00, $02, $00, $04, $00
         .BYTE   $FF
 
@@ -27907,7 +27917,7 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $81, $04, $11, $00
         .BYTE   $81, $08
         .BYTE   $87, $02
-        .WORD   @f - music_bridge_data                                                  ;=$48, $02
+        .WORD   @f - @header            ;=$48, $02
         .BYTE   $86
 @g:     .BYTE   $13, $00
         .BYTE   $81, $04, $0A, $00
@@ -27927,9 +27937,9 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $81, $04, $13, $00
         .BYTE   $81, $08
         .BYTE   $87, $02
-        .WORD   @g - music_bridge_data  ;=$8D, $02
+        .WORD   @g - @header            ;=$8D, $02
         .BYTE   $87, $02
-        .WORD   @e - music_bridge_data  ;=$47, $02
+        .WORD   @e - @header            ;=$47, $02
         .BYTE   $86
 @h:     .BYTE   $15, $00
         .BYTE   $81, $04, $11, $00
@@ -27949,7 +27959,7 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $81, $04, $15, $00
         .BYTE   $81, $08
         .BYTE   $87, $02
-        .WORD   @h - music_bridge_data  ;=$D6, $02
+        .WORD   @h - @header            ;=$D6, $02
         .BYTE   $17, $00
         .BYTE   $81, $04, $11, $00
         .BYTE   $81, $08, $13, $00
@@ -28002,7 +28012,7 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $81, $04, $25, $00
         .BYTE   $81, $08
         .BYTE   $87, $04
-        .WORD   @i - music_bridge_data  ;=$9B, $03
+        .WORD   @i - @header            ;=$9B, $03
         .BYTE   $FF
 
 @channel4:
@@ -28014,7 +28024,7 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $0F
-        .WORD   @j - music_bridge_data  ;=$E4, $03
+        .WORD   @j - @header            ;=$E4, $03
         .BYTE   $81, $09, $70, $00, $70, $00
         .BYTE   $81, $0C, $71, $00, $71, $06, $71, $06
         .BYTE   $FF
@@ -28022,11 +28032,12 @@ music_bridge_data:                                                      ;$D74A
 
 music_scrapBrain_data:                                                  ;$DB4F
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_scrapBrain_data       ;=$000A
-        .WORD   @channel2 - music_scrapBrain_data       ;=$023F
-        .WORD   @channel3 - music_scrapBrain_data       ;=$031D
-        .WORD   @channel4 - music_scrapBrain_data       ;=$0604
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$023F
+        .WORD   @channel3 - @header     ;=$031D
+        .WORD   @channel4 - @header     ;=$0604
         .WORD   $0000
 
 @channel1:
@@ -28109,25 +28120,25 @@ music_scrapBrain_data:                                                  ;$DB4F
 @a:     .BYTE   $86
 @b:     .BYTE   $02, $00, $02, $00, $09, $00, $09, $00, $05, $00, $05, $00, $09, $00, $09, $00
         .BYTE   $87, $04
-        .WORD   @b - music_scrapBrain_data      ;=$4F, $02
+        .WORD   @b - @header            ;=$4F, $02
         .BYTE   $86
 @c:     .BYTE   $0D, $00, $0D, $00, $05, $00, $05, $00, $02, $00, $02, $00, $05, $00, $05, $00
         .BYTE   $87, $04
-        .WORD   @c - music_scrapBrain_data      ;=$64, $02
+        .WORD   @c - @header            ;=$64, $02
         .BYTE   $86
 @d:     .BYTE   $00, $00, $00, $00, $07, $00, $07, $00, $04, $00, $04, $00, $07, $00, $07, $00
         .BYTE   $87, $02
-        .WORD   @d - music_scrapBrain_data      ;=$79, $02
+        .WORD   @d - @header            ;=$79, $02
         .BYTE   $86
 @e:     .BYTE   $02, $00, $02, $00, $09, $00, $09, $00, $05, $00, $05, $00, $09, $00, $09, $00
         .BYTE   $87, $02
-        .WORD   @e - music_scrapBrain_data      ;=$8E, $02
+        .WORD   @e - @header            ;=$8E, $02
         .BYTE   $00, $00, $00, $00, $07, $00, $07, $00, $04, $00, $04, $00, $07, $00, $07, $00
         .BYTE   $00, $00, $00, $00, $07, $00, $07, $00, $0D, $00, $0D, $00, $07, $00, $07, $00
         .BYTE   $0C, $00, $7F, $00, $0C, $00, $7F, $00, $00, $00, $00, $00, $7F, $00, $0C, $00
         .BYTE   $7F, $00, $0C, $00, $0D, $00, $0C, $00, $0C, $00, $0C, $00, $00, $00, $01, $00
         .BYTE   $87, $02
-        .WORD   @a - music_scrapBrain_data      ;=$4E, $02
+        .WORD   @a - @header            ;=$4E, $02
         .BYTE   $02, $30, $8D, $02, $30, $00, $30, $8D, $00, $30, $0D, $30, $8D, $0D, $30
         .BYTE   $0C, $30, $8D, $0C, $30, $02, $30, $8D, $02, $30, $00, $30, $8D, $00, $30
         .BYTE   $0D, $30, $8D, $0D, $30, $0C, $30, $8D, $0C, $00, $0C, $00, $09, $00, $0C, $00
@@ -28194,7 +28205,7 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $81, $07, $14, $00
         .BYTE   $81, $0A
         .BYTE   $87, $02
-        .WORD   @g - music_scrapBrain_data      ;=$02, $04
+        .WORD   @g - @header            ;=$02, $04
         .BYTE   $10, $00
         .BYTE   $81, $07, $17, $00
         .BYTE   $81, $0A, $17, $00
@@ -28215,7 +28226,7 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $81, $07, $15, $00
         .BYTE   $81, $0A
         .BYTE   $87, $02
-        .WORD   @h - music_scrapBrain_data      ;=$49, $04
+        .WORD   @h - @header            ;=$49, $04
         .BYTE   $12, $00
         .BYTE   $81, $07, $19, $00
         .BYTE   $81, $0A, $19, $00
@@ -28236,7 +28247,7 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $81, $07, $17, $00
         .BYTE   $81, $0A
         .BYTE   $87, $03
-        .WORD   @i - music_scrapBrain_data      ;=$90, $04
+        .WORD   @i - @header            ;=$90, $04
         .BYTE   $24, $00
         .BYTE   $81, $07, $20, $00
         .BYTE   $81, $0A, $25, $00
@@ -28253,7 +28264,7 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $81, $07, $27, $00
         .BYTE   $81, $0A, $24, $00, $8D, $24, $18, $09, $00, $0B, $00, $10, $00, $11, $00
         .BYTE   $87, $02
-        .WORD   @f - music_scrapBrain_data      ;=$39, $03
+        .WORD   @f - @header            ;=$39, $03
         .BYTE   $8A, $0C
         .BYTE   $15, $06, $09, $00, $14, $00, $12, $00, $15, $00, $09, $00, $12, $06, $14, $00
         .BYTE   $12, $00, $15, $06, $09, $00, $14, $00, $12, $00, $15, $00, $09, $00, $10, $06
@@ -28310,12 +28321,12 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $1C
-        .WORD   @j - music_scrapBrain_data      ;=$12, $06
+        .WORD   @j - @header            ;=$12, $06
         .BYTE   $86
 @k:     .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $02
-        .WORD   @k - music_scrapBrain_data      ;=$25, $06
+        .WORD   @k - @header            ;=$25, $06
         .BYTE   $81, $0C, $71, $00, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $81, $0C, $71, $00
@@ -28326,13 +28337,14 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $00, $00, $00, $00
         ;
 
-music_skybase_data:                                                     ;$E1A7
+music_skyBase_data:                                                     ;$E1A7
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_skybase_data  ;=$000A
-        .WORD   @channel2 - music_skybase_data  ;=$0158
-        .WORD   @channel3 - music_skybase_data  ;=$01E2
-        .WORD   @channel4 - music_skybase_data  ;=$02C3
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0158
+        .WORD   @channel3 - @header     ;=$01E2
+        .WORD   @channel4 - @header     ;=$02C3
         .WORD   $0000
 
 @channel1:
@@ -28354,7 +28366,7 @@ music_skybase_data:                                                     ;$E1A7
 @b:     .BYTE   $25, $00, $81, $09, $25, $00
         .BYTE   $81, $0D
         .BYTE   $87, $02
-        .WORD   @b - music_skybase_data ;$3B, $00
+        .WORD   @b - @header            ;$3B, $00
         .BYTE   $22, $00
         .BYTE   $81, $0A, $25, $00
         .BYTE   $81, $0D, $19, $00, $17, $00, $15, $00, $22, $00, $20, $00, $22, $00
@@ -28367,12 +28379,12 @@ music_skybase_data:                                                     ;$E1A7
         .BYTE   $81, $0A, $25, $00
         .BYTE   $81, $0D
         .BYTE   $87, $02
-        .WORD   @c - music_skybase_data ;$6C, $00
+        .WORD   @c - @header            ;$6C, $00
         .BYTE   $22, $00
         .BYTE   $81, $0A, $25, $00
         .BYTE   $81, $0D, $18, $00, $17, $00, $15, $00
         .BYTE   $87, $02
-        .WORD   @a - music_skybase_data ;$24, $00
+        .WORD   @a - @header            ;$24, $00
         .BYTE   $86
 @d:     .BYTE   $19, $00, $19, $00
         .BYTE   $81, $0A, $19, $00
@@ -28404,7 +28416,7 @@ music_skybase_data:                                                     ;$E1A7
         .BYTE   $81, $0A, $15, $00
         .BYTE   $81, $0D, $18, $00
         .BYTE   $87, $02
-        .WORD   @d - music_skybase_data ;=$8B, $00
+        .WORD   @d - @header            ;=$8B, $00
         .BYTE   $21, $00, $19, $00, $21, $00, $22, $00
         .BYTE   $81, $0A, $21, $00
         .BYTE   $81, $0D, $1A, $00, $22, $00, $21, $00
@@ -28428,7 +28440,7 @@ music_skybase_data:                                                     ;$E1A7
         .BYTE   $02, $00, $05, $00, $04, $00, $00, $00, $0D, $0C, $0D, $0C, $0D, $00, $0D, $0C
         .BYTE   $0D, $0C, $0D, $00, $0D, $0C, $0D, $00, $0E, $00, $00, $00, $01, $00
         .BYTE   $87, $02
-        .WORD   @e - music_skybase_data ;=$65, $01
+        .WORD   @e - @header            ;=$65, $01
         .BYTE   $86
 @f:     .BYTE   $0C, $0C, $0C, $0C, $0C, $00, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $00
         .BYTE   $0C, $00, $0C, $00, $0D, $0C, $0D, $0C, $0D, $00, $0D, $0C, $0D, $0C, $0D, $0C
@@ -28439,7 +28451,7 @@ music_skybase_data:                                                     ;$E1A7
 @g:     .BYTE   $0C, $00, $0C, $00, $0C, $0C, $0C, $00, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C
         .BYTE   $0C, $00, $0C, $00, $0C, $00
         .BYTE   $87, $02
-        .WORD   @g - music_skybase_data ;=$C7, $01
+        .WORD   @g - @header            ;=$C7, $01
         .BYTE   $FF
 
 @channel3:
@@ -28455,7 +28467,7 @@ music_skybase_data:                                                     ;$E1A7
         .BYTE   $17, $00, $18, $00, $7F, $00, $22, $0C, $7F, $00, $22, $00, $7F, $00, $22, $00
         .BYTE   $7F, $00, $18, $00, $7F, $00, $15, $00, $12, $00, $12, $00
         .BYTE   $87, $02
-        .WORD   @h - music_skybase_data ;=$F2, $01
+        .WORD   @h - @header            ;=$F2, $01
         .BYTE   $83, $18, $01, $FA, $F4, $FF
         .BYTE   $19, $30
         .BYTE   $83, $10, $01, $04, $07, $00
@@ -28495,7 +28507,7 @@ music_skybase_data:                                                     ;$E1A7
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00, $70, $00, $70, $00
         .BYTE   $87, $09
-        .WORD   @i - music_skybase_data ;=$C9, $02
+        .WORD   @i - @header            ;=$C9, $02
         .BYTE   $70, $00, $70, $00, $70, $00, $70, $00
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00, $70, $00, $70, $00, $70, $00, $7F, $00, $70, $00, $70, $00
@@ -28505,11 +28517,12 @@ music_skybase_data:                                                     ;$E1A7
 
 music_titleScreen_data:                                                 ;$E4C3
 ;===============================================================================
-        
-        .WORD   @channel1 - music_titleScreen_data      ;=$000A
-        .WORD   @channel2 - music_titleScreen_data      ;=$008C
-        .WORD   @channel3 - music_titleScreen_data      ;=$00DA
-        .WORD   @channel4 - music_titleScreen_data      ;=$013C
+@header:
+
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$008C
+        .WORD   @channel3 - @header     ;=$00DA
+        .WORD   @channel4 - @header     ;=$013C
         .WORD   $0000
 
 @channel1:
@@ -28525,7 +28538,7 @@ music_titleScreen_data:                                                 ;$E4C3
         .BYTE   $86
 @a:     .BYTE   $14, $06, $7F, $06
         .BYTE   $87, $03
-        .WORD   @a - music_titleScreen_data     ;$27, $00
+        .WORD   @a - @header            ;$27, $00
         .BYTE   $81, $0C
         .BYTE   $82, $FF, $14, $96, $02, $32, $0A
         .BYTE   $83, $10, $01, $04, $06, $00
@@ -28539,7 +28552,7 @@ music_titleScreen_data:                                                 ;$E4C3
         .BYTE   $86
 @b:     .BYTE   $29, $00, $7F, $00, $8C, $8C, $8C
         .BYTE   $87, $04
-        .WORD   @b - music_titleScreen_data     ;=$7B, $00
+        .WORD   @b - @header            ;=$7B, $00
         .BYTE   $88
         .BYTE   $81, $00, $7F, $00
         .BYTE   $FF
@@ -28594,7 +28607,7 @@ music_titleScreen_data:                                                 ;$E4C3
         .BYTE   $81, $09, $70, $00, $70, $06
         .BYTE   $81, $0B, $71, $00
         .BYTE   $87, $03
-        .WORD   @d - music_titleScreen_data     ;=$4B, $01
+        .WORD   @d - @header            ;=$4B, $01
         .BYTE   $88
         .BYTE   $81, $00, $7F, $00
         .BYTE   $FF
@@ -28602,11 +28615,12 @@ music_titleScreen_data:                                                 ;$E4C3
 
 music_mapScreen_data:                                                   ;$E63C
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_mapScreen_data        ;=$000A
-        .WORD   @channel2 - music_mapScreen_data        ;=$004D
-        .WORD   @channel3 - music_mapScreen_data        ;=$008B
-        .WORD   @channel4 - music_mapScreen_data        ;=$00C2
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$004D
+        .WORD   @channel3 - @header     ;=$008B
+        .WORD   @channel4 - @header     ;=$00C2
         .WORD   $0000
 
 @channel1:
@@ -28621,7 +28635,7 @@ music_mapScreen_data:                                                   ;$E63C
         .BYTE   $86
 @a:     .BYTE   $47, $05, $7F, $05, $8C, $8C
         .BYTE   $87, $06
-        .WORD   @a - music_mapScreen_data       ;=$3D, $00
+        .WORD   @a - @header            ;=$3D, $00
         .BYTE   $88
         .BYTE   $81, $00, $7F, $00
         .BYTE   $FF
@@ -28637,7 +28651,7 @@ music_mapScreen_data:                                                   ;$E63C
         .BYTE   $86
 @b:     .BYTE   $47, $05, $7F, $05, $8C, $8C
         .BYTE   $87, $05
-        .WORD   @b - music_mapScreen_data       ;=$7B, $00
+        .WORD   @b - @header            ;=$7B, $00
         .BYTE   $88
         .BYTE   $81, $00, $7F, $00
         .BYTE   $FF
@@ -28663,11 +28677,12 @@ music_mapScreen_data:                                                   ;$E63C
 
 music_invincibility_data:                                               ;$E704
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_invincibility_data    ;=$000A
-        .WORD   @channel2 - music_invincibility_data    ;=$00A4
-        .WORD   @channel3 - music_invincibility_data    ;=$0109
-        .WORD   @channel4 - music_invincibility_data    ;=$0160
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$00A4
+        .WORD   @channel3 - @header     ;=$0109
+        .WORD   @channel4 - @header     ;=$0160
         .WORD   $0000
 
 @channel1:
@@ -28687,13 +28702,13 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $23, $00, $7F, $00, $23, $00, $7F, $00, $23, $00, $7F, $00, $1B, $00, $7F, $00
         .BYTE   $19, $12, $21, $1E
         .BYTE   $87, $02
-        .WORD   @a - music_invincibility_data   ;=$15, $00
+        .WORD   @a - @header            ;=$15, $00
         .BYTE   $86
 @b:     .BYTE   $7F, $00, $09, $12, $0B, $00, $7F, $00
         .BYTE   $81, $07, $0B, $00, $7F, $00
         .BYTE   $81, $0D
         .BYTE   $87, $02
-        .WORD   @b - music_invincibility_data   ;=$53, $00
+        .WORD   @b - @header            ;=$53, $00
         .BYTE   $8C, $8C
         .BYTE   $82, $FF, $00, $96, $02, $32, $0A
         .BYTE   $8A, $04
@@ -28714,18 +28729,18 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $08, $00, $0E, $00, $0B, $00, $06, $00, $06, $00, $04, $00, $04, $06, $03, $00
         .BYTE   $04, $06, $03, $00
         .BYTE   $87, $02
-        .WORD   @c - music_invincibility_data   ;=$AF, $00
+        .WORD   @c - @header            ;=$AF, $00
         .BYTE   $86
 @d:     .BYTE   $0C, $06, $0C, $12, $0E, $00, $0E, $00
         .BYTE   $87, $02
-        .WORD   @d - music_invincibility_data   ;=$DA, $00
+        .WORD   @d - @header            ;=$DA, $00
         .BYTE   $0C, $06, $01, $12, $03, $00, $05, $00
         .BYTE   $8A, $04
         .BYTE   $01, $00, $03, $00, $04, $00, $06, $00, $08, $00, $09, $00, $03, $00, $04, $00
         .BYTE   $06, $00, $08, $00, $09, $00, $10, $00
         .BYTE   $FF
 
-@channel:
+@channel3:
         ;-----------------------------------------------------------------------
         .BYTE   $82, $FF, $14, $82, $00, $32, $0A
         .BYTE   $88
@@ -28740,13 +28755,13 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $1B, $00, $7F, $00, $1B, $00, $7F, $00, $1B, $00, $7F, $00, $16, $00, $7F, $00
         .BYTE   $14, $12, $19, $1E
         .BYTE   $87, $02
-        .WORD   @e - music_invincibility_data   ;=$12, $01
+        .WORD   @e - @header            ;=$12, $01
         .BYTE   $86
 @f:     .BYTE   $7F, $00, $11, $12, $13, $00, $7F, $00
         .BYTE   $81, $06, $13, $00, $7F, $00
         .BYTE   $81, $0B
         .BYTE   $87, $04
-        .WORD   @f - music_invincibility_data   ;=$4B, $01
+        .WORD   @f - @header            ;=$4B, $01
         .BYTE   $FF
 
 @channel4:
@@ -28763,7 +28778,7 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $81, $09, $70, $00, $70, $06
         .BYTE   $81, $0B, $71, $00
         .BYTE   $87, $04
-        .WORD   @g - music_invincibility_data   ;=$64, $01
+        .WORD   @g - @header            ;=$64, $01
         .BYTE   $8A, $06
         .BYTE   $86
 @h:     .BYTE   $81, $09, $70, $00
@@ -28773,7 +28788,7 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $81, $09, $70, $00
         .BYTE   $81, $0B, $71, $00
         .BYTE   $87, $04
-        .WORD   @h - music_invincibility_data   ;=$8F, $01
+        .WORD   @h - @header            ;=$8F, $01
         .BYTE   $FF
 
         .BYTE   $00, $00, $00, $00
@@ -28781,11 +28796,12 @@ music_invincibility_data:                                               ;$E704
 
 music_actComplete_data:                                                 ;$E8B4
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_actComplete_data      ;=$000A
-        .WORD   @channel2 - music_actComplete_data      ;=$0044
-        .WORD   @channel3 - music_actComplete_data      ;=$006F
-        .WORD   @channel4 - music_actComplete_data      ;=$00A2
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0044
+        .WORD   @channel3 - @header     ;=$006F
+        .WORD   @channel4 - @header     ;=$00A2
         .WORD   $0000
 
 @channel1:
@@ -28803,7 +28819,7 @@ music_actComplete_data:                                                 ;$E8B4
         .BYTE   $81, $00, $7F, $00
         .BYTE   $FF
 
-@channel:
+@channel2:
         ;-----------------------------------------------------------------------
         .BYTE   $82, $FF, $1E, $96, $00, $0A, $0A
         .BYTE   $81, $0D
@@ -28834,7 +28850,7 @@ music_actComplete_data:                                                 ;$E8B4
 @a:     .BYTE   $81, $0B, $71, $00, $71, $00
         .BYTE   $81, $09, $70, $00, $7F, $00, $70, $00, $7F, $00
         .BYTE   $87, $02
-        .WORD   @a - music_actComplete_data     ;=$A7, $00
+        .WORD   @a - @header            ;=$A7, $00
         .BYTE   $81, $09, $70, $00, $70, $00
         .BYTE   $81, $0C, $71, $00, $71, $00, $71, $00, $71, $00, $71, $00
         .BYTE   $81, $09, $70, $00, $70, $00
@@ -28846,11 +28862,12 @@ music_actComplete_data:                                                 ;$E8B4
 
 music_death_data:                                                       ;$E991
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_death_data    ;=$000A
-        .WORD   @channel2 - music_death_data    ;=$0064
-        .WORD   @channel3 - music_death_data    ;=$009B
-        .WORD   @channel4 - music_death_data    ;=$00E9
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0064
+        .WORD   @channel3 - @header     ;=$009B
+        .WORD   @channel4 - @header     ;=$00E9
         .WORD   $0000
 
 @channel1:
@@ -28863,7 +28880,7 @@ music_death_data:                                                       ;$E991
         .BYTE   $86
 @a:     .BYTE   $00, $00, $0C, $00, $0E, $00, $8C, $8C, $40, $00, $0C, $00, $7F, $00, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @a - music_death_data   ;=$1D, $00
+        .WORD   @a - @header            ;=$1D, $00
         .BYTE   $8A, $06
         .BYTE   $81, $0C, $30, $18, $30, $0C, $31, $12
         .BYTE   $83, $0B, $01, $FA, $FE, $FF
@@ -28873,7 +28890,7 @@ music_death_data:                                                       ;$E991
         .BYTE   $86
 @b:     .BYTE   $26, $00, $7F, $00, $8C
         .BYTE   $87, $08
-        .WORD   @b - music_death_data   ;=$5A, $00
+        .WORD   @b - @header            ;=$5A, $00
         .BYTE   $FF
 
 @channel2:
@@ -28906,7 +28923,7 @@ music_death_data:                                                       ;$E991
         .BYTE   $86
 @c:     .BYTE   $22, $00, $7F, $00, $8C
         .BYTE   $87, $08
-        .WORD   @c - music_death_data   ;=$DF, $00
+        .WORD   @c - @header            ;=$DF, $00
         .BYTE   $FF
 
 @channel4:
@@ -28931,17 +28948,18 @@ music_death_data:                                                       ;$E991
         .BYTE   $86
 @d:     .BYTE   $71, $04
         .BYTE   $87, $18
-        .WORD   @d - music_death_data   ;=$28, $01
+        .WORD   @d - @header            ;=$28, $01
         .BYTE   $FF
         ;
 
 music_boss_data:                                                        ;$EAC0
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_boss_data     ;=$000A
-        .WORD   @channel2 - music_boss_data     ;=$014B
-        .WORD   @channel3 - music_boss_data     ;=$01B2
-        .WORD   @channel4 - music_boss_data     ;=$022A
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$014B
+        .WORD   @channel3 - @header     ;=$01B2
+        .WORD   @channel4 - @header     ;=$022A
         .WORD   $0000
 
 @channel1:
@@ -29007,7 +29025,7 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $09, $12
         .BYTE   $81, $0D
         .BYTE   $87, $02
-        .WORD   @a - music_boss_data    ;=$F4, $00
+        .WORD   @a - @header            ;=$F4, $00
         .BYTE   $FF
 
 @channel2:
@@ -29019,11 +29037,11 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $86
 @b:     .BYTE   $02, $00, $02, $00, $00, $00, $0E, $00, $0D, $00, $0E, $00, $00, $00, $01, $00
         .BYTE   $87, $02
-        .WORD   @b - music_boss_data    ;=$58, $01
+        .WORD   @b - @header            ;=$58, $01
         .BYTE   $86
 @c:     .BYTE   $07, $00, $07, $00, $06, $00, $05, $00, $04, $00, $05, $00, $06, $00, $07, $00
         .BYTE   $87, $02
-        .WORD   @c - music_boss_data    ;=$6D, $01
+        .WORD   @c - @header            ;=$6D, $01
         .BYTE   $8B, $09, $0C, $8C, $09, $06, $0C, $12, $0C, $12, $0C, $12, $0C, $12, $0C, $12
         .BYTE   $0C, $12, $0C, $12, $8B, $09, $0C, $8C, $09, $06, $0C, $12, $0C, $12, $0C, $12
         .BYTE   $0C, $0C, $0D, $06, $7F, $0C, $0E, $06, $7F, $0C, $00, $06, $7F, $0C, $01, $06
@@ -29041,25 +29059,25 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $86
 @e:     .BYTE   $19, $00, $7F, $0C
         .BYTE   $87, $03
-        .WORD   @e - music_boss_data    ;=$C7, $01
+        .WORD   @e - @header            ;=$C7, $01
         .BYTE   $19, $18, $8D, $19, $0C, $8D, $19, $24
         .BYTE   $87, $02
-        .WORD   @d - music_boss_data    ;=$C2, $01
+        .WORD   @d - @header            ;=$C2, $01
         .BYTE   $86
 @f:     .BYTE   $7F, $0C, $22, $00, $7F, $12, $22, $00, $7F, $0C, $22, $00, $7F, $0C, $22, $0C
         .BYTE   $22, $00, $22, $0C, $22, $00, $7F, $0C, $22, $18
         .BYTE   $87, $02
-        .WORD   @f - music_boss_data    ;=$DC, $01
+        .WORD   @f - @header            ;=$DC, $01
         .BYTE   $8B, $19, $00, $7F, $00, $19, $00
         .BYTE   $86
 @g:     .BYTE   $09, $00, $7F, $0C
         .BYTE   $87, $07
-        .WORD   @g - music_boss_data    ;=$02, $02
+        .WORD   @g - @header            ;=$02, $02
         .BYTE   $19, $00, $7F, $00, $19, $00
         .BYTE   $86
 @h:     .BYTE   $09, $00, $7F, $0C
         .BYTE   $87, $03
-        .WORD   @h - music_boss_data    ;=$11, $02
+        .WORD   @h - @header            ;=$11, $02
         .BYTE   $09, $0C, $0A, $00, $7F, $0C, $0B, $00, $7F, $0C, $10, $00, $7F, $0C, $11, $00
         .BYTE   $FF
 
@@ -29073,7 +29091,7 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $81, $0B, $71, $0C
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $10
-        .WORD   @i - music_boss_data    ;=$30, $02
+        .WORD   @i - @header            ;=$30, $02
         .BYTE   $81, $0C, $71, $00, $7F, $00, $71, $00
         .BYTE   $81, $09, $70, $12, $70, $12, $70, $12
         .BYTE   $86
@@ -29081,7 +29099,7 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $81, $0B, $71, $0C
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $02
-        .WORD   @j - music_boss_data    ;=$55, $02
+        .WORD   @j - @header            ;=$55, $02
         .BYTE   $81, $0C, $71, $00, $7F, $00, $71, $00
         .BYTE   $81, $09, $70, $12, $70, $12, $70, $12, $70, $00, $7F, $00, $70, $00
         .BYTE   $81, $0B, $71, $0C
@@ -29092,11 +29110,12 @@ music_boss_data:                                                        ;$EAC0
 
 music_ending_data:                                                      ;$ED54
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_ending_data   ;=$000A
-        .WORD   @channel2 - music_ending_data   ;=$0164
-        .WORD   @channel3 - music_ending_data   ;=$0254
-        .WORD   @channel4 - music_ending_data   ;=$0392
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0164
+        .WORD   @channel3 - @header     ;=$0254
+        .WORD   @channel4 - @header     ;=$0392
         .WORD   $0000
 
 @channel1:
@@ -29113,7 +29132,7 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $22, $00, $22, $00, $24, $00, $21, $00, $7F, $00, $19, $0C, $8D, $19, $24
         .BYTE   $7F, $00, $16, $00, $7F, $00, $19, $00, $19, $00, $1B, $00
         .BYTE   $87, $03
-        .WORD   @a - music_ending_data  ;=$25, $00
+        .WORD   @a - @header            ;=$25, $00
         .BYTE   $21, $00, $7F, $00, $19, $0C, $8D, $19, $24, $7F, $00, $22, $00, $7F, $00
         .BYTE   $22, $00, $22, $00, $24, $00, $21, $00, $7F, $00, $19, $1E, $29, $00
         .BYTE   $8D, $29, $30, $7F, $18, $20, $00, $19, $0C, $20, $00, $1B, $0C, $20, $00
@@ -29129,7 +29148,7 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $22, $00, $22, $00, $24, $00, $21, $00, $7F, $00, $19, $0C, $8D, $19, $24
         .BYTE   $7F, $00, $16, $00, $7F, $00, $19, $00, $19, $00, $1B, $00
         .BYTE   $87, $03
-        .WORD   @b - music_ending_data  ;=$E1, $00
+        .WORD   @b - @header            ;=$E1, $00
         .BYTE   $21, $00, $7F, $00, $19, $0C, $8D, $19, $24, $7F, $00, $22, $00, $7F, $00
         .BYTE   $22, $00, $22, $00, $24, $00, $21, $00, $7F, $00, $19, $1E, $29, $0C, $29, $00
         .BYTE   $26, $00, $7F, $00, $29, $00, $2B, $00, $7F, $00, $29, $00, $8D, $29, $30
@@ -29151,12 +29170,12 @@ music_ending_data:                                                      ;$ED54
 @c:     .BYTE   $0C, $0C, $0C, $0C, $01, $00, $11, $00, $01, $00, $02, $0C, $02, $00, $12, $00
         .BYTE   $02, $00, $04, $00, $04, $00, $14, $00, $04, $00
         .BYTE   $87, $08
-        .WORD   @c - music_ending_data                                                  ;=$72, $01
+        .WORD   @c - @header            ;=$72, $01
         .BYTE   $86
 @d:     .BYTE   $05, $00, $05, $00, $10, $00, $05, $0C, $05, $00, $00, $00, $05, $00, $04, $00
         .BYTE   $04, $00, $10, $00, $04, $0C, $00, $00, $02, $00, $04, $00
         .BYTE   $87, $04
-        .WORD   @d - music_ending_data  ;=$91, $01
+        .WORD   @d - @header            ;=$91, $01
         .BYTE   $0D, $0C, $0D, $00, $0C, $0C, $0C, $00, $0D, $0C, $0D, $00, $00, $0C, $00, $00
         .BYTE   $02, $0C, $04, $0C, $0C, $0C, $0C, $00, $0E, $0C, $0E, $00, $00, $0C, $00, $00
         .BYTE   $02, $0C, $02, $00, $04, $0C, $00, $0C, $08, $0C, $08, $00, $07, $0C, $07, $00
@@ -29167,7 +29186,7 @@ music_ending_data:                                                      ;$ED54
 @e:     .BYTE   $0C, $0C, $0C, $0C, $01, $00, $11, $00, $01, $00, $02, $0C, $02, $00, $12, $00
         .BYTE   $02, $00, $04, $00, $04, $00, $14, $00, $04, $00
         .BYTE   $87, $0B
-        .WORD   @e - music_ending_data  ;=$10, $02
+        .WORD   @e - @header            ;=$10, $02
         .BYTE   $05, $00, $05, $00, $15, $00, $05, $00, $07, $00, $17, $00, $07, $00, $09, $0C
         .BYTE   $04, $0C, $01, $00
         .BYTE   $82, $FF, $14, $96, $14, $00, $0A
@@ -29194,14 +29213,14 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $81, $0B, $34, $00
         .BYTE   $81, $07, $36, $00
         .BYTE   $87, $20
-        .WORD   @f - music_ending_data                                                  ;=$63, $02
+        .WORD   @f - @header            ;=$63, $02
         .BYTE   $8A, $06
         .BYTE   $81, $0B
         .BYTE   $86
 @g:     .BYTE   $19, $00, $15, $00, $10, $00, $09, $00, $09, $00, $10, $00, $15, $00, $19, $00
         .BYTE   $17, $00, $14, $00, $10, $00, $07, $00, $07, $00, $10, $00, $14, $00, $17, $00
         .BYTE   $87, $03
-        .WORD   @g - music_ending_data                                                  ;=$8C, $02
+        .WORD   @g - @header            ;=$8C, $02
         .BYTE   $19, $00, $15, $00, $10, $00, $09, $00, $09, $00, $10, $00, $15, $00, $19, $00
         .BYTE   $10, $00, $14, $00, $17, $00, $1B, $00, $20, $00, $24, $00, $27, $00, $2B, $00
         .BYTE   $1A, $00, $22, $00, $25, $00, $29, $00, $2A, $00, $32, $00, $35, $00, $39, $00
@@ -29223,7 +29242,7 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $81, $0B, $34, $00
         .BYTE   $81, $07, $36, $00
         .BYTE   $87, $2C
-        .WORD   @h - music_ending_data                                                  ;=$53, $03
+        .WORD   @h - @header            ;=$53, $03
         .BYTE   $81, $0B
         .BYTE   $8A, $06
         .BYTE   $7F, $00, $19, $00, $7F, $0C, $19, $00, $7F, $00, $19, $00, $14, $36
@@ -29243,17 +29262,17 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $81, $0D, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $0F
-        .WORD   @j - music_ending_data                                                  ;=$A0, $03
+        .WORD   @j - @header            ;=$A0, $03
         .BYTE   $70, $00
         .BYTE   $81, $0D, $71, $00, $71, $00, $71, $00
         .BYTE   $87, $06
-        .WORD   @i - music_ending_data                                                  ;=$9F, $03
+        .WORD   @i - @header            ;=$9F, $03
         .BYTE   $86
 @k:     .BYTE   $81, $09, $70, $00, $70, $00
         .BYTE   $81, $0D, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $0F
-        .WORD   @k - music_ending_data                                                  ;=$BF, $03
+        .WORD   @k - @header            ;=$BF, $03
         .BYTE   $81, $00
         .BYTE   $88
         .BYTE   $7F, $00
@@ -29264,11 +29283,12 @@ music_ending_data:                                                      ;$ED54
 
 music_specialStage_data:                                                ;$F12C
 ;===============================================================================
+@header:
 
-        .WORD   @channel1 - music_specialStage_data     ;=$000A
-        .WORD   @channel2 - music_specialStage_data     ;=$0279
-        .WORD   @channel3 - music_specialStage_data     ;=$0359
-        .WORD   @channel4 - music_specialStage_data     ;=$049F
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0279
+        .WORD   @channel3 - @header     ;=$0359
+        .WORD   @channel4 - @header     ;=$049F
         .WORD   $0000
 
 @channel1:
@@ -29336,7 +29356,7 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $81, $09, $2B, $00
         .BYTE   $81, $0D
         .BYTE   $87, $02
-        .WORD   @a - music_specialStage_data    ;=$24, $00
+        .WORD   @a - @header            ;=$24, $00
         .BYTE   $86
 @b:     .BYTE   $82, $FF, $14, $96, $0A, $14, $0A
         .BYTE   $81, $0D, $32, $00, $7F, $00, $32, $00, $7F, $00, $32, $00, $7F, $18
@@ -29345,22 +29365,22 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $86
 @c:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $02
-        .WORD   @c - music_specialStage_data    ;=$B4, $01
+        .WORD   @c - @header            ;=$B4, $01
         .BYTE   $7F, $02, $7F, $00
         .BYTE   $86
 @d:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $02
-        .WORD   @d - music_specialStage_data    ;=$C1, $01
+        .WORD   @d - @header            ;=$C1, $01
         .BYTE   $7F, $02
         .BYTE   $86
 @e:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $02
-        .WORD   @e - music_specialStage_data    ;=$CC, $01
+        .WORD   @e - @header            ;=$CC, $01
         .BYTE   $7F, $02, $7F, $00
         .BYTE   $86
 @f:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $06
-        .WORD   @f - music_specialStage_data    ;=$D9, $01
+        .WORD   @f - @header            ;=$D9, $01
         .BYTE   $82, $FF, $14, $96, $0A, $14, $0A
         .BYTE   $81, $0D, $32, $00, $7F, $00, $32, $00, $7F, $00, $32, $00
         .BYTE   $82, $FF, $00, $96, $00, $14, $0A
@@ -29368,37 +29388,37 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $86
 @g:     .BYTE   $39, $01, $3B, $01
         .BYTE   $87, $02
-        .WORD   @g - music_specialStage_data    ;=$FE, $01
+        .WORD   @g - @header            ;=$FE, $01
         .BYTE   $7F, $02
         .BYTE   $86
 @h:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $02
-        .WORD   @h - music_specialStage_data    ;=$09, $02
+        .WORD   @h - @header            ;=$09, $02
         .BYTE   $7F, $02
         .BYTE   $86
 @i:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $06
-        .WORD   @i - music_specialStage_data    ;=$14, $02
+        .WORD   @i - @header            ;=$14, $02
         .BYTE   $86
 @j:     .BYTE   $39, $01, $3B, $01
         .BYTE   $87, $02
-        .WORD   @j - music_specialStage_data    ;=$1D, $02
+        .WORD   @j - @header            ;=$1D, $02
         .BYTE   $7F, $02
         .BYTE   $86
 @k:     .BYTE   $42, $01, $44, $01
         .BYTE   $87, $02
-        .WORD   @k - music_specialStage_data    ;=$28, $02
+        .WORD   @k - @header            ;=$28, $02
         .BYTE   $7F, $02
         .BYTE   $86
 @l:     .BYTE   $86
 @m:     .BYTE   $39, $01, $3B, $01
         .BYTE   $87, $02
-        .WORD   @m - music_specialStage_data    ;=$34, $02
+        .WORD   @m - @header            ;=$34, $02
         .BYTE   $7F, $02
         .BYTE   $87, $05
-        .WORD   @l - music_specialStage_data    ;=$33, $02
+        .WORD   @l - @header            ;=$33, $02
         .BYTE   $87, $03
-        .WORD   @b - music_specialStage_data    ;=$95, $01
+        .WORD   @b - @header            ;=$95, $01
         .BYTE   $82, $FF, $14, $96, $0A, $14, $0A
         .BYTE   $81, $0D, $32, $00, $7F, $00, $32, $00, $7F, $00, $32, $00, $7F, $30, $1B, $00
         .BYTE   $1A, $00, $19, $00, $7F, $0C
@@ -29419,20 +29439,20 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $02, $0C, $12, $0C, $07, $0C, $17, $0C, $07, $0C, $17, $00, $07, $0C, $07, $00
         .BYTE   $17, $00, $07, $00, $07, $0C, $17, $0C
         .BYTE   $87, $04
-        .WORD   @o - music_specialStage_data    ;=$87, $02
+        .WORD   @o - @header            ;=$87, $02
         .BYTE   $06, $0C, $16, $0C, $06, $0C, $16, $00, $06, $0C, $06, $00, $16, $0C, $06, $0C
         .BYTE   $16, $00, $06, $00, $0E, $0C, $0B, $0C, $0E, $00, $0E, $00, $0B, $00, $0E, $0C
         .BYTE   $0E, $00, $0B, $00, $0E, $00, $0E, $0C, $0B, $0C, $04, $0C, $14, $0C, $04, $00
         .BYTE   $04, $00, $14, $00, $04, $0C, $04, $00, $14, $00, $04, $00, $04, $0C, $14, $0C
         .BYTE   $09, $0C, $19, $0C, $0A, $0C, $1A, $0C, $0B, $0C, $1B, $0C, $11, $0C, $21, $0C
         .BYTE   $87, $02
-        .WORD   @n - music_specialStage_data    ;=$86, $02
+        .WORD   @n - @header            ;=$86, $02
         .BYTE   $86
 @p:     .BYTE   $02, $0C, $12, $0C, $02, $0C, $12, $00, $02, $0C, $02, $00, $12, $00, $02, $00
         .BYTE   $02, $0C, $12, $0C, $07, $0C, $17, $0C, $07, $0C, $17, $00, $07, $0C, $07, $00
         .BYTE   $17, $00, $07, $00, $07, $0C, $17, $0C
         .BYTE   $87, $03
-        .WORD   @p - music_specialStage_data    ;=$08, $03
+        .WORD   @p - @header            ;=$08, $03
         .BYTE   $02, $0C, $12, $0C, $02, $0C, $12, $00, $02, $0C, $02, $00, $12, $00, $02, $00
         .BYTE   $02, $0C, $12, $0C, $09, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0E, $0C
         .BYTE   $00, $0C, $01, $0C
@@ -29476,39 +29496,39 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $81, $06, $1B, $00
         .BYTE   $81, $0A
         .BYTE   $87, $04
-        .WORD   @r - music_specialStage_data    ;=$67, $03
+        .WORD   @r - @header            ;=$67, $03
         .BYTE   $21, $18, $1A, $18, $1B, $18, $21, $18, $1B, $00, $7F, $00, $1B, $00, $7F, $00
         .BYTE   $26, $00, $27, $00, $26, $00, $22, $00, $7F, $00, $22, $00, $1B, $00, $7F, $00
         .BYTE   $16, $00, $7F, $00, $12, $00, $7F, $00, $24, $18, $14, $18, $16, $18, $18, $18
         .BYTE   $19, $00, $7F, $00, $19, $00, $7F, $00, $17, $00, $7F, $00, $17, $00, $7F, $00
         .BYTE   $16, $00, $17, $00, $16, $00, $14, $00, $7F, $00, $14, $00, $7F, $00, $14, $00
         .BYTE   $87, $02
-        .WORD   @q - music_specialStage_data    ;=$66, $03
+        .WORD   @q - @header            ;=$66, $03
         .BYTE   $86
 @s:     .BYTE   $81, $0A, $12, $00
         .BYTE   $86
 @t:     .BYTE   $16, $00, $19, $00, $21, $00, $32, $00, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @t - music_specialStage_data    ;=$3D, $04
+        .WORD   @t - @header            ;=$3D, $04
         .BYTE   $16, $00, $19, $00, $21, $00
         .BYTE   $81, $0A, $17, $00
         .BYTE   $86
 @u:     .BYTE   $1B, $00, $22, $00, $26, $00, $27, $00, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @u - music_specialStage_data    ;=$56, $04
+        .WORD   @u - @header            ;=$56, $04
         .BYTE   $1B, $00, $22, $00, $26, $00
         .BYTE   $87, $03
-        .WORD   @s - music_specialStage_data    ;=$38, $04
+        .WORD   @s - @header            ;=$38, $04
         .BYTE   $81, $0A, $12, $00
         .BYTE   $86
 @v:     .BYTE   $16, $00, $19, $00, $21, $00, $32, $00, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @v - music_specialStage_data    ;=$73, $04
+        .WORD   @v - @header            ;=$73, $04
         .BYTE   $16, $00, $19, $00, $21, $00, $19, $00
         .BYTE   $86
 @w:     .BYTE   $21, $00, $24, $00, $27, $00, $29, $00, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @w - music_specialStage_data    ;=$8A, $04
+        .WORD   @w - @header            ;=$8A, $04
         .BYTE   $24, $00, $27, $00, $29, $00
         .BYTE   $FF
 
@@ -29522,7 +29542,7 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $81, $0C, $71, $00
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $7C
-        .WORD   @x - music_specialStage_data    ;=$A5, $04
+        .WORD   @x - @header            ;=$A5, $04
         .BYTE   $81, $0D, $71, $00, $7F, $00
         .BYTE   $81, $09, $70, $00, $7F, $00, $70, $00, $7F, $00, $70, $00, $7F, $00, $70, $00
         .BYTE   $7F, $00
@@ -29534,11 +29554,11 @@ music_specialStage_data:                                                ;$F12C
 
 music_labyrinth_data:                                                   ;$F60C
 ;===============================================================================
-        
-        .WORD   @channel1 - music_labyrinth_data        ;=$000A
-        .WORD   @channel2 - music_labyrinth_data        ;=$01E0
-        .WORD   @channel3 - music_labyrinth_data        ;=$029D
-        .WORD   @channel4 - music_labyrinth_data        ;=$0351
+@header:
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$01E0
+        .WORD   @channel3 - @header     ;=$029D
+        .WORD   @channel4 - @header     ;=$0351
         .WORD   $0000
 
 @channel1:
@@ -29580,7 +29600,7 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $81, $09, $27, $00
         .BYTE   $81, $0D
         .BYTE   $87, $03
-        .WORD   @a - music_labyrinth_data       ;=$CE, $00
+        .WORD   @a - @header            ;=$CE, $00
         .BYTE   $20, $00, $7F, $00
         .BYTE   $81, $09, $20, $00
         .BYTE   $81, $0D, $20, $00, $1A, $12, $17, $0C, $23, $00, $7F, $00
@@ -29597,7 +29617,7 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $81, $09, $27, $00
         .BYTE   $81, $0D
         .BYTE   $87, $03
-        .WORD   @b - music_labyrinth_data       ;=$1E, $01
+        .WORD   @b - @header            ;=$1E, $01
         .BYTE   $30, $00, $8D, $30, $0C, $30, $00, $2A, $12, $27, $0C, $23, $00, $7F, $00
         .BYTE   $81, $09, $23, $00
         .BYTE   $81, $0D, $25, $12, $25, $00, $23, $12, $25, $0C, $27, $00, $7F, $00
@@ -29639,44 +29659,44 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $81, $0A, $00, $00
         .BYTE   $81, $0E, $00, $00
         .BYTE   $87, $07
-        .WORD   @c - music_labyrinth_data       ;=$EF, $01
+        .WORD   @c - @header            ;=$EF, $01
         .BYTE   $03, $12, $05, $12, $06, $0C, $07, $00, $7F, $00
         .BYTE   $81, $0A, $07, $00
         .BYTE   $81, $0E, $07, $00, $0C, $12, $0D, $12, $0E, $0C, $00, $00
         .BYTE   $86
 @d:     .BYTE   $00, $12
         .BYTE   $87, $03
-        .WORD   @d - music_labyrinth_data       ;=$32, $02
+        .WORD   @d - @header            ;=$32, $02
         .BYTE   $00, $00, $00, $00, $00, $00
         .BYTE   $86
 @e:     .BYTE   $0D, $12
         .BYTE   $87, $03
-        .WORD   @e - music_labyrinth_data       ;=$3F, $02
+        .WORD   @e - @header            ;=$3F, $02
         .BYTE   $0D, $00, $0D, $00, $0D, $00
         .BYTE   $86
 @f:     .BYTE   $08, $12
         .BYTE   $87, $03
-        .WORD   @f - music_labyrinth_data       ;=$4C, $02
+        .WORD   @f - @header            ;=$4C, $02
         .BYTE   $08, $00, $08, $00, $08, $00
         .BYTE   $86
 @g:     .BYTE   $07, $12
         .BYTE   $87, $03
-        .WORD   @g - music_labyrinth_data       ;=$59, $02
+        .WORD   @g - @header            ;=$59, $02
         .BYTE   $07, $00, $07, $00, $07, $00
         .BYTE   $86
 @h:     .BYTE   $00, $12
         .BYTE   $87, $03
-        .WORD   @h - music_labyrinth_data       ;=$66, $02
+        .WORD   @h - @header            ;=$66, $02
         .BYTE   $00, $00, $00, $00, $00, $00
         .BYTE   $86
 @i:     .BYTE   $0D, $12
         .BYTE   $87, $03
-        .WORD   @i - music_labyrinth_data       ;=$73, $02
+        .WORD   @i - @header            ;=$73, $02
         .BYTE   $0D, $00, $0D, $00, $0D, $00
         .BYTE   $86
 @j:     .BYTE   $08, $12
         .BYTE   $87, $03
-        .WORD   @j - music_labyrinth_data       ;=$80, $02
+        .WORD   @j - @header            ;=$80, $02
         .BYTE   $08, $00, $08, $00, $08, $00, $07, $12, $07, $12, $0D, $00, $0D, $00, $0D, $00
         .BYTE   $0E, $00, $0E, $00, $0E, $00
         .BYTE   $FF
@@ -29693,24 +29713,24 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $86
 @l:     .BYTE   $30, $00, $7F, $00, $8C, $8C, $8C, $8C, $30, $00, $8B, $8B, $8B
         .BYTE   $87, $06
-        .WORD   @l - music_labyrinth_data       ;=$B0, $02
+        .WORD   @l - @header            ;=$B0, $02
         .BYTE   $81, $0A, $20, $0C, $20, $00, $7F, $0C, $20, $00, $7F, $0C, $17, $00
         .BYTE   $8D, $17, $24, $23, $00, $25, $00, $26, $00, $27, $00, $26, $00, $25, $00
         .BYTE   $23, $00, $20, $00, $1A, $00, $20, $00, $1A, $00, $17, $0C, $1A, $00, $17, $00
         .BYTE   $87, $02
-        .WORD   @k - music_labyrinth_data       ;=$AD, $02
+        .WORD   @k - @header            ;=$AD, $02
         .BYTE   $86
 @m:     .BYTE   $7F, $0C, $17, $00, $17, $0C, $7F, $00, $12, $0C, $1A, $00, $7F, $0C, $20, $12
         .BYTE   $20, $00, $1A, $00, $7F, $0C, $12, $0C, $15, $00, $7F, $0C, $17, $12, $17, $00
         .BYTE   $13, $00, $7F, $0C, $15, $0C, $16, $00, $7F, $0C, $17, $00, $7F, $0C, $17, $00
         .BYTE   $13, $12, $15, $0C, $13, $00, $7F, $0C, $17, $00
         .BYTE   $87, $02
-        .WORD   @m - music_labyrinth_data       ;=$F3, $02
+        .WORD   @m - @header            ;=$F3, $02
         .BYTE   $86
 @n:     .BYTE   $17, $48, $17, $48, $20, $48, $20, $12, $22, $00, $23, $00, $25, $00, $27, $00
         .BYTE   $25, $00, $23, $00, $22, $00, $1A, $00, $17, $00
         .BYTE   $87, $02
-        .WORD   @n - music_labyrinth_data       ;=$32, $03
+        .WORD   @n - @header            ;=$32, $03
         .BYTE   $FF
 
 @channel4:
@@ -29723,7 +29743,7 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $81, $0B, $71, $0C
         .BYTE   $81, $09, $70, $00
         .BYTE   $87, $2F
-        .WORD   @o - music_labyrinth_data       ;=$57, $03
+        .WORD   @o - @header            ;=$57, $03
         .BYTE   $81, $09, $70, $00, $7F, $00, $70, $00
         .BYTE   $81, $0B, $71, $00, $71, $00, $71, $00
         .BYTE   $FF
@@ -29733,11 +29753,11 @@ music_labyrinth_data:                                                   ;$F60C
 
 music_allEmeralds_data:                                                 ;$F98C
 ;===============================================================================
-
-        .WORD   @channel1 - music_allEmeralds_data      ;=$000A
-        .WORD   @channel2 - music_allEmeralds_data      ;=$003E
-        .WORD   @channel3 - music_allEmeralds_data      ;=$006B
-        .WORD   @channel4 - music_allEmeralds_data      ;=$0096
+@header:
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$003E
+        .WORD   @channel3 - @header     ;=$006B
+        .WORD   @channel4 - @header     ;=$0096
         .WORD   $0000
 
 @channel1:
@@ -29751,13 +29771,13 @@ music_allEmeralds_data:                                                 ;$F98C
 @a:     .BYTE   $14, $24
         .BYTE   $8B
         .BYTE   $87, $04
-        .WORD   @a - music_allEmeralds_data     ;=$25, $00
+        .WORD   @a - @header            ;=$25, $00
         .BYTE   $14, $24, $14, $24, $14, $24
         .BYTE   $86
 @b:     .BYTE   $14, $24
         .BYTE   $8C
         .BYTE   $87, $09
-        .WORD   @b - music_allEmeralds_data     ;=$33, $00
+        .WORD   @b - @header            ;=$33, $00
         .BYTE   $88
         .BYTE   $7F, $00
         .BYTE   $FF
@@ -29771,13 +29791,13 @@ music_allEmeralds_data:                                                 ;$F98C
 @c:     .BYTE   $14, $24
         .BYTE   $8B
         .BYTE   $87, $04
-        .WORD   @c - music_allEmeralds_data     ;=$52, $00
+        .WORD   @c - @header            ;=$52, $00
         .BYTE   $14, $24, $14, $24, $14, $24
         .BYTE   $86
 @d:     .BYTE   $14, $24
         .BYTE   $8C
         .BYTE   $87, $09
-        .WORD   @d - music_allEmeralds_data     ;=$60, $00
+        .WORD   @d - @header            ;=$60, $00
         .BYTE   $88
         .BYTE   $7F, $00
         .BYTE   $FF
@@ -29791,12 +29811,12 @@ music_allEmeralds_data:                                                 ;$F98C
 @e:     .BYTE   $4B, $00, $3B, $00, $4B, $00, $3B, $00
         .BYTE   $8B
         .BYTE   $87, $07
-        .WORD   @e - music_allEmeralds_data     ;=$77, $00
+        .WORD   @e - @header            ;=$77, $00
         .BYTE   $86
 @f:     .BYTE   $4B, $00, $3B, $00, $4B, $00, $3B, $00
         .BYTE   $8C
         .BYTE   $87, $0D
-        .WORD   @f - music_allEmeralds_data     ;=$85, $00
+        .WORD   @f - @header            ;=$85, $00
         .BYTE   $88
         .BYTE   $7F, $00
         .BYTE   $FF
@@ -29810,11 +29830,12 @@ music_allEmeralds_data:                                                 ;$F98C
 
 music_emerald_data:                                                     ;$FA26
 ;===============================================================================
-        
-        .WORD   @channel1 - music_emerald_data  ;=$000A
-        .WORD   @channel2 - music_emerald_data  ;=$0086
-        .WORD   @channel3 - music_emerald_data  ;=$00BC
-        .WORD   @channel4 - music_emerald_data  ;=$00FB
+@header:
+
+        .WORD   @channel1 - @header     ;=$000A
+        .WORD   @channel2 - @header     ;=$0086
+        .WORD   @channel3 - @header     ;=$00BC
+        .WORD   @channel4 - @header     ;=$00FB
         .WORD   $0000
 
 @channel1:
@@ -29876,7 +29897,7 @@ music_emerald_data:                                                     ;$FA26
         .BYTE   $86
 @a:     .BYTE   $34, $04, $36, $04
         .BYTE   $87, $0F
-        .WORD   @a - music_emerald_data ;=$EF, $00
+        .WORD   @a - @header            ;=$EF, $00
         .BYTE   $88
         .BYTE   $7F, $00
         .BYTE   $FF
@@ -29891,7 +29912,7 @@ music_emerald_data:                                                     ;$FA26
 
 sfx_fb27_data:                                                          ;$FB27
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29905,7 +29926,7 @@ sfx_fb27_data:                                                          ;$FB27
 
 sfx_fb43_data:                                                          ;$FB43
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29916,14 +29937,14 @@ sfx_fb43_data:                                                          ;$FB43
         .BYTE   $86
 @a:     .BYTE   $17, $00, $15, $00, $14, $00, $12, $00, $10, $00, $0B, $00, $8C, $8C, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @a - sfx_fb43_data      ;=$1A, $00
+        .WORD   @a - @header            ;=$1A, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fb74_data:                                                          ;$FB74
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29936,7 +29957,7 @@ sfx_fb74_data:                                                          ;$FB74
 
 sfx_fb98_data:                                                          ;$FB98
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29947,14 +29968,14 @@ sfx_fb98_data:                                                          ;$FB98
         .BYTE   $86
 @a:     .BYTE   $28, $00, $2A, $00
         .BYTE   $87, $09
-        .WORD   @a - sfx_fb98_data      ;=$1C, $00
+        .WORD   @a - @header            ;=$1C, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fbbf_data:                                                          ;$FBBF
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29965,14 +29986,14 @@ sfx_fbbf_data:                                                          ;$FBBF
         .BYTE   $86
 @a:     .BYTE   $17, $00, $19, $00, $1B, $00, $20, $00, $22, $00, $24, $00, $8C, $8C
         .BYTE   $87, $07
-        .WORD   @a - sfx_fbbf_data      ;=$12, $00
+        .WORD   @a - @header            ;=$12, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fbe6_data:                                                          ;FBE6
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -29983,20 +30004,20 @@ sfx_fbe6_data:                                                          ;FBE6
         .BYTE   $86
 @a:     .BYTE   $3B, $02, $8D, $8B
         .BYTE   $87, $03
-        .WORD   @a - sfx_fbe6_data      ;=$16, $00
+        .WORD   @a - @header            ;=$16, $00
         .BYTE   $3B, $02
         .BYTE   $83, $01, $01, $FA, $17, $00
         .BYTE   $86
 @b:     .BYTE   $4B, $03, $8D, $8C
         .BYTE   $87, $0E
-        .WORD   @b - sfx_fbe6_data      ;=$27, $00
+        .WORD   @b - @header            ;=$27, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fc18_data:                                                          ;$FC18
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30007,18 +30028,18 @@ sfx_fc18_data:                                                          ;$FC18
         .BYTE   $86
 @a:     .BYTE   $3B, $0C, $8D, $8B
         .BYTE   $87, $04
-        .WORD   @a - sfx_fc18_data      ;=$16, $00
+        .WORD   @a - @header            ;=$16, $00
         .BYTE   $86
 @b:     .BYTE   $3B, $0C, $8D, $8C
         .BYTE   $87, $06
-        .WORD   @b - sfx_fc18_data      ;=$1F, $00
+        .WORD   @b - @header            ;=$1F, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fc42_data:                                                          ;$FC42
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30028,14 +30049,14 @@ sfx_fc42_data:                                                          ;$FC42
         .BYTE   $86
 @a:     .BYTE   $10, $01, $30, $01, $8C
         .BYTE   $87, $0F
-        .WORD   @a - sfx_fc42_data      ;=$10, $00
+        .WORD   @a - @header            ;=$10, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fc5e_data:                                                          ;$FC5E
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30048,14 +30069,14 @@ sfx_fc5e_data:                                                          ;$FC5E
 @a:     .BYTE   $10, $00, $8C, $12, $00, $8C, $14, $00, $8C, $15, $00, $8C, $17, $00, $8C
         .BYTE   $19, $00
         .BYTE   $87, $03
-        .WORD   @a - sfx_fc5e_data      ;=$18, $00
+        .WORD   @a - @header            ;=$18, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fc8e_data:                                                          ;$FC8E
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30066,14 +30087,14 @@ sfx_fc8e_data:                                                          ;$FC8E
         .BYTE   $86
 @a:     .BYTE   $48, $00, $7F, $00, $8C, $8C
         .BYTE   $87, $07
-        .WORD   @a - sfx_fc8e_data      ;=$1C, $00
+        .WORD   @a - @header            ;=$1C, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fcb7_data:                                                          ;FCB7
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30083,14 +30104,14 @@ sfx_fcb7_data:                                                          ;FCB7
         .BYTE   $86
 @a:     .BYTE   $18, $01, $7F, $01, $8C, $10, $01, $7F, $01, $8C
         .BYTE   $87, $07
-        .WORD   @a - sfx_fcb7_data      ;=$10, $00
+        .WORD   @a - @header            ;=$10, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fcd8_data:                                                          ;$FCD8
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30101,14 +30122,14 @@ sfx_fcd8_data:                                                          ;$FCD8
         .BYTE   $86
 @a:     .BYTE   $3B, $00, $49, $00, $7F, $02, $3B, $00, $49, $00, $7F, $02
         .BYTE   $87, $FF
-        .WORD   @a - sfx_fcd8_data      ;=$12, $00
+        .WORD   @a - @header            ;=$12, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fcfd_data:                                                          ;$FCFD
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30119,14 +30140,14 @@ sfx_fcfd_data:                                                          ;$FCFD
         .BYTE   $86
 @a:     .BYTE   $19, $0C, $8C, $8C, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @a - sfx_fcfd_data      ;=$1A, $00
+        .WORD   @a - @header            ;=$1A, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fd24_data:                                                          ;FD24
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30137,28 +30158,28 @@ sfx_fd24_data:                                                          ;FD24
         .BYTE   $86
 @a:     .BYTE   $00, $09, $8B
         .BYTE   $87, $0A
-        .WORD   @a - sfx_fd24_data      ;=$16, $00
+        .WORD   @a - @header            ;=$16, $00
         .BYTE   $86
 @b:     .BYTE   $86
 @c:     .BYTE   $00, $09, $00, $09, $8B
         .BYTE   $87, $04
-        .WORD   @c - sfx_fd24_data      ;=$1F, $00
+        .WORD   @c - @header            ;=$1F, $00
         .BYTE   $86
 @d:     .BYTE   $00, $09
         .BYTE   $87, $08
-        .WORD   @d - sfx_fd24_data      ;=$29, $00
+        .WORD   @d - @header            ;=$29, $00
         .BYTE   $86
 @e:     .BYTE   $00, $09, $00, $09, $8C
         .BYTE   $87, $04
-        .WORD   @e - sfx_fd24_data      ;=$30, $00
+        .WORD   @e - @header            ;=$30, $00
         .BYTE   $87, $FF
-        .WORD   @b - sfx_fd24_data      ;=$1E, $00
+        .WORD   @b - @header            ;=$1E, $00
         .BYTE   $FE
         ;
 
 sfx_fd62_data:                                                          ;FD62
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30168,19 +30189,19 @@ sfx_fd62_data:                                                          ;FD62
         .BYTE   $86
 @a:     .BYTE   $00, $01, $01, $01
         .BYTE   $87, $02
-        .WORD   @a - sfx_fd62_data      ;=$10, $00
+        .WORD   @a - @header            ;=$10, $00
         .BYTE   $7F, $05
         .BYTE   $86
 @b:     .BYTE   $00, $01, $01, $01
         .BYTE   $87, $10
-        .WORD   @b - sfx_fd62_data      ;=$1B, $00
+        .WORD   @b - @header            ;=$1B, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fd88_data:                                                          ;$FD88
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $03
         .WORD $0001, $0001
         .BYTE $00
@@ -30195,14 +30216,14 @@ sfx_fd88_data:                                                          ;$FD88
         .BYTE   $86
 @a:     .BYTE   $00, $00, $8C
         .BYTE   $87, $0D
-        .WORD   @a - sfx_fd88_data      ;=$1F, $00
+        .WORD   @a - @header            ;=$1F, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fdb1_data:                                                          ;$FDB1
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30214,18 +30235,18 @@ sfx_fdb1_data:                                                          ;$FDB1
         .BYTE   $86
 @a:     .BYTE   $04, $00, $7F, $00
         .BYTE   $87, $0F
-        .WORD   @a - sfx_fdb1_data      ;=$1E, $00
+        .WORD   @a - @header            ;=$1E, $00
         .BYTE   $86
 @b:     .BYTE   $04, $00, $7F, $00, $7F, $00, $8C
         .BYTE   $87, $0F
-        .WORD   @b - sfx_fdb1_data      ;=$27, $00
+        .WORD   @b - @header            ;=$27, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fde6_data:                                                          ;$FDE6
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $03
         .WORD $0001, $0001
         .BYTE $00
@@ -30236,19 +30257,19 @@ sfx_fde6_data:                                                          ;$FDE6
         .BYTE   $86
 @a:     .BYTE   $00, $0C, $8B
         .BYTE   $87, $07
-        .WORD   @a - sfx_fde6_data      ;=$12, $00
+        .WORD   @a - @header            ;=$12, $00
         .BYTE   $00, $30
         .BYTE   $86
 @b:     .BYTE   $00, $02, $8C
         .BYTE   $87, $0E
-        .WORD   @b - sfx_fde6_data      ;=$1C, $00
+        .WORD   @b - @header            ;=$1C, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fe0c_data:                                                          ;$FE0C
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $03
         .WORD $0001, $0001
         .BYTE $00
@@ -30259,7 +30280,7 @@ sfx_fe0c_data:                                                          ;$FE0C
         .BYTE   $86
 @a:     .BYTE   $00, $03, $7F, $03, $8C, $8C, $8C, $8C
         .BYTE   $87, $03
-        .WORD   @a - sfx_fe0c_data      ;=$12, $00
+        .WORD   @a - @header            ;=$12, $00
         .BYTE   $00, $03
         .BYTE   $81, $00
         .BYTE   $FE
@@ -30267,7 +30288,7 @@ sfx_fe0c_data:                                                          ;$FE0C
 
 sfx_fe2f_data:                                                          ;$FE2F
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30277,13 +30298,13 @@ sfx_fe2f_data:                                                          ;$FE2F
         .BYTE   $86
 @a:     .BYTE   $0C, $02, $0D, $02
         .BYTE   $87, $0A
-        .WORD   @a - sfx_fe2f_data      ;=$10, $00
+        .WORD   @a - @header            ;=$10, $00
         .BYTE   $FE
         ;
 
 sfx_fe48_data:                                                          ;$FE48
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30296,7 +30317,7 @@ sfx_fe48_data:                                                          ;$FE48
 
 sfx_fe5c_data:                                                          ;$FE5C
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $03
         .WORD $0001, $0001
         .BYTE $00
@@ -30312,7 +30333,7 @@ sfx_fe5c_data:                                                          ;$FE5C
 
 sfx_fe74_data:                                                          ;$FE74
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30324,14 +30345,14 @@ sfx_fe74_data:                                                          ;$FE74
 @a:     .BYTE   $11, $00, $09, $00, $07, $00, $04, $00, $03, $00, $00, $00, $0E, $00, $0C, $00
         .BYTE   $8C, $8C, $8C
         .BYTE   $87, $04
-        .WORD   @a - sfx_fe74_data      ;=$16, $00
+        .WORD   @a - @header            ;=$16, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fea4_data:                                                          ;$FEA4
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30343,14 +30364,14 @@ sfx_fea4_data:                                                          ;$FEA4
         .BYTE   $86
 @a:     .BYTE   $4B, $00, $0B, $00, $8C
         .BYTE   $87, $0F
-        .WORD   @a - sfx_fea4_data      ;=$1C, $00
+        .WORD   @a - @header            ;=$1C, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fecc_data:                                                          ;$FECC
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30360,14 +30381,14 @@ sfx_fecc_data:                                                          ;$FECC
         .BYTE   $86
 @a:     .BYTE   $19, $01, $39, $01, $8C
         .BYTE   $87, $0F
-        .WORD   @a - sfx_fecc_data      ;=$10, $00
+        .WORD   @a - @header            ;=$10, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_fee8_data:                                                          ;$FEE8
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $03
         .WORD $0001, $0001
         .BYTE $00
@@ -30379,14 +30400,14 @@ sfx_fee8_data:                                                          ;$FEE8
         .BYTE   $86
 @a:     .BYTE   $00, $00, $7F, $00, $8C
         .BYTE   $87, $0E
-        .WORD   @a - sfx_fee8_data      ;=$14, $00
+        .WORD   @a - @header            ;=$14, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_ff08_data:                                                          ;$FF08
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30401,14 +30422,14 @@ sfx_ff08_data:                                                          ;$FF08
         .BYTE   $86
 @a:     .BYTE   $5B, $00, $0C, $00, $7F, $00, $57, $00, $8C
         .BYTE   $87, $06
-        .WORD   @a - sfx_ff08_data      ;=$36, $00
+        .WORD   @a - @header            ;=$36, $00
         .BYTE   $81, $00
         .BYTE   $FE
         ;
 
 sfx_ff4e_data:                                                          ;$FF4E
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30427,7 +30448,7 @@ sfx_ff4e_data:                                                          ;$FF4E
 
 sfx_ff83_data:                                                          ;$FF83
 ;===============================================================================
-        ;%sfxHeader
+@header:
         .BYTE $02
         .WORD $0001, $0001
         .BYTE $00
@@ -30439,22 +30460,23 @@ sfx_ff83_data:                                                          ;$FF83
         .BYTE   $86
 @b:     .BYTE   $30, $06, $8B
         .BYTE   $87, $04
-        .WORD   @b - sfx_ff83_data      ;=$17, $00
+        .WORD   @b - @header            ;=$17, $00
         .BYTE   $86
 @c:     .BYTE   $30, $06, $8C, $8C
         .BYTE   $87, $05
-        .WORD   @c - sfx_ff83_data      ;=$1F, $00
+        .WORD   @c - @header            ;=$1F, $00
         .BYTE   $87, $FF
-        .WORD   @a - sfx_ff83_data      ;=$14, $00
+        .WORD   @a - @header            ;=$14, $00
         .BYTE   $81, $00
         .BYTE   $FE
+
+;===============================================================================
 
 ;;        ;the background text in the original ROM
 ;;      ;TODO: move this to \original module
 ;;        "Master System & Game Gear Version. '1991 (C)Ancient. (BANK0-4)", $A2
 ;;        "SONIC THE HEDGE"
         ;
-
 .ENDS
 
 .BANK   4       SLOT    1
