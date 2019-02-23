@@ -4001,7 +4001,7 @@ titleScreen:                                                            ;$1287
         ;play title screen music:
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_TITLESCREEN
+                ld      A,      MUSIC_ID_TITLESCREEN
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -7043,7 +7043,7 @@ _LABEL_258B_133:                                                        ;$258B
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_ALLEMERALDS
+                ld      A,      MUSIC_ID_ALLEMERALDS
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -7196,7 +7196,7 @@ _LABEL_258B_133:                                                        ;$258B
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_ENDING
+                ld      A,      MUSIC_ID_ENDING
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -9758,7 +9758,7 @@ hitPlayer:                                                              ;$35E5
         ; play the death sound effect:
         ; (we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_DEATH
+                ld      A,      MUSIC_ID_DEATH
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -12215,7 +12215,7 @@ sonic_process:                                                          ;$49C8
         ;drowned!
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_DEATH
+                ld      A,      MUSIC_ID_DEATH
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -14069,7 +14069,7 @@ powerups_invincibility_process:                                         ;$5CFF
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_INVINCIBILITY
+                ld      A,      MUSIC_ID_INVINCIBILITY
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -14329,7 +14329,7 @@ powerups_emerald_process:                                               ;$5EA2
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_EMERALD
+                ld      A,      MUSIC_ID_EMERALD
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -14500,7 +14500,7 @@ boss_endSign_process:                                                   ;$5F17
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_ACTCOMPLETE
+                ld      A,      MUSIC_ID_ACTCOMPLETE
                 rst     $18     ;=rst_playMusic
                 ld      A,      $0C
                 rst     $28     ;=rst_playSFX
@@ -16381,7 +16381,7 @@ boss_greenHill_process:                                                 ;$700C
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_BOSS1
+                ld      A,      MUSIC_ID_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -16822,7 +16822,7 @@ boss_capsule_process:                                                   ;$732C
 
         ;(we can compile with, or without, audio)
         .IFDEF  OPTION_AUDIO
-                ld      A,      MUSIC_ACTCOMPLETE
+                ld      A,      MUSIC_ID_ACTCOMPLETE
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -18219,7 +18219,7 @@ boss_jungle_process:                                                    ;$8053
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_BOSS1
+                ld      A,      MUSIC_ID_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -18692,7 +18692,7 @@ mob_boss_bridge:                                                        ;$8496
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_BOSS1
+                ld      A,      MUSIC_ID_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -20384,7 +20384,7 @@ mob_boss_labyrinth:                                                     ;$9267
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_BOSS1
+                ld      A,      MUSIC_ID_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -22812,7 +22812,7 @@ boss_scrapBrain_process:                                                        
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_BOSS1
+                ld      A,      MUSIC_ID_BOSS1
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -22951,7 +22951,7 @@ boss_scrapBrain_process:                                                        
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_ACTCOMPLETE
+                ld      A,      MUSIC_ID_ACTCOMPLETE
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -24502,7 +24502,7 @@ boss_skyBase_process:                                                           
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_BOSS3
+                ld      A,      MUSIC_ID_BOSS3
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -24654,7 +24654,7 @@ boss_skyBase_process:                                                           
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_SCRAPBRAIN
+                ld      A,      MUSIC_ID_SCRAPBRAIN
                 rst     $18     ;=rst_playMusic
                 ld      A,      $21
                 rst     $28     ;=rst_playSFX
@@ -25401,7 +25401,7 @@ cutscene_final_process:                                                         
 
         ;(we can compile with, or without, audio)
         .IFDEF OPTION_AUDIO
-                ld      A,      MUSIC_TITLESCREEN
+                ld      A,      MUSIC_ID_TITLESCREEN
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -26943,89 +26943,89 @@ music_pointers:                                                         ;$C716
 ;       but use auto-numbering for new builds
 
 @greenHill:                             ; index $00
-        .DEFINE MUSIC_GREENHILL         $00
-        .WORD   music_greenHill_data    ;=$47D0 [$C7D0]
+        .DEFINE MUSIC_ID_GREENHILL      $00
+        .WORD   music_greenHill         ;=$47D0 [$C7D0]
 
 @bridge:                                ; index $01
-        .DEFINE MUSIC_BRIDGE            $01
-        .WORD   music_bridge_data       ;=$574A [$D74A]
+        .DEFINE MUSIC_ID_BRIDGE         $01
+        .WORD   music_bridge            ;=$574A [$D74A]
 
 @jungle:                                ; index $02
-        .DEFINE MUSIC_JUNGLE            $02
-        .WORD   music_jungle_data       ;=$524A [$D24A]
+        .DEFINE MUSIC_ID_JUNGLE         $02
+        .WORD   music_jungle            ;=$524A [$D24A]
 
 @labyrinth:                             ; index $03
-        .DEFINE MUSIC_LABYRINTH         $03
-        .WORD   music_labyrinth_data    ;=$760C [$F60C]
+        .DEFINE MUSIC_ID_LABYRINTH      $03
+        .WORD   music_labyrinth         ;=$760C [$F60C]
 
 @scrapBrain:                            ; index $04
-        .DEFINE MUSIC_SCRAPBRAIN        $04
-        .WORD   music_scrapBrain_data   ;=$5B4F [$DB4F]
+        .DEFINE MUSIC_ID_SCRAPBRAIN     $04
+        .WORD   music_scrapBrain        ;=$5B4F [$DB4F]
 
 @skyBase:                               ; index $05
-        .DEFINE MUSIC_SKYBASE           $05
-        .WORD   music_skyBase_data      ;=$61A7 [$E1A7]
+        .DEFINE MUSIC_ID_SKYBASE        $05
+        .WORD   music_skyBase           ;=$61A7 [$E1A7]
 
 @titleScreen:                           ; index $06
-        .DEFINE MUSIC_TITLESCREEN       $06
-        .WORD   music_titleScreen_data  ;=$64C3 [$E4C3]
+        .DEFINE MUSIC_ID_TITLESCREEN    $06
+        .WORD   music_titleScreen       ;=$64C3 [$E4C3]
 
 @mapScreen:                             ; index $07
-        .DEFINE MUSIC_MAPSCREEN         $07
-        .WORD   music_mapScreen_data    ;=$663C [$E63C]
+        .DEFINE MUSIC_ID_MAPSCREEN      $07
+        .WORD   music_mapScreen         ;=$663C [$E63C]
 
 @invincibility:                         ; index $08
-        .DEFINE MUSIC_INVINCIBILITY     $08
-        .WORD   music_invincibility_data;=$6704 [$E704]
+        .DEFINE MUSIC_ID_INVINCIBILITY  $08
+        .WORD   music_invincibility     ;=$6704 [$E704]
 
 @actComplete:                           ; index $09
-        .DEFINE MUSIC_ACTCOMPLETE       $09
-        .WORD   music_actComplete_data  ;=$68B4 [$E8B4]
+        .DEFINE MUSIC_ID_ACTCOMPLETE    $09
+        .WORD   music_actComplete       ;=$68B4 [$E8B4]
 
 @death:                                 ; index $0A
-        .DEFINE MUSIC_DEATH             $0A
-        .WORD   music_death_data        ;=$6991 [$E991]
+        .DEFINE MUSIC_ID_DEATH          $0A
+        .WORD   music_death             ;=$6991 [$E991]
 
 @boss1:                                 ; index $0B
-        .DEFINE MUSIC_BOSS1             $0B
-        .WORD   music_boss_data         ;=$6AC0 [$EAC0]
+        .DEFINE MUSIC_ID_BOSS1          $0B
+        .WORD   music_boss              ;=$6AC0 [$EAC0]
 
 @boss2:                                 ; index $0C
-        .DEFINE MUSIC_BOSS2             $0C
-        .WORD   music_boss_data         ;=$6AC0 [$EAC0]
+        .DEFINE MUSIC_ID_BOSS2          $0C
+        .WORD   music_boss              ;=$6AC0 [$EAC0]
 
 @boss3:                                 ; index $0D
-        .DEFINE MUSIC_BOSS3             $0D
-        .WORD   music_boss_data         ;=$6AC0 [$EAC0]
+        .DEFINE MUSIC_ID_BOSS3          $0D
+        .WORD   music_boss              ;=$6AC0 [$EAC0]
 
 @ending:                                ; index $0E
-        .DEFINE MUSIC_ENDING            $0E
-        .WORD   music_ending_data       ;=$6D54 [$ED54]
+        .DEFINE MUSIC_ID_ENDING         $0E
+        .WORD   music_ending            ;=$6D54 [$ED54]
 
         ; an unused entry
 @unused1:                               ; index $0F
-        .DEFINE MUSIC_UNUSED1           $0F
-        .WORD   music_greenHill_data    ;=$47D0 [$C7D0]
+        .DEFINE MUSIC_ID_UNUSED1        $0F
+        .WORD   music_greenHill         ;=$47D0 [$C7D0]
 
 @specialStage:                          ; index $10
-        .DEFINE MUSIC_SPECIALSTAGE      $10
-        .WORD   music_specialStage_data ;=$712C [$F12C]
+        .DEFINE MUSIC_ID_SPECIALSTAGE   $10
+        .WORD   music_specialStage      ;=$712C [$F12C]
 
         ; a couple of unused entries
 @unused2:                               ; index $11
-        .DEFINE MUSIC_UNUSED2           $11
-        .WORD   music_greenHill_data    ;=$47D0 [$C7D0]
+        .DEFINE MUSIC_ID_UNUSED2        $11
+        .WORD   music_greenHill         ;=$47D0 [$C7D0]
 @unused3:                               ; index $12
-        .DEFINE MUSIC_UNUSED3           $12
-        .WORD   music_greenHill_data    ;=$47D0 [$C7D0]
+        .DEFINE MUSIC_ID_UNUSED3        $12
+        .WORD   music_greenHill         ;=$47D0 [$C7D0]
 
 @allEmeralds:                           ; index $13
-        .DEFINE MUSIC_ALLEMERALDS       $13
-        .WORD   music_allEmeralds_data  ;=$798C [$F98C]
+        .DEFINE MUSIC_ID_ALLEMERALDS    $13
+        .WORD   music_allEmeralds       ;=$798C [$F98C]
 
 @emerald:                               ; index $14
-        .DEFINE MUSIC_EMERALD           $14
-        .WORD   music_emerald_data      ;=$7A26 [$FA26]
+        .DEFINE MUSIC_ID_EMERALD        $14
+        .WORD   music_emerald           ;=$7A26 [$FA26]
 
 ;;%sfxHeader
 ;;@overriddenTrack:                       %byte
@@ -27073,7 +27073,7 @@ sfx_pointers:                                                           ;$C740
         .WORD   sfx_ff83_data, $0002    ;=$7F83 [$FF83]
         ;
 
-music_greenHill_data:                                                   ;$C7D0
+music_greenHill:                                                        ;$C7D0
 ;===============================================================================
 @header:
 
@@ -27326,7 +27326,7 @@ music_greenHill_data:                                                   ;$C7D0
         .BYTE   $00
         ;
 
-music_marble_data:                                                      ;$CD0A
+music_marble:                                                           ;$CD0A
 ;===============================================================================
 @header:
 
@@ -27643,7 +27643,7 @@ music_marble_data:                                                      ;$CD0A
         .BYTE   $00, $00, $00, $00, $00, $00, $00
         ;
 
-music_jungle_data:                                                      ;$D24A
+music_jungle:                                                           ;$D24A
 ;===============================================================================
 @header:
 
@@ -27804,7 +27804,7 @@ music_jungle_data:                                                      ;$D24A
         .BYTE   $00, $00, $00, $00
         ;
 
-music_bridge_data:                                                      ;$D74A
+music_bridge:                                                           ;$D74A
 ;===============================================================================
 @header:
 
@@ -28030,7 +28030,7 @@ music_bridge_data:                                                      ;$D74A
         .BYTE   $FF
         ;
 
-music_scrapBrain_data:                                                  ;$DB4F
+music_scrapBrain:                                                       ;$DB4F
 ;===============================================================================
 @header:
 
@@ -28337,7 +28337,7 @@ music_scrapBrain_data:                                                  ;$DB4F
         .BYTE   $00, $00, $00, $00
         ;
 
-music_skyBase_data:                                                     ;$E1A7
+music_skyBase:                                                          ;$E1A7
 ;===============================================================================
 @header:
 
@@ -28515,7 +28515,7 @@ music_skyBase_data:                                                     ;$E1A7
         .BYTE   $FF
         ;
 
-music_titleScreen_data:                                                 ;$E4C3
+music_titleScreen:                                                      ;$E4C3
 ;===============================================================================
 @header:
 
@@ -28613,7 +28613,7 @@ music_titleScreen_data:                                                 ;$E4C3
         .BYTE   $FF
         ;
 
-music_mapScreen_data:                                                   ;$E63C
+music_mapScreen:                                                        ;$E63C
 ;===============================================================================
 @header:
 
@@ -28675,7 +28675,7 @@ music_mapScreen_data:                                                   ;$E63C
         .BYTE   $FF
         ;
 
-music_invincibility_data:                                               ;$E704
+music_invincibility:                                                    ;$E704
 ;===============================================================================
 @header:
 
@@ -28794,7 +28794,7 @@ music_invincibility_data:                                               ;$E704
         .BYTE   $00, $00, $00, $00
         ;
 
-music_actComplete_data:                                                 ;$E8B4
+music_actComplete:                                                      ;$E8B4
 ;===============================================================================
 @header:
 
@@ -28860,7 +28860,7 @@ music_actComplete_data:                                                 ;$E8B4
         .BYTE   $FF
         ;
 
-music_death_data:                                                       ;$E991
+music_death:                                                            ;$E991
 ;===============================================================================
 @header:
 
@@ -28952,7 +28952,7 @@ music_death_data:                                                       ;$E991
         .BYTE   $FF
         ;
 
-music_boss_data:                                                        ;$EAC0
+music_boss:                                                             ;$EAC0
 ;===============================================================================
 @header:
 
@@ -29108,7 +29108,7 @@ music_boss_data:                                                        ;$EAC0
         .BYTE   $FF
         ;
 
-music_ending_data:                                                      ;$ED54
+music_ending:                                                           ;$ED54
 ;===============================================================================
 @header:
 
@@ -29281,7 +29281,7 @@ music_ending_data:                                                      ;$ED54
         .BYTE   $00
         ;
 
-music_specialStage_data:                                                ;$F12C
+music_specialStage:                                                     ;$F12C
 ;===============================================================================
 @header:
 
@@ -29552,7 +29552,7 @@ music_specialStage_data:                                                ;$F12C
         .BYTE   $00, $00
         ;
 
-music_labyrinth_data:                                                   ;$F60C
+music_labyrinth:                                                        ;$F60C
 ;===============================================================================
 @header:
         .WORD   @channel1 - @header     ;=$000A
@@ -29751,7 +29751,7 @@ music_labyrinth_data:                                                   ;$F60C
         .BYTE   $00, $00, $00, $00
         ;
 
-music_allEmeralds_data:                                                 ;$F98C
+music_allEmeralds:                                                      ;$F98C
 ;===============================================================================
 @header:
         .WORD   @channel1 - @header     ;=$000A
@@ -29828,7 +29828,7 @@ music_allEmeralds_data:                                                 ;$F98C
         .BYTE   $FF
         ;
 
-music_emerald_data:                                                     ;$FA26
+music_emerald:                                                          ;$FA26
 ;===============================================================================
 @header:
 
