@@ -4285,7 +4285,7 @@ _1401:                                                                  ;$1401
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1A
+                ld      A,      SFX_ID_1A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -4527,7 +4527,7 @@ _155e:                                                                  ;$155E
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $02
+                ld      A,      SFX_ID_02
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -4725,7 +4725,7 @@ _172f:                                                                  ;$172F
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $02
+                ld      A,      SFX_ID_02
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -4754,7 +4754,7 @@ _172f:                                                                  ;$172F
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $02
+                ld      A,      SFX_ID_02
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -4794,8 +4794,8 @@ _172f:                                                                  ;$172F
         call    increaseScore
 
         ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUNDUDIO
-                ld      A,      $02
+        .IFDEF  OPTION_SOUND
+                ld      A,      SFX_ID_02
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -5876,7 +5876,7 @@ _1f49:                                                                  ;$1F49
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $13
+                ld      A,      SFX_ID_13
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -6022,7 +6022,7 @@ _202d:                                                                  ;$202D
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $0E
+                ld      A,      SFX_ID_0E
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -6036,7 +6036,7 @@ addExtraLife:                                                           ;$2031
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $09                             ;extra life sound?
+                ld      A,      SFX_ID_09       ; extra life sound?
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -6056,7 +6056,7 @@ _203f:                                                                  ;$203F
 ;-------------------------------------------------------------------------------
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $07
+                ld      A,      SFX_ID_07
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -9831,7 +9831,7 @@ dropRings:                                                              ;$3644
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $11
+                ld      A,      SFX_ID_11
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -9876,7 +9876,7 @@ _36be:                                                                  ;$36BE
         ; play the explosion sound:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -10488,8 +10488,8 @@ increaseRings:                                                          ;$39AC
         ; play the 1-up sound effect:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,              $09
-                rst     $28             ;=rst_playSFX
+                ld      A,      SFX_ID_09
+                rst     $28     ;=rst_playSFX
         .ENDIF
         ret
 
@@ -10500,8 +10500,8 @@ increaseRings:                                                          ;$39AC
         ; play the pickup-ring sound:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,              $02
-                rst     $28             ;=rst_playSFX
+                ld      A,      SFX_ID_02
+                rst     $28     ;=rst_playSFX
         .ENDIF
         ret
         ;
@@ -10561,8 +10561,8 @@ increaseScore:                                                          ;$39D8
         ; play extra life sound effect:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,              $09
-                rst     $28             ;=rst_playSFX
+                ld      A,      SFX_ID_09
+                rst     $28     ;=rst_playSFX
         .ENDIF
         ret
         ;
@@ -12243,7 +12243,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1A
+                ld      A,      SFX_ID_1A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -12283,7 +12283,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $00
+                ld      A,      SFX_ID_00
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -12329,7 +12329,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $06
+                ld      A,      SFX_ID_06
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -12522,7 +12522,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $03
+                ld      A,      SFX_ID_03
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13002,7 +13002,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $05
+                ld      A,      SFX_ID_05
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13025,7 +13025,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13056,7 +13056,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13079,7 +13079,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13124,7 +13124,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $12                                     ;splash?
+                ld      A,      SFX_ID_12       ; splash?
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13158,7 +13158,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13172,7 +13172,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $05
+                ld      A,      SFX_ID_05
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13234,7 +13234,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $06
+                ld      A,      SFX_ID_06
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -13268,7 +13268,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $12
+                ld      A,      SFX_ID_12
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13383,7 +13383,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $07
+                ld      A,      SFX_ID_07
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13439,7 +13439,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13454,7 +13454,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13469,7 +13469,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13513,7 +13513,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $07
+                ld      A,      SFX_ID_07
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13890,7 +13890,7 @@ powerups_speed_process:                                                 ;$5BD9
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $02
+                ld      A,      SFX_ID_02
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -13946,7 +13946,7 @@ powerups_life_process:                                                  ;$5C05
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $09
+                ld      A,      SFX_ID_09
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -14504,7 +14504,7 @@ boss_endSign_process:                                                   ;$5F17
         .IFDEF  OPTION_SOUND
                 ld      A,      MUSIC_ID_ACTCOMPLETE
                 rst     $18     ;=rst_playMusic
-                ld      A,      $0C
+                ld      A,      SFX_ID_0C
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -14553,7 +14553,7 @@ boss_endSign_process:                                                   ;$5F17
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $0B
+                ld      A,      SFX_ID_0B
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -15072,7 +15072,7 @@ badnick_crabmeat_process:                                               ;$65EE
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $0A
+                ld      A,      SFX_ID_0A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -15836,7 +15836,7 @@ badnick_buzzbomber_process:                                             ;$6B74
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $0A
+                ld      A,      SFX_ID_0A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -16309,7 +16309,7 @@ badnick_newtron_process:                                                ;$6F08
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $0A
+                ld      A,      SFX_ID_0A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -17189,7 +17189,7 @@ _77be:                                                                  ;$77BE
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -17462,7 +17462,7 @@ _7a3a:                                                                  ;$7A3A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -17503,7 +17503,7 @@ meta_trip_process:                                                      ;$7AA7
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $11
+                ld      A,      SFX_ID_11
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -17863,7 +17863,7 @@ badnick_chopper_process:                                                ;$7CF6
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $12
+                ld      A,      SFX_ID_12
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -18449,7 +18449,7 @@ unknown_8218_process:                                                   ;$8218
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -18606,10 +18606,10 @@ platform_bridge_process:                                                ;$83C1
         ld      HL,     @_848e
         ld      [D2AF], HL
         set     0,      [IX+Mob.flags]
-        ld      A,      $20
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
+                ld      A,      SFX_ID_20
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -18811,7 +18811,7 @@ mob_boss_bridge:                                                        ;$8496
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -18996,7 +18996,7 @@ platform_balance_process:                                               ;$866C
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $04
+                ld      A,      SFX_ID_04
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -19581,7 +19581,7 @@ trap_spear_process:                                                             
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1D
+                ld      A,      SFX_ID_1D
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -19653,7 +19653,7 @@ trap_fireball_process:                                                          
 
         ; (we can compile with, or without, sound)
 @_3:    .IFDEF  OPTION_SOUND
-                ld      A,      $18
+                ld      A,      SFX_ID_18
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -20607,7 +20607,7 @@ mob_boss_labyrinth:                                                     ;$9267
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -21030,7 +21030,7 @@ unknown_96f8_process:                                                           
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $22
+                ld      A,      SFX_ID_22
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -21382,7 +21382,7 @@ platform_bumper_process:                                                        
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $07
+                ld      A,      SFX_ID_07
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -21482,7 +21482,7 @@ unknown_9be8_process:                                                           
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $18
+                ld      A,      SFX_ID_18
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -21516,7 +21516,7 @@ unknown_9be8_process:                                                           
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $18
+                ld      A,      SFX_ID_18
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -21650,7 +21650,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $17
+                ld      A,      SFX_ID_17
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -21790,7 +21790,7 @@ _9eb4:                                                                  ;$9EB4
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $19
+                ld      A,      SFX_ID_19
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -21812,7 +21812,7 @@ _9ec4:                                                                  ;$9EC4
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $19
+                ld      A,      SFX_ID_19
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -22092,7 +22092,7 @@ trap_electric_process:                                                          
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $13
+                ld      A,      SFX_ID_13
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -22346,7 +22346,7 @@ unknown_a33c_process:                                                           
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -22438,7 +22438,7 @@ door_switch_process:                                                            
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1A
+                ld      A,      SFX_ID_1A
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -22997,7 +22997,7 @@ boss_scrapBrain_process:                                                        
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $19
+                ld      A,      SFX_ID_19
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -23286,7 +23286,7 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1B
+                ld      A,      SFX_ID_1B
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -23498,7 +23498,7 @@ trap_cannon_process:                                                            
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $1C
+                ld      A,      SFX_ID_1C
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -24458,7 +24458,7 @@ _b5c2:                                                                  ;$B5C2
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -24658,7 +24658,7 @@ boss_skyBase_process:                                                           
         .IFDEF  OPTION_SOUND
                 ld      A,      MUSIC_ID_SCRAPBRAIN
                 rst     $18     ;=rst_playMusic
-                ld      A,      $21
+                ld      A,      SFX_ID_21
                 rst     $28     ;=rst_playSFX
         .ENDIF
         ret
@@ -24696,7 +24696,7 @@ boss_skyBase_process:                                                           
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -25136,7 +25136,7 @@ boss_electricBeam_process:                                                      
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $13
+                ld      A,      SFX_ID_13
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -25183,7 +25183,7 @@ boss_electricBeam_process:                                                      
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,  $13
+                ld      A,      SFX_ID_13
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -25403,7 +25403,7 @@ cutscene_final_process:                                                         
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_TITLESCREEN
+                ld      A,      SFX_ID_06
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
@@ -25460,7 +25460,7 @@ cutscene_final_process:                                                         
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      $01
+                ld      A,      SFX_ID_01
                 rst     $28     ;=rst_playSFX
         .ENDIF
 

@@ -7,15 +7,18 @@
 ; Terminology:
 ; 
 ; *     "PSG"
+;
 ;       Short for Programmable Sound Generator, it is the Yamaha SN76489
 ;       sound processor used in the Master System
 ; 
 ; *     "Channel"
+;
 ;       The PSG has four channels of sound that the chip mixes into mono
 ;       output. Three of the channels produce waves (musical notes) and
 ;       the fourth produces noise (for percussion or sound effects)
 ; 
 ; *     "Track"
+;
 ;       The sequence of notes played by a single channel. There are five
 ;       tracks, 4 represent the current song being played and the fifth
 ;       is for sound-effects. Since there are only four actual hardware
@@ -27,7 +30,7 @@
 ; each of the five tracks have a large set of variables for managing their
 ; state. below is the general definition of the track variables, which is
 ; duplicated five times in the RAM
-
+;-------------------------------------------------------------------------------
         ; to set a frequency on the PSG, a data byte is written to the sound
         ; port with bit 7 set and bits 6 & 5 forming the sound channel number
         ; 0-3. this variable holds the bit mask for the track's particular
@@ -1478,41 +1481,148 @@ music_pointers:                                                         ;$C716
 
 sfx_pointers:                                                           ;$C740
 ;===============================================================================
+        .DEFINE SFX_ID_00       $00
+        .EXPORT SFX_ID_00
         .WORD   sfx_fb27_data $0002    ;=$7B27 [$FB27]
+        
+        .DEFINE SFX_ID_01       $01
+        .EXPORT SFX_ID_01
         .WORD   sfx_fb43_data $0002    ;=$7B43 [$FB43]
+        
+        .DEFINE SFX_ID_02       $02
+        .EXPORT SFX_ID_02
         .WORD   sfx_fb74_data $0002    ;=$7B74 [$FB74]
+        
+        .DEFINE SFX_ID_03       $03
+        .EXPORT SFX_ID_03
         .WORD   sfx_fb98_data $0002    ;=$7B98 [$FB98]
+        
+        .DEFINE SFX_ID_04       $04
+        .EXPORT SFX_ID_04
         .WORD   sfx_fbbf_data $0002    ;=$7BBF [$FBBF]
+        
+        .DEFINE SFX_ID_05       $05
+        .EXPORT SFX_ID_05
         .WORD   sfx_fbe6_data $0002    ;=$7BE6 [$FBE6]
+        
+        .DEFINE SFX_ID_06       $06
+        .EXPORT SFX_ID_06
         .WORD   sfx_fc18_data $0002    ;=$7C18 [$FC18]
+        
+        .DEFINE SFX_ID_07       $07
+        .EXPORT SFX_ID_07
         .WORD   sfx_fc42_data $0002    ;=$7C42 [$FC42]
+        
+        .DEFINE SFX_ID_08       $08
+        .EXPORT SFX_ID_08
         .WORD   sfx_fc5e_data $0001    ;=$7C5E [$FC5E]
+        
+        .DEFINE SFX_ID_09       $09
+        .EXPORT SFX_ID_09
         .WORD   sfx_fc8e_data $0001    ;=$7C8E [$FC8E]
+        
+        .DEFINE SFX_ID_0A       $0A
+        .EXPORT SFX_ID_0A
         .WORD   sfx_fcb7_data $0002    ;=$7CB7 [$FCB7]
+        
+        .DEFINE SFX_ID_0B       $0B
+        .EXPORT SFX_ID_0B
         .WORD   sfx_fcd8_data $0001    ;=$7CD8 [$FCD8]
+        
+        .DEFINE SFX_ID_0C       $0C
+        .EXPORT SFX_ID_0C
         .WORD   sfx_fcfd_data $0001    ;=$7CFD [$FCFD]
+        
+        .DEFINE SFX_ID_0D       $0D
+        .EXPORT SFX_ID_0D
         .WORD   sfx_fd24_data $0001    ;=$7D24 [$FD24]
+        
+        .DEFINE SFX_ID_0E       $0E
+        .EXPORT SFX_ID_0E
         .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        
+        .DEFINE SFX_ID_0F       $0F
+        .EXPORT SFX_ID_0F
         .WORD   sfx_fd62_data $0001    ;=$7D62 [$FD62]
+        
+        .DEFINE SFX_ID_10       $10
+        .EXPORT SFX_ID_10
         .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        
+        .DEFINE SFX_ID_11       $11
+        .EXPORT SFX_ID_11
         .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        
+        .DEFINE SFX_ID_12       $12
+        .EXPORT SFX_ID_12
         .WORD   sfx_fd88_data $0002    ;=$7D88 [$FD88]
+        
+        .DEFINE SFX_ID_13       $13
+        .EXPORT SFX_ID_13
         .WORD   sfx_fdb1_data $0001    ;=$7DB1 [$FDB1]
+        
+        .DEFINE SFX_ID_14       $14
+        .EXPORT SFX_ID_14
         .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        
+        .DEFINE SFX_ID_15       $15
+        .EXPORT SFX_ID_15
         .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        
+        .DEFINE SFX_ID_16       $16
+        .EXPORT SFX_ID_16
         .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        
+        .DEFINE SFX_ID_17       $17
+        .EXPORT SFX_ID_17
         .WORD   sfx_fde6_data $0001    ;=$7DE6 [$FDE6]
+        
+        .DEFINE SFX_ID_18       $18
+        .EXPORT SFX_ID_18
         .WORD   sfx_fe0c_data $0001    ;=$7E0C [$FE0C]
+        
+        .DEFINE SFX_ID_19       $19
+        .EXPORT SFX_ID_19
         .WORD   sfx_fe2f_data $0002    ;=$7E2F [$FE2F]
+        
+        .DEFINE SFX_ID_1A       $1A
+        .EXPORT SFX_ID_1A
         .WORD   sfx_fe48_data $0001    ;=$7E48 [$FE48]
+        
+        .DEFINE SFX_ID_1B       $1B
+        .EXPORT SFX_ID_1B
         .WORD   sfx_fe5c_data $0001    ;=$7E5C [$FE5C]
+        
+        .DEFINE SFX_ID_1C       $1C
+        .EXPORT SFX_ID_1C
         .WORD   sfx_fe74_data $0001    ;=$7E74 [$FE74]
+        
+        .DEFINE SFX_ID_1D       $1D
+        .EXPORT SFX_ID_1D
         .WORD   sfx_fea4_data $0001    ;=$7EA4 [$FEA4]
+        
+        .DEFINE SFX_ID_1E       $1E
+        .EXPORT SFX_ID_1E
         .WORD   sfx_fecc_data $0002    ;=$7ECC [$FECC]
+        
+        .DEFINE SFX_ID_1F       $1F
+        .EXPORT SFX_ID_1F
         .WORD   sfx_fecc_data $0002    ;=$7ECC [$FECC]
+        
+        .DEFINE SFX_ID_20       $20
+        .EXPORT SFX_ID_20
         .WORD   sfx_fee8_data $0002    ;=$7EE8 [$FEE8]
+        
+        .DEFINE SFX_ID_21       $21
+        .EXPORT SFX_ID_21
         .WORD   sfx_ff08_data $0001    ;=$7F08 [$FF08]
+        
+        .DEFINE SFX_ID_22       $22
+        .EXPORT SFX_ID_22
         .WORD   sfx_ff4e_data $0001    ;=$7F4E [$FF4E]
+        
+        .DEFINE SFX_ID_23       $23
+        .EXPORT SFX_ID_23
         .WORD   sfx_ff83_data $0002    ;=$7F83 [$FF83]
         ;
 
