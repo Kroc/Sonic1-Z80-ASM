@@ -378,7 +378,7 @@ loadPaletteFromInterrupt_water:                                         ;$01BA
 ;-------------------------------------------------------------------------------
 
         ; get the position of the water line on screen
-        ld      A,    [WATERLINE]
+        ld      A,      [WATERLINE]
         and     A
         jr      z,      @_2     ; is it 0? (above the screen)
         cp      $FF             ; or $FF? (below the screen)
@@ -540,8 +540,8 @@ init:                                                                   ;$028B
         ld      [SMS_MAPPER_SLOT2],     A
 
         ; empty the RAM!
-        ld      HL,     FLOORLAYOUT     ; starting from $C000,
-        ld      DE,     FLOORLAYOUT+1   ; and copying one byte to the next,
+        ld      HL,     RAM_FLOORLAYOUT ; starting from $C000,
+        ld      DE,     RAM_FLOORLAYOUT+1 ; and copying one byte to the next,
         ld      BC,     $1FEF           ; copy 8'175 bytes ($C000-$DFEF),
         ld      [HL],   L               ; using a value of 0 ($00 from $C000)
         ldir                            ; -- faster to read a register than RAM
@@ -571,8 +571,8 @@ init:                                                                   ;$028B
         ; move all sprites off the bottom of the screen!
         ; (set 64 bytes of VRAM from $3F00 to 224)
         ld      HL,     $3F00
-        ld      BC,     64
-        ld      A,      224
+        ld      BC,     SMS_SPRITES
+        ld      A,      SMS_SCREEN_HEIGHT
         call    clearVRAM
 
         ; if the sound module is being included,
@@ -585,7 +585,7 @@ init:                                                                   ;$028B
         ; though this is in practice slower than just using an absolute address
         ; TODO: we could remove use of IY as the common variables address
         ;       entirely and perhaps use it for other things
-        ld      IY,        VARS         ; variable space starts here
+        ld      IY,     VARS            ; variable space starts here
         jp      _1c49
         ;
 
@@ -742,7 +742,8 @@ updateVDPSprites:                                                       ;$033E
         out     [sms.ports.vdp_control],        A
 
         ld      B,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     SPRITETABLE+1   ; Y-position of the first sprite
+        ; Y-position of the first sprite
+        ld      HL,     RAM_SPRITETABLE+1
         ld      DE,     3               ; sprite table is 3 bytes per sprite
 
         ld      A,      B
@@ -784,16 +785,16 @@ updateVDPSprites:                                                       ;$033E
         and     A
         ret     z
 
-        ld      HL,     SPRITETABLE     ; first X-position in the sprite table
+        ld      HL,     RAM_SPRITETABLE ; first X-position in the sprite table
         ld      B,      [IY+Vars.spriteUpdateCount]
 
         ; set the VDP address to $3F80
         ; (sprite info table, X-positions & indexes)
-        ld      A,      <$3F80
-        out     [sms.ports.vdp_control],        A
-        ld      A,      >$3F80
+        ld      A,      <SMS_VRAM_SPRITES_XPOS
+        out     [sms.ports.vdp_control],A
+        ld      A,      >SMS_VRAM_SPRITES_XPOS
         or      %01000000               ; add bit 6 to mark an address is given
-        out     [sms.ports.vdp_control],        A
+        out     [sms.ports.vdp_control],A
 
 @xLoop: ld      A,      [HL]            ; set the sprite X-position
         out     [sms.ports.vdp_data],   A
@@ -1515,7 +1516,7 @@ hideSprites:                                                            ;$05E2
 ;-------------------------------------------------------------------------------
 
         ; get the address of the game's main sprite table
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      E,      L               ; copy to DE
         ld      D,      H
         ld      BC,     189             ; size of SPRITETABLE - 3?
@@ -2259,7 +2260,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         add     A,      E
         ld      E,      A
 
-        ld      HL,     FLOORLAYOUT
+        ld      HL,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -2279,7 +2280,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         add     A,      E
         ld      E,      A
 
-        ld      HL,     FLOORLAYOUT
+        ld      HL,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -2300,7 +2301,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         add     A,      E
         ld      E,      A
 
-        ld      HL,     FLOORLAYOUT
+        ld      HL,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -2323,7 +2324,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         add     A,      E
         ld      E,      A
 
-        ld      HL,     FLOORLAYOUT
+        ld      HL,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -2336,7 +2337,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         add     A,      C
         ld      E,      A
 
-        ld      HL,     FLOORLAYOUT
+        ld      HL,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
         ;
@@ -2520,7 +2521,7 @@ loadFloorLayout:                                                        ;$0A10
 ; in    HL      address of Floor Layout data
 ;       BC      length of compressed data
 ;-------------------------------------------------------------------------------
-        ld      DE,       FLOORLAYOUT   ; where in RAM the floor layout will go
+        ld      DE,     RAM_FLOORLAYOUT ; where in RAM the floor layout will go
 
         ; RLE decompress floor layout:
         ;-----------------------------------------------------------------------
@@ -3421,7 +3422,7 @@ _LABEL_E86_110:                                                         ;$0E86
 
         ld      B,      167
         ld      C,      40
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      DE,     LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
@@ -4066,7 +4067,7 @@ titleScreen:                                                            ;$1287
         ld      [TEMP4],        DE
 
         ;set the game's main sprite table as the table to use
-@_4:    ld      HL,     SPRITETABLE
+@_4:    ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
 
         ld      HL,     $0080
@@ -4271,7 +4272,7 @@ _1401:                                                                  ;$1401
 
         ex      DE,     HL
 
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      C, 140
         ld      B, 94
         call    layoutSpritesHorizontal
@@ -4816,7 +4817,7 @@ _1860:                                                                  ;$1860
         call    waitForInterrupt
 
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
         ld      HL,     SCORE_MILLIONS
         ld      DE,     LAYOUT_BUFFER
@@ -5074,7 +5075,6 @@ _19df:                                                                  ;$19DF
 
 _1a14:                                                                  ;$1A14
 ;===============================================================================
-
         .BYTE   $00 $00 $00 $00
         ;
 
@@ -5083,7 +5083,7 @@ _1a18:                                                                  ;$1A18
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
         ld      HL,     SCORE_MILLIONS
         ld      DE,     LAYOUT_BUFFER
@@ -5637,7 +5637,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         ld      HL,                     $D03F                   ;lives icon sprite table entry
         ld      [SPRITETABLE_ADDR],     HL
 
-        ld      HL,     SPRITETABLE+1                           ;sprite Y-value
+        ld      HL,     RAM_SPRITETABLE+1                           ;sprite Y-value
         ld      B,      $07
         ld      DE,     $0003
         ld      A,      $E0
@@ -7034,7 +7034,7 @@ _LABEL_258B_133:                                                        ;$258B
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      C, 112
         ld      B, 96
         ld      DE,     _2825
@@ -7063,7 +7063,7 @@ _LABEL_258B_133:                                                        ;$258B
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ld      DE,     SPRITETABLE
+        ld      DE,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     DE
         ld      B,      $03
 
@@ -7226,7 +7226,7 @@ _2718:                                                                  ;$2718
         call    waitForInterrupt
 
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
 
         ld      HL,     D322
@@ -9945,7 +9945,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ld      L,      H
         ld      H,      $00
         add     HL,     DE
-        ld      DE,     FLOORLAYOUT
+        ld      DE,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -9975,7 +9975,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ld      L,      H
         ld      H,      $00
         add     HL,     DE
-        ld      DE,     FLOORLAYOUT
+        ld      DE,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -10003,7 +10003,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ld      L,      H
         ld      H,      $00
         add     HL,     DE
-        ld      DE,     FLOORLAYOUT
+        ld      DE,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -10033,7 +10033,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ld      L,      H
         ld      H,      $00
         add     HL,     DE
-        ld      DE,     FLOORLAYOUT
+        ld      DE,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
 
@@ -10076,7 +10076,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ld      H,      $00
         ld      E,      H
         add     HL,     DE
-        ld      DE,     FLOORLAYOUT
+        ld      DE,     RAM_FLOORLAYOUT
         add     HL,     DE
         ret
         ;
@@ -12587,7 +12587,7 @@ sonic_process:                                                          ;$49C8
 
         push    AF                                      ;remember no. of sprite updates pending
         push    HL                                         ;remember current sprite-table address
-        ld      HL,        SPRITETABLE                   ;load the game's main sprite table
+        ld      HL,     RAM_SPRITETABLE ; load the game's main sprite table
         ld      [SPRITETABLE_ADDR],     HL                 ;and set the pointer to that
 
         ld      DE,     [CAMERA_Y]
@@ -13770,8 +13770,8 @@ sonic_process:                                                          ;$49C8
 
 powerups_ring_process:                                                  ;$5B09
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    24
         call    _5da8
@@ -15161,8 +15161,8 @@ badnick_crabmeat_process:                                               ;$65EE
 
 platform_swinging_process:                                              ;$673C
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      HL,     $0020
@@ -15408,12 +15408,12 @@ spriteLayouts:                                                          ;$6911
 
 explosion_process:                                                      ;$693F
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
+        set     5,      [IX+Mob.flags]  ;mob does not collide with the floor
 
         ld      A,      [IX+Mob.unknown15]
-        cp      $AA                                             ;=170, lifetime of explosion?
+        cp      $AA                     ;=170, lifetime of explosion?
         jr      z,      @_1
 
         ;-----------------------------------------------------------------------
@@ -15503,8 +15503,8 @@ explosion_process:                                                      ;$693F
 
 platform_sinking_process:                                               ;$69E9
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      [IX+Mob.width],     26
@@ -15553,8 +15553,8 @@ platform_sinking_process:                                               ;$69E9
 
 platform_falling_process:                                               ;$6A47
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      A,      [IX+Mob.unknown16]
         add     A,      [IX+Mob.unknown17]
@@ -15611,8 +15611,8 @@ platform_falling_process:                                               ;$6A47
 
 unknown_6ac1_process:                                                   ;$6AC1
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     2
         ld      [IX+Mob.height],    2
@@ -15700,8 +15700,8 @@ unknown_6ac1_process:                                                   ;$6AC1
 
 badnick_buzzbomber_process:                                             ;$6B74
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
 
         bit     0,      [IX+Mob.flags]
@@ -15915,8 +15915,8 @@ badnick_buzzbomber_process:                                             ;$6B74
 
 platform_moving_process:                                                ;$6D65
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      A,      [CURRENT_LEVEL]
@@ -16005,119 +16005,123 @@ platform_moving_process:                                                ;$6D65
 
 badnick_motobug_process:                                                ;$6E0C
 ;===============================================================================
-/*      AI for the Motobug Badnick
-        */
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
-        ;this mob adheres to the floor
-        ;TODO: this shouldn't need to be done every frame?
+; AI for the Motobug Badnick.
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
+        ; this mob adheres to the floor
+        ; TODO: this shouldn't need to be done every frame?
         res     5,      [IX+Mob.flags]
 
-        ;define the size of the mob
-        ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
-        ld      [IX+Mob.width],     10
-        ld      [IX+Mob.height],    16
+        ; define the size of the mob
+        ; TODO: we don't need to do this every frame.
+        ;       we could set this up when the mob spawns
+        ld      [IX+Mob.width],         10
+        ld      [IX+Mob.height],        16
 
         ld      E,      [IX+$12]
         ld      D,      $00
 
 @actions:
-        ;a "$00" AI action tells the code to repeat the mob's pre-programmed actions, the "behaviour" table near the
-        ;bottom of this page gives a list of AI actions the mob will automatically play through whilst this chunk of
-        ;code is not an AI action itself, we use it to define the zero value enum:
-        ;'.actions.loop@index' used as the list-terminator
+        ; a "$00" AI action tells the code to repeat the mob's pre-programmed
+        ; actions, the "behaviour" table near the bottom of this page gives a
+        ; list of AI actions the mob will automatically play through whilst
+        ; this chunk of code is not an AI action itself, we use it to define
+        ; the zero value enum used as the list-terminator
 
 @@loop:                                 ;index = $00
         ;=======================================================================
-        ;NOTE: this row MUST be index 0 as the assembly code works on that basis
+        ; NOTE: this row MUST be index 0 as the code works on that basis
         ;
-        ;params IX      Address of the current mob being processed
-        ;       DE      the high-byte of the mob's counter, provided in the low-byte of DE
-        ;return TEMP6   Address within the animation table, for the current frame
-        ;               (this tells the mob what to do each frame)
-                ;-------------------------------------------------------------------------------------------------------
-                ld      HL,     badnick_motobug_behaviour
-                add     HL,     DE
-                ld      [TEMP6],HL
-                ld      A,      [HL]
-                and     A
-                jr      nz,     @@moveLeft
+        ; in    IX      Address of the current mob being processed
+        ;       DE      the high-byte of the mob's counter,
+        ;               provided in the low-byte of DE
+        ; out   TEMP6   Address within the animation table, for the current
+        ;               frame (this tells the mob what to do each frame)
+        ;-----------------------------------------------------------------------
+        ld      HL,     badnick_motobug_behaviour
+        add     HL,     DE
+        ld      [TEMP6],HL
+        ld      A,      [HL]
+        and     A
+        jr      nz,     @@moveLeft
+        
+        ; we've hit the end of the animation list, start over
+        ld      [IX+$12],       A       ; set the mob's counter to 0
+        ld      E,              A       ; and likewise with the working copy
+        jp      @@loop                  ; proceed with next frame of animation
 
-                ;we've hit the end of the animation list, start over
-                ld      [IX+$12],   A                       ;set the mob's counter to 0
-                ld      E,      A                       ;and likewise with the working copy
-                jp      @@loop                                   ;proceed with next frame of animation
 
-
-
-        ;this is the mob's first AI action, "move left":
+        ; this is the mob's first AI action, "move left":
 
 @@moveLeft:                                              ;@index = $01
-        ;===============================================================================================================
-        ;return A
+        ;=======================================================================
+        ; out   A
         ;       C
         ;       HL
-                ;-------------------------------------------------------------------------------------------------------
-                dec     A
-                jr      nz,     @@moveRight
-
-                ld      C,    $FF                     ;set direction: left
-                ld      HL,       $FF00                   ;set speed: -256
-                jp      @@apply
+        ;-----------------------------------------------------------------------
+        dec     A
+        jr      nz,     @@moveRight
+        
+        ld      C,      $FF             ; set direction: left
+        ld      HL,     $FF00           ; set speed: -256
+        jp      @@apply
 
 @@moveRight:                                             ;@index = $02
-        ;===============================================================================================================
-        ;return C
+        ;=======================================================================
+        ; out   C
         ;       HL
-                ;-------------------------------------------------------------------------------------------------------
-                dec     A
-                jr      nz,     @@idleLeft
+        ;-----------------------------------------------------------------------
+        dec     A
+        jr      nz,     @@idleLeft
+        
+        ld      C,      $00             ; set direction: right
+        ld      HL,     $0100           ; set speed: +256
+        jp      @@apply
 
-                ld      C,    $00                     ;set direction: right
-                ld      HL,       $0100                   ;set speed: +256
-                jp      @@apply
-
-        ;the AI code handles "idleLeft" and "idleRight" actions the same, they only differ in the animation displayed.
-        ;therefore we define the "idleLeft" index but provide no code, the "idleRight" index will share the same ROM
-        ;address but have a higher index
+        ; the AI code handles "idleLeft" and "idleRight" actions the same,
+        ; they only differ in the animation displayed. therefore we define
+        ; the "idleLeft" index but provide no code, the "idleRight" index
+        ; will share the same ROM address but have a higher index
 
 @@idleLeft:                                              ;@index = $03
 @@idleRight:                                             ;@index = $04
-        ;===============================================================================================================
-        ;return C       direction is set to $00 (default facing right)
+        ;=======================================================================
+        ; out   C       direction is set to $00 (default facing right)
         ;       HL      speed is set to $0000
-                ;-------------------------------------------------------------------------------------------------------
-                ld      C,    $00
-                ld      L,        C
-                ld      H,        C
+        ;-------------------------------------------------------------------------------------------------------
+        ld      C,    $00
+        ld      L,        C
+        ld      H,        C
 
-                ;fall through to the ".apply" action below:
-                ;...
+        ;fall through to the ".apply" action below:
+        ;...
 
 @@apply:                                                 ;@index = $05
-        ;===============================================================================================================
-        ;params IX      Address of the current mob being processed
+        ;=======================================================================
+        ; in    IX      Address of the current mob being processed
         ;       HL
         ;       C
         ;       TEMP6
-                ;-------------------------------------------------------------------------------------------------------
-                ;apply the chosen direction and speed
-                ld      [IX+Mob.Xspeed+0],  L
-                ld      [IX+Mob.Xspeed+1],  H
-                ld      [IX+Mob.Xdirection],        C
+        ;-----------------------------------------------------------------------
+        ; apply the chosen direction and speed
+        ld      [IX+Mob.Xspeed+0],      L
+        ld      [IX+Mob.Xspeed+1],      H
+        ld      [IX+Mob.Xdirection],    C
 
-                ld      L,      [IX+Mob.unknown11]
-                ld      H,      [IX+$12]
-                ld      DE,     $0008
-                add     HL,     DE
-                ld      [IX+Mob.unknown11], L
-                ld      [IX+$12],   H
+        ld      L,      [IX+Mob.unknown11]
+        ld      H,      [IX+$12]
+        ld      DE,     $0008
+        add     HL,     DE
+        ld      [IX+Mob.unknown11],     L
+        ld      [IX+$12],               H
 
-                ;apply gravity to the mob, it will attempt to move downward any time possible.
-                ;because it adheres to the ground it won't fall through the floor
-                ld      [IX+Mob.Yspeed+0],  $00
-                ld      [IX+Mob.Yspeed+1],  $02
-                ld      [IX+Mob.Ydirection],        $00
+        ; apply gravity to the mob, it will attempt to move downward any time
+        ; possible. because it adheres to the ground it won't fall through the
+        ; floor
+        ld      [IX+Mob.Yspeed+0],  $00
+        ld      [IX+Mob.Yspeed+1],  $02
+        ld      [IX+Mob.Ydirection],        $00
 
         ;-----------------------------------------------------------------------
 
@@ -16138,7 +16142,7 @@ badnick_motobug_process:                                                ;$6E0C
         ld      [TEMP6],        HL
         call    detectCollisionWithSonic
 
-        ;if hit, place the explosion in the centre (0,0 offset)
+        ; if hit, place the explosion in the centre (0,0 offset)
         ld      HL,     $0000
         ld      [TEMP1],        HL
         call    nc,     hitPlayer
@@ -16158,83 +16162,82 @@ badnick_motobug_behaviour:                                              ;$6E96
 
 badnick_motobobug_actions:                                              ;$6EB1
 ;===============================================================================
-        ;the "actions" table pairs an AI action with an animation,
-        ;for each action we create we need to push a pointer on to this table
+        ; the "actions" table pairs an AI action with an animation,
+        ; for each action we create we need to push a pointer on to this table
 
-        ;since the "loop" action is just a list-terminator, the following is a dummy entry
+        ; since the "loop" action is just a list-terminator,
+        ; the following is a dummy entry
         .WORD   badnick_motobug_animations@moveLeft
-        ;here we map the "moveLeft" action to the "moveLeft" animation
+        ; here we map the "moveLeft" action to the "moveLeft" animation
         .WORD   badnick_motobug_animations@moveLeft
-        ;here we map the "moveRight" action to the "moveRight" animation
+        ; here we map the "moveRight" action to the "moveRight" animation
         .WORD   badnick_motobug_animations@moveRight
-        ;the "idleLeft" action has to be added to the actions table
+        ; the "idleLeft" action has to be added to the actions table
         .WORD   badnick_motobug_animations@idleLeft
-        ;here we map the "idleRight" action to the "idleRight" animation
+        ; here we map the "idleRight" action to the "idleRight" animation
         .WORD   badnick_motobug_animations@idleRight
         ;
 
 badnick_motobug_animations:                                             ;$6EBB
 ;===============================================================================
-/*      Maps actions to a set of animation timings.
-        */
-        ;-----------------------------------------------------------------------
+; Maps actions to a set of animation timings.
+;-------------------------------------------------------------------------------
 
-        ;sprite layout to use                   ;frame length
-        ;($FF terminates)                       ;($FF for infinite)
+        ; sprite layout         ;frame length
+        ; ($FF terminates)      ;($FF for infinite)
 @moveLeft:                                                      ;@index = $00                                  `$6EBB
-        .BYTE   0      8       ;=badnick_motobug_spriteLayout@leftIdle
-        .BYTE   1      8       ;=badnick_motobug_spriteLayout@leftMove
+        .BYTE   0               8       ;=badnick_motobug_spriteLayout@leftIdle
+        .BYTE   1               8       ;=badnick_motobug_spriteLayout@leftMove
         .BYTE   $FF
 
 @moveRight:                                                     ;@index = $01                                  `$6EC0
-        .BYTE   2      8       ;=badnick_motobug_spriteLayout@rightIdle
-        .BYTE   3      8       ;=badnick_motobug_spriteLayout@rightMove
+        .BYTE   2               8       ;=badnick_motobug_spriteLayout@rightIdle
+        .BYTE   3               8       ;=badnick_motobug_spriteLayout@rightMove
         .BYTE   $FF
 
 @idleLeft:                                                      ;@index = $02                                  `$6EC5
-        .BYTE   0      $FF     ;=badnick_motobug_spriteLayout@leftIdle
+        .BYTE   0               $FF     ;=badnick_motobug_spriteLayout@leftIdle
         .BYTE   $FF
 
 @idleRight:                                                     ;@index = $03                                  `$6EC8
-        .BYTE   2      $FF     ;=badnick_motobug_spriteLayout@rightIdle
+        .BYTE   2               $FF     ;=badnick_motobug_spriteLayout@rightIdle
         .BYTE   $FF
         ;
 
 badnick_motobug_spriteLayout:                                           ;$6ECB
 ;===============================================================================
-/*      The Sprite Layouts (sprite composition of each animation frame) for the Motobug Badnick.
-        */
-        ;-----------------------------------------------------------------------
-
+; The Sprite Layouts (sprite composition of each animation frame)
+; for the Motobug Badnick.
+;-------------------------------------------------------------------------------
 @leftIdle:                                                      ;@index = $00
-        ;facing left -- frame #1
+        ; facing left -- frame #1
         .BYTE   $60 $62 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
 
 @leftMove:                                                      ;@index = $01
-        ;facing left -- frame #2 (when moving)
+        ; facing left -- frame #2 (when moving)
         .BYTE   $64 $66 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
 
 @rightIdle:                                                     ;@index = $02
-        ;facing right -- frame #1
+        ; facing right -- frame #1
         .BYTE   $68 $6A $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
 
 @rightMove:                                                     ;@index = $03
-        ;facing right -- frame #2 (when moving)
+        ; facing right -- frame #2 (when moving)
         .BYTE   $6C $6E $FF $FF $FF $FF
         .BYTE   $FF
         ;
 
 badnick_newtron_process:                                                ;$6F08
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]      ;mob does not collide with the floor
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    20
         ld      A,      [IX+Mob.unknown11]
@@ -19815,7 +19818,7 @@ meta_water_process:                                                             
         ld      HL,     [SPRITETABLE_ADDR]
         push    AF
         push    HL
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
         ld      A,      [FRAMECOUNT]
         and     $03
@@ -20935,7 +20938,7 @@ unknown_96f8_process:                                                           
 
         ld      E,      A
         ld      D,      $00
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         add     HL,     DE
         ld      [SPRITETABLE_ADDR],     HL
         ld      L,      [IX+Mob.X+0]
@@ -23027,7 +23030,7 @@ meta_clouds_process:                                                            
 
         ld      E,      A
         ld      D,      $00
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         add     HL,     DE
         ld      [SPRITETABLE_ADDR],     HL
         ld      A,      [D2A3]
@@ -25222,7 +25225,7 @@ unknown_bcdf_process:                                                           
 ;===============================================================================
 ;params IX         Address of the current mob being processed
         ;-----------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         set     5,      [IY+Vars.unknown0]
         ld      HL,     $0202
         ld      [TEMP6],        HL
@@ -25277,9 +25280,9 @@ unknown_bcdf_process:                                                           
         ld      DE,     $0018
 @_3:    add     HL,     DE
         adc     A,      C
-        ld      [IX+Mob.Xspeed+0],  L
-        ld      [IX+Mob.Xspeed+1],  H
-        ld      [IX+Mob.Xdirection],        A
+        ld      [IX+Mob.Xspeed+0],      L
+        ld      [IX+Mob.Xspeed+1],      H
+        ld      [IX+Mob.Xdirection],    A
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
         ld      HL,     [CAMERA_Y]
@@ -25320,9 +25323,9 @@ unknown_bcdf_process:                                                           
         ld      DE,     $0005
 @_5:    add     HL,     DE
         adc     A,      C
-        ld      [IX+Mob.Yspeed+0],  L
-        ld      [IX+Mob.Yspeed+1],  H
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.Yspeed+0],      L
+        ld      [IX+Mob.Yspeed+1],      H
+        ld      [IX+Mob.Ydirection],    A
         jr      @_7
 @_6:    inc     [IX+Mob.unknown11]
 @_7:    ld      BC,     @_bdc7
@@ -25331,7 +25334,7 @@ unknown_bcdf_process:                                                           
         bit     4,      [IY+Vars.unknown0]
         ret     nz
 
-@_8:    ld      [IX+Mob.type],  $FF                     ;remove object?
+@_8:    ld      [IX+Mob.type],  $FF     ; remove object?
         res     5,      [IY+Vars.unknown0]
         ret
 
@@ -25358,7 +25361,7 @@ cutscene_final_process:                                                         
         set     5,      [IX+Mob.flags]
 
         ;clear joypad input
-        ld      [IY+Vars.joypad],  $FF
+        ld      [IY+Vars.joypad],       $FF
 
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -25373,7 +25376,7 @@ cutscene_final_process:                                                         
         ld      HL,     $0000
         ld      [SONIC.Y],      HL
 
-        ld      [IX+$12],   $FF
+        ld      [IX+$12],       $FF
         set     6,      [IY+Vars.timeLightningFlags]      ;lock the screen - no scrolling
         set     1,      [IX+Mob.flags]
 @_1:    ld      A,       [FRAMECOUNT]
@@ -25410,12 +25413,12 @@ cutscene_final_process:                                                         
 @_2:    ld      [IX+Mob.width],         32
         ld      [IX+Mob.height],        28
         xor     A
-        ld      [IX+Mob.Xspeed+0],  A
-        ld      [IX+Mob.Xspeed+1],  $01
-        ld      [IX+Mob.Xdirection],        A
-        ld      [IX+Mob.Yspeed+0],  A
-        ld      [IX+Mob.Yspeed+1],  A
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.Xspeed+0],      A
+        ld      [IX+Mob.Xspeed+1],      $01
+        ld      [IX+Mob.Xdirection],    A
+        ld      [IX+Mob.Yspeed+0],      A
+        ld      [IX+Mob.Yspeed+1],      A
+        ld      [IX+Mob.Ydirection],    A
         bit     6,      [IY+Vars.timeLightningFlags]
         jr      z,      @_3
 
@@ -25430,13 +25433,13 @@ cutscene_final_process:                                                         
 
         inc     DE
         ld      [CAMERA_X],     DE
-@_3:    ld      [IX+Mob.spriteLayout+0],        <@_bf21
-        ld      [IX+Mob.spriteLayout+1],        >@_bf21
+@_3:    ld      [IX+Mob.spriteLayout+0],<@_bf21
+        ld      [IX+Mob.spriteLayout+1],>@_bf21
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_4
 
         ld      HL,     $1008
-        ld      [TEMP6],        HL
+        ld      [TEMP6],HL
         call    detectCollisionWithSonic
         jr      c,      @_4
 
@@ -25452,11 +25455,11 @@ cutscene_final_process:                                                         
         cpl
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Yspeed], HL
+        ld      [SONIC.Yspeed],         HL
         ld      [SONIC.Ydirection],     A
         res     6,      [IY+Vars.timeLightningFlags]
         set     0,      [IX+Mob.flags]
-        ld      [IX+Mob.unknown11], $01
+        ld      [IX+Mob.unknown11],     $01
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -25469,16 +25472,16 @@ cutscene_final_process:                                                         
         ret     z
 
         xor     A
-        ld      [IX+Mob.Yspeed+0],  $40
-        ld      [IX+Mob.Yspeed+1],  A
-        ld      [IX+Mob.Ydirection],        A
-        ld      [IX+Mob.spriteLayout+0],    <@_bf33
-        ld      [IX+Mob.spriteLayout+1],    >@_bf33
+        ld      [IX+Mob.Yspeed+0],      $40
+        ld      [IX+Mob.Yspeed+1],      A
+        ld      [IX+Mob.Ydirection],    A
+        ld      [IX+Mob.spriteLayout+0],<@_bf33
+        ld      [IX+Mob.spriteLayout+1],>@_bf33
         dec     [IX+Mob.unknown11]
         ret     nz
 
         call    _7a3a
-        ld      [IX+Mob.unknown11], $18
+        ld      [IX+Mob.unknown11],     $18
         inc     [IX+Mob.unknown13]
         ld      A,      [IX+Mob.unknown13]
         cp      $0A
@@ -25491,7 +25494,7 @@ cutscene_final_process:                                                         
         set     7,      [IY+Vars.unknown0]
         ret
 
-@_5:    ld      A,       [D289]
+@_5:    ld      A,      [D289]
         and     A
         ret     nz
 
@@ -25527,11 +25530,11 @@ cutscene_emeralds_process:                                                      
         jr      nz,     @_1
 
         xor     A                                          ;set A to 0
-        ld      [IX+Mob.spriteLayout+0],    A
-        ld      [IX+Mob.spriteLayout+1],    A
-        ld      [IX+Mob.Xspeed+0],  A
-        ld      [IX+Mob.Xspeed+1],  A
-        ld      [IX+Mob.Xdirection],        A
+        ld      [IX+Mob.spriteLayout+0],A
+        ld      [IX+Mob.spriteLayout+1],A
+        ld      [IX+Mob.Xspeed+0],      A
+        ld      [IX+Mob.Xspeed+1],      A
+        ld      [IX+Mob.Xdirection],    A
 
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
@@ -25542,7 +25545,7 @@ cutscene_emeralds_process:                                                      
         ld      [IX+Mob.unknown11], $64
         ret
 
-@_1:    ld      A,       [IX+Mob.unknown11]
+@_1:    ld      A,      [IX+Mob.unknown11]
         and     A
         jr      z,      @_2
 
@@ -25561,7 +25564,7 @@ cutscene_emeralds_process:                                                      
         ld      HL,     [SPRITETABLE_ADDR]
         push    AF
         push    HL
-        ld      HL,     SPRITETABLE
+        ld      HL,     RAM_SPRITETABLE
         ld      [SPRITETABLE_ADDR],     HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
@@ -25580,7 +25583,7 @@ cutscene_emeralds_process:                                                      
         pop     AF
         ld      [SPRITETABLE_ADDR],     HL
         ld      [IY+Vars.spriteUpdateCount],       A
-@_4:    ld      L,       [IX+Mob.Y+0]
+@_4:    ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $0020
         add     HL,     DE

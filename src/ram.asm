@@ -9,10 +9,10 @@
 ; the floor layout (i.e. the tiles Sonic runs around on). a 'level' is
 ; a sub-portion of this floor layout since sometimes multiple levels
 ; are crammed into one layout (such as the special stages)
-FLOORLAYOUT                     DSB 4096                                ;[$C000]
+RAM_FLOORLAYOUT                 DSB 4096                                ;[$C000]
 
 ; X/Y/I data for the 64 sprites
-SPRITETABLE                     DSB 64 * 3                              ;[$D000]
+RAM_SPRITETABLE                 DSB 64 * 3                              ;[$D000]
         
 D0C0                            DSB 64  ; UNUSED                        ;[$D0C0]
         
@@ -24,7 +24,7 @@ OVERSCROLLCACHE_VERT            DSB 128                                 ;[$D100]
 OVERSCROLLCACHE_HORZ            DSB 128                                 ;[$D180]
 
 ; throughout the codebase, IY is used as a shorthand to $D200 where many
-; commonly used variables exist. therefore these use the `[IY`vars+vars.abc]`
+; commonly used variables exist. therefore these use the `[IY+Vars.abc]`
 ; form of addressing. for the sake of completeness, we'll also define the
 ; absolute location of these variables too, i.e. `VARS.abc`
 VARS                            INSTANCEOF Vars                         ;[$D200]

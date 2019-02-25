@@ -26,4 +26,3 @@ ECHO - link "sonic_the_hedgehog.sms"
 %WLALINK% -S "link.ini" "sonic_the_hedgehog.sms"
 
 ECHO * OK.
-ECHO:
