@@ -24,14 +24,15 @@
 
 ; display dimensions, in pixels, of the SEGA Master System.
 ; note that the VRAM contains a 256 x 224 px scrollable region for the display
-
-.DEF    SMS_SCREEN_WIDTH                256                     ;display width in pixels
-.DEF    SMS_SCREEN_HEIGHT               192                     ;display height in pixels
-.DEF    SMS_SCREEN_HEIGHT_EXTENDED      224                     ;notably used on CodeMasters' MicroMachines game
+.DEF    SMS_SCREEN_WIDTH                256
+.DEF    SMS_SCREEN_HEIGHT               192
+; notably used on CodeMasters' MicroMachines game
+.DEF    SMS_SCREEN_HEIGHT_EXTENDED      224
+; the super-extended display height is 240px. This leaves NTSC displays with no
+; VBlank remaining causing the picture to roll around on the screen. This mode
+; can be used on PAL displays, but leaves you with next to no VRAM left for
+; sprites or tiles and a miniscule VBlank period
 .DEF    SMS_SCREEN_HEIGHT_SUPEREXTENDED 240
-        ;the super-extended display height is 240px. This leaves NTSC displays with no VBlank remaining causing the
-        ;picture to roll around on the screen. This mode can be used on PAL displays, but leaves you with next to no
-        ;VRAM left for sprites or tiles and a miniscule VBlank period
 
 .STRUCT SMSTile
         bitplane1       BYTE
@@ -53,20 +54,20 @@
 
 ; Z80 ports:
 ;===============================================================================
-.DEF    sms.ports.region                $3E
-.DEF    sms.ports.control               $3F
+.DEF    SMS_PORTS_REGION                $3E
+.DEF    SMS_PORTS_CONTROL               $3F
 
-.DEF    sms.ports.control.io            %00000100
-.DEF    sms.ports.control.bios          %00001000
-.DEF    sms.ports.control.ram           %00010000
-.DEF    sms.ports.control.card          %00100000
-.DEF    sms.ports.control.cart          %01000000
-.DEF    sms.ports.control.expansion     %10000000
+.DEF    SMS_PORTS_CONTROL_IO            %00000100
+.DEF    SMS_PORTS_CONTROL_BIOS          %00001000
+.DEF    SMS_PORTS_CONTROL_RAM           %00010000
+.DEF    SMS_PORTS_CONTROL_CARD          %00100000
+.DEF    SMS_PORTS_CONTROL_CART          %01000000
+.DEF    SMS_PORTS_CONTROL_EXPANSION     %10000000
 
-.DEF    sms.ports.scanline              $7E
-.DEF    sms.ports.psg                   $7F
-.DEF    sms.ports.vdp_data              $BE
-.DEF    sms.ports.vdp_control           $BF
+.DEF    SMS_PORTS_SCANLINE              $7E
+.DEF    SMS_PORTS_PSG                   $7F
+.DEF    SMS_PORTS_VDP_DATA              $BE
+.DEF    SMS_PORTS_VDP_CONTROL           $BF
 
 .DEF    SMS_VDP_REGISTER_WRITE          %10000000
 .DEF    SMS_VDP_REGISTER_0              SMS_VDP_REGISTER_WRITE | 0

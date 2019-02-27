@@ -21,7 +21,7 @@ start:                                                                  ;$0000
                                         ; $0038 will be called at 50/60Hz
 
 @wait:  ; wait for the scanline to reach 176 (no idea why)
-        in      A,      [sms.ports.scanline]
+        in      A,      [SMS_PORTS_SCANLINE]
         cp      176
         jr      nz,     @wait
 
@@ -113,7 +113,7 @@ interruptHandler:                                                       ;$0073
 
         ; get the status of the VDP
         ; (the Master System's GPU)
-        in      A,      [sms.ports.vdp_control]
+        in      A,      [SMS_PORTS_VDP_CONTROL]
 
         bit     7,      [IY+Vars.flags6]        ; check the underwater flag
         jr      z,      @_1                     ; if off, skip ahead
@@ -147,18 +147,18 @@ interruptHandler:                                                       ;$0073
         ; we will then set another interrupt to fire where we want the
         ; split to occur. first send the data ("10") to the VDP...
         ld      A,                      10
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ; and then the control command (VDP register 10)
         ld      A,                      SMS_VDP_REGISTER_10
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ; enable line interrupt IRQs (bit 5 of VDP register 0)
         ld      A,                      [VDPREGISTER_0]
         or      %00010000               ; set bit 5
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ; write to VDP register 0
         ld      A,                      SMS_VDP_REGISTER_0
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ; initialise the step counter for the water line raster split
         ld      A,                      3
@@ -236,23 +236,23 @@ interruptHandler:                                                       ;$0073
         ; blank the screen (remove bit 6 of VDP register 1)
         ld      A,      [VDPREGISTER_1]                 ; cache value from RAM
         and     %10111111                               ; remove bit 6
-        out     [sms.ports.vdp_control],        A       ; write the value,
+        out     [SMS_PORTS_VDP_CONTROL],        A       ; write the value,
         ld      A,      SMS_VDP_REGISTER_1
-        out     [sms.ports.vdp_control],        A       ; then register.no
+        out     [SMS_PORTS_VDP_CONTROL],        A       ; then register.no
 
         ; horizontal scroll:
         ld      A,      [VDPSCROLL_HORZ]
         ; I don't understand the reason for this
         neg
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      SMS_VDP_REGISTER_8
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ; vertical scroll:
         ld      A,      [VDPSCROLL_VERT]
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,              SMS_VDP_REGISTER_9
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         bit     5,      [IY+Vars.flags0]
         call    nz,     fillScrollTiles
@@ -263,9 +263,9 @@ interruptHandler:                                                       ;$0073
         ; turn the screen back on
         ; (or if it was already blank before this function, leave it blank)
         ld      A,      [VDPREGISTER_1]
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      SMS_VDP_REGISTER_1
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ; TODO: set these bank numbers according to the data location
         ld      A,                      8       ; Sonic sprites?
@@ -441,16 +441,16 @@ doRasterSplit:                                                          ;$01F2
         dec     A
         ld      [RASTERSPLIT_STEP],     A
 
-        in      A,      [sms.ports.scanline]
+        in      A,      [SMS_PORTS_SCANLINE]
         ld      C,      A
         ld      A,      [RASTERSPLIT_LINE]
         sub     C       ; work out the difference
 
         ; set VDP register 10 with the scanline number to interrupt at next
         ; (that is, set the next interrupt to occur at the water line)
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      SMS_VDP_REGISTER_10
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         jp      @_3
 
@@ -468,9 +468,9 @@ doRasterSplit:                                                          ;$01F2
 
         ; set the VDP to point at the palette
         ld      A,                              $00
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,                              %11000000
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ld      B,      16
         ld      HL,     underwaterPalette
@@ -485,21 +485,21 @@ doRasterSplit:                                                          ;$01F2
 
         ; copy the palette into the VDP
 @loop:  ld      A,                      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
 
         nop
 
         ld      A,                      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
         djnz    @loop
 
         ld      A,      [VDPREGISTER_0]
         and     %11101111       ; remove bit 4: disable line interrupts
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,                              SMS_VDP_REGISTER_0
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
 @_3:    pop     BC
         pop     DE
@@ -560,12 +560,12 @@ init:                                                                   ;$028B
         inc     HL                      ; move to the next byte
         inc     DE
         ; send the VDP lo-byte
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      C               ; Load A with #$8B
         sub     B                       ; subtract B from A (B is decreasing),
                                         ; so A will count from #$80 to #8A
         ; send the VDP hi-byte
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         djnz    @loop                   ; loop until B has reached 0
 
         ; move all sprites off the bottom of the screen!
@@ -734,12 +734,12 @@ updateVDPSprites:                                                       ;$033E
         ; set the VDP address to $3F00
         ; (Sprite Attribute Table, Y-positions)
         ld      A, <SMS_VRAM_SPRITES_YPOS
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A, >SMS_VRAM_SPRITES_YPOS
         ; add bit 6 to mark a VRAM address being given
         or      %01000000
         ; write the high-byte, with the 'address flag'
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ld      B,      [IY+Vars.spriteUpdateCount]
         ; Y-position of the first sprite
@@ -754,7 +754,7 @@ updateVDPSprites:                                                       ;$033E
         ; get the sprite's Y-position from RAM
 @yLoop: ld      A,      [HL]            
         ; set the sprite's Y-position in the hardware
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         add     HL,     DE              ; move to the next sprite
         djnz    @yLoop
 
@@ -776,7 +776,7 @@ updateVDPSprites:                                                       ;$033E
 
         ; move remaining sprites off screen
 @yOff:  ld      A,      SMS_SCREEN_HEIGHT       ; =224
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         djnz    @yOff
 
         ; sprite X positions / indexes:
@@ -791,18 +791,18 @@ updateVDPSprites:                                                       ;$033E
         ; set the VDP address to $3F80
         ; (sprite info table, X-positions & indexes)
         ld      A,      <SMS_VRAM_SPRITES_XPOS
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      >SMS_VRAM_SPRITES_XPOS
         or      %01000000               ; add bit 6 to mark an address is given
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
 @xLoop: ld      A,      [HL]            ; set the sprite X-position
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     L                       ; skip Y-position
         inc     L
         ; set the sprite index number
         ld      A,                      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     L
         djnz    @xLoop
 
@@ -824,14 +824,14 @@ unused_0397:                                                            ;$0397
 ;-------------------------------------------------------------------------------
         di
         ld      A,      E
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
         ei
 
 @loop:  ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
 
         dec     BC
@@ -853,10 +853,10 @@ unused_03ac:                                                            ;$03AC
 
         ; set the VDP address using DE
         ld      A,      E
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
 
         pop     AF
         ld      DE,     [SLOT1]
@@ -876,7 +876,7 @@ unused_03ac:                                                            ;$03AC
 @_2:    ld      A,      [HL]
         cp      E
         jr      z,      @_3
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         ld      E,      A
         inc     HL
         dec     BC
@@ -894,7 +894,7 @@ unused_03ac:                                                            ;$03AC
         ld      A,      D
         ld      E,      [HL]
 
-@_4:    out     [sms.ports.vdp_data],   A
+@_4:    out     [SMS_PORTS_VDP_DATA],   A
         dec     E
         nop
         nop
@@ -964,12 +964,12 @@ decompressArt:                                                          ;$0405
 @_2:    ; VDP value byte from the E parameter
         ld      A,      E
         ; send to the VDP
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ld      A,      D
         or      %01000000               ; add bit 7 (that is, convert A to
         ; send it to the VDP            ; a VDP control register number)
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ; switch banks:
         ;-----------------------------------------------------------------------
@@ -1115,22 +1115,22 @@ decompressArt:                                                          ;$0405
 
         ; write 1 row of pixels (4 bytes) to the VDP
         ld      A,      [BC']
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     BC'
         nop
         nop
         ld      A,      [BC']
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     BC'
         nop
         nop
         ld      A,      [BC']
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     BC'
         nop
         nop
         ld      A,      [BC']
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     BC'
 
         ; swap BC/DE/HL back again
@@ -1185,22 +1185,22 @@ decompressArt:                                                          ;$0405
 
         ; write 1 row of pixels (4 bytes) to the VDP
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
         nop
         nop
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
         nop
         nop
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
         nop
         nop
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
 
         ; decrease the remaining row count
@@ -1249,12 +1249,12 @@ decompressScreen:                                                       ;$0501
 
         ; configure the VDP based on the DE parameter
         ld      A,      E
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
 
         ; add bit 7 (that is, convert A to a VDP control register number)
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
 
         ei      ; enable interrupts
 
@@ -1276,11 +1276,11 @@ decompressScreen:                                                       ;$0501
 
         ; uncompressed byte:
         ;-----------------------------------------------------------------------
-        out     [sms.ports.vdp_data], A ; send the tile to the VDP
+        out     [SMS_PORTS_VDP_DATA], A ; send the tile to the VDP
         ld      E,      A               ; update current byte being compared
         ld      A,      [TEMP1]         ; get the upper byte for the tiles
                                         ; (foreground / background / flip)
-        out     [sms.ports.vdp_data], A
+        out     [SMS_PORTS_VDP_DATA], A
 
         inc     HL                      ; move to the next byte
         dec     BC                      ; decrease the remaining bytes to read
@@ -1305,10 +1305,10 @@ decompressScreen:                                                       ;$0501
         jr      z,      @multiSkip
 
         ; repeat the byte
-@_4:    out     [sms.ports.vdp_data],   A
+@_4:    out     [SMS_PORTS_VDP_DATA],   A
         push    AF
         ld      A,      [TEMP1]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         pop     AF
         dec     E
         jp      nz,     @_4
@@ -1328,11 +1328,11 @@ decompressScreen:                                                       ;$0501
 @skip:
         ;-----------------------------------------------------------------------
         ld      E,      A
-        in      A,      [sms.ports.vdp_data]
+        in      A,      [SMS_PORTS_VDP_DATA]
         nop
         inc     HL
         dec     BC
-        in      A,      [sms.ports.vdp_data]
+        in      A,      [SMS_PORTS_VDP_DATA]
 
         ld      A,      B
         or      C
@@ -1343,10 +1343,10 @@ decompressScreen:                                                       ;$0501
 
 @multiSkip:
         ;-----------------------------------------------------------------------
-        in      A,      [sms.ports.vdp_data]
+        in      A,      [SMS_PORTS_VDP_DATA]
         push    AF
         pop     AF
-        in      A,      [sms.ports.vdp_data]
+        in      A,      [SMS_PORTS_VDP_DATA]
         nop
         dec     E
         jp      nz,     @multiSkip
@@ -1397,9 +1397,9 @@ loadPalette:                                                            ;$0566
 
 @sendPalette:
         ld      A,      C               ; send palette index number to begin at
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      %11000000       ; specify palette operation (bits 7 & 6)
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ; TODO: this can be unrolled into `outi` to go faster
         ld      C,      $BE             ; send the colours to the palette
@@ -1418,13 +1418,13 @@ clearVRAM:                                                              ;$0595
 ;-------------------------------------------------------------------------------
         ld      E,      A               ; temporarily shift the value to E
         ld      A,      L
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
 @loop:  ld      A,      E               ; return the value to A
-        out     [sms.ports.vdp_data], A ; send it to the VDP
+        out     [SMS_PORTS_VDP_DATA], A ; send it to the VDP
 
         dec     BC
         ld      A, B
@@ -1485,10 +1485,10 @@ print:                                                                  ;$05AF
         ; set the VDP to point to the screen address calculated
         di
         ld      A,      L
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control], A
+        out     [SMS_PORTS_VDP_CONTROL], A
         ei
 
         ; read bytes from memory until hitting $FF
@@ -1496,12 +1496,12 @@ print:                                                                  ;$05AF
         cp      $FF
         ret     z
 
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         push    AF                      ; kill time?
         pop     AF
         ld      A,      [TEMP1]         ; what to use as the tile upper bits
                                         ; (front/back, flip &c.)
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
         djnz    @loop
 
@@ -2111,9 +2111,9 @@ fillScrollTiles:                                                        ;$07DB
         ; that is, the tile beginning in the top-left corner of the screen
 @_2:    exx
         ld      A,      L'
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      H'
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ; move to the next row
         add     HL',    BC'
@@ -2189,11 +2189,11 @@ fillScrollTiles:                                                        ;$07DB
         and     %11000000
         ld      [TEMP1],        A
         ld      A,              E
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         and     %00111111
         ld      E,      A
         ld      A,      D
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      B,      $3E
         ld      C,      $BE
 
@@ -2208,9 +2208,9 @@ fillScrollTiles:                                                        ;$07DB
         ret
 
 @_8:    ld      A,      [TEMP1]
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      D
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
 @_9:    outi
         outi
@@ -2436,52 +2436,52 @@ fillScreenWithFloorLayout:                                              ;$0966
 
         ; set the screen name address
 @_3:    ld      A,      L
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
 
         exx
         ld      A,      C'
         exx
 
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
 
         exx
         ld      A,      C'
         exx
 
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
 
         exx
         ld      A,      C'
         exx
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
 
         exx
         ld      A,      C'
         exx
 
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         ld      A,      B
         ld      BC,     64
         add     HL,     BC
@@ -2972,19 +2972,19 @@ loadPowerUpIcon:                                                        ;$0C1D
 
         add     HL,     BC
         ld      A,      L
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
 
         ld      B,      4
 @loop:  ld      A,       [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         nop
         inc     DE
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
         djnz    @loop
 
@@ -5720,9 +5720,9 @@ _1f06:                                                                  ;$1F06
         ld      B,      $00
         add     HL,     BC
         add     A,      E
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      %11000000
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      [D2B1]
         and     %00000001
         ld      A,      [HL]
@@ -5730,7 +5730,7 @@ _1f06:                                                                  ;$1F06
 
         ld      A,      [D2B3]
 
-@_2:    out     [sms.ports.vdp_data],   A
+@_2:    out     [SMS_PORTS_VDP_DATA],   A
 
         ei
         ret
@@ -7303,24 +7303,24 @@ _2795:                                                                  ;$2795
 
 @_5:    di
         ld      A,      L
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      H
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         push    IX
         pop     IX
-        in      A,      [sms.ports.vdp_data]
+        in      A,      [SMS_PORTS_VDP_DATA]
         ld      C,      A
         push    IX
         pop     IX
         ld      A,      E
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      D
         or      $40
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         push    IX
         pop     IX
         ld      A,      C
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         push    IX
         pop     IX
         ei
@@ -9976,13 +9976,13 @@ updateSonicSpriteFrame:                                                 ;$37E0
 
         ;-----------------------------------------------------------------------
         ld      A,      E               ;=$80
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      D               ;=$36
         or      %01000000               ; set bit 6 to specify a VDP address
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         xor     A       ; set A to 0
-        ld      C,      sms.ports.vdp_data
+        ld      C,      SMS_PORTS_VDP_DATA
         ld      E,      24
 
         ; by nature of the way the VDP stores image colours across bit-planes,
@@ -9993,19 +9993,19 @@ updateSonicSpriteFrame:                                                 ;$37E0
 @_1:    outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
 
         dec     E
         jp      nz,     @_1
@@ -10020,10 +10020,10 @@ updateSonicSpriteFrame:                                                 ;$37E0
         add     HL,     BC
 
         ld      A,      E
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         exx
         push    BC
@@ -10036,22 +10036,22 @@ updateSonicSpriteFrame:                                                 ;$37E0
 @_3:    outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         add     HL,     DE
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         add     HL,     DE
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         add     HL,     DE
         outi
         outi
         outi
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         add     HL,     DE
         exx
         dec     B
@@ -10083,26 +10083,26 @@ animateFloorRing:                                                       ;$3879
 
         di
         ld      A,      E
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      D
         or      %01000000
-        out     [sms.ports.vdp_control],        A
+        out     [SMS_PORTS_VDP_CONTROL],        A
         ld      B,      $20
 
 @loop:  ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         inc     HL
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         inc     HL
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         nop
         inc     HL
         ld      A,      [HL]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     HL
         djnz    @loop
 
@@ -10199,28 +10199,28 @@ _38b0:                                                                  ;$38B0
         ld      B,      $02
 
 @loop:  ld      A,      L
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      H
         or      %01000000
-        out     [sms.ports.vdp_control],A
+        out     [SMS_PORTS_VDP_CONTROL],A
 
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
         nop
         nop
         ld      A,      [DE]
-        out     [sms.ports.vdp_data],   A
+        out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
 
         ld      A,      B
@@ -10710,12 +10710,12 @@ UnknownCollision:                                                       ;$3FBF
         .BYTE   $03 $08 $03 $03 $03 $03 $03 $03 $00 $00 $00 $00 $00 $00 $00 $00 
         .BYTE   $00 $00 $00 $00 $00 $00 $00 $03 $03 $04 $04 $03 $03 $03 $03
 
-        ;junk data?
+        ; junk data?
         .BYTE   $00
         ;
 
-;referenced by "postProcessMob"
-;something to do with mob floor collision
+; referenced by "postProcessMob"
+; something to do with mob floor collision
 
 Unknown:                                                                ;$4020
 ;===============================================================================
@@ -11693,10 +11693,10 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 
-@_4dcb: .BYTE   $10 $00 $30 $00 $08 $00 $00 $08 $02                             ;$4DCB
-@_4dd4: .BYTE   $10 $00 $30 $00 $02 $00 $00 $08 $02                             ;$4DD4
-@_4ddd: .BYTE   $04 $00 $0C $00 $02 $00 $00 $02 $01                             ;$4DDD
-@_4de6: .BYTE   $10 $00 $30 $00 $08 $00 $00 $08 $02                             ;$4DE6
+@_4dcb: .BYTE   $10 $00 $30 $00 $08 $00 $00 $08 $02                     ;$4DCB
+@_4dd4: .BYTE   $10 $00 $30 $00 $02 $00 $00 $08 $02                     ;$4DD4
+@_4ddd: .BYTE   $04 $00 $0C $00 $02 $00 $00 $02 $01                     ;$4DDD
+@_4de6: .BYTE   $10 $00 $30 $00 $08 $00 $00 $08 $02                     ;$4DE6
 
         ;-----------------------------------------------------------------------
 
@@ -12144,7 +12144,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 
-@_5097: .BYTE   $01 $07 $0F $1F $3F $7F                            ;$5097
+@_5097: .BYTE   $01 $07 $0F $1F $3F $7F                                 ;$5097
 
         ;-----------------------------------------------------------------------
 
@@ -12237,7 +12237,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_510a: ;clear joypad input                                                                                    `$510A
+@_510a: ; clear joypad input                                            ;$510A
         ld      [IY+Vars.joypad],  $FF
 
         ld      A,        [SONIC.flags]
@@ -12402,7 +12402,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-        ;every other frame...                                                                                  `$5206
+        ; every other frame...                                          ;$5206
 @_5206: ld      A,       [FRAMECOUNT]
         and     %00000001
         ret     nz
@@ -12481,7 +12481,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_526e: .BYTE   $00 $02 $04 $06 $FF $FF                            ;$526E
+@_526e: .BYTE   $00 $02 $04 $06 $FF $FF                                 ;$526E
         .BYTE   $20 $22 $24 $26 $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
 
@@ -12733,7 +12733,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
         ;Sonic is dead...
 
-@_543c: set     5,      [IX+Mob.flags]                     ;make Sonic pass over the floor                  `$543C
+@_543c: set     5,      [IX+Mob.flags]  ; make Sonic pass over the floor;$543C
 
         ld      A,      [D287]
         cp      $60
@@ -12808,9 +12808,9 @@ sonic_process:                                                          ;$49C8
         ld      [IX+Mob.unknown14], $15
         jp      @_4c39
 
-        ;===============================================================================================================
-        ;referenced by table at `_58e5` - index $00
-        ;air
+        ;=======================================================================
+        ; referenced by table at `_58e5` - index $00
+        ; air
 
 @_54bc: ; check if the player is underwater                             ;$54BC
         bit     7,      [IY+Vars.flags6]                  ;underwater flag
@@ -12819,18 +12819,18 @@ sonic_process:                                                          ;$49C8
         res     4,      [IX+Mob.flags]                     ;turn off mob underwater flag
         ret
 
-        ;===============================================================================================================
-        ;referenced by table at `_58e5` - index $01
-        ;spikes?
+        ;=======================================================================
+        ; referenced by table at `_58e5` - index $01
+        ; spikes?
 
         ; is the player dead?
 @_54c6: bit     0,      [IY+Vars.scrollRingFlags]                       ;$54C6
         jp      z,      hitPlayer@_35fd ; if not, damage them
         ret
 
-        ;===============================================================================================================
-        ;referenced by table at `_58e5` - index $02
-        ;jump ramp?
+        ;=======================================================================
+        ; referenced by table at `_58e5` - index $02
+        ; jump ramp?
 
 @_54ce: ld      A,      [IX+Mob.X+0]                                    ;$54CE
         add     A,      $0C
@@ -12989,7 +12989,7 @@ sonic_process:                                                          ;$49C8
         ;referenced by table at `_58e5` - index $08
         ;water? (non-raster)
 
-@_55a8: bit     4,      [IX+Mob.flags]                      ;mob underwater?                                `$55A8
+@_55a8: bit     4,      [IX+Mob.flags]  ; mob underwater?               ;$55A8
         jr      nz,     @_74
 
         ; (we can compile with, or without, sound)
@@ -13558,8 +13558,8 @@ sonic_process:                                                          ;$49C8
         and     A
         ret
 
-        ;===============================================================================================================
-        ;referenced by table at `_58e5` - index $1B
+        ;=======================================================================
+        ; referenced by table at `_58e5` - index $1B
 
 @_58d0: bit     7,      [IX+Mob.flags]                                  ;$58D0
         ret     z
@@ -13575,40 +13575,39 @@ sonic_process:                                                          ;$49C8
         ld      [IY+Vars.joypad],  $FF
         ret
 
-        ;===============================================================================================================
-        ;lookup table to the functions above
-        ;(these probably handle the different solidity values)
+        ;=======================================================================
+        ; lookup table to the functions above
+        ; (these probably handle the different solidity values)
 
 @_58e5: .WORD   @_54bc @_54c6 @_54ce @_550f @_552d @_5556 @_5578 @_5590  ;$58E5
         .WORD   @_55a8 @_55b6 @_55e2 @_55eb @_565c @_567c @_56a6 @_56b6
         .WORD   @_56c6 @_56d6 @_5761 @_5771 @_5781 @_5791 @_57cd @_57f6
         .WORD   @_5808 @_584b @_5883 @_58d0
 
-        ;===============================================================================================================
-        ;sprite layouts
+        ;=======================================================================
+        ; sprite layouts
 
-
-@_591d: ;Sonic's sprite layout                                                                                 `$591D
+@_591d: ; Sonic's sprite layout                                         ;$591D
         .BYTE   $B4 $B6 $B8 $FF $FF $FF
         .BYTE   $BA $BC $BE $FF $FF $FF
         .BYTE   $FF $FF
 
-@_592b: .BYTE   $B8 $B6 $B4 $FF $FF $FF                                         ;$592B
+@_592b: .BYTE   $B8 $B6 $B4 $FF $FF $FF                                 ;$592B
         .BYTE   $BE $BC $BA $FF $FF $FF
         .BYTE   $FF $FF
 
-@_5939: .BYTE   $B4 $B6 $B8 $FF $FF $FF                                         ;$5939
+@_5939: .BYTE   $B4 $B6 $B8 $FF $FF $FF                                 ;$5939
         .BYTE   $BA $BC $BE $FF $FF $FF
         .BYTE   $98 $9A $FF $FF $FF $FF
 
-@_594b: .BYTE   $B4 $B6 $B8 $FF $FF $FF                                         ;$594B
+@_594b: .BYTE   $B4 $B6 $B8 $FF $FF $FF                                 ;$594B
         .BYTE   $BA $BC $BE $FF $FF $FF
         .BYTE   $FE $9C $9E $FF $FF $FF
 
-@_595d: ;unknown data                                                                                          `$593D
+@_595d: ; unknown data                                                  ;$593D
         .BYTE   $00 $00 $00 $00 $00 $00 $00 $00
 
-@_5965: ;unknown data                                                                                          `$5965
+@_5965: ; unknown data                                                  ;$5965
         .BYTE   $99 $59 $99 $59 $CB $59 $DD $59 $DF $59 $E2 $59 $E5 $59 $FB $59
         .BYTE   $FE $59 $01 $5A $53 $5A $65 $5A $68 $5A $6B $5A $AF $5A $C5 $5A
         .BYTE   $CC $5A $D0 $5A $DE $5A $E1 $5A $E4 $5A $E7 $5A $EA $5A $00 $5B
@@ -15941,7 +15940,7 @@ badnick_motobug_process:                                                ;$6E0C
         ;=======================================================================
         ; out   C       direction is set to $00 (default facing right)
         ;       HL      speed is set to $0000
-        ;-------------------------------------------------------------------------------------------------------
+        ;-----------------------------------------------------------------------
         ld      C,    $00
         ld      L,        C
         ld      H,        C
@@ -16210,8 +16209,8 @@ badnick_newtron_process:                                                ;$6F08
 
 boss_greenHill_process:                                                 ;$700C
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     32
         ld      [IX+Mob.height],    28
@@ -16485,7 +16484,7 @@ boss_greenHill_process:                                                 ;$700C
         .BYTE   $01 $00 $01 $04 $01 $01 $01 $04 $01 $01 $01 $04 $01 $FF $02 $02
         .BYTE   $01 $05 $01 $02 $01 $05 $01 $03 $01 $05 $01 $03 $01 $05 $01 $FF
 
-        ;sprite layout
+        ; sprite layout
 @_72f8: .BYTE   $20 $22 $24 $26 $28 $FF
         .BYTE   $40 $42 $44 $46 $48 $FF
         .BYTE   $60 $62 $64 $66 $68 $FF
@@ -16496,15 +16495,14 @@ boss_greenHill_process:                                                 ;$700C
 
 bossPalette:                                                            ;$731C
 ;===============================================================================
-        ;sms.palette
-
-        .BYTE   $38 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
+        .TABLE  DSB 16
+        .ROW    $38 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
         ;
 
 boss_capsule_process:                                                   ;$732C
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -16767,8 +16765,8 @@ boss_capsule_process:                                                   ;$732C
 
 boss_freeBird_process:                                                  ;$7594
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         res     5,      [IX+Mob.flags]      ;mob adheres to the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    16
@@ -16866,8 +16864,8 @@ boss_freeBird_process:                                                  ;$7594
 
 boss_freeRabbit_process:                                                ;$7699
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         res     5,      [IX+Mob.flags]              ;mob adheres to the floor
 
         ld      [IX+Mob.width],     12
@@ -16991,10 +16989,10 @@ boss_freeRabbit_process:                                                ;$7699
 
 _77be:                                                                  ;$77BE
 ;===============================================================================
-        ;called by the boss mob code -- probably the exploded egg ship
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; called by the boss mob code -- probably the exploded egg ship
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      A,      [D2EC]
         cp      $08
         jr      nc,     @_4
@@ -17230,10 +17228,10 @@ _77be:                                                                  ;$77BE
 
 _79fa:                                                                  ;$79FA
 ;===============================================================================
-        ;called by green hill boss, jungle boss and final animation
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; called by green hill boss, jungle boss and final animation
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      A,      [IX+Mob.Xspeed+0]
         or      [IX+Mob.Xspeed+1]
         ret     z
@@ -17265,10 +17263,10 @@ _79fa:                                                                  ;$79FA
 
 _7a3a:                                                                  ;$7A3A
 ;===============================================================================
-        ;called by `_77be`, capsule and final animation
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; called by `_77be`, capsule and final animation
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         call    findEmptyMob
         ret     c
 
@@ -17326,8 +17324,8 @@ _7a3a:                                                                  ;$7A3A
 
 meta_trip_process:                                                      ;$7AA7
 ;===============================================================================
-;params IX       Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     64
         ld      [IX+Mob.height],    64
@@ -17366,8 +17364,8 @@ meta_trip_process:                                                      ;$7AA7
 
 flower_process:                                                         ;$7AED
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -17435,8 +17433,8 @@ flower_process:                                                         ;$7AED
 
 meta_blink_process:                                                     ;$7B95
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         set     0,      [IY+Vars.flags9]
         ld      A,      [FRAMECOUNT]
@@ -17507,7 +17505,7 @@ meta_blink_process:                                                     ;$7B95
         .ROW    @_7c31  $1D
         .ROW    @_7c39  $1D
 
-        ;sprite layout
+        ; sprite layout
 @_7c29: .BYTE   $B4 $B6 $FF $FF $FF $FF
         .BYTE   $FF $FF
 @_7c31: .BYTE   $B8 $BA $FF $FF $FF $FF
@@ -17516,12 +17514,12 @@ meta_blink_process:                                                     ;$7B95
         .BYTE   $FF $FF
         ;
 
-animateMob:                                                                  ;$7C41
+animateMob:                                                             ;$7C41
 ;===============================================================================
-;params IX      Address of the current mob being processed
+; in    IX      Address of the current mob being processed
 ;       DE      e.g. $7DE1
 ;       BC      e.g. $7DDC
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      L,      [IX+Mob.unknown17]
 
 @_1:    ld      H,      $00
@@ -17561,13 +17559,13 @@ animateMob:                                                                  ;$7
 
 findEmptyMob:                                                           ;$7C7B
 ;===============================================================================
-/*      Search through the mob storage and find the first empty mob slot available
-        (this is used when spawning new mobs, such as bullets).
-        */
-;return AF      carry is set if no mob was found
+; Search through the mob storage and find the first empty mob slot available
+; (this is used when spawning new mobs, such as bullets).
+;
+; out   AF      carry is set if no mob was found
 ;       B       mob slot index number (0-31)
 ;       HL      address of the empty mob slot selected
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      HL,     MOBS
         ld      DE,     _sizeof_Mob
         ld      B,      31                                      ;number of mob slots, less Sonic?
@@ -17585,11 +17583,11 @@ findEmptyMob:                                                           ;$7C7B
 
 _7c8c:                                                                  ;$7C8C
 ;===============================================================================
-        ;used by bosses to lock the screen?
-
-;params HL
+; used by bosses to lock the screen?
+;
+; in    HL
 ;       DE
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         ld      [CAMERA_X_GOTO],        HL
         ld      [CAMERA_Y_GOTO],        DE
 
@@ -17623,9 +17621,9 @@ _7ca6:                                                                  ;$7CA6
 
 _LABEL_7CC1_12:                                                         ;$7CC1
 ;===============================================================================
-;params IX      Address of the current mob being processed
+; in    IX      Address of the current mob being processed
 ;       D       bit 7 sets A to $FF instead of 0 -- direction?
-        ;-----------------------------------------------------------------------
+;-------------------------------------------------------------------------------
         bit     6,      [IY+Vars.flags6]
         ret     nz
 
@@ -17662,8 +17660,8 @@ _LABEL_7CC1_12:                                                         ;$7CC1
 
 badnick_chopper_process:                                                ;$7CF6
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ;mob does not collide with the floor
         set     5,      [IX+Mob.flags]
 
@@ -17791,10 +17789,10 @@ badnick_chopper_process:                                                ;$7CF6
 
 mob_platform_fallVert:                                                  ;$7E02
 ;===============================================================================
-        ;log - vertical (Jungle)
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; log - vertical (Jungle)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
 
         ld      HL,     $0030
@@ -17857,10 +17855,10 @@ mob_platform_fallVert:                                                  ;$7E02
 
 mob_platform_fallHoriz:                                                 ;$7E9B
 ;===============================================================================
-        ;log - horizontal (Jungle)
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; log - horizontal (Jungle)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]               ;mob does not collide with the floor
 
         ld      HL,     $0030
@@ -17882,18 +17880,18 @@ mob_platform_fallHoriz:                                                 ;$7E9B
         set     0,      [IX+Mob.flags]
         jp      mob_platform_fallVert@_7e3c
 
-        ;sprite layout
-@layout:.BYTE   $FE $FF $FF $FF $FF $FF                                         ;$7ED9
+        ; sprite layout
+@layout:.BYTE   $FE $FF $FF $FF $FF $FF                                 ;$7ED9
         .BYTE   $6C $6E $6E $48 $FF $FF
         .BYTE   $FF
         ;
 
 mob_platform_roll:                                                      ;$7EE6
 ;===============================================================================
-        ;log - floating (Jungle)
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; log - floating (Jungle)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         ld      [IX+Mob.width],     $0A
         ld      [IX+Mob.height],    $10
@@ -18005,14 +18003,15 @@ mob_platform_roll:                                                      ;$7EE6
         jr      mob_platform_roll_continue@_800b
         ;
 
-;ROM header goes here
+; ROM header goes here
 
 .BANK   2       SLOT    2
 .ORG    $0003
 
 mob_platform_roll_continue:                                             ;$8003
 ;===============================================================================
-        ;jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
+; jumped to by `doObjectCode_platform_roll`, OBJECT: log - floating (Jungle)
+;
 @_8003: ld      [IX+Mob.spriteLayout+0],        <@_8022
         ld      [IX+Mob.spriteLayout+1],        >@_8022
 @_800b: inc     [IX+Mob.unknown11]
@@ -18025,7 +18024,7 @@ mob_platform_roll_continue:                                             ;$8003
 
 @_8019: .BYTE   $00 $00 $00 $12 $12 $12 $24 $24 $24
 
-        ;sprite layout
+        ; sprite layout
 @_8022: .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $3A $3C $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
@@ -18041,8 +18040,8 @@ mob_platform_roll_continue:                                             ;$8003
 
 boss_jungle_process:                                                    ;$8053
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     32
         ld      [IX+Mob.height],    28
@@ -18236,8 +18235,8 @@ boss_jungle_process:                                                    ;$8053
 
 unknown_8218_process:                                                   ;$8218
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         res     5,      [IX+Mob.flags]                      ;mob adheres to the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    16
@@ -18334,8 +18333,8 @@ unknown_8218_process:                                                   ;$8218
 
 badnick_yadrin_process:                                                 ;$82E6
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     16
         ld      [IX+Mob.height],    15
         ld      HL,     $0408
@@ -18414,8 +18413,8 @@ badnick_yadrin_process:                                                 ;$82E6
 
 platform_bridge_process:                                                ;$83C1
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     14
         ld      [IX+Mob.height],    8
@@ -18515,8 +18514,8 @@ platform_bridge_process:                                                ;$83C1
 
 mob_boss_bridge:                                                        ;$8496
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    28
@@ -18687,10 +18686,10 @@ mob_boss_bridge:                                                        ;$8496
 
 _85d1:                                                                  ;$85D1
 ;===============================================================================
-        ;called by bridge & labyrinth boss
-
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; called by bridge & labyrinth boss
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         push    BC
         call    findEmptyMob
         pop     BC
@@ -18764,8 +18763,8 @@ _865a:                                                                  ;$865A
 
 platform_balance_process:                                               ;$866C
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -18993,8 +18992,8 @@ platform_balance_process:                                               ;$866C
 
 badnick_jaws_process:                                                   ;$8837
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         ld      A,      [IX+Mob.unknown11]
         cp      $80
@@ -19072,8 +19071,8 @@ badnick_jaws_process:                                                   ;$8837
 
 trap_spikeBall_process:                                                 ;$88FB
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     8
         ld      [IX+Mob.height],    12
@@ -19324,10 +19323,10 @@ trap_spikeBall_process:                                                 ;$88FB
         .BYTE   $40     $FE
         ;
 
-trap_spear_process:                                                             ;$8AF6
+trap_spear_process:                                                     ;$8AF6
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -19447,10 +19446,10 @@ trap_spear_process:                                                             
         .BYTE   $12 $20 $FF $00 $FF $00 $1E $30
         ;
 
-trap_fireball_process:                                                                  ;$8C16
+trap_fireball_process:                                                  ;$8C16
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         res     5,      [IX+Mob.flags]                      ;mob adheres to the floor
                                                                 ;(it doesn't move, so this is odd)
         ld      [IX+Mob.width],     4
@@ -19591,10 +19590,10 @@ trap_fireball_process:                                                          
         .BYTE   $FF
         ;
 
-meta_water_process:                                                             ;$8D48
+meta_water_process:                                                     ;$8D48
 ;===============================================================================
-;params IX      Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      A,      [IX+Mob.unknown11]
         ld      E,      A
@@ -19713,10 +19712,10 @@ meta_water_process:                                                             
         .BYTE   $02 $04 $08 $10 $18 $28 $38 $38 $38 $38 $28 $18 $10 $08 $04 $02
         ;
 
-powerups_bubbles_process:                                                               ;$8E56
+powerups_bubbles_process:                                               ;$8E56
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      A,      [IX+Mob.unknown12]
         and     %01111111                                       ;=$7F
@@ -19769,10 +19768,10 @@ powerups_bubbles_process:                                                       
 
 _8eca:                                                                  ;$8ECA
 ;===============================================================================
-        ;unknown mob
-
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; unknown mob
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]
         xor     A
         ld      [IX+Mob.spriteLayout+0],    A
@@ -19852,15 +19851,15 @@ _8eca:                                                                  ;$8ECA
         ret
         ;
 
-null_process:                                                                   ;$8F6C
+null_process:                                                           ;$8F6C
 ;===============================================================================
-        ret                                                     ;object nullified!
+        ret                             ; object nullified!
         ;
 
-badnick_burrobot_process:                                                               ;$8F6D
+badnick_burrobot_process:                                               ;$8F6D
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ;define the size of the mob
         ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
         ld      [IX+Mob.width],     12
@@ -19994,10 +19993,10 @@ badnick_burrobot_process:                                                       
         .BYTE   $FF
         ;
 
-platform_float_process:                                                                 ;$90C0
+platform_float_process:                                                 ;$90C0
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    28
@@ -20145,8 +20144,8 @@ platform_float_process:                                                         
 
 _91eb:                                                                  ;$91EB
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         call    findEmptyMob
         ret     c
 
@@ -20205,8 +20204,8 @@ _91eb:                                                                  ;$91EB
 
 mob_boss_labyrinth:                                                     ;$9267
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]
         ld      [IX+Mob.width],     32
         ld      [IX+Mob.height],    28
@@ -20475,10 +20474,10 @@ mob_boss_labyrinth:                                                     ;$9267
         .BYTE   $60 $62 $64 $66 $68 $FF
         ;
 
-unknown_94a5_process:                                                           ;$94A5
+unknown_94a5_process:                                                   ;$94A5
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     8
         ld      [IX+Mob.height],    10
@@ -20726,10 +20725,10 @@ unknown_94a5_process:                                                           
         .BYTE   $FF $FF $FF $FF
         ;
 
-unknown_96a8_process:                                                                ;$96A8
+unknown_96a8_process:                                                   ;$96A8
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         xor     A
         ld      [IX+Mob.spriteLayout+0],    A
@@ -20767,10 +20766,10 @@ unknown_96a8_process:                                                           
 @_96f5: .BYTE   $1C $1E $5E
         ;
 
-unknown_96f8_process:                                                                ;$96F8
+unknown_96f8_process:                                                   ;$96F8
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         xor     A
         ld      [IX+Mob.spriteLayout+0],    A
@@ -20952,10 +20951,10 @@ unknown_96f8_process:                                                           
         ret
         ;
 
-platform_flipper_process:                                                               ;$9866
+platform_flipper_process:                                               ;$9866
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]              ;mob does not collide with the floor
         ld      [IX+Mob.spriteLayout+0],    <@_9a7e
         ld      [IX+Mob.spriteLayout+1],    >@_9a7e
@@ -21128,7 +21127,7 @@ platform_flipper_process:                                                       
 
         ;-----------------------------------------------------------------------
 
-@_9aaf: ld      A,       [SONIC.Ydirection]                              ;$9AAF
+@_9aaf: ld      A,      [SONIC.Ydirection]                              ;$9AAF
         and     A
         ret     m
 
@@ -21176,10 +21175,10 @@ platform_flipper_process:                                                       
         ret
         ;
 
-platform_bumper_process:                                                                ;$9AFB
+platform_bumper_process:                                                ;$9AFB
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     $1C
         ld      [IX+Mob.height],    $06
@@ -21246,10 +21245,10 @@ platform_bumper_process:                                                        
         .BYTE   $FF
 ;
 
-unknown_9b75_process:                                                                ;$9B75
+unknown_9b75_process:                                                   ;$9B75
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    96
@@ -21311,10 +21310,10 @@ unknown_9b75_process:                                                           
         .BYTE   $19 $14 $0F $1A
         ;
 
-unknown_9be8_process:                                                                ;$9BE8
+unknown_9be8_process:                                                   ;$9BE8
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.Xspeed+0],  $80
         ld      [IX+Mob.Xspeed+1],  $01
         ld      [IX+Mob.Xdirection],        $00
@@ -21387,10 +21386,10 @@ unknown_9be8_process:                                                           
 
 _9c70:                                                                  ;$9C70
 ;===============================================================================
-        ;unknown mob
-
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; unknown mob
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.Xspeed+0],  $80
         ld      [IX+Mob.Xspeed+1],  $FE
         ld      [IX+Mob.Xdirection],        $FF
@@ -21406,8 +21405,8 @@ _9c70:                                                                  ;$9C70
 
 mob_trap_flameThrower:                                                  ;$9C8E
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -21529,9 +21528,10 @@ _9d6a:                                                                  ;$9D6A
 
 mob_door_left:                                                          ;$9DFA
 ;===============================================================================
-        ;door - one way left (Scrap Brain)
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; door - one way left (Scrap Brain)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]               ;mob does not collide with the floor
         call    _9ed4
         ld      A,      [IX+Mob.unknown11]
@@ -21628,8 +21628,8 @@ mob_door_left:                                                          ;$9DFA
 
 _9eb4:                                                                  ;$9EB4
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      A,      [IX+Mob.unknown11]
         cp      $30
         ret     nc
@@ -21649,8 +21649,8 @@ _9eb4:                                                                  ;$9EB4
 
 _9ec4:                                                                  ;$9EC4
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      A,      [IX+Mob.unknown11]
         and     A
         ret     z
@@ -21670,8 +21670,8 @@ _9ec4:                                                                  ;$9EC4
 
 _9ed4:                                                                  ;$9ED4
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     4
         ld      A,      [IX+Mob.unknown11]
         srl     A
@@ -21733,10 +21733,10 @@ _9f2b:                                                                  ;$9F2B
 
 mob_door_right:                                                         ;$9F62
 ;===============================================================================
-        ;door - one way right (Scrap Brain)
-
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; door - one way right (Scrap Brain)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
         ld      A,      [IX+Mob.unknown11]
@@ -21823,8 +21823,8 @@ mob_door_right:                                                         ;$9F62
 
 mob_door:                                                               ;$A025
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX         Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         call    _9ed4
 
@@ -21912,10 +21912,10 @@ mob_door:                                                               ;$A025
         .BYTE   $FF
         ;
 
-trap_electric_process:                                                                  ;$A0E8
+trap_electric_process:                                                  ;$A0E8
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     $30
         ld      [IX+Mob.height],    $10
@@ -21980,7 +21980,7 @@ trap_electric_process:                                                          
 @_a16e:                                                                 ;$A16E
         .BYTE   $02 $01 $03 $01 $FF
 
-@_a173: ;sprite layout                                                                                          `$A173
+@_a173: ; sprite layout                                                 ;$A173
         .BYTE   $02 $04 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
@@ -21995,10 +21995,10 @@ trap_electric_process:                                                          
         .BYTE   $FF
         ;
 
-badnick_ballhog_process:                                                                ;$A1AA
+badnick_ballhog_process:                                                ;$A1AA
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     10
         ld      [IX+Mob.height],    32
 
@@ -22126,7 +22126,7 @@ badnick_ballhog_process:                                                        
 @_a2d7:                                                                 ;$A2D7
         .BYTE   $02 $18 $FF
 
-@_a2da: ;sprite layouts                                                                                         `$A2DA
+@_a2da: ; sprite layouts                                                ;$A2DA
 
         .BYTE   $40 $42 $FF $FF $FF $FF
         .BYTE   $60 $62 $FF $FF $FF $FF
@@ -22140,7 +22140,7 @@ badnick_ballhog_process:                                                        
         .BYTE   $68 $6A $FF $FF $FF $FF
         .BYTE   $FF
 
-@_a30b: .BYTE   $50 $52 $FF $FF $FF $FF                                         ;$A30B
+@_a30b: .BYTE   $50 $52 $FF $FF $FF $FF                                 ;$A30B
         .BYTE   $70 $72 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
 
@@ -22153,12 +22153,12 @@ badnick_ballhog_process:                                                        
         .BYTE   $FF
         ;
 
-unknown_a33c_process:                                                                ;$A33C
+unknown_a33c_process:                                                   ;$A33C
 ;===============================================================================
-        ;mob: UNKNOWN (ball from Ball Hog?)
-
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; mob: UNKNOWN (ball from Ball Hog?)
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         res     5,      [IX+Mob.flags]                      ;mob adheres to the floor
         ld      [IX+Mob.width],     $0A
         ld      [IX+Mob.height],    $0F
@@ -22235,10 +22235,10 @@ unknown_a33c_process:                                                           
         .BYTE   $FF
         ;
 
-door_switch_process:                                                                    ;$A3F8
+door_switch_process:                                                    ;$A3F8
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     $0A
         ld      [IX+Mob.height],    $11
 
@@ -22330,10 +22330,10 @@ door_switch_process:                                                            
         .BYTE   $FF $FF
         ;
 
-door_switching_process:                                                                 ;$A4AB
+door_switching_process:                                                 ;$A4AB
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         call    _9ed4
 
@@ -22412,10 +22412,10 @@ door_switching_process:                                                         
         .BYTE   $FF
         ;
 
-badnick_caterkiller_process:                                                            ;$A551
+badnick_caterkiller_process:                                            ;$A551
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     6
         ld      [IX+Mob.height],    16
 
@@ -22629,10 +22629,10 @@ badnick_caterkiller_process:                                                    
         .BYTE   $06 $06 $05 $05 $04 $03 $02 $00
         ;
 
-boss_scrapBrain_process:                                                                ;$A7ED
+boss_scrapBrain_process:                                                ;$A7ED
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $2F
         bit     0,      [IX+Mob.flags]
@@ -22856,16 +22856,16 @@ boss_scrapBrain_process:                                                        
 @_a9b7:                                                                 ;$A9B7
         .BYTE   $03 $08 $04 $07 $05 $08 $04 $07 $FF
 
-        ;sprite layout
-@_a9c0:                                                            ;$A9C0
+        ; sprite layout
+@_a9c0:                                                                 ;$A9C0
         .BYTE   $74 $76 $76 $78 $FF $FF
         .BYTE   $FF
         ;
 
-meta_clouds_process:                                                            ;$A9C7
+meta_clouds_process:                                                    ;$A9C7
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      A,      [IY+Vars.spriteUpdateCount]
         ld      HL,     [SPRITETABLE_ADDR]
@@ -22944,10 +22944,10 @@ meta_clouds_process:                                                            
         .BYTE   $FF
         ;
 
-trap_propeller_process:                                                                 ;$AA6A
+trap_propeller_process:                                                 ;$AA6A
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     $05
         ld      [IX+Mob.height],    $14
@@ -23026,8 +23026,8 @@ trap_propeller_process:                                                         
 
 mob_badnick_bomb:                                                       ;$AB21
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],$0c
         ld      [IX+Mob.height],$10
         ld      A,      [IX+Mob.unknown11]
@@ -23198,10 +23198,10 @@ mob_badnick_bomb:                                                       ;$AB21
 
 _ac96:                                                                  ;$AC96
 ;===============================================================================
-        ;crabmeat and bomb use this -- must be the spray shots
-
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; crabmeat and bomb use this -- must be the spray shots
+;
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         push    IX
         push    HL
         ld      L,      [IX+Mob.X+0]
@@ -23301,10 +23301,10 @@ _ad53:                                                                  ;$AD53
         .BYTE   $FF
         ;
 
-trap_cannon_process:                                                            ;$AD6C
+trap_cannon_process:                                                    ;$AD6C
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -23374,7 +23374,7 @@ trap_cannon_process:                                                            
 @_adfd:                                                                 ;$ADFD
         .BYTE   $00 $08 $01 $08 $02 $08 $FF
 
-@_ae04: ;sprite layout                                                          `$AE04
+@_ae04: ; sprite layout                                                 ;$AE04
         .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $74 $76 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
@@ -23388,10 +23388,10 @@ trap_cannon_process:                                                            
         .BYTE   $FF
         ;
 
-trap_cannonball_process:                                                                ;$AE35
+trap_cannonball_process:                                                ;$AE35
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    12
@@ -23427,10 +23427,10 @@ trap_cannonball_process:                                                        
         .BYTE   $FF
         ;
 
-badnick_unidos_process:                                                                 ;$AE88
+badnick_unidos_process:                                                 ;$AE88
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                              ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -23678,10 +23678,10 @@ badnick_unidos_process:                                                         
         .BYTE   $FF
         ;
 
-unknown_b0f4_process:                                                                ;$B0F4
+unknown_b0f4_process:                                                   ;$B0F4
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.spriteLayout+0],    $00
         ld      [IX+Mob.spriteLayout+1],    $00
@@ -23739,10 +23739,10 @@ unknown_b0f4_process:                                                           
         ret
         ;
 
-trap_turretRotating_process:                                                            ;$B16C
+trap_turretRotating_process:                                            ;$B16C
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -23859,10 +23859,10 @@ trap_turretRotating_process:                                                    
         .BYTE   $00 $01 $F8 $18 $00 $FE $00 $00 $F2 $07 $00 $FF $00 $FF $F7 $F6
         ;
 
-platform_flyingRight_process:                                                                   ;$B297
+platform_flyingRight_process:                                           ;$B297
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -23975,10 +23975,10 @@ platform_flyingRight_process:                                                   
         .BYTE   $08 $1C $18 $3C $08 $1E $18 $3E $08 $38 $18 $3A $0C $1A $00 $FF
         ;
 
-trap_spikewall_process:                                                         ;$B398
+trap_spikewall_process:                                                 ;$B398
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -24067,10 +24067,10 @@ trap_spikewall_process:                                                         
         .BYTE   $16 $18 $FF $FF $FF $FF
         ;
 
-trap_turretFixed_process:                                                               ;$B46D
+trap_turretFixed_process:                                               ;$B46D
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -24154,10 +24154,10 @@ trap_turretFixed_process:                                                       
         .BYTE   $80 $01 $18 $00 $10 $00 $00 $00
         ;
 
-platform_flyingUpDown_process:                                                                  ;$B50E
+platform_flyingUpDown_process:                                          ;$B50E
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      HL,     platform_flyingRight_process@_b37b
         ld      A,      [LEVEL_SOLIDITY]
@@ -24252,8 +24252,8 @@ platform_flyingUpDown_process:                                                  
 
 _b5c2:                                                                  ;$B5C2
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         push    BC
         push    DE
         call    findEmptyMob
@@ -24314,10 +24314,10 @@ _b5c2:                                                                  ;$B5C2
         ret
         ;
 
-boss_skyBase_process:                                                                   ;$B634
+boss_skyBase_process:                                                   ;$B634
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    47
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
@@ -24515,7 +24515,7 @@ boss_skyBase_process:                                                           
 
         ;-----------------------------------------------------------------------
 
-@_b7e6: ld      A,       [D2B1]                                  ;$B7E6
+@_b7e6: ld      A,      [D2B1]                                          ;$B7E6
         and     A
         ret     nz
         bit     0,      [IY+Vars.scrollRingFlags]
@@ -24556,7 +24556,7 @@ boss_skyBase_process:                                                           
 
         ;-----------------------------------------------------------------------
 
-@_b821: bit     3,      [IX+Mob.flags]                              ;$B821
+@_b821: bit     3,      [IX+Mob.flags]                                  ;$B821
         jp      nz,     @_20
 
         res     5,      [IX+Mob.flags]                      ;make mob adhere to the floor
@@ -24871,10 +24871,10 @@ _bb77:                                                                  ;$BB77
         .BYTE   $FF
         ;
 
-boss_electricBeam_process:                                                              ;$BB84
+boss_electricBeam_process:                                              ;$BB84
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      HL,     $0008
@@ -25068,10 +25068,10 @@ boss_electricBeam_process:                                                      
 @_bcdd: .BYTE   $40 $42
         ;
 
-unknown_bcdf_process:                                                                ;$BCDF
+unknown_bcdf_process:                                                   ;$BCDF
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         set     5,      [IY+Vars.unknown0]
         ld      HL,     $0202
@@ -25200,10 +25200,10 @@ unknown_bcdf_process:                                                           
         .BYTE   $FF
         ;
 
-cutscene_final_process:                                                                 ;$BDF9
+cutscene_final_process:                                                 ;$BDF9
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         ;mob does not collide with the floor
         set     5,      [IX+Mob.flags]
 
@@ -25362,10 +25362,10 @@ cutscene_final_process:                                                         
         .BYTE   $FF
         ;
 
-cutscene_emeralds_process:                                                                      ;$BF4C
+cutscene_emeralds_process:                                              ;$BF4C
 ;===============================================================================
-;params IX         Address of the current mob being processed
-        ;-----------------------------------------------------------------------
+; in    IX      Address of the current mob being processed
+;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ;load the emerald image into VRAM,
@@ -25451,112 +25451,3 @@ cutscene_emeralds_process:                                                      
 
         .BYTE   $49 $43 $20 $54 $48 $45 $20 $48
         ;
-
-;===============================================================================
-
-.BANK   4       SLOT    1
-.ORG    $0000
-
-blockMappings:                                                          ;$1:0000
-
-;;;[$10000]
-;;S1_BlockMappings:
-;;
-;;S1_BlockMappings_GreenHill:
-;;.INCBIN "ROM.sms" SKIP $10000 READ 2944
-;;
-;;S1_BlockMappings_Bridge:
-;;.INCBIN "ROM.sms" SKIP $10B80 READ 2304
-;;
-;;S1_BlockMappings_Jungle:
-;;.INCBIN "ROM.sms" SKIP $11480 READ 2560
-;;
-;;S1_BlockMappings_Labyrinth:
-;;.INCBIN "ROM.sms" SKIP $11E80 READ 2816
-;;
-;;S1_BlockMappings_ScrapBrain:
-;;.INCBIN "ROM.sms" SKIP $12980 READ 3072
-;;
-;;S1_BlockMappings_SkyBaseExterior:
-;;;.INCBIN "ROM.sms" SKIP $13580 READ 3456
-;;.INCBIN "ROM.sms" SKIP $13580 READ ($14000 - $13580)
-;;.BANK 5
-;;.ORG $0000
-;;.INCBIN "ROM.sms" SKIP $14000 READ 3456 - ($14000 - $13580)
-;;
-;;S1_BlockMappings_SkyBaseInterior:
-;;.INCBIN "ROM.sms" SKIP $14300 READ 1664
-;;
-;;S1_BlockMappings_SpecialStage:
-;;.INCBIN "ROM.sms" SKIP $14980 READ 2048
-;;
-;;;======================================================================================
-;;;"blinking items"
-;;;(need to properly break these down)
-;;
-;;;[$15180]
-;;.INCBIN "ROM.sms" SKIP $15180 READ 1024
-;;
-;;;======================================================================================
-;;;level headers:
-;;
-;;.MACRO TABLE ARGS tableName
-;;	;define the current position as the table name
-;;__TABLE\@__:
-;;	.DEF \1 __TABLE\@__
-;;	;then define a reference used for counting the row index
-;;	.REDEF __ROW__ 0
-;;.ENDM
-;;
-;;.MACRO ROW ARGS rowIndexLabel
-;;__ROW\@__:
-;;	.IFDEFM \1
-;;		.DEF \1 __ROW__
-;;	.ENDIF
-;;	.REDEF __ROW__ (__ROW__+1)
-;;.ENDM
-;;
-;;.MACRO ENDTABLE ARGS tableName
-;;	.DEF _sizeof_\1 (__ROW__+1)
-;;.ENDM
-;;
-;;
-;;.BANK 5
-;;
-;;;[$15580]
-;;S1_LevelHeader_Pointers:
-;;
-;;;[$155CA]
-;;.ORG $155CA - $14000
-;;
-;; TABLE	"S1_LevelHeaders"
-;; ROW	"index_levelHeaders_greenHill1"
-;;.db $00					;SP: SolidityPointer
-;;.dw $0100, $0010			;FW/FH: FloorWidth/Height
-;;.db $40					;CL: CropLeft
-;;.db $00					;LX: LevelXOffset
-;;.db $C0					;unknown byte
-;;.db $18					;LW: LevelWidth
-;;.db $20					;CT: CropTop
-;;.db $00					;LY: LevelYOffset
-;;.db $40					;XH: ExtendHeight
-;;.db $01					;LH: LevelHeight
-;;.db $08					;SX: StartX
-;;.db $0B					;SY: StartY
-;;.dw $2DEA				;FL: FloorLayout
-;;.dw $083E				;FS: FloorSize
-;;.dw $0000				;BM: BlockMappings
-;;.dw $2FE6				;LA: LevelArt
-;;.db $09					;SB: SpriteBank
-;;.dw $612A				;SA: SpriteArt
-;;.db $00					;IP: InitialPalette
-;;.db $0A					;CS: CycleSpeed
-;;.db $03					;CC: CycleCount
-;;.db $00					;CP: CyclePalette
-;;.dw $0534				;OL: ObjectLayout
-;;.db $04					;SR: Scrolling/Ring flags
-;;.db $00					;UW: Underwater flag
-;;.db $20					;TL: Time/Lightning flags
-;;.db $00					;X0: Unknown byte - always 0
-;;.db $00					;MU: Music
-;; ENDTABLE	"S1_LevelHeaders"
