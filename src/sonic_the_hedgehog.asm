@@ -123,7 +123,7 @@ interruptHandler:                                                       ;$0073
         ; means that it needs to be initialised, and then it counts down from 3
 
         ; read current step value
-        ld      A,      [RASTERSPLIT_STEP]
+        ld      A,      [RAM_RASTERSPLIT_STEP]
         and     A                       ; keep value, but update flags
         jp      nz,     doRasterSplit   ; not 0?, deal with particulars
 
@@ -131,7 +131,7 @@ interruptHandler:                                                       ;$0073
         ;-----------------------------------------------------------------------
 
         ; check the water line height:
-        ld      A,      [WATERLINE]
+        ld      A,      [RAM_WATERLINE]
         and     A
         jr      z,      @_1             ; if it's zero (above the screen), skip
 
@@ -141,7 +141,7 @@ interruptHandler:                                                       ;$0073
         ; copy the water line position into the working space for the raster
         ; split. this is to avoid the water line changing height between the
         ; multiple interrupts needed to produce the split, I think
-        ld      [RASTERSPLIT_LINE],     A
+        ld      [RAM_RASTERSPLIT_LINE], A
 
         ; set the line interrupt to fire at line 10 (top of the screen).
         ; we will then set another interrupt to fire where we want the
@@ -153,7 +153,7 @@ interruptHandler:                                                       ;$0073
         out     [SMS_PORTS_VDP_CONTROL],A
 
         ; enable line interrupt IRQs (bit 5 of VDP register 0)
-        ld      A,                      [VDPREGISTER_0]
+        ld      A,                      [RAM_VDPREGISTER_0]
         or      %00010000               ; set bit 5
         out     [SMS_PORTS_VDP_CONTROL],A
         ; write to VDP register 0
@@ -162,14 +162,14 @@ interruptHandler:                                                       ;$0073
 
         ; initialise the step counter for the water line raster split
         ld      A,                      3
-        ld      [RASTERSPLIT_STEP],     A
+        ld      [RAM_RASTERSPLIT_STEP], A
 
         ;-----------------------------------------------------------------------
 @_1:    push    IX
         push    IY
 
         ; remember the current page 1 & 2 banks
-        ld      HL,     [SLOT1]
+        ld      HL,     [RAM_SLOT1]
         push    HL
 
         ; if the main thread is not held up at the `waitForInterrupt` routine
@@ -190,7 +190,7 @@ interruptHandler:                                                       ;$0073
                 ; switch in the music engine & data
                 ld      A,                      :sound.update
                 ld      [SMS_MAPPER_SLOT1],     A
-                ld      [SLOT1],                A
+                ld      [RAM_SLOT1],            A
                 ; process the sound for this frame
                 call    sound.update
         .ENDIF
@@ -213,7 +213,7 @@ interruptHandler:                                                       ;$0073
         ; before we started messing around here
         pop     HL
         ld      [SMS_MAPPER_SLOT1],     HL
-        ld      [SLOT1],                HL
+        ld      [RAM_SLOT1],            HL
 
         ; pull everything off the stack so that the code that
         ; was running before the interrupt doesn't explode
@@ -234,14 +234,14 @@ interruptHandler:                                                       ;$0073
 @_00f7:                                                                 ;$00F7
         ;=======================================================================
         ; blank the screen (remove bit 6 of VDP register 1)
-        ld      A,      [VDPREGISTER_1]                 ; cache value from RAM
-        and     %10111111                               ; remove bit 6
-        out     [SMS_PORTS_VDP_CONTROL],        A       ; write the value,
+        ld      A,      [RAM_VDPREGISTER_1]     ; cache value from RAM
+        and     %10111111                       ; remove bit 6
+        out     [SMS_PORTS_VDP_CONTROL],A       ; write the value,
         ld      A,      SMS_VDP_REGISTER_1
-        out     [SMS_PORTS_VDP_CONTROL],        A       ; then register.no
+        out     [SMS_PORTS_VDP_CONTROL],A       ; then register.no
 
         ; horizontal scroll:
-        ld      A,      [VDPSCROLL_HORZ]
+        ld      A,      [RAM_VDPSCROLL_HORZ]
         ; I don't understand the reason for this
         neg
         out     [SMS_PORTS_VDP_CONTROL],        A
@@ -249,7 +249,7 @@ interruptHandler:                                                       ;$0073
         out     [SMS_PORTS_VDP_CONTROL],        A
 
         ; vertical scroll:
-        ld      A,      [VDPSCROLL_VERT]
+        ld      A,      [RAM_VDPSCROLL_VERT]
         out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,              SMS_VDP_REGISTER_9
         out     [SMS_PORTS_VDP_CONTROL],        A
@@ -262,7 +262,7 @@ interruptHandler:                                                       ;$0073
 
         ; turn the screen back on
         ; (or if it was already blank before this function, leave it blank)
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      SMS_VDP_REGISTER_1
         out     [SMS_PORTS_VDP_CONTROL],        A
@@ -270,10 +270,10 @@ interruptHandler:                                                       ;$0073
         ; TODO: set these bank numbers according to the data location
         ld      A,                      8       ; Sonic sprites?
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      9
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ; does the Sonic sprite need updating?
         ; (the particular frame of animation is copied to the VRAM)
@@ -283,10 +283,10 @@ interruptHandler:                                                       ;$0073
         ; TODO: set these bank numbers according to the data location
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ; update sprite table?
         bit     1,      [IY+Vars.flags0]
@@ -295,12 +295,12 @@ interruptHandler:                                                       ;$0073
         bit     5,      [IY+Vars.flags0]
         call    z,      loadPaletteFromInterrupt
 
-        ld      A,      [D2AB+1]
+        ld      A,      [RAM_D2AB+1]
         and     %10000000
         call    z,      _38b0
 
         ld      A,              $FF
-        ld      [D2AB+1],       A
+        ld      [RAM_D2AB+1],   A
 
         set     0,      [IY+Vars.flags0]
         ret
@@ -316,10 +316,10 @@ loadPaletteFromInterrupt:                                               ;$0174
 
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ; if the level is underwater then skip loading the palette as the
         ; palettes are handled by the code that does the raster split
@@ -328,8 +328,8 @@ loadPaletteFromInterrupt:                                               ;$0174
 
         ; get the palette loading parameters that were assigned
         ; by the main thread (i.e. `loadPaletteOnInterrupt`)
-        ld      HL,     [LOADPALETTE_ADDRESS]
-        ld      A,      [LOADPALETTE_FLAGS]
+        ld      HL,     [RAM_LOADPALETTE_ADDRESS]
+        ld      A,      [RAM_LOADPALETTE_FLAGS]
 
         ; check flag to specify loading palette
         bit     3,      [IY+Vars.flags0]
@@ -356,10 +356,10 @@ _01A0:                                                                  ;$01A0
         ; TODO: set these bank numbers according to the data location
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ; this seems quite pointless but could do with
         ; killing a specific amount of time
@@ -378,7 +378,7 @@ loadPaletteFromInterrupt_water:                                         ;$01BA
 ;-------------------------------------------------------------------------------
 
         ; get the position of the water line on screen
-        ld      A,      [WATERLINE]
+        ld      A,      [RAM_WATERLINE]
         and     A
         jr      z,      @_2     ; is it 0? (above the screen)
         cp      $FF             ; or $FF? (below the screen)
@@ -404,14 +404,14 @@ loadPaletteFromInterrupt_water:                                         ;$01BA
 
         ; above water:
         ;-----------------------------------------------------------------------
-@_2:    ld      A,      [CYCLEPALETTE_INDEX]
+@_2:    ld      A,      [RAM_CYCLEPALETTE_INDEX]
         add     A,      A               ; x2
         add     A,      A               ; x4
         add     A,      A               ; x8
         add     A,      A               ; x16
         ld      E,      A
         ld      D,      $00
-        ld      HL,     [CYCLEPALETTE_POINTER]
+        ld      HL,     [RAM_CYCLEPALETTE_POINTER]
         add     HL,     DE
         ld      A,      %00000001
         call    loadPalette
@@ -439,11 +439,11 @@ doRasterSplit:                                                          ;$01F2
         ;-----------------------------------------------------------------------
         ; set counter at step 2
         dec     A
-        ld      [RASTERSPLIT_STEP],     A
+        ld      [RAM_RASTERSPLIT_STEP], A
 
         in      A,      [SMS_PORTS_SCANLINE]
         ld      C,      A
-        ld      A,      [RASTERSPLIT_LINE]
+        ld      A,      [RAM_RASTERSPLIT_LINE]
         sub     C       ; work out the difference
 
         ; set VDP register 10 with the scanline number to interrupt at next
@@ -458,13 +458,13 @@ doRasterSplit:                                                          ;$01F2
         ;-----------------------------------------------------------------------
 @_1:    ; we don't do anything on this step
         dec     A
-        ld      [RASTERSPLIT_STEP],     A
+        ld      [RAM_RASTERSPLIT_STEP], A
         jp      @_3
 
         ; step 1:
         ;-----------------------------------------------------------------------
 @_2:    dec     A
-        ld      [RASTERSPLIT_STEP],     A
+        ld      [RAM_RASTERSPLIT_STEP], A
 
         ; set the VDP to point at the palette
         ld      A,                              $00
@@ -495,7 +495,7 @@ doRasterSplit:                                                          ;$01F2
         inc     HL
         djnz    @loop
 
-        ld      A,      [VDPREGISTER_0]
+        ld      A,      [RAM_VDPREGISTER_0]
         and     %11101111       ; remove bit 4: disable line interrupts
         out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,                              SMS_VDP_REGISTER_0
@@ -551,7 +551,7 @@ init:                                                                   ;$028B
 
         ; initialize the VDP:
         ld      HL,     initVDPRegisterValues
-        ld      DE,     VDPREGISTER_0
+        ld      DE,     RAM_VDPREGISTER_0
         ld      B,      11
         ld      C,      $8B
 
@@ -585,7 +585,7 @@ init:                                                                   ;$028B
         ; though this is in practice slower than just using an absolute address
         ; TODO: we could remove use of IY as the common variables address
         ;       entirely and perhaps use it for other things
-        ld      IY,     VARS            ; variable space starts here
+        ld      IY,     RAM_VARS        ; variable space starts here
         jp      _1c49
         ;
 
@@ -605,10 +605,10 @@ call_playMusic:                                                         ;$02D7
         ld      [SMS_MAPPER_SLOT1],     A
 
         pop     AF
-        ld      [PREVIOUS_MUSIC],       A
+        ld      [RAM_PREVIOUS_MUSIC],   A
         call    sound.playMusic
 
-        ld      A,                      [SLOT1]
+        ld      A,                      [RAM_SLOT1]
         ld      [SMS_MAPPER_SLOT1],     A
 
         ei      ; enable interrupts
@@ -627,7 +627,7 @@ call_muteSound:                                                         ;$02ED
         ld      A,                      :sound.stop
         ld      [SMS_MAPPER_SLOT1],     A
         call    sound.stop
-        ld      A,                      [SLOT1]
+        ld      A,                      [RAM_SLOT1]
         ld      [SMS_MAPPER_SLOT1],     A
 
         ei      ; enable interrupts
@@ -650,7 +650,7 @@ call_playSFX:                                                           ;$02FE
         pop     AF
         call    sound.playSFX
 
-        ld      A,                      [SLOT1]
+        ld      A,                      [RAM_SLOT1]
         ld      [SMS_MAPPER_SLOT1],     A
 
         ei
@@ -703,9 +703,9 @@ unused_0323:                                                            ;$0323
 ; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         set     2,      [IY+Vars.flags0]
-        ld      [UNUSED_D225],  HL      ; unused RAM location!
-        ld      [UNUSED_D227],  DE      ; unused RAM location!
-        ld      [UNUSED_D229],  BC      ; unused RAM location!
+        ld      [RAM_UNUSED_D225], HL   ; unused RAM location!
+        ld      [RAM_UNUSED_D227], DE   ; unused RAM location!
+        ld      [RAM_UNUSED_D229], BC   ; unused RAM location!
         ret
         ;
 
@@ -720,8 +720,8 @@ loadPaletteOnInterrupt:                                                 ;$0333
         ; set the flag for the interrupt handler
         set     3,      [IY+Vars.flags0]
         ;store the parameters
-        ld      [LOADPALETTE_FLAGS],    A
-        ld      [LOADPALETTE_ADDRESS],  HL
+        ld      [RAM_LOADPALETTE_FLAGS],        A
+        ld      [RAM_LOADPALETTE_ADDRESS],      HL
         ret
         ;
 
@@ -760,7 +760,7 @@ updateVDPSprites:                                                       ;$033E
 
         ; if the number of sprites to update is >= than the existing number of
         ; active sprites, skip ahead to setting the X-positions and indexes
-@_1:    ld      A,      [ACTIVESPRITECOUNT]
+@_1:    ld      A,      [RAM_ACTIVESPRITECOUNT]
         ld      B,      A
         ld      A,      [IY+Vars.spriteUpdateCount]
         ld      C,      A
@@ -808,9 +808,9 @@ updateVDPSprites:                                                       ;$033E
 
         ; set the new number of active sprites
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      [ACTIVESPRITECOUNT],    A
+        ld      [RAM_ACTIVESPRITECOUNT],        A
         ; set the update count to 0
-        ld      [IY+Vars.spriteUpdateCount],       B
+        ld      [IY+Vars.spriteUpdateCount],    B
         ret
         ;
 
@@ -859,14 +859,14 @@ unused_03ac:                                                            ;$03AC
         out     [SMS_PORTS_VDP_CONTROL], A
 
         pop     AF
-        ld      DE,     [SLOT1]
+        ld      DE,     [RAM_SLOT1]
         push    DE
 
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
         inc     A
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
         ei
 
 @_1:    ld      A,      [HL]
@@ -911,7 +911,7 @@ unused_03ac:                                                            ;$03AC
 
         ; restore bank numbers
         pop     DE
-        ld      [SLOT1],        DE      ; restore our copy of the bank numbers
+        ld      [RAM_SLOT1],    DE      ; restore our copy of the bank numbers
         ld      A,              E       ; restore Slot 1
         ld      [SMS_MAPPER_SLOT1],     A
         ld      A,              D       ; restore Slot 2
@@ -981,16 +981,16 @@ decompressArt:                                                          ;$0405
         add     HL,     DE
 
         ; stash the current page 1/2 bank numbers cached in RAM
-        ld      DE,     [SLOT1]
+        ld      DE,     [RAM_SLOT1]
         push    DE
 
         ; change pages 1 & 2 (Z80:$4000-$BFFF)
         ; to banks A & A+1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         inc     A
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ; read art header:
         ;-----------------------------------------------------------------------
@@ -999,7 +999,7 @@ decompressArt:                                                          ;$0405
         jr      nz,     @_3
         ei
 
-@_3:    ld      [TEMP4],        HL
+@_3:    ld      [RAM_TEMP4],    HL
 
         ; begin reading the compressed art header:
         ; see <info.sonicretro.org/SCHG:Sonic_the_Hedgehog_(8-bit)#Header>
@@ -1030,22 +1030,22 @@ decompressArt:                                                          ;$0405
         ld      B,      [HL]
         inc     HL
 
-        ld      [TEMP3],        BC      ; store the row count in $D210
-        ld      [TEMP6],        HL      ; where the UniqueRows list begins
+        ld      [RAM_TEMP3],    BC      ; store the row count in $D210
+        ld      [RAM_TEMP6],    HL      ; where the UniqueRows list begins
 
         ; swap BC/DE/HL with their shadow values
         exx
 
         ; load BC' with the absolute starting address of the art header;
         ; the DuplicateRows and ArtData values are always relative to this
-        ld      BC',    [TEMP4]
+        ld      BC',    [RAM_TEMP4]
         ; copy it to DE
         ld      E',     C'
         ld      D',     B'
 
         pop     HL'                     ; pull the ArtData value from the stack
         add     HL',    BC'             ; get the absolute address of ArtData
-        ld      [TEMP1],        HL'     ; and store that in $D20E
+        ld      [RAM_TEMP1],    HL'     ; and store that in $D20E
         ; copy it to BC.
         ; this will be used to produce a counter from 0 to RowCount
         ld      C',     L'
@@ -1066,7 +1066,7 @@ decompressArt:                                                          ;$0405
         ; process row:
         ;-----------------------------------------------------------------------
 @processRow:
-        ld      HL,     [TEMP3]         ; load HL with original row count
+        ld      HL,     [RAM_TEMP3]     ; load HL with original row count
                                         ; ($0400 for sprites, $0800 for tiles)
         xor     A                       ; set A to 0 (Carry is reset)
         sbc     HL,     BC              ; subtract counter from row count
@@ -1094,7 +1094,7 @@ decompressArt:                                                          ;$0405
         srl     D
         rr      E
 
-        ld      HL,     [TEMP6]         ; the absolute address where the
+        ld      HL,     [RAM_TEMP6]     ; the absolute address where the
                                         ; UniqueRows list begins
         add     HL,     DE              ; add the counter, so move along to the
                                         ; DE'th byte in the UniqueRows list
@@ -1180,7 +1180,7 @@ decompressArt:                                                          ;$0405
         add     HL,     HL
         add     HL,     HL
 
-        ld      DE,     [TEMP1]         ; get absolute address to the art data
+        ld      DE,     [RAM_TEMP1]     ; get absolute address to the art data
         add     HL,     DE              ; add the index from duplicate row list
 
         ; write 1 row of pixels (4 bytes) to the VDP
@@ -1217,7 +1217,7 @@ decompressArt:                                                          ;$0405
 @_6:    ; restore the pages to the original banks
         ; at the beginning of the procedure
         pop     DE
-        ld      [SLOT1],                DE
+        ld      [RAM_SLOT1],            DE
         ld      [SMS_MAPPER_SLOT1],     DE
 
         ei
@@ -1278,7 +1278,7 @@ decompressScreen:                                                       ;$0501
         ;-----------------------------------------------------------------------
         out     [SMS_PORTS_VDP_DATA], A ; send the tile to the VDP
         ld      E,      A               ; update current byte being compared
-        ld      A,      [TEMP1]         ; get the upper byte for the tiles
+        ld      A,      [RAM_TEMP1]     ; get the upper byte for the tiles
                                         ; (foreground / background / flip)
         out     [SMS_PORTS_VDP_DATA], A
 
@@ -1307,7 +1307,7 @@ decompressScreen:                                                       ;$0501
         ; repeat the byte
 @_4:    out     [SMS_PORTS_VDP_DATA],   A
         push    AF
-        ld      A,      [TEMP1]
+        ld      A,      [RAM_TEMP1]
         out     [SMS_PORTS_VDP_DATA],   A
         pop     AF
         dec     E
@@ -1371,7 +1371,7 @@ loadPalette:                                                            ;$0566
         bit     0,      A               ; are we loading a tile palette?
         jr      z,      @_1             ; if no, skip ahead to sprite palette
 
-        ld      [LOADPALETTE_TILE],     HL
+        ld      [RAM_LOADPALETTE_TILE], HL
         call    @sendPalette            ; send the palette colours to the VDP
 
 @_1:    pop     AF
@@ -1380,7 +1380,7 @@ loadPalette:                                                            ;$0566
         ret     z                       ; if no, finish here
 
         ; store the address of the sprite palette
-        ld      [LOADPALETTE_SPRITE],   HL
+        ld      [RAM_LOADPALETTE_SPRITE],       HL
 
         ld      B,      16              ; we will copy 16 colours
         ld      C,      16              ; beginning at index 16 (sprites)
@@ -1424,7 +1424,7 @@ clearVRAM:                                                              ;$0595
         out     [SMS_PORTS_VDP_CONTROL],A
 
 @loop:  ld      A,      E               ; return the value to A
-        out     [SMS_PORTS_VDP_DATA], A ; send it to the VDP
+        out     [SMS_PORTS_VDP_DATA],   A ; send it to the VDP
 
         dec     BC
         ld      A, B
@@ -1499,7 +1499,7 @@ print:                                                                  ;$05AF
         out     [SMS_PORTS_VDP_DATA],   A
         push    AF                      ; kill time?
         pop     AF
-        ld      A,      [TEMP1]         ; what to use as the tile upper bits
+        ld      A,      [RAM_TEMP1]     ; what to use as the tile upper bits
                                         ; (front/back, flip &c.)
         out     [SMS_PORTS_VDP_DATA],   A
         inc     DE
@@ -1538,7 +1538,7 @@ hideSprites:                                                            ;$05E2
         ld      [IY+Vars.spriteUpdateCount],       64
         ;and set zero active sprites
         xor     A                                          ;(set A to 0)
-        ld      [ACTIVESPRITECOUNT],    A
+        ld      [RAM_ACTIVESPRITECOUNT],        A
 
         ret
         ;
@@ -1645,7 +1645,7 @@ _0625:                                                                  ;$0625
         push    HL
         push    DE
 
-        ld      HL,     [D2D7]
+        ld      HL,     [RAM_D2D7]
         ld      E,      L
         ld      D,      H
         add     HL,     DE              ;x2
@@ -1659,7 +1659,7 @@ _0625:                                                                  ;$0625
 
         ld      DE,     $0054
         add     HL,     DE
-        ld      [D2D7], HL
+        ld      [RAM_D2D7],     HL
         ld      A,      H
 
         pop     DE
@@ -1678,12 +1678,12 @@ updateVDPscroll:                                                        ;$063E
 ;-------------------------------------------------------------------------------
 
         ; fill B with vertical and C with horizontal VDP scroll values
-        ld      BC,     [VDPSCROLL_HORZ]
+        ld      BC,     [RAM_VDPSCROLL_HORZ]
 
         ; has the camera moved horizontally?
         ;-----------------------------------------------------------------------
-        ld      HL,     [CAMERA_X]
-        ld      DE,     [CAMERA_X_PREV]
+        ld      HL,     [RAM_CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X_PREV]
         and     A                       ; clear carry flag
         sbc     HL,     DE              ; `RAM_CAMERA_X_LEFT` > `RAM_CAMERA_X`?
         jr      c,      @_1             ; jump if the camera has moved left
@@ -1706,8 +1706,8 @@ updateVDPscroll:                                                        ;$063E
 
         ; has the camera moved vertically?
         ;-----------------------------------------------------------------------
-@_2:    ld      HL,     [CAMERA_Y]
-        ld      DE,     [CAMERA_Y_PREV]
+@_2:    ld      HL,     [RAM_CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y_PREV]
         and     A                       ; clear carry flag
         sbc     HL,     DE              ; `RAM_CAMERA_Y_UP` > `RAM_CAMERA_Y`?
         jr      c,      @_4             ; jump if the camera has moved up
@@ -1741,14 +1741,14 @@ updateVDPscroll:                                                        ;$063E
 
         ; update the VDP horizontal / vertical scroll values in the RAM,
         ; the interrupt routine will send the values to the chip
-@_6:    ld      [VDPSCROLL_HORZ],       BC
+@_6:    ld      [RAM_VDPSCROLL_HORZ],   BC
 
         ; get the number of blocks across / down the camera is located:
         ; we multiply the camera position by 8 and take only the high byte
         ; (effectively dividing by 256) so that everything below 32 pixels
         ; of precision is lost
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         sla     L       ; x2 ...
         rl      H
         sla     L       ; x4 ...
@@ -1757,7 +1757,7 @@ updateVDPscroll:                                                        ;$063E
         rl      H
         ld      C,      H               ; take the high byte
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         sla     L       ; x2 ...
         rl      H
         sla     L       ; x4 ...
@@ -1767,13 +1767,13 @@ updateVDPscroll:                                                        ;$063E
         ld      B,      H               ; take the high byte
 
         ; now store the block X & Y counts
-        ld      [BLOCK_X],      BC
+        ld      [RAM_BLOCK_X],  BC
 
         ; update the left / up values now that the camera has moved
-        ld      HL,                     [CAMERA_X]
-        ld      [CAMERA_X_PREV],        HL
-        ld      HL,                     [CAMERA_Y]
-        ld      [CAMERA_Y_PREV],        HL
+        ld      HL,                     [RAM_CAMERA_X]
+        ld      [RAM_CAMERA_X_PREV],    HL
+        ld      HL,                     [RAM_CAMERA_Y]
+        ld      [RAM_CAMERA_Y_PREV],    HL
 
         ret
         ;
@@ -1798,10 +1798,10 @@ fillOverscrollCache:                                                    ;$06BD
         ; to banks 4 & 5 ($10000-$17FFF)
         ld      A,                      :blockMappings
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      :blockMappings+1
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
         ei
 
         ;-----------------------------------------------------------------------
@@ -1810,7 +1810,7 @@ fillOverscrollCache:                                                    ;$06BD
         ;       header, instead of an index
 
         ; get the solidity index for the level
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         add     A,      A               ; double it (for a pointer)
         ld      C,      A               ; and put it into a 16-bit number (BC)
         ld      B,      $00
@@ -1826,7 +1826,7 @@ fillOverscrollCache:                                                    ;$06BD
         ld      L,      A
 
         ; store the solidity data address in RAM
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
 
         ;-----------------------------------------------------------------------
         ; horizontal scrolling allowed??
@@ -1843,7 +1843,7 @@ fillOverscrollCache:                                                    ;$06BD
 
         ; get the position in the floor layout (in RAM) of the camera:
 
-@horz:  ld      A,      [VDPSCROLL_HORZ]
+@horz:  ld      A,      [RAM_VDPSCROLL_HORZ]
         and     %00011111               ; MOD 32 (i.e. 0-31 looping)
         add     A,      8               ; add 8 (ergo, 8-39)
         rrca                            ; divide by 2 ...
@@ -1859,7 +1859,7 @@ fillOverscrollCache:                                                    ;$06BD
 @_1:    call    getFloorLayoutRAMPosition
 
         ;-----------------------------------------------------------------------
-        ld      A,      [VDPSCROLL_HORZ]
+        ld      A,      [RAM_VDPSCROLL_HORZ]
 
         ; has the camera moved left?
         bit     6,      [IY+Vars.flags0]
@@ -1875,12 +1875,12 @@ fillOverscrollCache:                                                    ;$06BD
         srl     A                       ; divide by 8 (determine tile, 0-3)
         ld      C,      A               ; copy the tile number (0-3) into BC
         ld      B,      $00
-        ld      [TEMP1],        BC      ; stash it away for later
+        ld      [RAM_TEMP1],    BC      ; stash it away for later
 
         exx
-        ld      DE',    OVERSCROLLCACHE_HORZ
+        ld      DE',    RAM_OVERSCROLLCACHE_HORZ
         exx
-        ld      DE,     [LEVEL_FLOORWIDTH]
+        ld      DE,     [RAM_LEVEL_FLOORWIDTH]
 
         ld      B,      7
 @loopH: ld      A,      [HL]            ; read block index from the FloorLayout
@@ -1888,7 +1888,7 @@ fillOverscrollCache:                                                    ;$06BD
         exx
         ld      C',     A
         ld      B',     $00
-        ld      HL',    [TEMP3]         ; retrieve the solidity data address
+        ld      HL',    [RAM_TEMP3]     ; retrieve the solidity data address
         add     HL',    BC'             ; offset block index into solidity data
 
         ; multiply the block index by 16
@@ -1910,9 +1910,9 @@ fillOverscrollCache:                                                    ;$06BD
         rrca
         and     %00010000
 
-        ld      HL',    [TEMP1]         ; retrieve column number of VDP scroll
+        ld      HL',    [RAM_TEMP1]     ; retrieve column number of VDP scroll
         add     HL',    BC'
-        ld      BC',    [BLOCKMAPPINGS] ; get address of level's block mappings
+        ld      BC',    [RAM_BLOCKMAPPINGS]
         add     HL',    BC'
         ld      BC',    4
         ldi                             ; copy the first byte
@@ -1959,16 +1959,16 @@ fillOverscrollCache:                                                    ;$06BD
         ;-----------------------------------------------------------------------
 
 @_4:    call    getFloorLayoutRAMPosition
-        ld      A,      [VDPSCROLL_VERT]
+        ld      A,      [RAM_VDPSCROLL_VERT]
         and     %00011111
         srl     A
         and     %11111100
         ld      C,      A
         ld      B,      $00
-        ld      [TEMP1],        BC
+        ld      [RAM_TEMP1],    BC
 
         exx
-        ld      DE',    OVERSCROLLCACHE_VERT
+        ld      DE',    RAM_OVERSCROLLCACHE_VERT
         exx
 
         ld      B,      $09
@@ -1978,7 +1978,7 @@ fillOverscrollCache:                                                    ;$06BD
         exx
         ld      C',     A
         ld      B',     $00
-        ld      HL',    [TEMP3]
+        ld      HL',    [RAM_TEMP3]
         add     HL',    BC'
         rlca
         rlca
@@ -1995,9 +1995,9 @@ fillOverscrollCache:                                                    ;$06BD
         rrca
         rrca
         and     %00010000
-        ld      HL',    [TEMP1]
+        ld      HL',    [RAM_TEMP1]
         add     HL',    BC'
-        ld      BC',    [BLOCKMAPPINGS]
+        ld      BC',    [RAM_BLOCKMAPPINGS]
         add     HL',    BC'
         ldi
         ld      [DE'],  A
@@ -2039,7 +2039,7 @@ fillScrollTiles:                                                        ;$07DB
         ; in the screen table
         ; TODO: a look-up table for this might be faster
 
-        ld      A,   [VDPSCROLL_VERT]
+        ld      A,   [RAM_VDPSCROLL_VERT]
         and     %11111000               ; round scroll to the nearest 8 pixels
 
         ; multiply the vertical scroll offset by 8. since the scroll offset is
@@ -2058,7 +2058,7 @@ fillScrollTiles:                                                        ;$07DB
         ; calculate the number of bytes to get from the beginning of a row to
         ; the horizontal scroll position
 
-        ld      A,   [VDPSCROLL_HORZ]
+        ld      A,      [RAM_VDPSCROLL_HORZ]
 
         ; camera moved left?
         bit     6,      [IY+Vars.flags0]
@@ -2091,11 +2091,11 @@ fillScrollTiles:                                                        ;$07DB
 
         ;-----------------------------------------------------------------------
 
-        ld      HL,     OVERSCROLLCACHE_HORZ
+        ld      HL,     RAM_OVERSCROLLCACHE_HORZ
 
         ; find where in a block the scroll offset sits (this is needed to find
         ; which of the 4 tiles width in a block have to be referenced)
-        ld      A,      [VDPSCROLL_VERT]
+        ld      A,      [RAM_VDPSCROLL_VERT]
         and     %00011111               ; MOD 32
         srl     A                       ; divide by 2 ...
         srl     A                       ; divide by 4 ...
@@ -2138,7 +2138,7 @@ fillScrollTiles:                                                        ;$07DB
 @_4:    bit     1,      [IY+Vars.flags2]
         jp      z,      @exit           ; could  optimise to `ret z`?
 
-        ld      A,      [VDPSCROLL_VERT]
+        ld      A,      [RAM_VDPSCROLL_VERT]
         ld      B,      $00
         srl     A
         srl     A
@@ -2163,7 +2163,7 @@ fillScrollTiles:                                                        ;$07DB
         add     A,      A
         rl      B
         ld      C,      A
-        ld      A,      [VDPSCROLL_HORZ]
+        ld      A,      [RAM_VDPSCROLL_HORZ]
         add     A,      $08
         and     %11111000
         srl     A
@@ -2174,8 +2174,8 @@ fillScrollTiles:                                                        ;$07DB
         add     HL,     BC
         set     6,      H
         ex      DE,     HL
-        ld      HL,     OVERSCROLLCACHE_VERT
-        ld      A,      [VDPSCROLL_HORZ]
+        ld      HL,     RAM_OVERSCROLLCACHE_VERT
+        ld      A,      [RAM_VDPSCROLL_HORZ]
         and     %00011111
         add     A,      $08
         srl     A
@@ -2187,7 +2187,7 @@ fillScrollTiles:                                                        ;$07DB
         add     HL,     BC
         ld      A,      E
         and     %11000000
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         ld      A,              E
         out     [SMS_PORTS_VDP_CONTROL],A
         and     %00111111
@@ -2207,7 +2207,7 @@ fillScrollTiles:                                                        ;$07DB
         jp      nz,     @_7
         ret
 
-@_8:    ld      A,      [TEMP1]
+@_8:    ld      A,      [RAM_TEMP1]
         out     [SMS_PORTS_VDP_CONTROL],A
         ld      A,      D
         out     [SMS_PORTS_VDP_CONTROL],A
@@ -2235,7 +2235,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         ; get the low-byte of the width of the level in blocks. many levels are
         ; 256 blocks wide, ergo have a FloorWidth of $0100, making the low-byte
         ; "$00"
-        ld      A,      [LEVEL_FLOORWIDTH]
+        ld      A,      [RAM_LEVEL_FLOORWIDTH]
         rlca                            ; double it (x2)
         jr      c,      @width128       ; >128?
         rlca                            ; double it again (x4)
@@ -2248,14 +2248,14 @@ getFloorLayoutRAMPosition:                                              ;$08D5
 
 @width128:
         ;-----------------------------------------------------------------------
-        ld      A, [BLOCK_Y]
+        ld      A,      [RAM_BLOCK_Y]
         add     A,      B
         ld      E,      $00
         srl     A                       ; divide by 2
         rr      E
         ld      D,      A
 
-        ld      A,      [BLOCK_X]
+        ld      A,      [RAM_BLOCK_X]
         add     A,      C
         add     A,      E
         ld      E,      A
@@ -2266,7 +2266,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
 
 @width64:
         ;-----------------------------------------------------------------------
-        ld      A,      [BLOCK_Y]
+        ld      A,      [RAM_BLOCK_Y]
         add     A,      B
         ld      E,      $00
         srl     A
@@ -2275,7 +2275,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         rr      E
         ld      D,      A
 
-        ld      A,      [BLOCK_X]
+        ld      A,      [RAM_BLOCK_X]
         add     A,      C
         add     A,      E
         ld      E,      A
@@ -2286,7 +2286,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
 
 @width32:
         ;-----------------------------------------------------------------------
-        ld      A,      [BLOCK_Y]
+        ld      A,      [RAM_BLOCK_Y]
         add     A,      B
         ld      E,      $00
         srl     A
@@ -2296,7 +2296,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         srl     A
         rr      E
         ld      D,      A
-        ld      A,      [BLOCK_X]
+        ld      A,      [RAM_BLOCK_X]
         add     A,      C
         add     A,      E
         ld      E,      A
@@ -2307,7 +2307,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
 
 @width16:
         ;-----------------------------------------------------------------------
-        ld      A,      [BLOCK_Y]
+        ld      A,      [RAM_BLOCK_Y]
         add     A,      B
         ld      E,      $00
         srl     A
@@ -2319,7 +2319,7 @@ getFloorLayoutRAMPosition:                                              ;$08D5
         srl     A
         rr      E
         ld      D,      A
-        ld      A,      [BLOCK_X]
+        ld      A,      [RAM_BLOCK_X]
         add     A,      C
         add     A,      E
         ld      E,      A
@@ -2330,10 +2330,10 @@ getFloorLayoutRAMPosition:                                              ;$08D5
 
 @width256:
         ;-----------------------------------------------------------------------
-        ld      A,      [BLOCK_Y]
+        ld      A,      [RAM_BLOCK_Y]
         add     A,      B
         ld      D,      A
-        ld      A,      [BLOCK_X]
+        ld      A,      [RAM_BLOCK_X]
         add     A,      C
         ld      E,      A
 
@@ -2356,10 +2356,10 @@ fillScreenWithFloorLayout:                                              ;$0966
         ; make up the Floor / Level
         ld      A,                      :blockMappings
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      :blockMappings + 1
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ld      BC,     $0000
         call    getFloorLayoutRAMPosition
@@ -2385,7 +2385,7 @@ fillScreenWithFloorLayout:                                              ;$0966
 
         exx
         ld      E',     A               ; copy the block index to E
-        ld      A,      [LEVEL_SOLIDITY]; load A with level's solidity index
+        ld      A,      [RAM_LEVEL_SOLIDITY]; load A with level's solidity index
         add     A,      A               ; double it (i.e. for a 16-bit pointer)
         ld      C',     A               ; put it into BC'
         ld      B',     $00
@@ -2415,17 +2415,17 @@ fillScreenWithFloorLayout:                                              ;$0966
         exx
 
         ; return the block index to HL
-        ld      L,   [HL]
-        ld      H,   $00
+        ld      L,      [HL]
+        ld      H,      $00
         ; block mappings are 16 bytes each
         ; TODO: make the number of shifts here based !BLOCK.SIZE?
         ; (add     HL   HL) x !BLOCK.SIZE
-        add     HL,  HL                 ; x2 ...
-        add     HL,  HL                 ; x4 ...
-        add     HL,  HL                 ; x8 ...
-        add     HL,  HL                 ; x16
-        ld      BC,   [BLOCKMAPPINGS]
-        add     HL,  BC
+        add     HL,     HL              ; x2 ...
+        add     HL,     HL              ; x4 ...
+        add     HL,     HL              ; x8 ...
+        add     HL,     HL              ; x16
+        ld      BC,     [RAM_BLOCKMAPPINGS]
+        add     HL,     BC
 
         ; DE will be the address of block mapping
         ; HL will be an address in the screen name table
@@ -2500,7 +2500,7 @@ fillScreenWithFloorLayout:                                              ;$0966
 
         pop     DE
         pop     HL
-        ld      BC,     [LEVEL_FLOORWIDTH]
+        ld      BC,     [RAM_LEVEL_FLOORWIDTH]
         add     HL,     BC
         ex      DE,     HL
         ld      BC,     $0100
@@ -2582,10 +2582,10 @@ fadeOut:                                                                ;$0A40
         ; of the mob code is)
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ld      A,      [IY+Vars.spriteUpdateCount]
 
@@ -2600,19 +2600,19 @@ fadeOut:                                                                ;$0A40
 @_1:    push    BC                      ; put aside the loop counter
 
         ; fade out the tile palette one step
-        ld      HL,     [LOADPALETTE_TILE]
-        ld      DE,     PALETTE
+        ld      HL,     [RAM_LOADPALETTE_TILE]
+        ld      DE,     RAM_PALETTE
         ld      B,      16
         call    darkenPalette
 
         ; fade out the sprite palette one step
-        ld      HL,     [LOADPALETTE_SPRITE]
+        ld      HL,     [RAM_LOADPALETTE_SPRITE]
         ld      B,      16
         call    darkenPalette
 
         ; load the darkened palette on the next interrupt
-        ld      HL,        PALETTE
-        ld      A,        %00000011
+        ld      HL,     RAM_PALETTE
+        ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
         ; wait 10 frames
@@ -2675,33 +2675,33 @@ _aae:                                                                   ;$0AAE
 ; in    HL
 ;       IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         ; copy parameter palette into the
         ; temporary RAM palette used for fading out
 
-        ld      HL,     [LOADPALETTE_TILE]
-        ld      DE,     PALETTE
+        ld      HL,     [RAM_LOADPALETTE_TILE]
+        ld      DE,     RAM_PALETTE
         ld      BC,     32              ; both palettes
         ldir
 
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         ;switch to using the temporary palette on screen
-        ld      HL,     PALETTE
+        ld      HL,     RAM_PALETTE
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
         ld      C,      [IY+Vars.spriteUpdateCount]
 
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      %01000000               ; enable screen (bit6 of VDP register 1)
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ; wait for interrupt (refresh screen)
         ; -- the switch to the temporary palette (above) will occur
@@ -2727,8 +2727,8 @@ _aae:                                                                   ;$0AAE
 
         ld      B,      4
 @_2:    push    BC
-        ld      HL,     [TEMP6]         ; restore the HL parameter
-        ld      DE,     PALETTE
+        ld      HL,     [RAM_TEMP6]     ; restore the HL parameter
+        ld      DE,     RAM_PALETTE
         ld      B,      32
 
 @_3:    push    BC
@@ -2767,7 +2767,7 @@ _aae:                                                                   ;$0AAE
         pop     BC
         djnz    @_3
 
-        ld      HL,     PALETTE
+        ld      HL,     RAM_PALETTE
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
@@ -2790,8 +2790,8 @@ _b50:                                                                   ;$0B50
 ;===============================================================================
 ; in    HL      Address of a palette
 ;-------------------------------------------------------------------------------
-        ld      [TEMP6],        HL      ; put the palette parameter aside
-        ld      HL,             PALETTE ; RAM cache of current palette
+        ld      [RAM_TEMP6],    HL      ; put the palette parameter aside
+        ld      HL,     RAM_PALETTE     ; RAM cache of current palette
 
         ; erase the current palette
         ld      B,      32              ; 32 colours
@@ -2807,10 +2807,10 @@ _b60:                                                                   ;$0B60
 ; in    HL
 ;       IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
-        ld      HL,     [LOADPALETTE_TILE]
-        ld      DE,     PALETTE
+        ld      HL,     [RAM_LOADPALETTE_TILE]
+        ld      DE,     RAM_PALETTE
         ld      BC,     32              ; 32 colours
         ldir
 
@@ -2818,19 +2818,19 @@ _b60:                                                                   ;$0B60
 
 @_1:    ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
-        ld      HL,     PALETTE
+        ld      HL,     RAM_PALETTE
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
         ld      C,      [IY+Vars.spriteUpdateCount]
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      $40
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
@@ -2849,8 +2849,8 @@ _b60:                                                                   ;$0B60
         ld      B,      $04
 
 @_3:    push    BC
-        ld      HL,     [TEMP6]
-        ld      DE,     PALETTE
+        ld      HL,     [RAM_TEMP6]
+        ld      DE,     RAM_PALETTE
         ld      B,      32
 
 @_4:    push    BC
@@ -2888,8 +2888,8 @@ _b60:                                                                   ;$0B60
         pop     BC
         djnz    @_4
 
-        ld      HL,        PALETTE
-        ld      A,        %00000011
+        ld      HL,     RAM_PALETTE
+        ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
         ld      B,      10
@@ -2915,7 +2915,7 @@ getLevelBitFlag:                                                        ;$0C02
 ;               D311+: set by continue monitor
 ;               D317+: set by switch
 ;-------------------------------------------------------------------------------
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         ld      C,      A
         srl     A       ; divide by 2 ...
         srl     A       ; divide by 4 ...
@@ -2958,7 +2958,7 @@ loadPowerUpIcon:                                                        ;$0C1D
         ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00001111
         add     A,      A               ; x2
         add     A,      A               ; x4
@@ -2989,7 +2989,7 @@ loadPowerUpIcon:                                                        ;$0C1D
         djnz    @loop
 
         ; return to the previous bank number
-        ld      A, [SLOT1]
+        ld      A,      [RAM_SLOT1]
         ld      [SMS_MAPPER_SLOT1],     A
         ei
 
@@ -3005,17 +3005,17 @@ _LABEL_C52_106:                                                         ;$0C52
         ; reset horizontal / vertical hardware
         ; scroll; the map screen doesn't scroll
         xor     A                       ; set A to 0
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
 
         ld      A,      $FF
-        ld      [D216], A
+        ld      [RAM_D216],     A
 
         ; either one or two, depending on level
         ; -- probably regular or special stage
         ld      C,      $01
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      18
         ret     nc
 
@@ -3024,19 +3024,19 @@ _LABEL_C52_106:                                                         ;$0C52
 
         ld      C,      $02
 
-@_1:    ld      A,      [D216]
+@_1:    ld      A,      [RAM_D216]
         cp      C
         jp      z,      @_4
 
         ld      A,      C
-        ld      [D216], A
+        ld      [RAM_D216],     A
         dec     A
         jr      nz,     @_2
 
         ; turn the screen off
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111               ; remove bit 6 of VDP register 1
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ; refresh the screen (wait for interrupt to complete)
         res     0,      [IY+Vars.flags0]
@@ -3066,14 +3066,14 @@ _LABEL_C52_106:                                                         ;$0C52
         ; with bank 5 ($14000-$17FFF)
         ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
 
         ; map 1 background
         ld      HL,     $627E
         ld      BC,     $0178
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $10
-        ld      [TEMP1],A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ; map 1 foreground
@@ -3081,7 +3081,7 @@ _LABEL_C52_106:                                                         ;$0C52
         ld      BC,     $0145
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
-        ld      [TEMP1],A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ld      HL,     map1Palette
@@ -3091,9 +3091,9 @@ _LABEL_C52_106:                                                         ;$0C52
         ;-----------------------------------------------------------------------
 
 @_2:    ; turn the screen off
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111               ; remove bit 6 of VDP register 1
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ; refresh the screen
         res     0,      [IY+Vars.flags0]
@@ -3120,14 +3120,14 @@ _LABEL_C52_106:                                                         ;$0C52
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;map screen 2 background
         ld      HL,     $653B
         ld      BC,     $0170
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $10
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ;map screen 2 foreground
@@ -3135,7 +3135,7 @@ _LABEL_C52_106:                                                         ;$0C52
         ld      BC,     $0153
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ld      HL,     map2Palette
@@ -3151,7 +3151,7 @@ _LABEL_C52_106:                                                         ;$0C52
         ;-----------------------------------------------------------------------
 
 @_4:    call    _LABEL_E86_110
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         add     A,      A
         ld      C,      A
         ld      B,      $00
@@ -3164,10 +3164,10 @@ _LABEL_C52_106:                                                         ;$0C52
 
         ;display in-front of sprites (bit 12 of tile)
         ld      A,      %00010000
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    print
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         ld      C,      A
         add     A,      A
         add     A,      C
@@ -3179,7 +3179,7 @@ _LABEL_C52_106:                                                         ;$0C52
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [TEMP3],        DE
+        ld      [RAM_TEMP3],    DE
         ld      A,      [HL]
         and     A
         jr      z,      @_
@@ -3198,18 +3198,18 @@ _LABEL_C52_106:                                                         ;$0C52
 
 ; NOTE: externally jumped to
 @_:     ld      A,      $01
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         ld      BC,     $012C
 
 @_5:    push    BC
         call    _LABEL_E86_110
-        ld      A,      [TEMP1]
+        ld      A,      [RAM_TEMP1]
         dec     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         jr      nz,     @_8
 
-        ld      HL,     [TEMP3]
-@_6:    ld      E,       [HL]
+        ld      HL,     [RAM_TEMP3]
+@_6:    ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
@@ -3217,7 +3217,7 @@ _LABEL_C52_106:                                                         ;$0C52
         inc     HL
         ld      B,      [HL]
         inc     HL
-        ld      [TEMP6],        BC
+        ld      [RAM_TEMP6],    BC
         ld      A,      [HL]
         inc     HL
         and     A
@@ -3228,19 +3228,19 @@ _LABEL_C52_106:                                                         ;$0C52
 
         ;-----------------------------------------------------------------------
 
-@_7:    ld      [TEMP1],A
-        ld      [TEMP3],HL
-        ld      [TEMP4],DE
+@_7:    ld      [RAM_TEMP1],    A
+        ld      [RAM_TEMP3],    HL
+        ld      [RAM_TEMP4],    DE
 
-@_8:    ld      HL,      [TEMP6]
+@_8:    ld      HL,      [RAM_TEMP6]
         push    HL
         ld      E,H
         ld      H,$00
         ld      D,H
-        ld      BC,     [TEMP4]
+        ld      BC,     [RAM_TEMP4]
         call    processSpriteLayout
         pop     HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         pop     BC
         dec     BC
         ld      A,      B
@@ -3262,7 +3262,7 @@ _0dd9:                                                                  ;$0DD9
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      HL,     $00DC
         ld      DE,     $003C
         ld      B,      $00
@@ -3281,7 +3281,7 @@ _0dd9:                                                                  ;$0DD9
         djnz    @_1
 
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      HL,     $FFD8
         ld      DE,     $0058
         ld      B,      $80
@@ -3308,7 +3308,7 @@ _0e24:                                                                  ;$0E24
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      HL,     $0080
         ld      DE,     $00C0
         ld      B,      $78
@@ -3335,7 +3335,7 @@ _0e4b:                                                                  ;$04EB
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      HL,     $0078
         ld      DE,     $0000
         ld      B,      $30
@@ -3384,14 +3384,14 @@ _LABEL_E86_110:                                                         ;$0E86
         push    DE
         push    BC
 
-        ld      HL,     [TEMP1]
+        ld      HL,     [RAM_TEMP1]
         push    HL
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         ld      L,      A
         ld      H,      $00
         ld      C,      $0A
@@ -3400,13 +3400,13 @@ _LABEL_E86_110:                                                         ;$0E86
         ld      A,      L
         add     A,      A
         add     A,      $80
-        ld      [LAYOUT_BUFFER],        A
+        ld      [RAM_LAYOUT_BUFFER],    A
         ld      C,      10
         call    multiply
 
         ex      DE,     HL
 
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         ld      L,      A
         ld      H,      $00
         and     A
@@ -3414,19 +3414,19 @@ _LABEL_E86_110:                                                         ;$0E86
         ld      A,      L
         add     A,      A
         add     A,      $80
-        ld      [LAYOUT_BUFFER+1],      A
+        ld      [RAM_LAYOUT_BUFFER+1],  A
         ld      A,      $FF
-        ld      [LAYOUT_BUFFER+2],      A
+        ld      [RAM_LAYOUT_BUFFER+2],  A
 
         ld      B,      167
         ld      C,      40
         ld      HL,     RAM_SPRITETABLE
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         pop     HL
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
 
         pop     BC
         pop     DE
@@ -3447,7 +3447,7 @@ _0edd:                                                                  ;$0EDD
         ld      L,      C
         ld      H,      B
 
-        ld      A,      [TEMP2]
+        ld      A,      [RAM_TEMP2]
         add     A,      A                                       ;x2
         add     A,      A                                       ;x4
         ld      E,      A
@@ -3460,15 +3460,15 @@ _0edd:                                                                  ;$0EDD
         ld      B,      [HL]
         inc     HL
 
-        ld      A,      [TEMP1]
+        ld      A,      [RAM_TEMP1]
         cp      [HL]
         jr      c,      @_1
 
         inc     HL
         ld      A,      [HL]
-        ld      [TEMP2],        A
+        ld      [RAM_TEMP2],    A
         xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
 
 @_1:    pop     DE                                              ;Y-position
         pop     HL                                              ;X-position
@@ -3476,9 +3476,9 @@ _0edd:                                                                  ;$0EDD
         push    DE
         call    processSpriteLayout
 
-        ld      A,      [TEMP1]
+        ld      A,      [RAM_TEMP1]
         inc     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
 
         pop     DE
         pop     HL
@@ -3875,9 +3875,9 @@ titleScreen:                                                            ;$1287
 ;-------------------------------------------------------------------------------
 
         ;turn off screen
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111                                       ;remove bit 6 of $D219
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ;refresh the screen
         res     0,      [IY+Vars.flags0]
@@ -3900,20 +3900,20 @@ titleScreen:                                                            ;$1287
         ;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;load the title screen itself
         ld      HL,     $6000                                   ;ROM:$16000
         ld      DE,     SMS_VRAM_SCREEN
         ld      BC,     $012E
         ld      A,      $00
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ;reset horizontal / vertical scroll
         xor     A                                          ;set A to zero
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
 
         ;load the palette
         ld      HL,     @S1_TitleScreen_Palette
@@ -3931,30 +3931,30 @@ titleScreen:                                                            ;$1287
 
         ;initialise the animation parameters?
         xor     A
-        ld      [D216], A                                  ;reset the screen counter
+        ld      [RAM_D216],     A       ; reset the screen counter
         ld      A,      $01
-        ld      [TEMP2],        A
+        ld      [RAM_TEMP2],    A
         ld      HL,     @_1372
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
 
         ;-----------------------------------------------------------------------
 @_1:    ;switch screen on (set bit 6 of VDP register 1)
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      %01000000
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ;refresh the screen
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
         ;count to 100:
-        ld      A,      [D216]                                  ;get the screen counter
-        inc     A                                               ;add one
-        cp      100                                             ;if less than 100,
-        jr      c,      @_2                                     ;keep counting,
+        ld      A,      [RAM_D216]      ; get the screen counter
+        inc     A                       ; add one
+        cp      100                     ; if less than 100,
+        jr      c,      @_2             ; keep counting,
 
-        xor     A                                          ;otherwise go back to 0
-@_2:    ld      [D216], A                                       ;update screen counter value
+        xor     A                       ; otherwise go back to 0
+@_2:    ld      [RAM_D216],     A       ; update screen counter value
 
         ld      HL,     @_1352
         cp      $40
@@ -3962,15 +3962,15 @@ titleScreen:                                                            ;$1287
 
         ld      HL,     @_1362
 @_3:    xor     A                                          ;set A to 0
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    print
 
-        ld      A,      [TEMP2]
+        ld      A,      [RAM_TEMP2]
         dec     A
-        ld      [TEMP2],        A
+        ld      [RAM_TEMP2],    A
         jr      nz,     @_4
 
-        ld      HL,     [TEMP3]
+        ld      HL,     [RAM_TEMP3]
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
@@ -3983,17 +3983,17 @@ titleScreen:                                                            ;$1287
         and     A
         jr      z,      @_5
 
-        ld      [TEMP2],        A
-        ld      [TEMP3],        HL
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP2],    A
+        ld      [RAM_TEMP3],    HL
+        ld      [RAM_TEMP4],    DE
 
         ;set the game's main sprite table as the table to use
 @_4:    ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ld      HL,     $0080
         ld      DE,     $0018
-        ld      BC,     [TEMP4]
+        ld      BC,     [RAM_TEMP4]
         call    processSpriteLayout
 
         ;has the button been pressed? if not, repeat
@@ -4068,9 +4068,9 @@ _1401:                                                                  ;$1401
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ;turn off the screen
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111                                       ;remove bit 6 of VDP register 1
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ;refresh the screen
         res     0,      [IY+Vars.flags0]
@@ -4087,19 +4087,19 @@ _1401:                                                                  ;$1401
         ;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;act complete background
         ld      HL,     $67FE
         ld      BC,     $0032
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      $00
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         xor     A
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
 
         ld      HL,     @_14fc
         ld      A,      %00000011
@@ -4110,9 +4110,9 @@ _1401:                                                                  ;$1401
         ld      B,      $78
 
 @_1:    ;turn the screen on
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      %01000000                                       ;enable bit 6 on VDP register 1
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         ;refresh the screen
         res     0,      [IY+Vars.flags0]
@@ -4120,7 +4120,7 @@ _1401:                                                                  ;$1401
 
         djnz    @_1
 
-        ld      A,      [D284]
+        ld      A,      [RAM_D284]
         and     A
         jr      nz,     @_3
 
@@ -4152,7 +4152,7 @@ _1401:                                                                  ;$1401
         call    print
 
         ld      A,      $09
-        ld      [D216], A
+        ld      [RAM_D216],     A
 
 @_4:    ld      B,      $3C
 @_5:    push    BC
@@ -4161,8 +4161,8 @@ _1401:                                                                  ;$1401
         call    waitForInterrupt
 
         ld      [IY+Vars.spriteUpdateCount],       $00
-        ld      HL,     D216
-        ld      DE,     LAYOUT_BUFFER
+        ld      HL,     RAM_D216
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $01
         call    _1b13
 
@@ -4172,7 +4172,7 @@ _1401:                                                                  ;$1401
         ld      C, 140
         ld      B, 94
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         pop     BC
         bit     5,      [IY+Vars.joypad]
@@ -4186,7 +4186,7 @@ _1401:                                                                  ;$1401
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-        ld      HL,     D216
+        ld      HL,     RAM_D216
         ld      A,      [HL]
         and     A
         ret     z
@@ -4195,7 +4195,7 @@ _1401:                                                                  ;$1401
         jr      @_4
 
         ;get the bit flag for the level
-@_6:    ld      HL,     D311
+@_6:    ld      HL,     RAM_D311
         call    getLevelBitFlag
         ld      A,      C
         cpl                                                     ;invert the level bits (create a mask)
@@ -4205,7 +4205,7 @@ _1401:                                                                  ;$1401
         and     C                                               ;remove the level bit
         ld      [HL],   A
 
-        ld      HL,     D284
+        ld      HL,     RAM_D284
         dec     [HL]
         scf                                                     ;set carry flag
 
@@ -4238,13 +4238,13 @@ _155e:                                                                  ;$155E
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      19
         jp      z,      _172f
 
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
@@ -4264,13 +4264,13 @@ _155e:                                                                  ;$155E
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A,      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;UNKNOWN
         ld      HL,     $612E
         ld      BC,     $00BB
         ld      DE,     SMS_VRAM_SCREEN
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      28                                              ;special stage?
         jr      c,      @_1
 
@@ -4280,24 +4280,24 @@ _155e:                                                                  ;$155E
         ld      DE,     SMS_VRAM_SCREEN
 
 @_1:    xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ld      HL,     _1711
         ld      C,      $10
-        ld      A,      [D27F]
+        ld      A,      [RAM_D27F]
         and     A
         call    nz,     _16d9
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      nc,     @_3
 
         ld      A,      $15
-        ld      [LAYOUT_BUFFER],        A
+        ld      [RAM_LAYOUT_BUFFER],    A
         ld      A,      $04
-        ld      [LAYOUT_BUFFER+1],      A
-        ld      A,      [CURRENT_LEVEL]
+        ld      [RAM_LAYOUT_BUFFER+1],  A
+        ld      A,      [RAM_CURRENT_LEVEL]
         ld      E,      A
         ld      D,      $00
         ld      HL,     _1b69
@@ -4309,7 +4309,7 @@ _155e:                                                                  ;$155E
 
 @_2:    push    BC
         push    HL
-        ld      DE,     LAYOUT_BUFFER+1
+        ld      DE,     RAM_LAYOUT_BUFFER+1
         ld      A,      [DE]
         inc     A
         ld      [DE],   A
@@ -4318,7 +4318,7 @@ _155e:                                                                  ;$155E
         ldi
         ld      A,      $FF
         ld      [DE],   A
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         call    print
         pop     HL
         pop     BC
@@ -4327,12 +4327,12 @@ _155e:                                                                  ;$155E
         djnz    @_2
 
 @_3:    xor     A
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
         ld      HL,     actComplete_Palette
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      c,      @_4
 
@@ -4343,7 +4343,7 @@ _155e:                                                                  ;$155E
 
         ld      HL,     $D282
         inc     [HL]
-        ld      HL,     D285
+        ld      HL,     RAM_D285
         inc     [HL]
 
 @_4:    bit     2,      [IY+Vars.flags9]
@@ -4356,12 +4356,12 @@ _155e:                                                                  ;$155E
         ld      DE,     $154E
         ld      B,      $08
 
-@_5:    ld      A,       [TIME_MINUTES]
+@_5:    ld      A,      [RAM_TIME_MINUTES]
         cp      [HL]
         jr      nz,     @_6
 
         inc     HL
-        ld      A,      [TIME_SECONDS]
+        ld      A,      [RAM_TIME_SECONDS]
         cp      [HL]
         jr      nc,     @_8
 
@@ -4382,9 +4382,9 @@ _155e:                                                                  ;$155E
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-@_9:    ld      HL,     TEMP4
+@_9:    ld      HL,     RAM_TEMP4
         ex      DE,     HL
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      c,      @_10
 
@@ -4397,9 +4397,9 @@ _155e:                                                                  ;$155E
         ld      B,      $78
 
 @_11:   push    BC
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      $40
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
@@ -4413,12 +4413,12 @@ _155e:                                                                  ;$155E
 
         call    _1a18
         call    _19b4
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      28
         call    c,      _19df
-        ld      A,      [D216]
+        ld      A,      [RAM_D216]
         inc     A
-        ld      [D216], A
+        ld      [RAM_D216],     A
         and     $03
         jr      nz,     @_13
 
@@ -4428,9 +4428,9 @@ _155e:                                                                  ;$155E
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-@_13:   ld      HL,      [TEMP4]
-        ld      DE,     [TEMP6]
-        ld      A,      [RINGS]
+@_13:   ld      HL,     [RAM_TEMP4]
+        ld      DE,     [RAM_TEMP6]
+        ld      A,      [RAM_RINGS]
         or      H
         or      L
         or      D
@@ -4457,7 +4457,7 @@ _16d9:                                                                  ;$16D9
 ;===============================================================================
         ld      B,      A
         push    BC
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         srl     A
         ld      B,      A
         ld      A,      C
@@ -4472,17 +4472,17 @@ _16d9:                                                                  ;$16D9
         ldir
         pop     BC
         xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
 
 @loop:  push    BC
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         call    print
-        ld      HL,     D2C3
+        ld      HL,     RAM_D2C3
         call    print
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         inc     [HL]
         inc     [HL]
-        ld      HL,     D2C3
+        ld      HL,     RAM_D2C3
         inc     [HL]
         inc     [HL]
         pop     BC
@@ -4502,8 +4502,8 @@ _1719:                                                                  ;$1719
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        xor     A                                          ;set A to 0
-        ld      [RINGS],        A                          ;set ring-count to 0
+        xor     A                       ; set A to 0
+        ld      [RAM_RINGS],    A       ; set ring-count to 0
 
         res     3,      [IY+Vars.flags9]
         res     2,      [IY+Vars.flags9]
@@ -4517,7 +4517,7 @@ _1726:                                                                  ;$1726
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      HL,     D284
+        ld      HL,     RAM_D284
         inc     [HL]
         res     3,      [IY+Vars.flags9]
         ret
@@ -4530,15 +4530,15 @@ _172f:                                                                  ;$172F
         ; when adding the final bonuses, don't
         ; award an extra life for every 5 thousand
         ld      A,      $FF
-        ld      [SCORE_1UP],    A
+        ld      [RAM_SCORE_1UP],        A
 
         ld      C,      $00
-        ld      A,      [D27F]
+        ld      A,      [RAM_D27F]
         cp      $06
         jr      c,      @_1
 
         ld      C,      $05
-@_1:    ld      A,       [$D280]
+@_1:    ld      A,      [RAM_D280]
         cp      $12
         jr      c,      @_2
 
@@ -4562,7 +4562,7 @@ _172f:                                                                  ;$172F
         add     A,      $05
         daa
         ld      C,      A
-@_4:    ld      A,       [D283]
+@_4:    ld      A,      [RAM_D283]
         and     A
         jr      nz,     @_5
 
@@ -4580,7 +4580,7 @@ _172f:                                                                  ;$172F
         add     A,      $0A
         daa
         ld      C,      A
-@_6:    ld      HL,     D2FF
+@_6:    ld      HL,     RAM_D2FF
         ld      [HL],   C
         inc     HL
         ld      [HL],   $00
@@ -4603,18 +4603,18 @@ _172f:                                                                  ;$172F
         ld      HL,     _197e
         call    print
         xor     A
-        ld      [D216], A
+        ld      [RAM_D216],     A
         ld      BC,     $00B4
         call    _1860
 
 @_7:    ld      BC,     $003C
         call    _1860
-        ld      A,      [D27F]
+        ld      A,      [RAM_D27F]
         and     A
         jr      z,      @_8
 
         dec     A
-        ld      [D27F], A
+        ld      [RAM_D27F],     A
 
         ld      DE,    $0000
         ld      C,    $02
@@ -4631,7 +4631,7 @@ _172f:                                                                  ;$172F
 @_8:    ld      BC,     $00B4
         call    _1860
         ld      A,      $01
-        ld      [D216], A
+        ld      [RAM_D216],     A
         ld      HL,     _198e
         call    print
         ld      BC,     $00B4
@@ -4639,11 +4639,11 @@ _172f:                                                                  ;$172F
 
 @_9:    ld      BC,     $001E
         call    _1860
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         and     A
         jr      z,      @_10
         dec     A
-        ld      [LIVES],        A
+        ld      [RAM_LIVES],    A
 
         ld      DE,    $5000
         ld      C,    $00
@@ -4660,7 +4660,7 @@ _172f:                                                                  ;$172F
 @_10:   ld      BC,     $00B4
         call    _1860
         ld      A,      $02
-        ld      [D216], A
+        ld      [RAM_D216],     A
         ld      HL,     _199e
         call    print
         ld      HL,     _197a
@@ -4670,7 +4670,7 @@ _172f:                                                                  ;$172F
 
 @_11:   ld      BC,     $001E
         call    _1860
-        ld      A,      [D2FF]
+        ld      A,      [RAM_D2FF]
         and     A
         jr      z,      @_13
 
@@ -4684,7 +4684,7 @@ _172f:                                                                  ;$172F
         sub     $06
         ld      C,      A
 @_12:   ld      A,      C
-        ld      [D2FF], A
+        ld      [RAM_D2FF],     A
 
         ld      DE,    $0000
         ld      C,    $01
@@ -4714,45 +4714,45 @@ _1860:                                                                  ;$1860
 
         ld      [IY+Vars.spriteUpdateCount],       $00
         ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      HL,     SCORE_MILLIONS
-        ld      DE,     LAYOUT_BUFFER
+        ld      [RAM_SPRITETABLE_ADDR], HL
+        ld      HL,     RAM_SCORE_MILLIONS
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $04
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 144
         ld      B, 128
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
-        ld      A,      [D216]
+        ld      A,      [RAM_D216]
         and     A
         jr      nz,     @_1
-        ld      HL,     D27F
-        ld      DE,     LAYOUT_BUFFER
+        ld      HL,     RAM_D27F
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $01
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 144
         ld      B, 96
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ld      HL,     _19ae
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $03
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 160
         ld      B, 96
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         jr      @_3
 
@@ -4760,30 +4760,30 @@ _1860:                                                                  ;$1860
         jr      nz,     @_2
         call    _1aca
         ld      HL,     _19b1
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $03
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 160
         ld      B, 96
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         jr      @_3
 
-@_2:    ld      HL,     D2FF
-        ld      DE,     LAYOUT_BUFFER
+@_2:    ld      HL,     RAM_D2FF
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $03
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C,      160
         ld      B,      96
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
 @_3:    pop     BC
         dec     BC
@@ -4900,7 +4900,7 @@ _19b1:                                                                  ;$19B1
 
 _19b4:                                                                  ;$19B4
 ;===============================================================================
-        ld      HL,     RINGS
+        ld      HL,     RAM_RINGS
         ld      A,      [HL]
         and     A
         ret     z
@@ -4917,13 +4917,13 @@ _19b4:                                                                  ;$19B4
 @_1:    ld      [HL],   C
         ld      DE,     $0100
         ld      C,      $00
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      c,      @_2
 
-        ld      A,      [D285]
+        ld      A,      [RAM_D285]
         ld      D,      A
-        ld      A,      [D286]
+        ld      A,      [RAM_D286]
         ld      E,      A
 @_2:    call    increaseScore
         ret
@@ -4931,8 +4931,8 @@ _19b4:                                                                  ;$19B4
 
 _19df:                                                                  ;$19DF
 ;===============================================================================
-        ld      HL,     [TEMP4]
-        ld      DE,     [TEMP6]
+        ld      HL,     [RAM_TEMP4]
+        ld      DE,     [RAM_TEMP6]
         ld      A,      H
         or      L
         or      D
@@ -4940,7 +4940,7 @@ _19df:                                                                  ;$19DF
         ret     z
 
         ld      B,      $03
-        ld      HL,     TEMP6
+        ld      HL,     RAM_TEMP6
         scf
 
 @loop:  ld      A,       [HL]
@@ -4980,91 +4980,91 @@ _1a18:                                                                  ;$1A18
 ;-------------------------------------------------------------------------------
         ld      [IY+Vars.spriteUpdateCount],       $00
         ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      HL,     SCORE_MILLIONS
-        ld      DE,     LAYOUT_BUFFER
+        ld      [RAM_SPRITETABLE_ADDR], HL
+        ld      HL,     RAM_SCORE_MILLIONS
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $04
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 136
         ld      B, 80
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
-        ld      HL,     RINGS
-        ld      DE,     LAYOUT_BUFFER
+        ld      HL,     RAM_RINGS
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $01
         call    _1b13
 
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C, 152
         ld      B, 128
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      c,      @_1
 
         ld      B, 104
 @_1:    call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      c,      @_2
 
-        ld      HL,     D285
-        ld      DE,     LAYOUT_BUFFER
+        ld      HL,     RAM_D285
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $02
         call    _1b13
         ld      B,      $68
         jr      @_3
 
 @_2:    ld      HL,     $151C
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $02
         call    _1b13
         ld      B,      128
 @_3:    ld      C,      192
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         call    _1aca
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1C
         jr      nc,     @_4
 
-        ld      HL,     TEMP4
-        ld      DE,     LAYOUT_BUFFER
+        ld      HL,     RAM_TEMP4
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $04
         call    _1b13
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C,      136
         ld      B,      104
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ret
 
-@_4:    ld      HL,     D284
-        ld      DE,     LAYOUT_BUFFER
+@_4:    ld      HL,     RAM_D284
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      B,      $01
         call    _1b13
         ex      DE,     HL
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      C,      168
         ld      B,      128
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ret
         ;
 
 _1aca:                                                                  ;$1ACA
 ;===============================================================================
         ;load number of lives into HL
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         ld      L,      A
         ld      H,      $00
         ld      C,      $0A
@@ -5073,12 +5073,12 @@ _1aca:                                                                  ;$1ACA
         ld      A,      L
         add     A,      A
         add     A,      $80
-        ld      [LAYOUT_BUFFER],        A
+        ld      [RAM_LAYOUT_BUFFER],    A
         ld      C,      10
         call    multiply
 
         ex      DE,     HL
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         ld      L,      A
         ld      H,      $00
         and     A
@@ -5086,21 +5086,21 @@ _1aca:                                                                  ;$1ACA
         ld      A,      L
         add     A,      A
         add     A,      $80
-        ld      [LAYOUT_BUFFER+1],      A
+        ld      [RAM_LAYOUT_BUFFER+1],  A
         ld      A,      $FF
-        ld      [LAYOUT_BUFFER+2],      A
+        ld      [RAM_LAYOUT_BUFFER+2],  A
         ld      C,      $38
         ld      B,      $9F
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $13
         jr      nz,     @_1
 
         ld      B, 96
         ld      C, 144
-@_1:    ld      HL,      [SPRITETABLE_ADDR]
-        ld      DE,     LAYOUT_BUFFER
+@_1:    ld      HL,     [RAM_SPRITETABLE_ADDR]
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ret
         ;
 
@@ -5128,7 +5128,7 @@ _1b13:                                                                  ;$1B13
         dec     DE
         ld      A,      $80
         ld      [DE],   A
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         ret
 
 @_:     ld      A,      [HL]
@@ -5151,7 +5151,7 @@ _1b13:                                                                  ;$1B13
         djnz    @_
         ld      A,      $FF
         ld      [DE],   A
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         ret
         ;
 
@@ -5187,18 +5187,18 @@ _1bad:                                                                  ;$1BAD
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      HL,     [D2B5]
+        ld      HL,     [RAM_D2B5]
         ld      DE,     @_1bc6
         add     HL,     DE
         ld      A,      [HL]
         ld      [IY+Vars.joypad],  A
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00011111
         ret     nz
 
-        ld      HL,     [D2B5]
+        ld      HL,     [RAM_D2B5]
         inc     HL
-        ld      [D2B5], HL
+        ld      [RAM_D2B5],     HL
         ret
 
 @_1bc6: ; joystick data? (lines are high by default)                    ;$1BC6
@@ -5225,21 +5225,21 @@ _1c49:                                                                  ;$1C49
 
         ;default to 3 lives
 @_1:    ld      A,              3
-        ld      [LIVES],        A
+        ld      [RAM_LIVES],    A
 
         ;set the number of thousands of pts per extra life
         ld      A,              SCORE_1UP_PTS
-        ld      [SCORE_1UP],    A
+        ld      [RAM_SCORE_1UP],A
 
-        ld      A,      $1C
-        ld      [D23F], A
+        ld      A,              $1C
+        ld      [RAM_D23F],     A
 
-        xor     A                                          ;set A to 0
-        ld      [CURRENT_LEVEL],        A                  ;set starting level!
-        ld      [FRAMECOUNT],           A
+        xor     A                               ; set A to 0
+        ld      [RAM_CURRENT_LEVEL],    A       ; set starting level!
+        ld      [RAM_FRAMECOUNT],       A
         ld      [IY+Vars.unknown_0D],   A
 
-        ld      HL,     D27F
+        ld      HL,     RAM_D27F
         ld      B,      $08
         call    fillMemoryWithValue
 
@@ -5247,11 +5247,11 @@ _1c49:                                                                  ;$1C49
         ld      B,      $0E
         call    fillMemoryWithValue
 
-        ld      HL,     SCORE_MILLIONS
+        ld      HL,     RAM_SCORE_MILLIONS
         ld      B,      $04
         call    fillMemoryWithValue
 
-        ld      HL,     D305
+        ld      HL,     RAM_D305
         ld      B,      $18
         call    fillMemoryWithValue
 
@@ -5267,7 +5267,7 @@ _1c49:                                                                  ;$1C49
 
 @_LABEL_1C9F_104:
         ;are we on the end sequence?
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      19
         jr      nc,     @_1
 
@@ -5333,14 +5333,14 @@ _LABEL_1CED_131:                                                        ;$1CED
         ; with bank 5 (ROM:$14000-$17FFF)
         ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
 
         bit     4,      [IY+Vars.flags6]
         jr      z,      @_1
 
-        ld      A,      [D2D3]
+        ld      A,      [RAM_D2D3]
 
 @_1:    add     A,      A               ; double the level number (for an index)
         ld      L,      A               ; put this into a 16-bit number
@@ -5392,14 +5392,14 @@ _LABEL_1CED_131:                                                        ;$1CED
         ld      [IY+Vars.joypad],  $FF                     ;clear joypad input
 
         ;increase the frame counter
-        ld      HL,     [FRAMECOUNT]
+        ld      HL,     [RAM_FRAMECOUNT]
         inc     HL
-        ld      [FRAMECOUNT],   HL
+        ld      [RAM_FRAMECOUNT],       HL
 
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
-        ld      A, 11
+        ld      A,                      11
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
@@ -5408,27 +5408,27 @@ _LABEL_1CED_131:                                                        ;$1CED
         ;establish the default zones around the edges of the screen which initiate scrolling.
         ;mobs can provide a temporary override to this
         ld      HL,                     $0060                   ;=96
-        ld      [SCROLLZONE_LEFT],      HL
+        ld      [RAM_SCROLLZONE_LEFT],  HL
 
         ld      HL,                     $0088                   ;=136
-        ld      [SCROLLZONE_RIGHT],     HL
+        ld      [RAM_SCROLLZONE_RIGHT], HL
 
         ld      HL,                     $0060                   ;=96
-        ld      [SCROLLZONE_TOP],       HL
+        ld      [RAM_SCROLLZONE_TOP],   HL
 
         ld      HL,                     $0070                   ;=112
-        ld      [SCROLLZONE_BOTTOM],    HL
+        ld      [RAM_SCROLLZONE_BOTTOM],HL
 
         ;animate ring?
         call    _239c
 
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
-        ld      A, 1
+        ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A, 2
+        ld      [RAM_SLOT1],            A
+        ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
 
         call    refresh
         call    updateVDPscroll
@@ -5446,7 +5446,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         jr      z,      @_1dae
 
         ld      HL,     $0000
-        ld      [D2B5], HL
+        ld      [RAM_D2B5],     HL
         ld      [IY+Vars.spriteUpdateCount],       H
 
 @_1dae: res     0,      [IY+Vars.flags0]
@@ -5455,7 +5455,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
         ld      A,                      11
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
 
         ;are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
@@ -5465,11 +5465,11 @@ _LABEL_1CED_131:                                                        ;$1CED
         call    nz,     updateTime
 
         ;every other frame?
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         jr      nz,     @_3
 
-        ld      A,      [D289]
+        ld      A,      [RAM_D289]
         and     A
         call    nz,     _1fa9
 
@@ -5477,11 +5477,11 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;-----------------------------------------------------------------------
 
-@_3:    ld      A,       [D287]
+@_3:    ld      A,       [RAM_D287]
         and     A
         jp      nz,     _2067
 @_1de2:                                                         ;jump to here from _2067
-        ld      A,      [D2B1]
+        ld      A,      [RAM_D2B1]
         and     A
         call    nz,     _1f06
 
@@ -5502,9 +5502,9 @@ _LABEL_1CED_131:                                                        ;$1CED
         call    _1bad                                           ;process demo mode?
 
         ;increase the frame counter
-@_5:    ld      HL,      [FRAMECOUNT]
+@_5:    ld      HL,      [RAM_FRAMECOUNT]
         inc     HL
-        ld      [FRAMECOUNT],   HL
+        ld      [RAM_FRAMECOUNT],       HL
 
         ;auto scrolling to the right? (ala Bridge 2)
         bit     3,      [IY+Vars.scrollRingFlags]
@@ -5525,12 +5525,12 @@ _LABEL_1CED_131:                                                        ;$1CED
         call    nz,     _239c
 
         xor     A                                          ;set A to 0
-        ld      [D302], A
-        ld      [D2DE], A
+        ld      [RAM_D302],     A
+        ld      [RAM_D2DE],     A
 
         ld      [IY+Vars.spriteUpdateCount],       $15
         ld      HL,                     $D03F                   ;lives icon sprite table entry
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ld      HL,     RAM_SPRITETABLE+1                           ;sprite Y-value
         ld      B,      $07
@@ -5548,16 +5548,16 @@ _LABEL_1CED_131:                                                        ;$1CED
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
         call    refresh
         call    updateVDPscroll
         call    fillOverscrollCache
 
-        ld      HL,     VDPREGISTER_1
+        ld      HL,     RAM_VDPREGISTER_1
         set     6,      [HL]
 
         ;paused?
@@ -5569,11 +5569,11 @@ _LABEL_1CED_131:                                                        ;$1CED
         ;-----------------------------------------------------------------------
 
 @_7:    ld      [IY+Vars.joypad],       $F7
-        ld      HL,     [LEVEL_LEFT]
+        ld      HL,     [RAM_LEVEL_LEFT]
         ld      DE,     $0112
         add     HL,     DE
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
 
         xor     A                                          ;set A to 0
         sbc     HL,     DE
@@ -5583,10 +5583,10 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
 
         ret
         ;
@@ -5612,9 +5612,9 @@ _1e9e:                                                                  ;$1E9E
 
         ld      [IY+Vars.spriteUpdateCount],       A
 
-        ld      A,      11
+        ld      A,                      11
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
@@ -5629,7 +5629,7 @@ _1e9e:                                                                  ;$1E9E
         .IFDEF  OPTION_SOUND
                 ld      A,                      :sound.unpause
                 ld      [SMS_MAPPER_SLOT1],     A
-                ld      [SLOT1],                A
+                ld      [RAM_SLOT1],            A
                 call    sound.unpause
         .ENDIF
 
@@ -5641,9 +5641,9 @@ lockCameraHorizontal:                                                   ;$1ED8
 ; lock the screen -- prevents the screen scrolling left or right
 ; (i.e. during boss battles)
 ;-------------------------------------------------------------------------------
-        ld      HL,     [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
-        ld      [LEVEL_RIGHT],  HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],       HL
+        ld      [RAM_LEVEL_RIGHT],      HL
         ret
         ;
 
@@ -5651,18 +5651,18 @@ autoscrollRight:                                                        ;$1EE2
 ;===============================================================================
 ; move the left-hand side of the level across -- i.e. Bridge Act 2
 ;-------------------------------------------------------------------------------
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         ret     nc
 
         ;increase the left hand crop by a pixel
-        ld      HL,     [LEVEL_LEFT]
+        ld      HL,     [RAM_LEVEL_LEFT]
         inc     HL
-        ld      [LEVEL_LEFT],   HL
+        ld      [RAM_LEVEL_LEFT],       HL
         ;prevent scrolling to the right by limiting the width of the level to the same
         ;NOTE: removing this would allow the player to continue running right, but not return left beyond a moving
         ;      point -- this would be useful for some kind of chase scene (i.e. wall of lava)
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],      HL
         ret
         ;
 
@@ -5671,14 +5671,14 @@ autoscrollUp:                                                           ;$1EF2
 ; autoscroll upwards -- unused by the game, but working
 ;-------------------------------------------------------------------------------
         ;ensure there's a pause before starting to scroll upwards, otherwise the player won't have time to react!
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         ret     nc
 
         ;shift the bottom of the level up one pixel
-        ld      HL,     [LEVEL_BOTTOM]
+        ld      HL,     [RAM_LEVEL_BOTTOM]
         dec     HL
-        ld      [LEVEL_BOTTOM], HL
+        ld      [RAM_LEVEL_BOTTOM],     HL
         ret
         ;
 
@@ -5687,8 +5687,8 @@ dontScrollDown:                                                         ;$1EFF
 ; Fixes the bottom of the level to the current screen position,
 ; i.e. Jungle Act 2
 ;-------------------------------------------------------------------------------
-        ld      HL,     [CAMERA_Y]
-        ld      [LEVEL_BOTTOM], HL
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      [RAM_LEVEL_BOTTOM],     HL
         ret
         ;
 
@@ -5696,25 +5696,25 @@ dontScrollDown:                                                         ;$1EFF
 _1f06:                                                                  ;$1F06
 ;===============================================================================
         dec     A
-        ld      [D2B1], A
+        ld      [RAM_D2B1],     A
         ld      E,      A
 
         di
-        ld      A,      1
+        ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A,      2
+        ld      [RAM_SLOT1],            A
+        ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
 
         ld      E,      $00
-        ld      A,      [D2B1+1]
-        ld      HL,     [LOADPALETTE_TILE]
+        ld      A,      [RAM_D2B1+1]
+        ld      HL,     [RAM_LOADPALETTE_TILE]
         and     A
         jp      p,      @_1
 
         and     $7F
-        ld      HL,     [LOADPALETTE_SPRITE]
+        ld      HL,     [RAM_LOADPALETTE_SPRITE]
         ld      E,      $10
 @_1:    ld      C,      A
         ld      B,      $00
@@ -5723,12 +5723,12 @@ _1f06:                                                                  ;$1F06
         out     [SMS_PORTS_VDP_CONTROL],        A
         ld      A,      %11000000
         out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,      [D2B1]
+        ld      A,      [RAM_D2B1]
         and     %00000001
         ld      A,      [HL]
         jr      z,      @_2
 
-        ld      A,      [D2B3]
+        ld      A,      [RAM_D2B3]
 
 @_2:    out     [SMS_PORTS_VDP_DATA],   A
 
@@ -5740,7 +5740,7 @@ _1f49:                                                                  ;$1F49
 ;===============================================================================
         ;lightning is enabled...
 
-        ld      DE,     [D2E9]
+        ld      DE,     [RAM_D2E9]
         ld      HL,     $00AA
         xor     A
         sbc     HL,     DE
@@ -5777,7 +5777,7 @@ _1f49:                                                                  ;$1F49
 
         pop     BC
 
-@_3:    ld      HL,     CYCLEPALETTE_COUNTER
+@_3:    ld      HL,     RAM_CYCLEPALETTE_COUNTER
         ld      A,      [BC]
         ld      [HL],   A
         inc     HL
@@ -5794,9 +5794,9 @@ _1f49:                                                                  ;$1F49
         inc     BC
         ld      A,      [BC]
         ld      H,      A
-        ld      [CYCLEPALETTE_POINTER], HL
+        ld      [RAM_CYCLEPALETTE_POINTER],     HL
 @_4:    inc     DE
-        ld      [D2E9], DE
+        ld      [RAM_D2E9],     DE
         ret
         ;
 
@@ -5825,7 +5825,7 @@ _1fa9:                                                                  ;$1FA9
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         dec     A
-        ld      [D289], A
+        ld      [RAM_D289],     A
         jr      z,      @_1
 
         cp      $88
@@ -5834,7 +5834,7 @@ _1fa9:                                                                  ;$1FA9
         ;-----------------------------------------------------------------------
 
         ;an action to take, according to table _2033?
-        ld      A,      [D288]
+        ld      A,      [RAM_D288]
         add     A,      A
         ld      E,      A
         ld      D,      $00
@@ -5872,7 +5872,7 @@ _1fa9:                                                                  ;$1FA9
         call    hideSprites
         call    _155e                                           ;Act Complete screen?
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1A
         jr      nc,     @_3
 
@@ -5881,16 +5881,16 @@ _1fa9:                                                                  ;$1FA9
 
         ld      HL,     $2047
         call    _b60
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         push    AF
-        ld      A,      [D23F]
-        ld      [CURRENT_LEVEL],        A
+        ld      A,      [RAM_D23F]
+        ld      [RAM_CURRENT_LEVEL],    A
         inc     A
-        ld      [D23F], A
+        ld      [RAM_D23F],     A
         call    _LABEL_1CED_131
         pop     AF
-        ld      [CURRENT_LEVEL],        A
-@_2:    ld      HL,     CURRENT_LEVEL                           ;note use of HL here
+        ld      [RAM_CURRENT_LEVEL],    A
+@_2:    ld      HL,     RAM_CURRENT_LEVEL                           ;note use of HL here
         inc     [HL]
         ld      A,      $01
         ret
@@ -5899,7 +5899,7 @@ _1fa9:                                                                  ;$1FA9
         ld      A,      $FF
         ret
 
-@_4:    ld      HL,     CURRENT_LEVEL                           ;note use of HL here
+@_4:    ld      HL,     RAM_CURRENT_LEVEL                           ;note use of HL here
         inc     [HL]
 @_5:    ld      A,      $FF
 
@@ -5930,7 +5930,7 @@ _202d:                                                                  ;$202D
 addExtraLife:                                                           ;$2031
 ;===============================================================================
         ;increases lives
-        ld      HL,     LIVES
+        ld      HL,     RAM_LIVES
         inc     [HL]
 
         ; (we can compile with, or without, sound)
@@ -5976,7 +5976,7 @@ _2067:                                                                  ;$2067
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ;wait until the water raster effect has finished its work (it requires three interrupts to produce)
-        ld      A,      [RASTERSPLIT_STEP]
+        ld      A,      [RAM_RASTERSPLIT_STEP]
         and     A
         jr      nz,     _2067
 
@@ -5985,8 +5985,8 @@ _2067:                                                                  ;$2067
         res     7,      [IY+Vars.flags6]                   ;underwater?
 
         xor     A                                          ;set A to 0
-        ld      [RASTERSPLIT_LINE],     A
-        ld      [WATERLINE],    A
+        ld      [RAM_RASTERSPLIT_LINE], A
+        ld      [RAM_WATERLINE],        A
 
         ei
         ret
@@ -5998,7 +5998,7 @@ _20b8:                                                                  ;$20B8
         .IFDEF  OPTION_SOUND
                 ld      A,                      :sound.fadeOut
                 ld      [SMS_MAPPER_SLOT1],     A
-                ld      [SLOT1],                A
+                ld      [RAM_SLOT1],            A
         .ENDIF
 
         ld      HL,     $0028
@@ -6021,9 +6021,9 @@ loadLevel:                                                              ;$20CB
 ;-------------------------------------------------------------------------------
         ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
 
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111                                       ;remove bit 6
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
@@ -6031,11 +6031,11 @@ loadLevel:                                                              ;$20CB
         ;copy the level header from ROM to RAM starting at $D354
         ;(this copies 40 bytes, even though level headers are 37 bytes long.
         ;the developers probably removed header bytes later in development)
-        ld      DE,     LEVEL_HEADER
+        ld      DE,     RAM_LEVEL_HEADER
         ld      BC,     40
         ldir
 
-        ld      HL,      LEVEL_HEADER                    ;position HL at the start of the header
+        ld      HL,     RAM_LEVEL_HEADER                    ;position HL at the start of the header
         push    HL                                       ;remember the start point
 
         ;read the current Scrolling / Ring HUD value
@@ -6044,23 +6044,23 @@ loadLevel:                                                              ;$20CB
         ld      A,      [IY+Vars.flags6]                   ;read the current underwater flag value
         ld      [IY+Vars.origFlags6],      A               ;take a copy
 
-        ld      A,      $FF
-        ld      [D2AB], A
+        ld      A,              $FF
+        ld      [RAM_D2AB],     A
 
         ;clear some variables
         xor     A                                          ;set A to 0
         ld      L, A                                  ;set HL to #$0000
         ld      H, A
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
-        ld      [CAMERA_X_GOTO],        HL
-        ld      [CAMERA_Y_GOTO],        HL
-        ld      [D2B7], HL
-        ld      [RASTERSPLIT_STEP],     A
-        ld      [RASTERSPLIT_LINE],     A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
+        ld      [RAM_CAMERA_X_GOTO],    HL
+        ld      [RAM_CAMERA_Y_GOTO],    HL
+        ld      [RAM_D2B7],             HL
+        ld      [RAM_RASTERSPLIT_STEP], A
+        ld      [RAM_RASTERSPLIT_LINE], A
 
         ;clear D287-$D2A4 (29 bytes)
-        ld      HL,     D287
+        ld      HL,     RAM_D287
         ld      B,      29
         call    fillMemoryWithValue
 
@@ -6068,14 +6068,14 @@ loadLevel:                                                              ;$20CB
         ;C returns a byte with bit x set, where x is the level number mod 8
         ;DE will be the level number divided by 8
         ;HL will be D311 + the level number divided by 8
-        ld      HL,     D311
+        ld      HL,     RAM_D311
         call    getLevelBitFlag
 
         ;DE will now be D311 + the level number divided by 8
         ex      DE,     HL
 
         ld      HL,     $0800
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      9
         jr      c,      @_2                                     ;less than level 9? (Labyrinth Act 1)
 
@@ -6089,15 +6089,15 @@ loadLevel:                                                              ;$20CB
         jr      z,      @_2                                     ;if so, skip this next part
 
 @_1:    ld      A,              $FF
-        ld      [WATERLINE],    A
+        ld      [RAM_WATERLINE],A
 
         ld      HL,     $0020
 
-@_2:    ld      [D2DC], HL                                      ;either $0800 or $0020
+@_2:    ld      [RAM_D2DC],     HL      ; either $0800 or $0020
 
         ld      HL,     $FFFE
 
-        ld      [TIME], HL
+        ld      [RAM_TIME],     HL
         ld      HL,     $23FF
 
         bit     4,      [IY+Vars.flags6]
@@ -6110,11 +6110,11 @@ loadLevel:                                                              ;$20CB
 
         ;set number of collected rings to 0
 @_3:    xor     A                                          ;set A to 0
-        ld      [RINGS],        A
+        ld      [RAM_RINGS],    A
 
         ;is this a special stage? (level number 28+)
         ;TODO: this should be based on header, not level number
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         sub     28
         jr      c,      @_4                                     ;skip ahead if level < 28
 
@@ -6129,7 +6129,7 @@ loadLevel:                                                              ;$20CB
 
         ;copy 3 bytes from HL (`_2402` for regular levels, `_2405`+ for special stages) to D2CE/F/D0
         ;set the level time?
-@_4:    ld      DE,     TIME_MINUTES
+@_4:    ld      DE,     RAM_TIME_MINUTES
         ld      BC,     $0003
         ldir
 
@@ -6145,7 +6145,7 @@ loadLevel:                                                              ;$20CB
         ;SP: Solidity Pointer
         ;-----------------------------------------------------------------------
         ld      A,      [HL]
-        ld      [LEVEL_SOLIDITY],       A
+        ld      [RAM_LEVEL_SOLIDITY],   A
         inc     HL
 
         ;FW: Floor Width
@@ -6154,7 +6154,7 @@ loadLevel:                                                              ;$20CB
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [LEVEL_FLOORWIDTH],     DE
+        ld      [RAM_LEVEL_FLOORWIDTH], DE
 
         ;FH: Floor Height
         ;-----------------------------------------------------------------------
@@ -6162,7 +6162,7 @@ loadLevel:                                                              ;$20CB
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [LEVEL_FLOORHEIGHT],    DE
+        ld      [RAM_LEVEL_FLOORHEIGHT],DE
 
         ;copy the next 8 bytes to $D273+
         ;-----------------------------------------------------------------------
@@ -6170,7 +6170,7 @@ loadLevel:                                                              ;$20CB
         ;$D275/6 - LW: Level Width
         ;$D277/8 - LY: Level Y Offset
         ;$D279/A - LH: Level Height
-        ld      DE,     LEVEL_LEFT
+        ld      DE,     RAM_LEVEL_LEFT
         ld      BC,     8
         ldir
 
@@ -6184,7 +6184,7 @@ loadLevel:                                                              ;$20CB
         ;C returns a byte with bit x set, where x is the level number mod 8
         ;DE will be the level number divided by 8
         ;HL will be D311 + the level number divided by 8
-        ld      HL,     D311
+        ld      HL,     RAM_D311
         call    getLevelBitFlag
 
         ld      A,      [HL]
@@ -6206,16 +6206,16 @@ loadLevel:                                                              ;$20CB
         ;copy 3 bytes from $2402 to D2CE, these will be $01, $30 & $00
         ;(set level time?)
         ld      HL,     _2402
-        ld      DE,     TIME_MINUTES
+        ld      DE,     RAM_TIME_MINUTES
         ld      BC,     $0003
         ldir
 
-        ld      A,      [CURRENT_LEVEL]                         ;get current level number
+        ld      A,      [RAM_CURRENT_LEVEL]                         ;get current level number
         add     A,      A                                       ;double it (i.e. for 16-bit tables)
         ld      E,      A                                       ;put it into DE
         ld      D,      $00
 
-        ld      HL,     D32E
+        ld      HL,     RAM_D32E
         add     HL,     DE                                      ;D32E + (level number * 2)
 
         ;NOTE: since other data in RAM begins at $D354 (a copy of the level header)
@@ -6224,7 +6224,7 @@ loadLevel:                                                              ;$20CB
 
         ;set starting X position:
 
-@_6:    ld      [D216], HL
+@_6:    ld      [RAM_D216],     HL
         ld      A,      [HL]                                    ;get the value at that RAM address
 
         ;if the value is less than 3, just use 0
@@ -6234,7 +6234,7 @@ loadLevel:                                                              ;$20CB
         jr      nc,     @_7
 
         xor     A                                          ;set A to 0
-@_7:    ld      [BLOCK_X],      A
+@_7:    ld      [RAM_BLOCK_X],  A
 
         ;using the number as the hi-byte, divide by 8 into DE
         ;e.g.
@@ -6254,8 +6254,8 @@ loadLevel:                                                              ;$20CB
         rr      E
         and     %00011111                                       ;mask off top 3 bits from the rotation
         ld      D,      A
-        ld      [CAMERA_X],     DE
-        ld      [CAMERA_X_PREV],        DE
+        ld      [RAM_CAMERA_X],         DE
+        ld      [RAM_CAMERA_X_PREV],    DE
 
         ;set starting Y position:
 
@@ -6267,7 +6267,7 @@ loadLevel:                                                              ;$20CB
 
         xor     A                                          ;set A to 0
 
-@_8:    ld      [BLOCK_Y],      A
+@_8:    ld      [RAM_BLOCK_Y],  A
         ld      E,      $00
         rrca
         rr      E
@@ -6277,8 +6277,8 @@ loadLevel:                                                              ;$20CB
         rr      E
         and     %00011111                                       ;mask off top 3 bits from the rotation
         ld      D,      A
-        ld      [CAMERA_Y],     DE
-        ld      [CAMERA_Y_PREV],        DE
+        ld      [RAM_CAMERA_Y],         DE
+        ld      [RAM_CAMERA_Y_PREV],    DE
 
         ;return to the "SX" byte in the level header
         pop     HL
@@ -6315,20 +6315,20 @@ loadLevel:                                                              ;$20CB
         sub     $40
         ld      H,      A
 
-        ld      A, 6
+        ld      A,                      6
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A, 7
+        ld      [RAM_SLOT1],            A
+        ld      A,                      7
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
         jr      @_10
 
 @_9:    ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],                A
+        ld      [RAM_SLOT1],            A
         ld      A,                      6
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],                A
+        ld      [RAM_SLOT2],            A
 
 @_10:   ei                                                      ;enable interrupts
 
@@ -6355,7 +6355,7 @@ loadLevel:                                                              ;$20CB
         ;rebase the Block Mapping address to Page 1
         ld      BC,     $4000
         add     HL,     BC
-        ld      [BLOCKMAPPINGS],        HL
+        ld      [RAM_BLOCKMAPPINGS],    HL
 
         ;swap back DE & HL
         ;HL will be current position in the level header
@@ -6419,12 +6419,12 @@ loadLevel:                                                              ;$20CB
 
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di
-        ld      A, 1
+        ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A, 2
+        ld      [RAM_SLOT1],            A
+        ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
         ei
 
         ;read the palette pointer into HL
@@ -6446,7 +6446,7 @@ loadLevel:                                                              ;$20CB
         inc     HL
 
         ;CS: Cycle Speed
-        ld      DE,     CYCLEPALETTE_COUNTER
+        ld      DE,     RAM_CYCLEPALETTE_COUNTER
         ld      A,      [HL]
         ld      [DE],   A
         inc     DE
@@ -6481,12 +6481,12 @@ loadLevel:                                                              ;$20CB
 
         ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
         di
-        ld      A, 1
+        ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A, 2
+        ld      [RAM_SLOT1],            A
+        ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
         ei
 
         ;read the cycle palette pointer
@@ -6494,7 +6494,7 @@ loadLevel:                                                              ;$20CB
         inc     HL
         ld      H,      [HL]
         ld      L,      A
-        ld      [CYCLEPALETTE_POINTER], HL
+        ld      [RAM_CYCLEPALETTE_POINTER],     HL
 
         ;swap back DE & HL
         ;HL will be the current position in the level header
@@ -6516,9 +6516,9 @@ loadLevel:                                                              ;$20CB
         add     HL,     DE
 
         ;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
-        ld      A, 5
+        ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
         call    loadMobList
 
         pop     HL
@@ -6551,7 +6551,7 @@ loadLevel:                                                              ;$20CB
         ;MU: Music
         ;-----------------------------------------------------------------------
         inc     HL
-        ld      A,      [PREVIOUS_MUSIC]                        ;check previously played music
+        ld      A,      [RAM_PREVIOUS_MUSIC]                        ;check previously played music
         cp      [HL]
         jr      z,      @_11                                    ;if current music is the same, skip ahead
 
@@ -6564,7 +6564,7 @@ loadLevel:                                                              ;$20CB
         ;remember the current level music to restore it after invincibility &c.
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      [LEVEL_MUSIC],  A
+                ld      [RAM_LEVEL_MUSIC],      A
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -6572,7 +6572,7 @@ loadLevel:                                                              ;$20CB
 
         ;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
 @_11:   ld      B,      32
-        ld      HL,     ACTIVEMOBS
+        ld      HL,     RAM_ACTIVEMOBS
         xor     A                                          ;set A to 0
 
 @_12:   ld      [HL],   A
@@ -6600,10 +6600,10 @@ loadMobList:                                                            ;$232B
         push    HL
 
         ;add Sonic to the list of active mobs first
-        ld      IX, SONIC
+        ld      IX,     RAM_SONIC
         ld      DE,     _sizeof_Mob     ;=$001A (length of the mob?)
         ld      C,      $00             ;?
-        ld      HL,     [D216]          ;=$D32E + (level number * 2)
+        ld      HL,     [RAM_D216]      ;=$D32E + (level number * 2)
         ld      A,      MOB_ID_SONIC    ;=0
         call    loadMobFromList
 
@@ -6611,14 +6611,14 @@ loadMobList:                                                            ;$232B
         pop     HL
 
         ;-----------------------------------------------------------------------
-        ld      A,     [HL]                    ;first byte is the number of mobs to load
+        ld      A,     [HL]             ; first byte is number of mobs to load
         inc     HL
 
-        ld      [D2F2],         A                      ;put aside the number of mobs in the layout
-        dec     A                                      ;reduce by 1,
-        ld      B,     A                      ;and set as the loop counter
+        ld      [RAM_D2F2],     A       ; put aside no. of mobs in the layout
+        dec     A                       ; reduce by 1,
+        ld      B,     A                ; and set as the loop counter
 
-        ;loop over the number of mobs:
+        ; loop over the number of mobs:
 @_1:    ld      A,       [HL]                    ;read the mob type
         inc     HL                                      ;move on to the X & Y position
         call    loadMobFromList
@@ -6626,8 +6626,8 @@ loadMobList:                                                            ;$232B
 
         ;-----------------------------------------------------------------------
 
-        ld      A,     [D2F2]                          ;retrieve number of mobs in layout
-        ld      B,     A
+        ld      A,      [RAM_D2F2]      ; retrieve number of mobs in layout
+        ld      B,      A
         ld      A,      $20
         sub     B
         ret     z                                               ;exit if exactly 32 mobs!
@@ -6733,7 +6733,7 @@ _239c:                                                                  ;$239C
         ;ld      (SCROLLZONE_TOP) = $0060
         ;ld      (SCROLLZONE_BOTTOM) = $0070
 
-        ld      A,      [D297]
+        ld      A,      [RAM_D297]
         ld      E,      A
         ld      D,      $00
         ld      HL,     _23f9
@@ -6747,9 +6747,9 @@ _239c:                                                                  ;$239C
 
         ld      DE,     $7CF0
         add     HL,     DE
-        ld      [RING_CURRENT_FRAME],   HL
+        ld      [RAM_RING_CURRENT_FRAME],       HL
 
-        ld      HL,     D298
+        ld      HL,     RAM_D298
         ld      A,      [HL]
         inc     A
         ld      [HL],   A
@@ -6772,23 +6772,23 @@ _239c:                                                                  ;$239C
 
 _23c9:                                                                  ;$23C9
 ;===============================================================================
-        ld      A,      [CYCLEPALETTE_COUNTER]
+        ld      A,      [RAM_CYCLEPALETTE_COUNTER]
         dec     A
-        ld      [CYCLEPALETTE_COUNTER], A
+        ld      [RAM_CYCLEPALETTE_COUNTER],     A
         ret     nz
 
-        ld      A,      [CYCLEPALETTE_INDEX]
+        ld      A,      [RAM_CYCLEPALETTE_INDEX]
         ld      L,      A
         ld      H,      $00
         add     HL,     HL
         add     HL,     HL
         add     HL,     HL
         add     HL,     HL
-        ld      DE,     [CYCLEPALETTE_POINTER]
+        ld      DE,     [RAM_CYCLEPALETTE_POINTER]
         add     HL,     DE
         ld      A,      %00000001
         call    loadPaletteOnInterrupt
-        ld      HL,     [CYCLEPALETTE_INDEX]
+        ld      HL,     [RAM_CYCLEPALETTE_INDEX]
         ld      A,      L
         inc     A
         cp      H
@@ -6796,9 +6796,9 @@ _23c9:                                                                  ;$23C9
 
         xor     A
 @_1:    ld      L,      A
-        ld      [CYCLEPALETTE_INDEX],   HL
-        ld      A,      [CYCLEPALETTE_SPEED]
-        ld      [CYCLEPALETTE_COUNTER], A
+        ld      [RAM_CYCLEPALETTE_INDEX],       HL
+        ld      A,      [RAM_CYCLEPALETTE_SPEED]
+        ld      [RAM_CYCLEPALETTE_COUNTER],     A
         ret
         ;
 
@@ -6877,17 +6877,17 @@ _LABEL_258B_133:                                                        ;$258B
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         and     %10111111
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
         ;reset the screen scroll (for static screens)
         xor     A
-        ld      [VDPSCROLL_HORZ],       A
-        ld      [VDPSCROLL_VERT],       A
+        ld      [RAM_VDPSCROLL_HORZ],   A
+        ld      [RAM_VDPSCROLL_VERT],   A
 
         ld      HL,     _2828
         ld      A,      %00000011
@@ -6902,27 +6902,27 @@ _LABEL_258B_133:                                                        ;$258B
         ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;map 3 screen (end of game)
         ld      HL,     $6830
         ld      BC,     $0179
         ld      DE,     SMS_VRAM_SCREEN
         xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
-        ld      A,      [VDPREGISTER_1]
+        ld      A,      [RAM_VDPREGISTER_1]
         or      %01000000
-        ld      [VDPREGISTER_1],        A
+        ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ld      A, 1
+        ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
-        ld      A,      [D27F]
+        ld      [RAM_SLOT1],            A
+        ld      A,      [RAM_D27F]
         cp      $06
         jp      c,      @_4
 
@@ -6938,7 +6938,7 @@ _LABEL_258B_133:                                                        ;$258B
         ld      B, 96
         ld      DE,     _2825
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         pop     BC
         djnz    @_1
 
@@ -6963,7 +6963,7 @@ _LABEL_258B_133:                                                        ;$258B
         call    waitForInterrupt
 
         ld      DE,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     DE
+        ld      [RAM_SPRITETABLE_ADDR], DE
         ld      B,      $03
 
 @_3:    push    BC
@@ -6978,9 +6978,9 @@ _LABEL_258B_133:                                                        ;$258B
         inc     HL
         push    BC
         ld      DE,     _2825
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         pop     BC
         pop     HL
         ld      A,      [HL]
@@ -6995,9 +6995,9 @@ _LABEL_258B_133:                                                        ;$258B
         inc     HL
         push    HL
         ld      DE,     _2825
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         pop     HL
         pop     BC
         djnz    @_3
@@ -7009,16 +7009,16 @@ _LABEL_258B_133:                                                        ;$258B
         call    _b60
         ld      [IY+Vars.spriteUpdateCount],       $00
 
-        ld      A, 5
+        ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;UNKNOWN
         ld      HL,     $69A9
         ld      BC,     $0145
         ld      DE,     SMS_VRAM_SCREEN
         xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         ld      HL,     _2828
@@ -7050,21 +7050,21 @@ _LABEL_258B_133:                                                        ;$258B
         ld      A,      9
         call    decompressArt
 
-        ld      A, 5
+        ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
-        ld      [SLOT1],        A
+        ld      [RAM_SLOT1],            A
 
         ;credits screen
         ld      HL,     $6C61
         ld      BC,     $0189
         ld      DE,     SMS_VRAM_SCREEN
         xor     A
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         call    decompressScreen
 
         xor     A                                          ;set A to 0
         ;NOTE: These are addresses! See `_275a`
-        ld      HL,     D322
+        ld      HL,     RAM_D322
         ld      [HL],   <_2848
         inc     HL
         ld      [HL],   >_2848
@@ -7102,7 +7102,7 @@ _LABEL_258B_133:                                                        ;$258B
         .ENDIF
 
         xor     A                                          ;(set A to 0)
-        ld      [TEMP1],        A
+        ld      [RAM_TEMP1],    A
         ld      HL,     creditsText
         call    _2795
 
@@ -7126,9 +7126,9 @@ _2718:                                                                  ;$2718
 
         ld      [IY+Vars.spriteUpdateCount],       $00
         ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
-        ld      HL,     D322
+        ld      HL,     RAM_D322
         ld      B,      $04
 
 @_2:    push    BC
@@ -7247,7 +7247,7 @@ _275a:                                                                  ;$275A
 
 _2795:                                                                  ;$2795
 ;===============================================================================
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         ldi
         ldi
         inc     DE
@@ -7275,12 +7275,12 @@ _2795:                                                                  ;$2795
         jr      @_
 
 @_1:    push    HL
-        ld      [LAYOUT_BUFFER+2],      A
+        ld      [RAM_LAYOUT_BUFFER+2],  A
         ld      BC,     $0008
         call    _2718
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         call    print
-        ld      HL,     LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
         inc     [HL]
         pop     HL
         jr      @_
@@ -7916,28 +7916,28 @@ refresh:                                                                ;$2E5A
 
         ;populate the buffer with the bytes in the layout
         ld      HL,     hudLivesLayout
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         ld      BC,     _sizeof_hudLivesLayout  ;=5
         ldir                                                    ;TODO: unroll this for speed
 
-        ld      A,        [LIVES]
+        ld      A,      [RAM_LIVES]
         cp      9                                               ;9 lives?
         jr      c,      @_1                                     ;if more than 9 lives,
         ld      A,        9                               ;we will display as 9 lives
 
 @_1:    add     A,      A                                 ;double for the 8x16 sprite lookup
         add     A,        $80                             ;numeral sprites begin at index $80
-        ld      [LAYOUT_BUFFER+3],      A                 ;put number of lives into the buffer
+        ld      [RAM_LAYOUT_BUFFER+3],  A                 ;put number of lives into the buffer
 
         ld      C,      HUD_LIVES_X     ; x-position of lives display
         ld      B,      HUD_LIVES_Y     ; y-position of lives display
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ; TODO: loading DE not needed
         ; -- we still have this value from before
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ;-----------------------------------------------------------------------
 
@@ -7952,7 +7952,7 @@ refresh:                                                                ;$2E5A
         ;-----------------------------------------------------------------------
 
         ld      DE,     $0060
-        ld      HL,     SCROLLZONE_OVERRIDE_LEFT                ;gets set by moving platforms, e.g. $20
+        ld      HL,     RAM_SCROLLZONE_OVERRIDE_LEFT                ;gets set by moving platforms, e.g. $20
         ld      A,      [HL]                                    ;[$D267]
         inc     HL      ;$D268
         or      [HL]                                            ;[$D268]
@@ -7992,11 +7992,11 @@ refresh:                                                                ;$2E5A
         bit     0,      [IY+Vars.scrollRingFlags]
         call    z,      updateCamera                            ;handle camera movement
 
-        ld      HL,        $0000
-        ld      [SCROLLZONE_OVERRIDE_LEFT],     HL
-        ld      [SCROLLZONE_OVERRIDE_RIGHT],    HL
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
-        ld      [SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      HL,     $0000
+        ld      [RAM_SCROLLZONE_OVERRIDE_LEFT],         HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_RIGHT],        HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
         ;check for mobs that have gone too far off-screen and should be despawned
         call    checkMobsOutOfBounds
@@ -8013,8 +8013,8 @@ displayRingCount:                                                       ;$2EE6
 ; TODO: it'll be faster to layout the sprites when the level loads,
 ;       and just update the indices here
 ;-------------------------------------------------------------------------------
-        ld      A,        [RINGS]
-        ld      C,        A
+        ld      A,      [RAM_RINGS]
+        ld      C,      A
         rrca
         rrca
         rrca
@@ -8022,27 +8022,27 @@ displayRingCount:                                                       ;$2EE6
         and     %00001111
         add     A,      A
         add     A,      $80                                     ;TODO: numeral 0 tile index
-        ld      [LAYOUT_BUFFER],        A
+        ld      [RAM_LAYOUT_BUFFER],    A
         ld      A,      C
         and     %00001111
         add     A,      A
         add     A,      $80                                     ;TODO: numeral 0 tile index
-        ld      [LAYOUT_BUFFER+1],      A
+        ld      [RAM_LAYOUT_BUFFER+1],  A
         ld      A,      $FF
-        ld      [LAYOUT_BUFFER+2],      A
+        ld      [RAM_LAYOUT_BUFFER+2],  A
 
         ld      C, 20
         ld      B, 0
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         ld      DE,     hudRingLayout
         call    layoutSpritesHorizontal
 
         ld      C, 40
         ld      B, 0
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ret
         ;
@@ -8054,21 +8054,21 @@ displayTime:                                                            ;$2F1F
 ; TODO: It'll be faster to layout the sprites at level load and just update
 ; the indices here instead of redoing the layout every time
 ;-------------------------------------------------------------------------------
-        ld      HL,      LAYOUT_BUFFER
+        ld      HL,     RAM_LAYOUT_BUFFER
 
-        ld      A,      [TIME_MINUTES]
+        ld      A,      [RAM_TIME_MINUTES]
         and     %00001111
-        add     A,    A
-        add     A,    $80                             ;TODO: numeral 0 tile index
+        add     A,      A
+        add     A,      $80                             ;TODO: numeral 0 tile index
 
-        ld      [HL],    A
+        ld      [HL],   A
         inc     HL
-        ld      [HL],    $B0                             ;TODO: colon tile index
+        ld      [HL],   $B0                             ;TODO: colon tile index
         inc     HL
 
         ;TODO: a look-up table has to be faster than this...
         ;      (could also lookup straight to the tile index, as calculated below)
-        ld      A,      [TIME_SECONDS]
+        ld      A,      [RAM_TIME_SECONDS]
         ld      C,      A
         srl     A
         srl     A
@@ -8094,7 +8094,7 @@ displayTime:                                                            ;$2F1F
         ld      B, 16
 
         ;are we on the special stage?
-        ld      A,        [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      28
         jr      c,      @_1
 
@@ -8103,10 +8103,10 @@ displayTime:                                                            ;$2F1F
         ld      C, 112
         ld      B, 56
 
-@_1:    ld      HL,      [SPRITETABLE_ADDR]
-        ld      DE,      LAYOUT_BUFFER
+@_1:    ld      HL,     [RAM_SPRITETABLE_ADDR]
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
 
         ret
         ;
@@ -8124,13 +8124,13 @@ updateCamera:                                                           ;$2F66
         ret     nz
 
         ; does the camera need to be moved horizontally toward a target?
-        ld      HL,     [CAMERA_X_GOTO]
+        ld      HL,     [RAM_CAMERA_X_GOTO]
         ld      A,      L
         or      H
         call    nz,     @scrollCameraTo_horizontal
 
         ; does the camera need to be moved vertically toward a target?
-        ld      HL,     [CAMERA_Y_GOTO]
+        ld      HL,     [RAM_CAMERA_Y_GOTO]
         ld      A,      L
         or      H
         call    nz,     @scrollCameraTo_vertical
@@ -8151,8 +8151,8 @@ updateCamera:                                                           ;$2F66
         ; manage the region within which Sonic
         ; can be before scrolling the screen?
 
-        ld      HL,     [SCROLLZONE_OVERRIDE_LEFT]      ;=32
-        ld      DE,     [SCROLLZONE_LEFT]               ;=96
+        ld      HL,     [RAM_SCROLLZONE_OVERRIDE_LEFT]      ;=32
+        ld      DE,     [RAM_SCROLLZONE_LEFT]               ;=96
         and     A       ; clear flags, particularly carry
         sbc     HL,     DE
         ; cause the DE value to head towards equality with HL?
@@ -8165,28 +8165,28 @@ updateCamera:                                                           ;$2F66
         ;._1     dec     DE
         ;       ret
 
-        ld      [SCROLLZONE_LEFT],      DE
+        ld      [RAM_SCROLLZONE_LEFT],  DE
 
-        ld      HL,     [SCROLLZONE_OVERRIDE_RIGHT]     ;=72
-        ld      DE,     [SCROLLZONE_RIGHT]              ;=136
+        ld      HL,     [RAM_SCROLLZONE_OVERRIDE_RIGHT]     ;=72
+        ld      DE,     [RAM_SCROLLZONE_RIGHT]              ;=136
         and     A                                    ;clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
-        ld      [SCROLLZONE_RIGHT],     DE
+        ld      [RAM_SCROLLZONE_RIGHT], DE
 
-        ld      HL,     [SCROLLZONE_OVERRIDE_TOP]               ;=48
-        ld      DE,     [SCROLLZONE_TOP]                        ;=96
+        ld      HL,     [RAM_SCROLLZONE_OVERRIDE_TOP]               ;=48
+        ld      DE,     [RAM_SCROLLZONE_TOP]                        ;=96
         and     A                                    ;clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
-        ld      [SCROLLZONE_TOP],       DE
+        ld      [RAM_SCROLLZONE_TOP],   DE
 
-        ld      HL,     [SCROLLZONE_OVERRIDE_BOTTOM]    ;=48
-        ld      DE,     [SCROLLZONE_BOTTOM]             ;=112
+        ld      HL,     [RAM_SCROLLZONE_OVERRIDE_BOTTOM]    ;=48
+        ld      DE,     [RAM_SCROLLZONE_BOTTOM]             ;=112
         and     A                                    ;clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
-        ld      [SCROLLZONE_BOTTOM],    DE
+        ld      [RAM_SCROLLZONE_BOTTOM],DE
 
         ; check left-hand scroll zone:
         ;-----------------------------------------------------------------------
@@ -8202,9 +8202,9 @@ updateCamera:                                                           ;$2F66
         ;       |   Zone   |              |
         ;       '----------+--------------'
 
-        ld      BC,     [SCROLLZONE_LEFT]
-        ld      DE,     [SONIC.X]
-        ld      HL,     [CAMERA_X]
+        ld      BC,     [RAM_SCROLLZONE_LEFT]
+        ld      DE,     [RAM_SONIC.X]
+        ld      HL,     [RAM_CAMERA_X]
         add     HL,     BC
         and     A                                    ;clear flags, particularly carry
         sbc     HL,     DE
@@ -8246,13 +8246,13 @@ updateCamera:                                                           ;$2F66
 
 @_3:    ex      DE,     HL
         ; move camera X position
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         ; skip if moving the camera would under/overflow
         jr      c,      @levelLeftLimit
         ; commit the new camera position
-        ld      [CAMERA_X],     HL
+        ld      [RAM_CAMERA_X], HL
 
         ; TODO: this could be a `jr`
         jp      @levelLeftLimit
@@ -8271,8 +8271,8 @@ updateCamera:                                                           ;$2F66
         ;       |               |   Zone  |
         ;       '---------------+---------'
 
-        ld      BC,     [SCROLLZONE_RIGHT]
-        ld      HL,     [CAMERA_X]
+        ld      BC,     [RAM_SCROLLZONE_RIGHT]
+        ld      HL,     [RAM_CAMERA_X]
         add     HL,     BC
         and     A       ; clear the carry flag
         sbc     HL,     DE
@@ -8317,11 +8317,11 @@ updateCamera:                                                           ;$2F66
 
 @checkOverflow:
         ; ensure that the camera position won't under/overflow
-        ld      DE,     [CAMERA_X]
-        add     HL, DE
+        ld      DE,     [RAM_CAMERA_X]
+        add     HL,     DE
         jr      c,      @levelLeftLimit
 
-        ld      [CAMERA_X],     HL
+        ld      [RAM_CAMERA_X], HL
 
         ; camera cannot go past left edge of level:
         ;-----------------------------------------------------------------------
@@ -8329,27 +8329,27 @@ updateCamera:                                                           ;$2F66
         ; Level can be packed on a Floor Layout), therefore the left-hand edge
         ; of the level is not necessarily 0
 @levelLeftLimit:
-        ld      HL,     [CAMERA_X]
-        ld      DE,     [LEVEL_LEFT]
+        ld      HL,     [RAM_CAMERA_X]
+        ld      DE,     [RAM_LEVEL_LEFT]
         and     A
         sbc     HL,     DE
         jr      nc,     @levelRightLimit
 
         ;stop the camera at the level boundary
-        ld      [CAMERA_X],     DE
+        ld      [RAM_CAMERA_X], DE
         jr      @cameraY
 
         ; camera cannot go past right edge of level:
         ;-----------------------------------------------------------------------
 @levelRightLimit:
-        ld      HL,     [CAMERA_X]
-        ld      DE,     [LEVEL_RIGHT]
+        ld      HL,     [RAM_CAMERA_X]
+        ld      DE,     [RAM_LEVEL_RIGHT]
         and     A
         sbc     HL,     DE
         jr      c,      @cameraY
 
         ; stop the camera at the level boundary
-        ld      [CAMERA_X],     DE
+        ld      [RAM_CAMERA_X], DE
 
 @cameraY:
         ;-----------------------------------------------------------------------
@@ -8357,9 +8357,9 @@ updateCamera:                                                           ;$2F66
         bit     6,      [IY+Vars.scrollRingFlags]
         call    nz,     @_3164
 
-        ld      BC,     [SCROLLZONE_TOP]
-        ld      DE,     [SONIC.Y]
-        ld      HL,     [CAMERA_Y]
+        ld      BC,     [RAM_SCROLLZONE_TOP]
+        ld      DE,     [RAM_SONIC.Y]
+        ld      HL,     [RAM_CAMERA_Y]
 
         ; is the camera waving up and down?
         bit     6,      [IY+Vars.scrollRingFlags]
@@ -8413,18 +8413,18 @@ updateCamera:                                                           ;$2F66
         ld      HL,     $0000
 
 @_12:   ex      DE,     HL
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         jr      c,      @levelTopLimit
 
-        ld      [CAMERA_Y],     HL
+        ld      [RAM_CAMERA_Y], HL
         jp      @levelTopLimit
 
         ;-----------------------------------------------------------------------
 
-@_13:   ld      BC,     [SCROLLZONE_BOTTOM]
-        ld      HL,     [CAMERA_Y]
+@_13:   ld      BC,     [RAM_SCROLLZONE_BOTTOM]
+        ld      HL,     [RAM_CAMERA_Y]
         add     HL,     BC
 
         ; is the camera prevented from scrolling down?
@@ -8461,33 +8461,33 @@ updateCamera:                                                           ;$2F66
 @_15:   bit     4,      [IY+Vars.scrollRingFlags]          ;auto scroll up?
         jr      nz,     @levelTopLimit
 
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         add     HL,     DE
         jr      c,      @levelTopLimit
 
-        ld      [CAMERA_Y],     HL
+        ld      [RAM_CAMERA_Y], HL
 
         ; camera cannot go past top edge of level:
         ;-----------------------------------------------------------------------
 @levelTopLimit:
-        ld      HL,     [CAMERA_Y]
-        ld      DE,    [LEVEL_TOP]
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      DE,     [RAM_LEVEL_TOP]
         and     A
         sbc     HL,     DE
         jr      nc,     @levelBottomLimit
         ; stop the camera at the level boundary
-        ld      [CAMERA_Y],     DE
+        ld      [RAM_CAMERA_Y], DE
 
         ; camera cannot go past bottom edge of level:
         ;-----------------------------------------------------------------------
 @levelBottomLimit:
-        ld      HL,     [CAMERA_Y]
-        ld      DE, [LEVEL_BOTTOM]
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      DE,     [RAM_LEVEL_BOTTOM]
         and     A
         sbc     HL,     DE
         jr      c,      @ret                                    ;TODO: use `ret c`?
         ; stop the camera at the level boundary
-        ld      [CAMERA_Y],     DE
+        ld      [RAM_CAMERA_Y], DE
 
 @ret:   ret
 
@@ -8511,7 +8511,7 @@ updateCamera:                                                           ;$2F66
 @scrollCameraTo_vertical:                                               ;$3122
         ;=======================================================================
         ; scroll vertically towards the locked camera position
-        ld      DE,        [LEVEL_TOP]
+        ld      DE,     [RAM_LEVEL_TOP]
         and     A
         sbc     HL,     DE
         ret     z
@@ -8519,33 +8519,33 @@ updateCamera:                                                           ;$2F66
 
         ; scroll downwards
         inc     DE
-        ld      [LEVEL_TOP],    DE
-        ld      [LEVEL_BOTTOM], DE
+        ld      [RAM_LEVEL_TOP],        DE
+        ld      [RAM_LEVEL_BOTTOM],     DE
         ret
 
         ; scroll upwards
 @up:    dec     DE
-        ld      [LEVEL_TOP],    DE
-        ld      [LEVEL_BOTTOM], DE
+        ld      [RAM_LEVEL_TOP],        DE
+        ld      [RAM_LEVEL_BOTTOM],     DE
         ret
 
 @scrollCameraTo_horizontal:                                             ;$3140
         ;=======================================================================
         ; scroll horizontally towards the locked camera position
-        ld      DE,     [LEVEL_LEFT]
+        ld      DE,     [RAM_LEVEL_LEFT]
         and     A                                               ;reset carry so it doesn't affect `sbc`
         sbc     HL,     DE
         ret     z                                               ;if HL = DE then return -- no change
         jr      c,      @_1a                                    ;is DE > HL?
 
         inc     DE
-        ld      [LEVEL_LEFT],   DE
-        ld      [LEVEL_RIGHT],  DE
+        ld      [RAM_LEVEL_LEFT],       DE
+        ld      [RAM_LEVEL_RIGHT],      DE
         ret
 
 @_1a:   dec     DE
-        ld      [LEVEL_LEFT],   DE
-        ld      [LEVEL_RIGHT],  DE
+        ld      [RAM_LEVEL_LEFT],       DE
+        ld      [RAM_LEVEL_RIGHT],      DE
         ret
 
 @_315e:                                                                 ;$315E
@@ -8559,8 +8559,8 @@ updateCamera:                                                           ;$2F66
 
 @_3164:                                                                 ;$3164
         ;=======================================================================
-        ld      HL,     [D29D]
-        ld      DE,     [TIME]
+        ld      HL,     [RAM_D29D]
+        ld      DE,     [RAM_TIME]
         add     HL,     DE
         ld      BC,     $0200
         ld      A,      H
@@ -8576,26 +8576,26 @@ updateCamera:                                                           ;$2F66
         ld      L,      C
         ld      H,      B
 
-@_2c:   ld      [D29D], HL
+@_2c:   ld      [RAM_D29D],     HL
         ld      C,      L
         ld      B,      H
-        ld      HL,     [D25C]                                  ;between RAM_CAMERA_X & Y
-        ld      A,      [CAMERA_Y+1]                            ;high-byte of RAM_CAMERA_X
+        ld      HL,     [RAM_D25C]                                  ;between RAM_CAMERA_X & Y
+        ld      A,      [RAM_CAMERA_Y+1]                            ;high-byte of RAM_CAMERA_X
         add     HL,     BC
         ld      E,      $00
         bit     7,      B
         jr      z,      @_3c
         ld      E,      $FF
 @_3c:   adc     A,      E
-        ld      [D25C], HL
-        ld      [CAMERA_Y+1],   A
-        ld      HL,     [D2A1]
-        ld      A,      [D2A3]
+        ld      [RAM_D25C],             HL
+        ld      [RAM_CAMERA_Y+1],       A
+        ld      HL,     [RAM_D2A1]
+        ld      A,      [RAM_D2A3]
         add     HL,     BC
         adc     A,      E
-        ld      [D2A1], HL
-        ld      [D2A3], A
-        ld      HL,     [D2A2]
+        ld      [RAM_D2A1],     HL
+        ld      [RAM_D2A3],     A
+        ld      HL,     [RAM_D2A2]
         bit     7,      H
         jr      z,      @_4c
         ld      BC,     $FFE0
@@ -8603,16 +8603,16 @@ updateCamera:                                                           ;$2F66
         sbc     HL,     BC
         jr      nc,     @_4c
         ld      HL,     $0002
-        ld      [TIME], HL
+        ld      [RAM_TIME],     HL
         ret
 
-@_4c:   ld      HL,     [D2A2]
+@_4c:   ld      HL,     [RAM_D2A2]
         ld      BC,     $0020
         and     A
         sbc     HL,     BC
         ret     c
         ld      HL,     $FFFE
-        ld      [TIME], HL
+        ld      [RAM_TIME],     HL
         ret
 
 @updateCamera_scrollZone_waving:                                        ;$31CF
@@ -8636,7 +8636,7 @@ updateCamera:                                                           ;$2F66
         bit     6,      [IY+Vars.scrollRingFlags]
         ret     nz
 
-        ld      BC,     [D2B7]
+        ld      BC,     [RAM_D2B7]
         add     HL,     BC
 
         ret
@@ -8651,7 +8651,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
 ;-------------------------------------------------------------------------------
         ; check only 4 mobs per frame:
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111               ; "MOD 8"
         ; TODO: a look-up table for this multiplication should be faster
         ld      C,      A
@@ -8659,7 +8659,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
                                         ; TODO: calculate this dynamically
         call    multiply                ; multiply 104 by the frame number 0-7
 
-        ld      DE,     SONIC           ; address of first mob's data
+        ld      DE,     RAM_SONIC       ; address of first mob's data
         add     HL,     DE              ; offset to the chosen group of 4 mobs
         ex      DE,     HL              ; put this aside for now
 
@@ -8668,7 +8668,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
 
         ; TODO: Could transfer the "A MOD 8" result via register I
         ;       to avoid having to redo this calculation
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111               ; "MOD 8"
         add     A,      A               ; x 2
         add     A,      A               ; x 4
@@ -8676,7 +8676,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
 
         ld      C,      A
         ld      B,      $00
-        ld      HL,     ACTIVEMOBS      ; list of current mob pointers
+        ld      HL,     RAM_ACTIVEMOBS  ; list of current mob pointers
         add     HL,     BC
 
         ld      C,      B               ; this will be used to remove mobs
@@ -8713,7 +8713,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
 
         ; copy the remaining data into the temporary space
         inc     HL'
-        ld      DE',    TEMP1
+        ld      DE',    RAM_TEMP1
         ; BUG: this reduces BC' by 6, likely unintended as the leftLimit value
         ;      does not already factor this in and does not benefit from it
         ldi
@@ -8728,7 +8728,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
         ; if the camera is near the left edge of the Floor Layout then the mob's
         ; area of off-screen allowance will overhang void-space. we check for
         ; this to avoid miscalculation further down the line
-        ld      HL',    [CAMERA_X]
+        ld      HL',    [RAM_CAMERA_X]
         xor     A                       ; reset carry flag
         sbc     HL',    BC'
         jr      nc,     @x
@@ -8748,8 +8748,8 @@ checkMobsOutOfBounds:                                                   ;$31E6
         ; the next WORD is how far right of the camera the mob can go before
         ; despawning. note that this value has the width of the screen included
         ; TODO: would adding 256 to the left limit be faster / good enough?
-        ld      HL',    [TEMP1]
-        ld      BC',    [CAMERA_X]
+        ld      HL',    [RAM_TEMP1]
+        ld      BC',    [RAM_CAMERA_X]
         add     HL',    BC'
         xor     A                       ; reset carry flag
         sbc     HL',    DE'             ; has the mob gone too far right?
@@ -8761,8 +8761,8 @@ checkMobsOutOfBounds:                                                   ;$31E6
         ; if the camera is near the top edge of the Floor Layout then the mob's
         ; area of off-screen allowance will overhang void-space. we check for
         ; this to avoid miscalculation further down the line
-        ld      HL',    [CAMERA_Y]
-        ld      BC',    [TEMP3]
+        ld      HL',    [RAM_CAMERA_Y]
+        ld      BC',    [RAM_TEMP3]
         sbc     HL',    BC'
         jr      nc,     @y
 
@@ -8784,8 +8784,8 @@ checkMobsOutOfBounds:                                                   ;$31E6
         ; TODO: would adding 192 to the bottom limit be faster / good enough?
         ;       also this would help with dynamically supporting 224-lines
 
-        ld      HL',    [TEMP4]
-        ld      BC',    [CAMERA_Y]
+        ld      HL',    [RAM_TEMP4]
+        ld      BC',    [RAM_CAMERA_Y]
         add     HL',    BC'
         xor     A
         sbc     HL',    DE'
@@ -8850,7 +8850,7 @@ processMobs:                                                            ;$392B
 ;-------------------------------------------------------------------------------
         ; starting from $D37E (we skip Sonic), read pointers until a non-zero
         ; one is found, or 31 pointers have been read
-        ld      HL,     ACTIVEMOBS+2
+        ld      HL,     RAM_ACTIVEMOBS+2
         ld      B,      31
 
         ; read the pointer into DE
@@ -8871,21 +8871,21 @@ processMobs:                                                            ;$392B
         ;-----------------------------------------------------------------------
 
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
 
         push    AF
         push    HL
 
         ; process the player:
         ld      HL,     $D024           ; TODO: Sonic's sprite table entry (VRAM)
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      DE,     SONIC
+        ld      [RAM_SPRITETABLE_ADDR], HL
+        ld      DE,     RAM_SONIC
         call    processMob
 
         pop     HL
         pop     AF
 
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ld      [IY+Vars.spriteUpdateCount],       A
         ret
         ;
@@ -9001,7 +9001,7 @@ postProcessMob:                                                         ;$32E2
         ld      HL,     Unknown@_4020
 
         ; put aside the 'nose' x-position of the mob
-@_2:    ld      [TEMP3],BC
+@_2:    ld      [RAM_TEMP3],    BC
 
         ; clear the flag for mob-collision-with-floor
         res     6,      [IX+Mob.flags]
@@ -9021,7 +9021,7 @@ postProcessMob:                                                         ;$32E2
         ld      D,        $00
         ; TODO: all this solidity pointer lookup could be done away with by
         ;       storing this result in RAM somewhere (or in the level header)
-        ld      A,      [LEVEL_SOLIDITY]; solidity index for the level
+        ld      A,      [RAM_LEVEL_SOLIDITY]; solidity index for the level
         add     A,      A               ; double it for a table look-up
         ld      C,      A               ; transfer value to BC
         ld      B,      D
@@ -9042,7 +9042,7 @@ postProcessMob:                                                         ;$32E2
         ; - bit 6 : water?
         and     %00111111
         ; put aside the solidity flags for the Block that the mob is within
-        ld      [TEMP6],A
+        ld      [RAM_TEMP6],    A
 
         pop     HL
         pop     DE
@@ -9052,8 +9052,8 @@ postProcessMob:                                                         ;$32E2
         ; no kind of collision can be possible, so skip ahead
         jp      z,      @_7
 
-        ; TODO: could we not have used B/C instead of [TEMP6] here?
-        ld      A,      [TEMP6]
+        ; TODO: could we not have used B/C instead of [RAM_TEMP6] here?
+        ld      A,      [RAM_TEMP6]
         add     A,      A               ; double it for a look-up table
         ld      C,      A               ; transfer to BC
         ld      B,      $00
@@ -9095,7 +9095,7 @@ postProcessMob:                                                         ;$32E2
 @_3:    ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ; retrieve the 'nose' position of the mob
-        ld      BC,     [TEMP3]
+        ld      BC,     [RAM_TEMP3]
         add     HL,     BC
 
         ; facing left or right?
@@ -9141,7 +9141,7 @@ postProcessMob:                                                         ;$32E2
         ld      [IX+Mob.X+0],   L
         ld      [IX+Mob.X+1],   H
 
-        ld      A,      [TEMP6]
+        ld      A,      [RAM_TEMP6]
         ld      E,      A
         ld      D,      $00
         ld      HL,     UnknownCollision@_3FBF
@@ -9191,14 +9191,14 @@ postProcessMob:                                                         ;$32E2
         ld      E,      $00
         ld      HL,     Unknown@_41EC
 
-@_9:    ld      [TEMP3],DE
+@_9:    ld      [RAM_TEMP3],    DE
         res     7,      [IX+Mob.flags]
         push    BC
         push    HL
         call    getFloorLayoutRAMAddressForMob
         ld      E,      [HL]
         ld      D,      $00
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         add     A,      A
         ld      C,      A
         ld      B,      D
@@ -9211,12 +9211,12 @@ postProcessMob:                                                         ;$32E2
         add     HL,     DE
         ld      A,      [HL]
         and     $3F
-        ld      [TEMP6],A
+        ld      [RAM_TEMP6],    A
         pop     HL
         pop     BC
         and     $3F
         jp      z,      @_34e6
-        ld      A,      [TEMP6]
+        ld      A,      [RAM_TEMP6]
         add     A,      A
         ld      E,      A
         ld      D,      $00
@@ -9240,7 +9240,7 @@ postProcessMob:                                                         ;$32E2
         ld      B,      $FF
 @_10:   ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      DE,     [TEMP3]
+        ld      DE,     [RAM_TEMP3]
         add     HL,     DE
         bit     7,      [IX+Mob.Ydirection]
         jr      nz,     @_11
@@ -9249,7 +9249,7 @@ postProcessMob:                                                         ;$32E2
         ld      A,      L
         and     %00011111
         exx
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      H,      $00
         ld      DE,     UnknownCollision@_3FF0
         add     HL,     DE
@@ -9265,7 +9265,7 @@ postProcessMob:                                                         ;$32E2
         ld      A,      L
         and     %00011111
         exx
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      H,      $00
         ld      DE,     UnknownCollision@_3FF0
         add     HL,     DE
@@ -9281,7 +9281,7 @@ postProcessMob:                                                         ;$32E2
         sbc     HL,     DE
         ld      [IX+Mob.Y+0],   L
         ld      [IX+Mob.Y+1],   H
-        ld      A,      [TEMP6]
+        ld      A,      [RAM_TEMP6]
         ld      E,      A
         ld      D,      $00
         ld      HL,     $3F90           ; data?
@@ -9309,7 +9309,7 @@ postProcessMob:                                                         ;$32E2
 
 @_34e6: ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      BC,     [CAMERA_Y]
+        ld      BC,     [RAM_CAMERA_Y]
         and     A                       ; clear Carry before subtracting
         sbc     HL,     BC
 
@@ -9317,7 +9317,7 @@ postProcessMob:                                                         ;$32E2
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      BC,     [CAMERA_X]
+        ld      BC,     [RAM_CAMERA_X]
         and     A                       ; clear Carry before subtracting
         sbc     HL,     BC
 
@@ -9348,7 +9348,7 @@ processSpriteLayout:                                                    ;$350F
 ;       BC      Address of a sprite layout
 ;-------------------------------------------------------------------------------
         ; store the X-position of the sprite for aligning the rows
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         ; copy BC (address of a sprite layout)
         ; to its shadow value BC'
@@ -9365,7 +9365,7 @@ processSpriteLayout:                                                    ;$350F
 
 @_1:    exx     ;-->                    ; switch to BC/DE/HL shadow values
 
-        ld      HL',    [TEMP6]         ; get the starting X-position
+        ld      HL',    [RAM_TEMP6]     ; get the starting X-position
                                         ; (original HL parameter)
 
         ; if a row begins with $FF, the data ends early.
@@ -9415,7 +9415,7 @@ processSpriteLayout:                                                    ;$350F
         jr      nc,     @_4             ; if so, skip
 
         ; get the address of the sprite table entry
-        ld      DE',    [SPRITETABLE_ADDR]
+        ld      DE',    [RAM_SPRITETABLE_ADDR]
         ld      A,      L'              ; take the current X-position
         ld      [DE'],  A               ; and set the sprite's X-position
         inc     E'
@@ -9429,7 +9429,7 @@ processSpriteLayout:                                                    ;$350F
 
         ; move to the next sprite table entry
         inc     E'
-        ld      [SPRITETABLE_ADDR],     DE'
+        ld      [RAM_SPRITETABLE_ADDR], DE'
         inc     [IY+Vars.spriteUpdateCount]
 
         ; move across 8 pixels
@@ -9478,25 +9478,25 @@ processSpriteLayout:                                                    ;$350F
 
 _3581:                                                                  ;$3581
 ;===============================================================================
-; in    IY      Address of the common variables (used throughout)
-;       TEMP3   y-position of some kind
-;       TEMP6   y-position of some kind
-;       TEMP1   x-position of some kind
-;       TEMP4   x-position of some kind
+; in    IY              Address of the common variables (used throughout)
+;       RAM_TEMP3       y-position of some kind
+;       RAM_TEMP6       y-position of some kind
+;       RAM_TEMP1       x-position of some kind
+;       RAM_TEMP4       x-position of some kind
 ;-------------------------------------------------------------------------------
-        ld      HL,     [TEMP3]
-        ld      BC,     [TEMP6]
+        ld      HL,     [RAM_TEMP3]
+        ld      BC,     [RAM_TEMP6]
         add     HL,     BC
-        ld      BC,     [CAMERA_Y]
+        ld      BC,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     BC
 
         ex      DE,     HL
 
-        ld      HL,     [TEMP1]
-        ld      BC,     [TEMP4]
+        ld      HL,     [RAM_TEMP1]
+        ld      BC,     [RAM_TEMP4]
         add     HL,     BC
-        ld      BC,     [CAMERA_X]
+        ld      BC,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     BC
         ld      C,      A
@@ -9518,7 +9518,7 @@ _3581:                                                                  ;$3581
         cp      $C0
         ret     nc
 @_2:    ld      H,      C
-        ld      BC,     [SPRITETABLE_ADDR]
+        ld      BC,     [RAM_SPRITETABLE_ADDR]
         ld      A,      L
         ld      [BC],   A
         inc     C
@@ -9528,7 +9528,7 @@ _3581:                                                                  ;$3581
         ld      A,      H
         ld      [BC],   A
         inc     C
-        ld      [SPRITETABLE_ADDR],     BC
+        ld      [RAM_SPRITETABLE_ADDR], BC
         inc     [IY+Vars.spriteUpdateCount]
         ret
         ;
@@ -9580,7 +9580,7 @@ hitPlayer:                                                              ;$35E5
         bit     0,      [IY+Vars.unknown0]
         jp      nz,     _36be
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rrca
         jp      c,      _36be
 
@@ -9603,7 +9603,7 @@ hitPlayer:                                                              ;$35E5
         jr      nz,     dropRings@_367e
 
         ; has the player any rings?
-        ld      A,        [RINGS]
+        ld      A,      [RAM_RINGS]
         and     A
         jr      nz,     dropRings       ; if so, drop them
 
@@ -9612,16 +9612,16 @@ hitPlayer:                                                              ;$35E5
         set     0,      [IY+Vars.scrollRingFlags]
 
         ; set flag 7 on the mob (mob death state?)
-        ld      HL,     SONIC.flags
+        ld      HL,     RAM_SONIC.flags
         set     7,      [HL]
 
         ld      HL,     $FFFA
         xor     A       ; set A to zero
-        ld      [SONIC.Yspeed+0],       A
-        ld      [SONIC.Yspeed+1],       HL
+        ld      [RAM_SONIC.Yspeed+0],   A
+        ld      [RAM_SONIC.Yspeed+1],   HL
 
         ld      A,      $60
-        ld      [D287], A
+        ld      [RAM_D287],     A
 
         res     6,      [IY+Vars.flags6]        ; turn off damage-state flag
         res     5,      [IY+Vars.flags6]        ; remove shield
@@ -9648,7 +9648,7 @@ dropRings:                                                              ;$3644
 ;-------------------------------------------------------------------------------
         ; set player's ring-count to 0
         xor     A
-        ld      [RINGS],        A
+        ld      [RAM_RINGS],    A
 
         ; find an available unused mob-slot
         call    findEmptyMob
@@ -9661,10 +9661,10 @@ dropRings:                                                              ;$3644
         ld      [IX+Mob.type],          $55     ; "make Sonic blink"?
         ld      [IX+Mob.unknown11],     $06
         ld      [IX+Mob.unknown12],     $00
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      [IX+Mob.X+0],   L
         ld      [IX+Mob.X+1],   H
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      [IX+Mob.Y+0],   L
         ld      [IX+Mob.Y+1],   H
         ld      [IX+Mob.Yspeed+0],      $00
@@ -9672,7 +9672,7 @@ dropRings:                                                              ;$3644
         ld      [IX+Mob.Ydirection],    $ff
         pop     IX
 
-@_367e: ld      HL,     SONIC.flags
+@_367e: ld      HL,     RAM_SONIC.flags
         ld      DE,     $fffc
         xor     A
 
@@ -9680,8 +9680,8 @@ dropRings:                                                              ;$3644
         jr      z,      @_1
 
         ld      DE,     $fffe
-@_1:    ld      [SONIC.Yspeed+0],       A
-        ld      [SONIC.Yspeed+1],       DE
+@_1:    ld      [RAM_SONIC.Yspeed+0],   A
+        ld      [RAM_SONIC.Yspeed+1],   DE
         bit     1,      [HL]
         jr      z,      @_2
         ld      A,      [HL]
@@ -9694,8 +9694,8 @@ dropRings:                                                              ;$3644
 @_2:    res     1,      [HL]
         xor     A
         ld      DE,     $FFFE
-@_3:    ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       DE
+@_3:    ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   DE
         res     5,      [IY+Vars.flags6]
         set     6,      [IY+Vars.flags6]
         ld      [IY+Vars.joypad],       $FF
@@ -9711,15 +9711,15 @@ dropRings:                                                              ;$3644
 
 _36be:                                                                  ;$36BE
 ;===============================================================================
-; in    IX      Address of the current mob being processed
+; in    IX              Address of the current mob being processed
 ;       TODO: could we use BC/DE as parameters instead of RAM addresses?
-;       TEMP1   An X-offset to place the explosion in the right place
-;       TEMP2   A Y-offset to place the explosion in the right place
+;       RAM_TEMP1       An X-offset to place the explosion in the right place
+;       RAM_TEMP2       A Y-offset to place the explosion in the right place
 ;-------------------------------------------------------------------------------
         ld      [IX+Mob.type],  $0A     ; change mob to explosion
 
         ; get the X-offset given in the parameter
-        ld      A,      [TEMP1]
+        ld      A,      [RAM_TEMP1]
         ld      E,      A
         ld      D,      $00
 
@@ -9731,7 +9731,7 @@ _36be:                                                                  ;$36BE
         ld      [IX+Mob.X+1],   H
 
         ; get the Y-offset given in the parameter
-        ld      A,      [TEMP2]
+        ld      A,      [RAM_TEMP2]
         ld      E,      A               ; note that D is still zero
 
         ld      L,      [IX+Mob.Y+0]
@@ -9776,7 +9776,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
         ; how wide is the floor layout?
         ; TODO: we could do this check when loading
         ; a level and store the exact label to jump-to in RAM
-        ld      A,   [LEVEL_FLOORWIDTH]
+        ld      A,      [RAM_LEVEL_FLOORWIDTH]
         cp      128
         jr      z,      @width128
         cp      64
@@ -9958,8 +9958,8 @@ updateSonicSpriteFrame:                                                 ;$37E0
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ld      DE,     [SONIC_CURRENT_FRAME]
-        ld      HL,     [SONIC_PREVIOUS_FRAME]
+        ld      DE,     [RAM_SONIC_CURRENT_FRAME]
+        ld      HL,     [RAM_SONIC_PREVIOUS_FRAME]
 
         ; has the animation advanced a frame?
         and     A                       ; ANDing A with itself resets the flags
@@ -10010,8 +10010,8 @@ updateSonicSpriteFrame:                                                 ;$37E0
         dec     E
         jp      nz,     @_1
 
-        ld      HL,     [SONIC_CURRENT_FRAME]
-        ld      [SONIC_PREVIOUS_FRAME], HL
+        ld      HL,     [RAM_SONIC_CURRENT_FRAME]
+        ld      [RAM_SONIC_PREVIOUS_FRAME],     HL
         ret
 
         ;-----------------------------------------------------------------------
@@ -10061,8 +10061,8 @@ updateSonicSpriteFrame:                                                 ;$37E0
         exx
         pop     BC
         exx
-        ld      HL,     [SONIC_CURRENT_FRAME]
-        ld      [SONIC_PREVIOUS_FRAME], HL
+        ld      HL,     [RAM_SONIC_CURRENT_FRAME]
+        ld      [RAM_SONIC_PREVIOUS_FRAME],     HL
         ret
         ;
 
@@ -10070,8 +10070,8 @@ animateFloorRing:                                                       ;$3879
 ;===============================================================================
 ; Updates the rings in the Floor Layout with their next frame of animation.
 ;-------------------------------------------------------------------------------
-        ld      DE,     [RING_CURRENT_FRAME]
-        ld      HL,     [RING_PREVIOUS_FRAME]
+        ld      DE,     [RAM_RING_CURRENT_FRAME]
+        ld      HL,     [RAM_RING_PREVIOUS_FRAME]
 
         and     A
         sbc     HL,     DE
@@ -10107,19 +10107,19 @@ animateFloorRing:                                                       ;$3879
         djnz    @loop
 
         ei
-        ld      HL,     [RING_CURRENT_FRAME]
-        ld      [RING_PREVIOUS_FRAME],  HL
+        ld      HL,     [RAM_RING_CURRENT_FRAME]
+        ld      [RAM_RING_PREVIOUS_FRAME],      HL
         ret
         ;
 
 _38b0:                                                                  ;$38B0
 ;===============================================================================
-        ld      HL,     [D2AB]
+        ld      HL,     [RAM_D2AB]
         ld      A,      L
         and     %11111000
         ld      L,      A
 
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         ld      A,      E
         and     %11111000
         ld      E,      A
@@ -10136,7 +10136,7 @@ _38b0:                                                                  ;$38B0
         ret     c
 
         ld      D,      A
-        ld      A,      [VDPSCROLL_HORZ]
+        ld      A,      [RAM_VDPSCROLL_HORZ]
         and     %11111000
         ld      E,      A
         add     HL,     DE
@@ -10150,11 +10150,11 @@ _38b0:                                                                  ;$38B0
         and     %00011111
         add     A,      A
         ld      C,      A
-        ld      HL,     [D2AD]
+        ld      HL,     [RAM_D2AD]
         ld      A,      L
         and     $F8
         ld      L,      A
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         ld      A,      E
         and     $F8
         ld      E,      A
@@ -10167,7 +10167,7 @@ _38b0:                                                                  ;$38B0
         cp      $C0
         ret     nc
         ld      D,      $00
-        ld      A,      [VDPSCROLL_VERT]
+        ld      A,      [RAM_VDPSCROLL_VERT]
         and     $F8
         ld      E,      A
         add     HL,     DE
@@ -10195,7 +10195,7 @@ _38b0:                                                                  ;$38B0
         add     HL,     BC
         ld      BC,     SMS_VRAM_SCREEN
         add     HL,     BC
-        ld      DE,     [D2AF]
+        ld      DE,     [RAM_D2AF]
         ld      B,      $02
 
 @loop:  ld      A,      L
@@ -10236,11 +10236,11 @@ detectCollisionWithSonic:                                               ;$3956
 ;===============================================================================
 ; Tests to see if the given mob has collided with Sonic.
 ;
-; in    IX      Address of the current mob being processed
-;       IY      Address of the common variables (used throughout)
-;       TEMP6   Left indent of the mob, in pixels
-;       TEMP7   Top indent of the mob, in pixels
-; out   AF      Carry flag is clear if collision, otherwise set
+; in    IX              Address of the current mob being processed
+;       IY              Address of the common variables (used throughout)
+;       RAM_TEMP6       Left indent of the mob, in pixels
+;       RAM_TEMP7       Top indent of the mob, in pixels
+; out   AF              Carry flag is clear if collision, otherwise set
 ;-------------------------------------------------------------------------------
         ; is Sonic dead? (no collision detection)
         bit     0,      [IY+Vars.scrollRingFlags]
@@ -10257,7 +10257,7 @@ detectCollisionWithSonic:                                               ;$3956
         ld      B,      $00
         add     HL,     BC
 
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
 
         ; is Sonic to the right of the mob?
         xor     A                       ; set A to 0, clearing the carry flag
@@ -10271,7 +10271,7 @@ detectCollisionWithSonic:                                               ;$3956
         ; a certain X-position but the graphic within may be indented a little
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      A,      [TEMP6]         ; get the mob's left indent
+        ld      A,      [RAM_TEMP6]     ; get the mob's left indent
         ld      C,      A
         add     HL,     BC              ; combine the two
 
@@ -10280,7 +10280,7 @@ detectCollisionWithSonic:                                               ;$3956
         ex      DE,     HL
 
         ; calculate Sonic's right edge:
-        ld      A,      [SONIC.width]
+        ld      A,      [RAM_SONIC.width]
         ld      C,      A               ; note that B is still 0
         add     HL,     BC
 
@@ -10297,7 +10297,7 @@ detectCollisionWithSonic:                                               ;$3956
         ld      C,      [IX+Mob.height]
         add     HL,     BC
 
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         xor     A                       ; set A to 0, clearing the carry flag
         sbc     HL,     DE
         ret     c                       ; return carry-set for no-collision
@@ -10306,13 +10306,13 @@ detectCollisionWithSonic:                                               ;$3956
         ; (including the indent)
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      A,      [TEMP7]
+        ld      A,      [RAM_TEMP7]
         ld      C,      A
         add     HL,     BC
 
         ex      DE,     HL
 
-        ld      A,      [SONIC.height]
+        ld      A,      [RAM_SONIC.height]
         ld      C,      A
         add     HL,     BC
         xor     A                       ; set A to 0, clearing the carry flag
@@ -10329,7 +10329,7 @@ increaseRings:                                                          ;$39AC
 ;-------------------------------------------------------------------------------
         ; add the given number to the total ring count
         ld      C,      A
-        ld      A,      [RINGS]
+        ld      A,      [RAM_RINGS]
         add     A,      C
         ld      C,      A               ; move the new total to C
 
@@ -10349,12 +10349,12 @@ increaseRings:                                                          ;$39AC
 
         ; subtract 100 rings
         sub     $A0
-        ld      [RINGS],        A
+        ld      [RAM_RINGS],    A
 
         ; add 1 to the lives count
-        ld      A,      [LIVES]
+        ld      A,      [RAM_LIVES]
         inc     A
-        ld      [LIVES],        A
+        ld      [RAM_LIVES],    A
 
         ; play the 1-up sound effect:
         ; (we can compile with, or without, sound)
@@ -10367,7 +10367,7 @@ increaseRings:                                                          ;$39AC
 @pickupRing:
         ;-----------------------------------------------------------------------
         ; update the ring total
-        ld      [RINGS],        A
+        ld      [RAM_RINGS],    A
         ; play the pickup-ring sound:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -10383,7 +10383,7 @@ increaseScore:                                                          ;$39D8
 ;       D       Hundreds to add to the score
 ;       E       Tens to add to the score
 ;-------------------------------------------------------------------------------
-        ld      HL,     SCORE_TENS      ; read the tens unit of the score
+        ld      HL,     RAM_SCORE_TENS  ; read the tens unit of the score
         ld      A,      E               ; handle the amount to add
         add     A,      [HL]            ; add the tens to the score
         daa                             ; adjust to binary-coded-decimal
@@ -10413,8 +10413,8 @@ increaseScore:                                                          ;$39D8
         ;-----------------------------------------------------------------------
 
         ; check if current score qualifies for an extra life
-        ld      HL,     SCORE_1UP
-        ld      A,    C
+        ld      HL,     RAM_SCORE_1UP
+        ld      A,      C
         cp      [HL]
         ret     c
 
@@ -10426,7 +10426,7 @@ increaseScore:                                                          ;$39D8
         ld      [HL],   A
 
         ; add an extra life
-        ld      HL,     LIVES
+        ld      HL,     RAM_LIVES
         inc     [HL]
 
         ; play extra life sound effect:
@@ -10449,7 +10449,7 @@ updateTime:                                                             ;$3A03
         ret     nz
 
         ; address of level time?
-        ld      HL,     TIME_FRAMES
+        ld      HL,     RAM_TIME_FRAMES
 
         ; is the time counting down? (special stages)
         bit     0,      [IY+Vars.timeLightningFlags]
@@ -10528,7 +10528,7 @@ updateTime:                                                             ;$3A03
 
         ; set some flags?
         ld      A,      $01
-        ld      [D289], A
+        ld      [RAM_D289],     A
         set     2,      [IY+Vars.flags9]
 
         xor     A
@@ -10970,7 +10970,7 @@ sonic_process:                                                          ;$49C8
 
         ;reduce this number until it hits 0. appears to only be set when changing
         ;direction from left to right; something to do with acceleration/skidding?
-        ld      A,      [SONIC.unknown16]
+        ld      A,      [RAM_SONIC.unknown16]
         and     A
         call    nz,     @_4ff0
 
@@ -10982,7 +10982,7 @@ sonic_process:                                                          ;$49C8
         bit     6,      [IY+Vars.flags6]
         call    nz,     @_510a
 
-        ld      A,      [D28C]
+        ld      A,      [RAM_D28C]
         and     A
         call    nz,     @_568f
 
@@ -10997,11 +10997,11 @@ sonic_process:                                                          ;$49C8
         bit     4,      [IX+Mob.flags]                     ;check mob underwater flag
         call    nz,     @drownTimer
 
-        ld      A,      [D28B]
+        ld      A,      [RAM_D28B]
         and     A
         call    nz,     @_5285
 
-        ld      A,      [D28A]
+        ld      A,      [RAM_D28A]
         and     A
         jp      nz,     @_5117
 
@@ -11017,16 +11017,16 @@ sonic_process:                                                          ;$49C8
         jp      z,      @_1
 
         ld      HL,     @_4ddd
-        ld      DE,     TEMP1
+        ld      DE,     RAM_TEMP1
         ld      BC,     $0009
         ldir
 
         ld      HL,     $0100
-        ld      [D240], HL
+        ld      [RAM_D240],     HL
         ld      HL,     $FD80
-        ld      [D242], HL
+        ld      [RAM_D242],     HL
         ld      HL,     $0010
-        ld      [D244], HL
+        ld      [RAM_D244],     HL
         jp      @_5
 
         ;-----------------------------------------------------------------------
@@ -11040,16 +11040,16 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_3
 
 @_2:    ld      HL,     @_4dcb
-        ld      DE,     TEMP1
+        ld      DE,     RAM_TEMP1
         ld      BC,     $0009
         ldir
 
         ld      HL,     $0300
-        ld      [D240], HL
+        ld      [RAM_D240],     HL
         ld      HL,     $FC80
-        ld      [D242], HL
+        ld      [RAM_D242],     HL
         ld      HL,     $0038
-        ld      [D244], HL
+        ld      [RAM_D244],     HL
         ld      HL,     [$DC0C]
         ld      [$DC0A],        HL
         jp      @_5
@@ -11058,36 +11058,36 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_2
 
         ld      HL,     @_4dd4
-        ld      DE,     TEMP1
+        ld      DE,     RAM_TEMP1
         ld      BC,     $0009
         ldir
 
         ld      HL,     $0C00
-        ld      [D240], HL
+        ld      [RAM_D240],     HL
         ld      HL,     $FC80
-        ld      [D242], HL
+        ld      [RAM_D242],     HL
         ld      HL,     $0038
-        ld      [D244], HL
+        ld      [RAM_D244],     HL
         ld      HL,     [$DC0C]
         ld      [$DC0A],        HL
         jp      @_5
 
 @_4:    ld      HL,     @_4de6
-        ld      DE,     TEMP1
+        ld      DE,     RAM_TEMP1
         ld      BC,     $0009
         ldir
 
         ld      HL,     $0600
-        ld      [D240], HL
+        ld      [RAM_D240],     HL
         ld      HL,     $FC80
-        ld      [D242], HL
+        ld      [RAM_D242],     HL
         ld      HL,     $0038
-        ld      [D244], HL
+        ld      [RAM_D244],     HL
         ld      HL,     [$DC0C]
         inc     HL
         ld      [$DC0A],        HL
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000011
         call    z,      @_4fec
 
@@ -11103,9 +11103,9 @@ sonic_process:                                                          ;$49C8
         ;handle collision with tile underneath Sonic:
         ;-----------------------------------------------------------------------
 
-        ld      A, 15
+        ld      A,                      15
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
 
         ;$3F9ED =
         ;0010, 00C4, 0154, 01F4, 02B4, 0374, 044C, 04CC
@@ -11121,7 +11121,7 @@ sonic_process:                                                          ;$49C8
         ld      D, 0
 
         ;get the solidity index for the current level
-        ld      A,     [LEVEL_SOLIDITY]
+        ld      A,     [RAM_LEVEL_SOLIDITY]
         ;double it to look it up in a list of pointers (2 bytes each)
         add     A,     A
         ;transfer it into HL so as to add it to the pointer table address
@@ -11161,9 +11161,9 @@ sonic_process:                                                          ;$49C8
         ld      DE,    @callback
 
         ;switch back to the regular bank layout (where the mob code is)
-        ld      A, 2
+        ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
-        ld      [SLOT2],        A
+        ld      [RAM_SLOT2],            A
 
         ;keep a copy of the callback address and jump to the specific solidity routine for the tile under Sonic
         push    DE
@@ -11172,11 +11172,11 @@ sonic_process:                                                          ;$49C8
 @callback:
         ;has Sonic fallen out of the level?
         ;-----------------------------------------------------------------------
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0024           ; height of Sonic?
         add     HL,     DE
         ex      DE,     HL
-        ld      HL,     [LEVEL_BOTTOM]
+        ld      HL,     [RAM_LEVEL_BOTTOM]
         ld      BC,     $00C0           ; height of the screen
         add     HL,     BC
         xor     A       ; set A to zero, clearing the carry flag
@@ -11192,20 +11192,20 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_7                                     ;skip the idle timer update
 
         ;is player moving left or right?
-        ld      DE,     [SONIC.Xspeed]                          ;get the horizontal speed
+        ld      DE,     [RAM_SONIC.Xspeed]                          ;get the horizontal speed
         ld      A,      E                                       ;shift E into A for next instruction
         or      D                                               ;combine E & D
         jr      nz,     @_7                                     ;if it's not zero, skip
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rlca
         jr      nc,     @_7
 
-        ld      HL,     [IDLE_TIMER]
+        ld      HL,     [RAM_IDLE_TIMER]
         inc     HL
 
         ;update the idle timer
-@_7:    ld      [IDLE_TIMER],    HL
+@_7:    ld      [RAM_IDLE_TIMER],       HL
 
         ;-----------------------------------------------------------------------
 
@@ -11213,7 +11213,7 @@ sonic_process:                                                          ;$49C8
         call    nz,     @_50e8
 
         ld      [IX+Mob.unknown14], $05
-        ld      HL,     [IDLE_TIMER]
+        ld      HL,     [RAM_IDLE_TIMER]
         ld      DE,     IDLE_TIME       ; idle time until waiting animation
         and     A                       ; clear the carry flag for below
         sbc     HL,    DE
@@ -11237,14 +11237,14 @@ sonic_process:                                                          ;$49C8
         jr      z,      @_8
 
         ;falling?
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $FFF8
         add     HL,     DE
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],  HL
 
 @_8:    ld      [IX+Mob.width],         24
         ld      [IX+Mob.height],        32
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      B,      [IX+Mob.Xdirection]
         ld      C,      $00
         ld      E,      C
@@ -11267,7 +11267,7 @@ sonic_process:                                                          ;$49C8
         bit     7,      B
         jr      nz,     @_9
 
-        ld      DE,     [TEMP4]
+        ld      DE,     [RAM_TEMP4]
         ld      A,      E
         cpl
         ld      A,      D
@@ -11279,14 +11279,14 @@ sonic_process:                                                          ;$49C8
 
         push    HL
         push    DE
-        ld      DE,     [D240]
+        ld      DE,     [RAM_D240]
         xor     A
         sbc     HL,     DE
         pop     DE
         pop     HL
         jr      c,      @_4b1b
 
-        ld      DE,     [TEMP1]
+        ld      DE,     [RAM_TEMP1]
         ld      A,      E
         cpl
         ld      E,      A
@@ -11295,13 +11295,13 @@ sonic_process:                                                          ;$49C8
         ld      D,      A
         inc     DE
         ld      C,      $FF
-        ld      A,      [D216]
+        ld      A,      [RAM_D216]
         ld      [IX+Mob.unknown14], A
         jp      @_4b1b
 
         ;-----------------------------------------------------------------------
 
-@_9:    ld      DE,      [TEMP4]
+@_9:    ld      DE,      [RAM_TEMP4]
         ld      C,      $00
 
         push    HL
@@ -11313,15 +11313,15 @@ sonic_process:                                                          ;$49C8
         cpl
         ld      H,      A
         inc     HL
-        ld      DE,     [D240]
+        ld      DE,     [RAM_D240]
         xor     A
         sbc     HL,     DE
         pop     DE
         pop     HL
         jr      c,      @_4b1b
 
-        ld      DE,     [TEMP1]
-        ld      A,      [D216]
+        ld      DE,     [RAM_TEMP1]
+        ld      A,      [RAM_D216]
         ld      [IX+Mob.unknown14], A
 @_4b1b:
         ld      A,      B
@@ -11333,7 +11333,7 @@ sonic_process:                                                          ;$49C8
         ld      C,      A
         jp      p,      @_11
 
-        ld      A,      [SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xspeed]
         or      [IX+Mob.Xspeed+1]
         or      [IX+Mob.Xdirection]
         jr      z,      @_11
@@ -11353,10 +11353,10 @@ sonic_process:                                                          ;$49C8
         ld      L,      C
         ld      H,      C
 @_11:   ld      A,                      C
-        ld      [SONIC.Xspeed],         HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
 @_4b49:
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      B,      [IX+Mob.Ydirection]
         ld      C,      $00
         ld      E,      C
@@ -11365,7 +11365,7 @@ sonic_process:                                                          ;$49C8
         call    nz,     @_50af
         bit     0,      [IX+Mob.flags]
         jp      nz,     @_5407
-        ld      A,      [D28E]
+        ld      A,      [RAM_D28E]
         and     A
         jr      nz,     @_12
         bit     7,      [IX+Mob.flags]
@@ -11379,17 +11379,17 @@ sonic_process:                                                          ;$49C8
 @_12:   bit     5,      [IY+Vars.joypad]
         jr      nz,     @_14
 @_4b7f:
-        ld      A,      [D28E]
+        ld      A,      [RAM_D28E]
         and     A
         call    z,      @_509d
-        ld      HL,     [D242]
+        ld      HL,     [RAM_D242]
         ld      B,      $FF
         ld      C,      $00
         ld      E,      C
         ld      D,      C
-        ld      A,      [D28E]
+        ld      A,      [RAM_D28E]
         dec     A
-        ld      [D28E], A
+        ld      [RAM_D28E],     A
         set     2,      [IX+Mob.flags]
         jp      @_17
 
@@ -11402,15 +11402,15 @@ sonic_process:                                                          ;$49C8
 
 @_14:   set     3,      [IX+Mob.flags]
 @_15:   xor     A
-        ld      [D28E], A
+        ld      [RAM_D28E],     A
 @_4bac:
         bit     7,      H
         jr      nz,     @_16
-        ld      A,      [TEMP7]
+        ld      A,      [RAM_TEMP7]
         cp      H
         jr      z,      @_17
         jr      c,      @_17
-@_16:   ld      DE,      [D244]
+@_16:   ld      DE,      [RAM_D244]
         ld      C,      $00
 
 @_17:   bit     0,      [IY+Vars.flags6]
@@ -11434,8 +11434,8 @@ sonic_process:                                                          ;$49C8
 @_18:   add     HL,     DE
         ld      A,      B
         adc     A,      C
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
         push    HL
         ld      A,      E
         cpl
@@ -11448,8 +11448,8 @@ sonic_process:                                                          ;$49C8
         ld      DE,     $0001
         add     HL,     DE
         adc     A,      $00
-        ld      [D2E6], HL
-        ld      [D2E8], A
+        ld      [RAM_D2E6],     HL
+        ld      [RAM_D2E8],     A
         pop     HL
         bit     2,      [IX+Mob.flags]
         call    nz,     @_5280
@@ -11468,7 +11468,7 @@ sonic_process:                                                          ;$49C8
         and     A
         sbc     HL,     DE
         jr      nc,     @_21
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         and     $85
         jr      nz,     @_21
         bit     7,      [IX+Mob.Ydirection]
@@ -11484,14 +11484,14 @@ sonic_process:                                                          ;$49C8
         cp      $79
         call    nc,     @_4def
 @_4c39:
-        ld      A,      [D28C]
+        ld      A,      [RAM_D28C]
         and     A
         call    nz,     @_51b3
         bit     6,      [IY+Vars.flags6]
         call    nz,     @_51bc
         bit     2,      [IY+Vars.unknown0]
         call    nz,     @_51dd
-        ld      A,      [SONIC.unknown14]
+        ld      A,      [RAM_SONIC.unknown14]
         cp      $0A
         call    z,      @_51f3
         ld      L,      [IX+Mob.unknown14]
@@ -11503,11 +11503,11 @@ sonic_process:                                                          ;$49C8
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-        ld      [SONIC.unknown11],      DE
-        ld      A,      [D2DF]
+        ld      [RAM_SONIC.unknown11],  DE
+        ld      A,      [RAM_D2DF]
         sub     C
         call    nz,     @_521f
-        ld      A,      [SONIC.unknown13]
+        ld      A,      [RAM_SONIC.unknown13]
 
 @_22:   ld      H,      $00
         ld      L,      A
@@ -11517,7 +11517,7 @@ sonic_process:                                                          ;$49C8
         jp      p,      @_23
         inc     HL
         ld      A,      [HL]
-        ld      [SONIC.unknown13],      A
+        ld      [RAM_SONIC.unknown13],  A
         jp      @_22
 
         ;-----------------------------------------------------------------------
@@ -11530,7 +11530,7 @@ sonic_process:                                                          ;$49C8
         ld      BC,     $7000           ; immediate $7000 or label?
 @_24:   bit     5,      [IY+Vars.flags6]
         call    nz,     @_5206
-        ld      A,      [D302]
+        ld      A,      [RAM_D302]
         and     A
         call    nz,     @_4e48
         ld      A,      D
@@ -11545,21 +11545,21 @@ sonic_process:                                                          ;$49C8
         add     A,      D
         ld      H,      A
         add     HL,     BC
-        ld      [SONIC_CURRENT_FRAME],  HL
+        ld      [RAM_SONIC_CURRENT_FRAME],      HL
         ld      HL,     @_591d
 
         bit     0,      [IY+Vars.flags6]
         call    nz,     @_520f
 
-        ld      A,      [SONIC.unknown14]
+        ld      A,      [RAM_SONIC.unknown14]
         cp      $13
         call    z,      @_5213
-        ld      A,      [D302]
+        ld      A,      [RAM_D302]
         and     A
         call    nz,     @_4e4d
-        ld      [SONIC.spriteLayout],   HL
+        ld      [RAM_SONIC.spriteLayout],       HL
         ld      C,      $10
-        ld      A,      [SONIC.Xspeed+1]
+        ld      A,      [RAM_SONIC.Xspeed+1]
         and     A
         jp      p,      @_25
         neg
@@ -11567,9 +11567,9 @@ sonic_process:                                                          ;$49C8
 @_25:   cp      $10
         jr      c,      @_26
         ld      A,      C
-        ld      [SONIC.Xspeed+1],       A
+        ld      [RAM_SONIC.Xspeed+1],   A
 @_26:   ld      C,      $10
-        ld      A,      [SONIC.Yspeed+1]
+        ld      A,      [RAM_SONIC.Yspeed+1]
         and     A
         jp      p,      @_27
         neg
@@ -11577,53 +11577,53 @@ sonic_process:                                                          ;$49C8
 @_27:   cp      $10
         jr      c,      @_28
         ld      A,      C
-        ld      [SONIC.Yspeed+1],       A
-@_28:   ld      DE,      [SONIC.Y]
+        ld      [RAM_SONIC.Yspeed+1],   A
+@_28:   ld      DE,      [RAM_SONIC.Y]
         ld      HL,     $0010
         and     A
         sbc     HL,     DE
         jr      c,      @_29
         add     HL,     DE
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],  HL
 @_29:   bit     7,      [IY+Vars.flags6]
         call    nz,     @_5224
         bit     0,      [IY+Vars.unknown0]
         call    nz,     @_4e8d
-        ld      A,      [D2E1]
+        ld      A,      [RAM_D2E1]
         and     A
         call    nz,     @_5231
-        ld      A,      [D321]
+        ld      A,      [RAM_D321]
         and     A
         call    nz,     @_4e51
         bit     1,      [IY+Vars.flags6]
         jr      nz,     @_31
-        ld      HL,     [LEVEL_LEFT]
+        ld      HL,     [RAM_LEVEL_LEFT]
         ld      BC,     $0008
         add     HL,     BC
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      nc,     @_30
-        ld      [SONIC.X],      DE
-        ld      A,      [SONIC.Xdirection]
+        ld      [RAM_SONIC.X],  DE
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      p,      @_31
 
         xor     A                                          ;(set A to zero)
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   A
+        ld      [RAM_SONIC.Xdirection], A
         jp      @_31
 
         ;-----------------------------------------------------------------------
 
-@_30:   ld      HL,      [LEVEL_RIGHT]
+@_30:   ld      HL,     [RAM_LEVEL_RIGHT]
         ld      DE,     $00F8                                   ;248 -- screen width less 8?
         add     HL,     DE
 
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      C,      $18
         add     HL,     BC
         and     A
@@ -11632,24 +11632,24 @@ sonic_process:                                                          ;$49C8
         ex      DE,     HL
         scf
         sbc     HL,     BC
-        ld      [SONIC.X],      HL
-        ld      A,      [SONIC.Xdirection]
+        ld      [RAM_SONIC.X],  HL
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      m,      @_31
-        ld      HL,     [SONIC.Xspeed+1]
+        ld      HL,     [RAM_SONIC.Xspeed+1]
         or      H
         or      L
         jr      z,      @_31
 
         xor     A                                          ;(set A to 0)
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   A
+        ld      [RAM_SONIC.Xdirection], A
 
-@_31:   ld      A,               [SONIC.flags]
-        ld      [D2B9], A
-        ld      A,      [SONIC.unknown14]
-        ld      [D2DF], A
+@_31:   ld      A,      [RAM_SONIC.flags]
+        ld      [RAM_D2B9],     A
+        ld      A,      [RAM_SONIC.unknown14]
+        ld      [RAM_D2DF],     A
         ld      D,      $01
         ld      C,      $30
         cp      $01
@@ -11661,9 +11661,9 @@ sonic_process:                                                          ;$49C8
         inc     [IX+Mob.unknown13]
         ret
 
-@_32:   ld      A,       [D2E0]
+@_32:   ld      A,      [RAM_D2E0]
         ld      B,      A
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         bit     7,      H
         jr      z,      @_33
         ld      A,      L
@@ -11677,16 +11677,16 @@ sonic_process:                                                          ;$49C8
         rr      L
         ld      A,      L
         add     A,      B
-        ld      [D2E0], A
+        ld      [RAM_D2E0],     A
         ld      A,      H
         adc     A,      D
         adc     A,      [IX+Mob.unknown13]
-        ld      [SONIC.unknown13],      A
+        ld      [RAM_SONIC.unknown13],  A
         cp      C
         ret     c
 
         sub     C
-        ld      [SONIC.unknown13],      A
+        ld      [RAM_SONIC.unknown13],  A
 
         ret
 
@@ -11702,8 +11702,8 @@ sonic_process:                                                          ;$49C8
 
 @_4def: ex      DE,     HL                                              ;$4DEF
 
-        ld      HL,     [SONIC.Y]
-        ld      BC,     [CAMERA_Y]
+        ld      HL,     [RAM_SONIC.Y]
+        ld      BC,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     BC
         ret     c
@@ -11713,7 +11713,7 @@ sonic_process:                                                          ;$49C8
         sbc     HL,     BC
         ret     c
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      BC,     $000C
         add     HL,     BC
         ld      A,      [DE]
@@ -11733,24 +11733,24 @@ sonic_process:                                                          ;$49C8
         ld      A,      L
         and     $F0
         ld      L,      A
-        ld      [D2AB], HL
-        ld      [D31D], HL
+        ld      [RAM_D2AB],     HL
+        ld      [RAM_D31D],     HL
         ld      A,      C
         xor     B
         ld      [DE],   A
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      BC,     $0008
         add     HL,     BC
         ld      A,      L
         and     $E0
         add     A,      $08
         ld      L,      A
-        ld      [D2AD], HL
-        ld      [D31F], HL
+        ld      [RAM_D2AD],     HL
+        ld      [RAM_D31F],     HL
         ld      A,      $06
-        ld      [D321], A
+        ld      [RAM_D321],     A
         ld      HL,     @_595d
-        ld      [D2AF], HL
+        ld      [RAM_D2AF],     HL
 
         ;add one ring to the ring count
         ld      A,      $01
@@ -11772,24 +11772,24 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_4e51: dec     A                                                       ;$4E51
-        ld      [D321], A
-        ld      HL,     [D31D]
-        ld      [TEMP1],        HL
-        ld      HL,     [D31F]
-        ld      [TEMP3],        HL
+        ld      [RAM_D321],     A
+        ld      HL,     [RAM_D31D]
+        ld      [RAM_TEMP1],    HL
+        ld      HL,     [RAM_D31F]
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $FFFE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         cp      $03
         jr      c,      @_34
 
         ld      A,      $B2
         call    _3581
         ld      HL,     $0008
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $0002
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 @_34:   ld      A,      $5A
         call    _3581
         ret
@@ -11801,17 +11801,17 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_4e8d: ld      HL,              [SONIC.X]                               ;$4E8D
-        ld      [TEMP1],        HL
-        ld      HL,     [SONIC.Y]
-        ld      [TEMP3],        HL
-        ld      HL,     D2F3
-        ld      A,      [FRAMECOUNT]
+@_4e8d: ld      HL,     [RAM_SONIC.X]                                   ;$4E8D
+        ld      [RAM_TEMP1],    HL
+        ld      HL,     [RAM_SONIC.Y]
+        ld      [RAM_TEMP3],    HL
+        ld      HL,     RAM_D2F3
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         rrca
         jr      nc,     @_35
-        ld      HL,     D2F7
-@_35:   ld      DE,     TEMP4
+        ld      HL,     RAM_D2F7
+@_35:   ld      DE,     RAM_TEMP4
         ldi
         ldi
         ldi
@@ -11821,15 +11821,15 @@ sonic_process:                                                          ;$49C8
         jr      nc,     @_36
         ld      A,      $96
 @_36:   call    _3581
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         ld      C,      A
         and     %00000111
         ret     nz
         ld      B,      $02
-        ld      HL,     D2F3
+        ld      HL,     RAM_D2F3
         bit     3,      C
         jr      z,      @_37
-        ld      HL,     D2F7
+        ld      HL,     RAM_D2F7
 @_37:   push    HL
         call    _0625
         pop     HL
@@ -11844,17 +11844,17 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
         ;is Sonic moving?
-@_4edd: ld      HL,     [SONIC.Xspeed]                                  ;$4EDD
+@_4edd: ld      HL,     [RAM_SONIC.Xspeed]                                  ;$4EDD
         ld      A,      H
         or      L
         ret     nz
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rlca
         ret     nc
 
         ld      [IX+Mob.unknown14], $0C
-        ld      DE,     [D2B7]
+        ld      DE,     [RAM_D2B7]
         bit     7,      D
         jr      nz,     @_38
 
@@ -11863,7 +11863,7 @@ sonic_process:                                                          ;$49C8
         sbc     HL,     DE
         ret     c
 @_38:   inc     DE
-        ld      [D2B7], DE
+        ld      [RAM_D2B7],     DE
 
         ret
 
@@ -11872,13 +11872,13 @@ sonic_process:                                                          ;$49C8
 @_4f01: res     1,      [IX+Mob.flags]                                  ;$4F01
         bit     7,      B
         jr      nz,     @_39
-        ld      DE,     [TEMP1]
+        ld      DE,     [RAM_TEMP1]
         ld      C,      $00
         ld      [IX+Mob.unknown14], $01
         push    HL
         exx
         pop     HL
-        ld      DE,     [D240]
+        ld      DE,     [RAM_D240]
         xor     A
         sbc     HL,     DE
         exx
@@ -11887,8 +11887,8 @@ sonic_process:                                                          ;$49C8
         ld      E,      A
         ld      D,      A
         ld      C,      A
-        ld      HL,     [D240]
-        ld      A,      [D216]
+        ld      HL,     [RAM_D240]
+        ld      A,      [RAM_D216]
         ld      [IX+Mob.unknown14], A
         jp      @_4b1b
 
@@ -11908,7 +11908,7 @@ sonic_process:                                                          ;$49C8
         and     A
         sbc     HL,     DE
         pop     HL
-        ld      DE,     [TEMP3]
+        ld      DE,     [RAM_TEMP3]
         ld      C,      $00
         jp      nc,     @_4b1b
         res     1,      [IX+Mob.flags]
@@ -11924,7 +11924,7 @@ sonic_process:                                                          ;$49C8
         jr      z,      @_40
         bit     7,      B
         jr      z,      @_4fa6
-@_40:   ld      DE,      [TEMP1]
+@_40:   ld      DE,     [RAM_TEMP1]
         ld      A,      E
         cpl
         ld      E,      A
@@ -11945,7 +11945,7 @@ sonic_process:                                                          ;$49C8
         cpl
         ld      H',     A
         inc     HL'
-        ld      DE',    [D240]
+        ld      DE',    [RAM_D240]
         xor     A
         sbc     HL',    DE'
         exx
@@ -11954,7 +11954,7 @@ sonic_process:                                                          ;$49C8
         ld      E,      A
         ld      D,      A
         ld      C,      A
-        ld      HL,     [D240]
+        ld      HL,     [RAM_D240]
         ld      A,      L
         cpl
         ld      L,      A
@@ -11963,7 +11963,7 @@ sonic_process:                                                          ;$49C8
         ld      H,      A
         inc     HL
         ld      B,      $FF
-        ld      A,      [D216]
+        ld      A,      [RAM_D216]
         ld      [IX+Mob.unknown14], A
         jp      @_4b1b
 
@@ -11972,7 +11972,7 @@ sonic_process:                                                          ;$49C8
 @_4fa6:
         res     1,      [IX+Mob.flags]
         ld      [IX+Mob.unknown14], $0A
-        ld      DE,     [TEMP3]
+        ld      DE,     [RAM_TEMP3]
         ld      A,      E
         cpl
         ld      E,      A
@@ -12000,7 +12000,7 @@ sonic_process:                                                          ;$49C8
 @_4fd3: bit     0,      [IX+Mob.flags]                                  ;$4FD3
         ret     nz
 
-        ld      HL,     [D2B7]
+        ld      HL,     [RAM_D2B7]
         ld      A,      H
         or      L
         ret     z
@@ -12009,11 +12009,11 @@ sonic_process:                                                          ;$49C8
         jr      z,      @_41
 
         inc     HL
-        ld      [D2B7], HL
+        ld      [RAM_D2B7],     HL
         ret
 
 @_41:   dec     HL
-        ld      [D2B7], HL
+        ld      [RAM_D2B7],     HL
 
         ret
 
@@ -12025,16 +12025,16 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_4ff0: dec     A                                                       ;$4FF0
-        ld      [SONIC.unknown16],      A
+        ld      [RAM_SONIC.unknown16],  A
         ret
 
         ;-----------------------------------------------------------------------
 
-@_4ff5: ld      A,      [FRAMECOUNT]                                    ;$4FF5
+@_4ff5: ld      A,      [RAM_FRAMECOUNT]                                    ;$4FF5
         and     %00000011
         ret     nz
 
-        ld      HL,     D28D
+        ld      HL,     RAM_D28D
         dec     [HL]
         ret     nz
 
@@ -12042,7 +12042,7 @@ sonic_process:                                                          ;$49C8
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      [LEVEL_MUSIC]
+                ld      A,      [RAM_LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -12051,20 +12051,20 @@ sonic_process:                                                          ;$49C8
 @drownTimer:                                                            ;$5009
         ;-----------------------------------------------------------------------
         ;check for specific solidity data for this level
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03                                             ;labyrinth?
         ret     nz
 
         ;is this labyrinth act 3?
         ;TODO: the no-drowning effect of Labyrinth Act 3 should be a level header flag, not hard-coded like this
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $0B
         ret     z                                               ;yes? not applicable
 
         ;increase drown timer...
-        ld      HL,     [D29B]
+        ld      HL,     [RAM_D29B]
         inc     HL
-        ld      [D29B], HL
+        ld      [RAM_D29B],     HL
 
         ld      DE,     $0300
         and     A
@@ -12082,7 +12082,7 @@ sonic_process:                                                          ;$49C8
         set     3,      [IY+Vars.unknown0]
         set     0,      [IY+Vars.scrollRingFlags]         ;mark player as dead
         ld      A,      $C0
-        ld      [D287], A
+        ld      [RAM_D287],     A
 
         ;drowned!
         ; (we can compile with, or without, sound)
@@ -12101,13 +12101,13 @@ sonic_process:                                                          ;$49C8
 @_42:   ld      E,      A
         add     A,      A
         add     A,      $80
-        ld      [LAYOUT_BUFFER],        A
+        ld      [RAM_LAYOUT_BUFFER],    A
         ld      A,      $FF
-        ld      [LAYOUT_BUFFER+1],      A
+        ld      [RAM_LAYOUT_BUFFER+1],  A
         ld      D,      $00
         ld      HL,     @_5097
         add     HL,     DE
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     [HL]
         jr      nz,     @_43
 
@@ -12117,26 +12117,26 @@ sonic_process:                                                          ;$49C8
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-@_43:   ld      A,       [FRAMECOUNT]
+@_43:   ld      A,      [RAM_FRAMECOUNT]
         rrca
         ret     nc
 
-        ld      HL,     [SONIC.X]
-        ld      DE,     [CAMERA_X]
+        ld      HL,     [RAM_SONIC.X]
+        ld      DE,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         ld      A,      L
         add     A,      $08
         ld      C,      A
-        ld      HL,     [SONIC.Y]
-        ld      DE,     [CAMERA_Y]
+        ld      HL,     [RAM_SONIC.Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         ld      A,      L
         add     A,      $EC
         ld      B,      A
         ld      HL,     $D03C
-        ld      DE,     LAYOUT_BUFFER
+        ld      DE,     RAM_LAYOUT_BUFFER
         call    layoutSpritesHorizontal
 
         ret
@@ -12149,7 +12149,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_509d: ld      A,      $10                                             ;$509D
-        ld      [D28E], A
+        ld      [RAM_D28E],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -12161,15 +12161,15 @@ sonic_process:                                                          ;$49C8
         ;--- UNUSED! (8 bytes) -----------------------------------------------------------------------------------------
 
         xor     A                                                       ;$50A6
-        ld      [SONIC.Xsubpixel],      A
-        ld      [SONIC.X],      DE
+        ld      [RAM_SONIC.Xsubpixel],  A
+        ld      [RAM_SONIC.X],          DE
         ret
 
         ;-----------------------------------------------------------------------
 
 @_50af: exx                                                             ;$50AF
-        ld      HL',    [SONIC.Y]
-        ld      [D2D9], HL
+        ld      HL',    [RAM_SONIC.Y]
+        ld      [RAM_D2D9],     HL
         exx
         bit     2,      [IX+Mob.flags]
         ret     z
@@ -12192,7 +12192,7 @@ sonic_process:                                                          ;$49C8
         ;is Sonic moving?
         set     0,      [IX+Mob.flags]
 
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      A,      L
         or      H
         jr      z,      @_44
@@ -12213,14 +12213,14 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_50e8: ld      HL,     [D2DC]                                          ;$50E8
-        ld      DE,     [SONIC.Y]
+@_50e8: ld      HL,     [RAM_D2DC]                                          ;$50E8
+        ld      DE,     [RAM_SONIC.Y]
         and     A
         sbc     HL,     DE
         jp      c,      @_55a8
 
         ld      HL,     $0000
-        ld      [D29B], HL
+        ld      [RAM_D29B],     HL
 
         res     4,      [IX+Mob.flags]                     ;mob not underwater
         ret
@@ -12240,16 +12240,16 @@ sonic_process:                                                          ;$49C8
 @_510a: ; clear joypad input                                            ;$510A
         ld      [IY+Vars.joypad],  $FF
 
-        ld      A,        [SONIC.flags]
+        ld      A,        [RAM_SONIC.flags]
         and     %11111010
-        ld      [SONIC.flags],  A
+        ld      [RAM_SONIC.flags],      A
 
         ret
 
         ;-----------------------------------------------------------------------
 
 @_5117: dec     A                                                       ;$5117
-        ld      [D28A], A
+        ld      [RAM_D28A],     A
         jr      z,      @_46
         cp      $14
         jr      c,      @_45
@@ -12257,10 +12257,10 @@ sonic_process:                                                          ;$49C8
         xor     A
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
-        ld      [SONIC.Yspeed+0],       A
-        ld      [SONIC.Yspeed+1],       HL
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
+        ld      [RAM_SONIC.Yspeed+0],   A
+        ld      [RAM_SONIC.Yspeed+1],   HL
 
         ld      [IX+Mob.unknown14], $0F
         jp      @_4c39
@@ -12273,7 +12273,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_46:   ld      HL,      [D2D5]
+@_46:   ld      HL,     [RAM_D2D5]
         ld      B,      [HL]
         inc     HL
         ld      C,      [HL]
@@ -12282,14 +12282,14 @@ sonic_process:                                                          ;$49C8
         and     A
         jr      z,      @_49
         jp      m,      @_47
-        ld      [D2D3], A
+        ld      [RAM_D2D3],     A
         set     4,      [IY+Vars.flags6]
         jr      @_48
 
 @_47:   set     2,      [IY+Vars.unknown_0D]
 
 @_48:   ld      A,      $01
-        ld      [D289], A
+        ld      [RAM_D289],     A
         ret
 
 @_49:   ld      A,      B
@@ -12303,7 +12303,7 @@ sonic_process:                                                          ;$49C8
         ld      L,      A
         ld      DE,     $0008
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],  HL
         ld      A,      C
         ld      H,      $00
         add     A,      A
@@ -12317,23 +12317,23 @@ sonic_process:                                                          ;$49C8
         add     A,      A
         rl      H
         ld      L,      A
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],  HL
 
         xor     A
-        ld      [SONIC.Xsubpixel],      A
-        ld      [SONIC.Ysubpixel],      A
+        ld      [RAM_SONIC.Xsubpixel],  A
+        ld      [RAM_SONIC.Ysubpixel],  A
         ret
 
         ;-----------------------------------------------------------------------
 
 @_5193: xor     A       ;set A to 0                                     ;$5319
-        ld      L, A
-        ld      H, A
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A                  ;set "not jumping"
+        ld      L,      A
+        ld      H,      A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A                  ;set "not jumping"
 
         ld      [IX+Mob.unknown14], $16
-        ld      A,      [SONIC.unknown13]
+        ld      A,      [RAM_SONIC.unknown13]
         cp      $12
         jp      c,      @_4c39
 
@@ -12344,7 +12344,7 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_51b3: dec     A                                                       ;$51B3
-        ld      [D28C], A
+        ld      [RAM_D28C],     A
         ld      [IX+Mob.unknown14], $11
         ret
 
@@ -12362,19 +12362,19 @@ sonic_process:                                                          ;$49C8
         res     6,      [IY+Vars.flags6]
 
         xor     A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   A
+        ld      [RAM_SONIC.Xdirection], A
 
         ret
 
         ;-----------------------------------------------------------------------
 
-@_51dd: ld      A,      [SONIC.flags]                                   ;$51DD
+@_51dd: ld      A,      [RAM_SONIC.flags]                                   ;$51DD
         and     $FA
-        ld      [SONIC.flags],  A
-        ld      [IX+Mob.unknown14], $14
-        ld      HL,     D2FB
+        ld      [RAM_SONIC.flags],      A
+        ld      [IX+Mob.unknown14],     $14
+        ld      HL,     RAM_D2FB
         dec     [HL]
         ret     nz
 
@@ -12383,7 +12383,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-@_51f3: ld      A,       [SONIC.unknown16]                              ;$51F3
+@_51f3: ld      A,      [RAM_SONIC.unknown16]                              ;$51F3
         and     A
         ret     nz
 
@@ -12397,13 +12397,13 @@ sonic_process:                                                          ;$49C8
         .ENDIF
 
         ld      A,      $3C
-        ld      [SONIC.unknown16],      A
+        ld      [RAM_SONIC.unknown16],  A
         ret
 
         ;-----------------------------------------------------------------------
 
         ; every other frame...                                          ;$5206
-@_5206: ld      A,       [FRAMECOUNT]
+@_5206: ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         ret     nz
 
@@ -12436,7 +12436,7 @@ sonic_process:                                                          ;$49C8
 @_5224: bit     4,      [IX+Mob.flags]                                  ;$5224
         ret     z
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     A
         call    z,      _91eb                                ;do this every 256 frames...?
 
@@ -12445,28 +12445,28 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_5231: dec     A                                                       ;$5231
-        ld      [D2E1], A
+        ld      [RAM_D2E1],     A
         cp      $06
         jr      c,      @_51
 
         cp      $0A
         ret     c
 
-@_51:   ld      A,       [IY+Vars.spriteUpdateCount]
-        ld      HL,[SPRITETABLE_ADDR]                    ;get current sprite-table address
+@_51:   ld      A,      [IY+Vars.spriteUpdateCount]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]                    ;get current sprite-table address
 
         push    AF                                      ;remember no. of sprite updates pending
         push    HL                                         ;remember current sprite-table address
         ld      HL,     RAM_SPRITETABLE ; load the game's main sprite table
-        ld      [SPRITETABLE_ADDR],     HL                 ;and set the pointer to that
+        ld      [RAM_SPRITETABLE_ADDR], HL                 ;and set the pointer to that
 
-        ld      DE,     [CAMERA_Y]
-        ld      HL,     [D2E4]
+        ld      DE,     [RAM_CAMERA_Y]
+        ld      HL,     [RAM_D2E4]
         and     A
         sbc     HL,     DE
         ex      DE,     HL
-        ld      BC,     [CAMERA_X]
-        ld      HL,     [D2E2]
+        ld      BC,     [RAM_CAMERA_X]
+        ld      HL,     [RAM_D2E2]
         and     A
         sbc     HL,     BC
         ld      BC,     @_526e                                  ;address of sprite layout
@@ -12475,8 +12475,8 @@ sonic_process:                                                          ;$49C8
         pop     HL
         pop     AF
 
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      [IY+Vars.spriteUpdateCount],       A
+        ld      [RAM_SPRITETABLE_ADDR],         HL
+        ld      [IY+Vars.spriteUpdateCount],    A
         ret
 
         ;-----------------------------------------------------------------------
@@ -12493,12 +12493,12 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_5285: dec     A                                                       ;$5285
-        ld      [D28B], A
+        ld      [RAM_D28B],     A
         ret     nz
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,      [LEVEL_MUSIC]
+                ld      A,      [RAM_LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -12513,14 +12513,14 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
 
 @_529c: ld      [IY+Vars.joypad],       $FB                             ;$529C
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      DE,     $1B60
         and     A
         sbc     HL,     DE
         ret     nc
 
         ld      [IY+Vars.joypad],  $FF
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      A,      L
         or      H
         ret     nz
@@ -12530,7 +12530,7 @@ sonic_process:                                                          ;$49C8
         pop     HL
         set     1,      [IX+Mob.flags]
         ld      [IX+Mob.unknown14], $18
-        ld      HL,     D2FE
+        ld      HL,     RAM_D2FE
 
         bit     0,      [IY+Vars.unknown_0D]
         jr      nz,     @_52
@@ -12547,13 +12547,13 @@ sonic_process:                                                          ;$49C8
         ld      [IX+Mob.unknown11], A
         ld      [IX+Mob.flags],     A
         ld      [IX+Mob.Xsubpixel], A
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      DE,     $0002
         add     HL,     DE
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
         ld      [IX+Mob.Ysubpixel], A
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $000E
         add     HL,     DE
         ld      [IX+Mob.Y+0],       L
@@ -12590,14 +12590,14 @@ sonic_process:                                                          ;$49C8
         cp      $18
         jr      z,      @_55
 
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],  HL
 
 @_55:   ld      [IX+Mob.width],         $18
         ld      [IX+Mob.height],        $18
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      B,      [IX+Mob.Xdirection]
         ld      C,      $00
         ld      E,      C
@@ -12662,7 +12662,7 @@ sonic_process:                                                          ;$49C8
 
         ld      [IX+Mob.unknown14], $07
         res     0,      [IX+Mob.flags]
-        ld      DE,     [D2B7]
+        ld      DE,     [RAM_D2B7]
 
         bit     7,      D
         jr      z,      @_61
@@ -12673,7 +12673,7 @@ sonic_process:                                                          ;$49C8
         jp      nc,     @_4b49
 
 @_61:   dec     DE
-        ld      [D2B7], DE
+        ld      [RAM_D2B7],     DE
         jp      @_4b49
 
 @_62:   ld      [IX+Mob.unknown14],     $09
@@ -12690,7 +12690,7 @@ sonic_process:                                                          ;$49C8
         cpl
         ld      H,      A
         inc     HL
-@_63:   ld      DE,      [D240]
+@_63:   ld      DE,     [RAM_D240]
         xor     A
         sbc     HL,     DE
         pop     HL
@@ -12719,9 +12719,9 @@ sonic_process:                                                          ;$49C8
 
         res     0,      [IX+Mob.flags]
 
-        ld      A,      [SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xspeed]
         and     $F8
-        ld      [SONIC.Xspeed], A
+        ld      [RAM_SONIC.Xspeed],     A
         jp      @_4b7f
 
 @_65:   res     3,      [IX+Mob.flags]
@@ -12735,15 +12735,15 @@ sonic_process:                                                          ;$49C8
 
 @_543c: set     5,      [IX+Mob.flags]  ; make Sonic pass over the floor;$543C
 
-        ld      A,      [D287]
+        ld      A,      [RAM_D287]
         cp      $60
         jr      z,      @_54aa
 
         ;has Sonic finished falling off the screen?
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      DE,     $00C0                                   ;height of screen?
         add     HL,     DE
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         sbc     HL,     DE
         jr      nc,     @_67
 
@@ -12751,10 +12751,10 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_67
 
         ld      A,      $01
-        ld      [D283], A
+        ld      [RAM_D283],     A
 
         ;remove a life...
-        ld      HL,     LIVES
+        ld      HL,     RAM_LIVES
         dec     [HL]
 
         set     2,      [IY+Vars.flags6]
@@ -12766,7 +12766,7 @@ sonic_process:                                                          ;$49C8
         bit     3,      [IY+Vars.unknown0]
         jr      nz,     @_71
 
-        ld      DE,     [SONIC.Yspeed]
+        ld      DE,     [RAM_SONIC.Yspeed]
 
         bit     7,      D
         jr      nz,     @_68
@@ -12790,14 +12790,14 @@ sonic_process:                                                          ;$49C8
 @_70:   add     HL,     DE
         ld      A,      B
         adc     A,      C
-@_71:   ld      [SONIC.Yspeed],         HL
-        ld      [SONIC.Ydirection],     A
+@_71:   ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
 
 @_72:   xor     A
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
 
 @_54aa:                                                                 ;$54AA
         ld      [IX+Mob.unknown14],     $0B
@@ -12838,7 +12838,7 @@ sonic_process:                                                          ;$49C8
         cp      $1A
         ret     c
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rrca
         jr      c,      @_73
 
@@ -12915,7 +12915,7 @@ sonic_process:                                                          ;$49C8
         bit     7,      [IX+Mob.flags]
         ret     z
 
-        ld      A,      [D2B9]
+        ld      A,      [RAM_D2B9]
         and     $80
         ret     nz
 
@@ -12961,13 +12961,13 @@ sonic_process:                                                          ;$49C8
 @_5578: bit     7,      [IX+Mob.flags]                                  ;$5578
         ret     z
 
-        ld      HL,     [SONIC.Xsubpixel]
-        ld      A,      [SONIC.X+1]
+        ld      HL,     [RAM_SONIC.Xsubpixel]
+        ld      A,      [RAM_SONIC.X+1]
         ld      DE,     $FE80
         add     HL,     DE
         adc     A,      $FF
-        ld      [SONIC.Xsubpixel],      HL
-        ld      [SONIC.X+1],    A
+        ld      [RAM_SONIC.Xsubpixel],  HL
+        ld      [RAM_SONIC.X+1],        A
         ret
 
         ;=======================================================================
@@ -12976,13 +12976,13 @@ sonic_process:                                                          ;$49C8
 @_5590: bit     7,      [IX+Mob.flags]                                  ;$5590
         ret     z
 
-        ld      HL,     [SONIC.Xsubpixel]
-        ld      A,      [SONIC.X+1]
+        ld      HL,     [RAM_SONIC.Xsubpixel]
+        ld      A,      [RAM_SONIC.X+1]
         ld      DE,     $0200
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Xsubpixel],      HL
-        ld      [SONIC.X+1],    A
+        ld      [RAM_SONIC.Xsubpixel],  HL
+        ld      [RAM_SONIC.X+1],        A
         ret
 
         ;=======================================================================
@@ -13017,7 +13017,7 @@ sonic_process:                                                          ;$49C8
         bit     7,      [IX+Mob.flags]
         ret     z
 
-        ld      A,      [D2B9]
+        ld      A,      [RAM_D2B9]
         and     $80
         ret     nz
 
@@ -13054,7 +13054,7 @@ sonic_process:                                                          ;$49C8
 @_55eb: bit     4,      [IY+Vars.flags6]                                ;$55EB
         ret     nz
 
-        ld      A,      [SONIC.X]
+        ld      A,      [RAM_SONIC.X]
         add     A,      $0C
         and     %00011111
         cp      $08
@@ -13063,7 +13063,7 @@ sonic_process:                                                          ;$49C8
         cp      $18
         ret     nc
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13074,7 +13074,7 @@ sonic_process:                                                          ;$49C8
         add     A,      A
         rl      H
         ld      E,      H
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      BC,     $0010
         add     HL,     BC
         ld      A,      L
@@ -13098,9 +13098,9 @@ sonic_process:                                                          ;$49C8
         jr      nz,     @_76
 
         inc     HL
-        ld      [D2D5], HL
-        ld      A,      $50
-        ld      [D28A], A
+        ld      [RAM_D2D5],     HL
+        ld      A,              $50
+        ld      [RAM_D28A],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -13125,13 +13125,13 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $0C
 
-@_565c: ld      HL,     [SONIC.Xspeed]                                  ;$565C
-        ld      A,      [SONIC.Xdirection]
+@_565c: ld      HL,     [RAM_SONIC.Xspeed]                                  ;$565C
+        ld      A,      [RAM_SONIC.Xdirection]
         ld      DE,     $FFF8
         add     HL,     DE
         adc     A,      $FF
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
 
         bit     4,      [IX+Mob.flags]                     ;mob underwater?
         jr      nz,     @_77
@@ -13150,13 +13150,13 @@ sonic_process:                                                          ;$49C8
 
 @_567c: xor     A       ; set A to 0                                    ;$567C
         ld      HL,     $0005
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
 
         res     1,      [IX+Mob.flags]
 
-@_568a: ld      A,      $06
-        ld      [D28C], A
+@_568a: ld      A,              $06
+        ld      [RAM_D28C],     A
 
         ;-----------------------------------------------------------------------
 
@@ -13165,7 +13165,7 @@ sonic_process:                                                          ;$49C8
         ld      [IY+Vars.joypad],  A
 
         ld      HL,     $0004
-        ld      [SONIC.Yspeed+1],       HL
+        ld      [RAM_SONIC.Yspeed+1],   HL
 
         res     0,      [IX+Mob.flags]
         res     2,      [IX+Mob.flags]
@@ -13176,8 +13176,8 @@ sonic_process:                                                          ;$49C8
 
 @_56a6: xor     A                                                       ;$56A6
         ld      HL,     $0006
-        ld      [SONIC.Xspeed+0],A
-        ld      [SONIC.Xspeed+1],HL
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
         res     1,      [IX+Mob.flags]
         jr      @_568a
 
@@ -13186,8 +13186,8 @@ sonic_process:                                                          ;$49C8
 
 @_56b6: xor     A                                                       ;$56B6
         ld      HL,     $FFFB
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
 
         set     1,      [IX+Mob.flags]
 
@@ -13198,8 +13198,8 @@ sonic_process:                                                          ;$49C8
 
 @_56c6: xor     A                                                       ;$56C6
         ld      HL,     $FFFA
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
 
         set     1,      [IX+Mob.flags]
 
@@ -13208,20 +13208,20 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $11
 
-@_56d6: ld      A,      [D2E1]                                          ;$56D6
+@_56d6: ld      A,      [RAM_D2E1]                                          ;$56D6
         cp      $08
         ret     nc
 
         call    @_5727
         ld      DE,     $0001
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $00
@@ -13232,24 +13232,24 @@ sonic_process:                                                          ;$49C8
         add     HL,     DE
         adc     A,      $FF
 
-@_78:   ld      [SONIC.Yspeed],         HL
-        ld      [SONIC.Ydirection],     A
+@_78:   ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
         ld      BC,     $000C
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         add     HL,     BC
         ld      A,      L
         and     $E0
         ld      L,      A
-        ld      [D2E2], HL
+        ld      [RAM_D2E2],     HL
         ld      BC,     $0010
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         add     HL,     BC
         ld      A,      L
         and     $E0
         ld      L,      A
-        ld      [D2E4], HL
+        ld      [RAM_D2E4],     HL
         ld      A,      $10
-        ld      [D2E1], A
+        ld      [RAM_D2E1],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -13262,12 +13262,12 @@ sonic_process:                                                          ;$49C8
         ;-----------------------------------------------------------------------
         ;called by functions referenced by `_58e5`
 
-@_5727: ld      HL,      [SONIC.Xspeed]                                 ;$5727
-        ld      A,      [SONIC.Xdirection]
+@_5727: ld      HL,     [RAM_SONIC.Xspeed]                                 ;$5727
+        ld      A,      [RAM_SONIC.Xdirection]
         ld      C,      A
         and     $80
         ld      B,      A
-        ld      A,      [SONIC.X]
+        ld      A,      [RAM_SONIC.X]
         add     A,      $0C
         and     %00011111
         sub     $10
@@ -13296,8 +13296,8 @@ sonic_process:                                                          ;$49C8
         rr      E
         add     HL,     DE
         adc     A,      C
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
         ret
 
         ;=======================================================================
@@ -13348,19 +13348,19 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $15
 
-@_5791: ld      A,      [D2B1]                                          ;$5791
+@_5791: ld      A,      [RAM_D2B1]                                          ;$5791
         and     A
         ret     nz
 
         ld      DE,     $0001
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Xdirection]
+        ld      A,      [RAM_SONIC.Xdirection]
         cpl
         add     HL,     DE
         adc     A,      $00
@@ -13372,9 +13372,9 @@ sonic_process:                                                          ;$49C8
         ld      C,      $00
 @_80:   add     HL,     DE
         adc     A,      C
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
-@_57be: ld      HL,     D2B1
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
+@_57be: ld      HL,     RAM_D2B1
         ld      [HL],   $04
         inc     HL
         ld      [HL],   $0E
@@ -13394,14 +13394,14 @@ sonic_process:                                                          ;$49C8
 
 @_57cd: call    @_5727                                                  ;$57CD
         ld      DE,     $0001
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $00
@@ -13411,14 +13411,14 @@ sonic_process:                                                          ;$49C8
         ld      DE,     $FFC8
         add     HL,     DE
         adc     A,      $FF
-@_81:   ld      [SONIC.Yspeed],         HL
-        ld      [SONIC.Ydirection],     A
+@_81:   ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
         jp      @_57be
 
         ;=======================================================================
         ;referenced by table at `_58e5` - index $17
 
-@_57f6: ld      HL,     [D2E9]                                          ;$57F6
+@_57f6: ld      HL,     [RAM_D2E9]                                          ;$57F6
         ld      DE,     $0082
         and     A
         sbc     HL,     DE
@@ -13431,11 +13431,11 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $18
 
-@_5808: ld      A,      [SONIC.flags]                                   ;$5808
+@_5808: ld      A,      [RAM_SONIC.flags]                                   ;$5808
         rlca
         ret     nc
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      BC,     $000C
         add     HL,     BC
         ld      A,      L
@@ -13443,14 +13443,14 @@ sonic_process:                                                          ;$49C8
         cp      $10
         jr      nc,     @_5858
 
-@_581b: ld      HL,      [SONIC.X]
+@_581b: ld      HL,      [RAM_SONIC.X]
         ld      BC,     $000C
         add     HL,     BC
         ld      A,      L
         and     $E0
         ld      C,      A
         ld      B,      H
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0010
         add     HL,     DE
         ld      A,      L
@@ -13476,7 +13476,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $19
 
-@_584b: ld      HL,     [SONIC.X]                                       ;$584B
+@_584b: ld      HL,     [RAM_SONIC.X]                                       ;$584B
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13489,7 +13489,7 @@ sonic_process:                                                          ;$49C8
         add     A,      $10
         ld      C,      A
         ld      B,      H
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0010
         add     HL,     DE
         ld      A,      L
@@ -13515,7 +13515,7 @@ sonic_process:                                                          ;$49C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $1A
 
-@_5883: ld      HL,     [SONIC.X]                                       ;$5883
+@_5883: ld      HL,     [RAM_SONIC.X]                                       ;$5883
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13565,8 +13565,8 @@ sonic_process:                                                          ;$49C8
         ret     z
 
         ;is Sonic on the screen (vertically)
-        ld      HL,      [SONIC.Y]
-        ld      DE,     [CAMERA_Y]
+        ld      HL,     [RAM_SONIC.Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,      DE
         ret     nc
@@ -13645,7 +13645,7 @@ powerups_ring_process:                                                  ;$5B09
         ld      [IX+Mob.height],    24
         call    _5da8
         ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         call    detectCollisionWithSonic
         jr      c,      @_1
@@ -13671,7 +13671,7 @@ powerups_ring_process:                                                  ;$5B09
         ld      [IX+Mob.spriteLayout+0],    <@_5bbf
         ld      [IX+Mob.spriteLayout+1],    >@_5bbf
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         cp      $05
         ret     nc
@@ -13687,7 +13687,7 @@ powerups_ring_process:                                                  ;$5B09
         adc     A,      [IX+Mob.Xdirection]
         ld      L,      H
         ld      H,      A
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Ysubpixel]
         ld      H,      [IX+Mob.Y+0]
         ld      A,      [IX+Mob.Y+1]
@@ -13701,17 +13701,17 @@ powerups_ring_process:                                                  ;$5B09
         adc     A,      [IX+Mob.Ydirection]
 @_2:    ld      L,      H
         ld      H,      A
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0004
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $0000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         ld      A,      $5C
         call    _3581
 
         ld      HL,     $000C
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
 
         ld      A,      $5E
         call    _3581
@@ -13747,7 +13747,7 @@ powerups_speed_process:                                                 ;$5BD9
         ld      [IX+Mob.height],    24
         call    _5da8
         ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -13755,7 +13755,7 @@ powerups_speed_process:                                                 ;$5BD9
         jr      c,      @_1
 
         ld      A,      $F0
-        ld      [SONIC.unknown15],      A
+        ld      [RAM_SONIC.unknown15],  A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -13778,7 +13778,7 @@ powerups_life_process:                                                  ;$5C05
         call    _5da8
 
         ;check if the level has its bit flag set at D305+
-        ld      HL,     D305
+        ld      HL,     RAM_D305
         call    getLevelBitFlag
 
         ld      A,      [HL]
@@ -13789,7 +13789,7 @@ powerups_life_process:                                                  ;$5C05
         jp      powerups_ring_process@_5b29
 
 @_1:    ld      HL,             $0003
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
@@ -13799,11 +13799,11 @@ powerups_life_process:                                                  ;$5C05
         bit     2,      [IX+Mob.flags]
         jp      nz,     powerups_ring_process@_5b24
 
-        ld      HL,     LIVES
+        ld      HL,     RAM_LIVES
         inc     [HL]
 
         ;set the level's bit flag at D305+
-        ld      HL,     D305
+        ld      HL,     RAM_D305
         call    getLevelBitFlag
         ld      A,      [HL]
         or      C
@@ -13819,17 +13819,17 @@ powerups_life_process:                                                  ;$5C05
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      28                                              ;special stage?
         ret     nc
 
-        ld      HL,     D280
+        ld      HL,     RAM_D280
         inc     [HL]
         ret
 
         ;-----------------------------------------------------------------------
 
-@_2:    ld      A,       [CURRENT_LEVEL]
+@_2:    ld      A,       [RAM_CURRENT_LEVEL]
         cp      4                                               ;level 4 (Bridge Act 2)?
         jr      z,      @_4
 
@@ -13867,7 +13867,7 @@ powerups_life_process:                                                  ;$5C05
         jr      @_3
 
 @_6:    set     2,      [IX+Mob.flags]
-        ld      HL,     D317
+        ld      HL,     RAM_D317
         call    getLevelBitFlag
         ld      A,      [HL]
         ld      HL,     $5180
@@ -13886,7 +13886,7 @@ powerups_life_process:                                                  ;$5C05
         ld      [IX+Mob.Xdirection],        $00
         jr      @_3
 
-@_8:    ld      A,       [D280]
+@_8:    ld      A,      [RAM_D280]
         cp      $11
         jr      nc,     @_3
 
@@ -13903,7 +13903,7 @@ powerups_shield_process:                                                ;$5CD7
         call    _5da8
 
         ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -13926,7 +13926,7 @@ powerups_invincibility_process:                                         ;$5CFF
         call    _5da8
 
         ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -13935,8 +13935,8 @@ powerups_invincibility_process:                                         ;$5CFF
 
         set     0,      [IY+Vars.unknown0]
 
-        ld      A,      $F0
-        ld      [D28D], A
+        ld      A,              $F0
+        ld      [RAM_D28D],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -13958,25 +13958,25 @@ powerups_checkpoint_process:                                            ;$5D2F
         ld      [IX+Mob.height],    24
         call    _5da8
 
-        ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      HL,             $0003
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
         call    _5deb
         jr      c,      @_1
 
-        ld      HL,     D311
+        ld      HL,     RAM_D311
         call    getLevelBitFlag
         ld      A,      [HL]
         or      C
         ld      [HL],   A
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         add     A,      A
         ld      E,      A
         ld      D,      $00
-        ld      HL,     D32E
+        ld      HL,     RAM_D32E
         add     HL,     DE
         ex      DE,     HL                                      ;DE is D32E + level number * 2
         ld      L,      [IX+Mob.X+0]
@@ -14009,8 +14009,8 @@ powerups_continue_process:                                              ;$5D80
         ld      [IX+Mob.height],    24
         call    _5da8
 
-        ld      HL,     $0003
-        ld      [TEMP6],        HL
+        ld      HL,             $0003
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -14031,7 +14031,7 @@ _5da8:                                                                  ;$5DA8
         bit     0,      [IX+Mob.flags]
         ret     nz
 
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      nz,     @_1
 
@@ -14068,14 +14068,14 @@ _5deb:                                                                  ;$5DEB
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ld      HL,     $0804
-        ld      [TEMP1],        HL
+        ld      HL,             $0804
+        ld      [RAM_TEMP1],    HL
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         and     %00000001
         jr      nz,     @_2
 
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         ld      C,      [IX+Mob.X+0]
         ld      B,      [IX+Mob.X+1]
         ld      HL,     $FFEE
@@ -14090,31 +14090,31 @@ _5deb:                                                                  ;$5DEB
         sbc     HL,     DE
         jr      c,      @_4
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         and     $04
         jr      nz,     @_1
 
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      A,      [SONIC.height]
+        ld      A,      [RAM_SONIC.height]
         ld      C,      A
         xor     A
         ld      B,      A
         sbc     HL,     BC
-        ld      [SONIC.Y],      HL
-        ld      [D28E], A
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
-        ld      HL,     SONIC.flags
+        ld      [RAM_SONIC.Y],  HL
+        ld      [RAM_D28E],     A
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
+        ld      HL,     RAM_SONIC.flags
 
         set     7,      [HL]
         scf
 
         ret
 
-@_1:    ld      A,       [SONIC.Ydirection]
+@_1:    ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_3
 
@@ -14128,14 +14128,14 @@ _5deb:                                                                  ;$5DEB
         ld      [IX+Mob.Ydirection],    $FF
         ld      HL,     $0400
         xor     A
-        ld      [SONIC.Yspeed],         HL
-        ld      [SONIC.Ydirection],     A
-        ld      [D28E], A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
+        ld      [RAM_D28E],             A
         set     1,      [IX+Mob.flags]
         scf
         ret
 
-@_4:    ld      HL,      [SONIC.X]
+@_4:    ld      HL,     [RAM_SONIC.X]
         ld      DE,     $000C
         add     HL,     DE
         ex      DE,     HL
@@ -14152,14 +14152,14 @@ _5deb:                                                                  ;$5DEB
 @_5:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     BC
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],  HL
 
         xor     A
-        ld      [SONIC.Xsubpixel],      A
-        ld      L, A
-        ld      H, A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
+        ld      [RAM_SONIC.Xsubpixel],  A
+        ld      L,      A
+        ld      H,      A
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
         scf
         ret
         ;
@@ -14168,7 +14168,7 @@ powerups_emerald_process:                                               ;$5EA2
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ld      HL,     D30B
+        ld      HL,     RAM_D30B
         call    getLevelBitFlag
         ld      A,      [HL]
         and     C
@@ -14182,21 +14182,21 @@ powerups_emerald_process:                                               ;$5EA2
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
 
-        ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      HL,             $0202
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
-        ld      HL,     D30B
+        ld      HL,     RAM_D30B
         call    getLevelBitFlag
 
         ld      A,      [HL]
         or      C
         ld      [HL],   A
-        ld      HL,     D27F
+        ld      HL,     RAM_D27F
         inc     [HL]
-        ld      A,      $FE
-        ld      [D28B], A
+        ld      A,              $FE
+        ld      [RAM_D28B],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -14207,7 +14207,7 @@ powerups_emerald_process:                                               ;$5EA2
 @_1:    ld      [IX+Mob.type],  $FF                     ;remove object?
         ret
 
-@_2:    ld      A,       [FRAMECOUNT]
+@_2:    ld      A,      [RAM_FRAMECOUNT]
         rrca
         jr      c,      @_3
 
@@ -14272,8 +14272,8 @@ boss_endSign_process:                                                   ;$5F17
 
         ;prevent the player leaving the screen by locking the left-hand side of the screen
         ;(the edge of the level is effectively moved up to the current screen position)
-@_1:    ld      HL,      [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
+@_1:    ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],       HL
 
         ;set the right-hand edge of the level such that the end-sign will be in the middle of the screen:
         ;note that the right-hand edge of the level is defined as the maximum left-hand position of the screen on
@@ -14287,19 +14287,19 @@ boss_endSign_process:                                                   ;$5F17
         ;      -- perhaps the sign was originally intended to be 28 or 32 px wide
         ld      DE,      $FF90                           ;-112
         add     HL,    DE
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],      HL
 
         ;change the size of the zones at the top & bottom of the screen that initiate scrolling.
         ;this is done so that if you are above / below the sign, the camera will centre the screen
-        ld      HL,       128             ;=$0080
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
-        ld      HL,    136             ;=$0088
-        ld      [SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      HL,     128             ;=$0080
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
+        ld      HL,     136             ;=$0088
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
         ;a copy of the player's status that the end-sign keeps
         ld      C,      [IX+Mob.unknown13]
         ;get the player's current status
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         ;TODO: whatever bit 7 is on Sonic, it's forced on
         and     %10000000
 
@@ -14319,7 +14319,7 @@ boss_endSign_process:                                                   ;$5F17
         ;TODO: the sign X position was already read earlier, we could use the stack for that
         ld      E,     [IX+Mob.X+0]
         ld      D,     [IX+Mob.X+1]
-        ld      HL,   [SONIC.X]
+        ld      HL,    [RAM_SONIC.X]
         and     A                                    ;clear the carry before doing a 16-bit add/subtract
         sbc     HL,   DE
 
@@ -14380,12 +14380,12 @@ boss_endSign_process:                                                   ;$5F17
         res     2,      [IX+Mob.unknown11]
         set     3,      [IX+Mob.unknown11]
         ld      A,      $A0
-        ld      [D289], A
+        ld      [RAM_D289],     A
         set     1,      [IY+Vars.flags6]
         jp      @_7
 
 @_4:    ld      HL,             $0A0A
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_7
 
@@ -14395,7 +14395,7 @@ boss_endSign_process:                                                   ;$5F17
         bit     1,      [IX+Mob.unknown11]
         jr      nz,     @_7
 
-        ld      DE,     [SONIC.Xspeed]
+        ld      DE,     [RAM_SONIC.Xspeed]
         bit     7,      D
         jr      z,      @_5
 
@@ -14437,7 +14437,7 @@ boss_endSign_process:                                                   ;$5F17
         bit     3,      [IX+Mob.unknown11]
         jr      z,      @_
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $0C
         jr      c,      @_8
         cp      $1C
@@ -14449,7 +14449,7 @@ boss_endSign_process:                                                   ;$5F17
 
 @_8:    ld      DE,     $61A8
         ld      C,      $04
-        ld      A,      [RINGS]
+        ld      A,      [RAM_RINGS]
         cp      $50
         jr      nc,     @_11
 
@@ -14461,13 +14461,13 @@ boss_endSign_process:                                                   ;$5F17
         and     $0F
         jr      z,      @_11
 
-@_10:   ld      A,       [RINGS]
+@_10:   ld      A,      [RAM_RINGS]
         srl     A
         srl     A
         srl     A
         srl     A
         ld      B,      A
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         and     $03
         inc     A
         ld      DE,     $6174
@@ -14478,7 +14478,7 @@ boss_endSign_process:                                                   ;$5F17
         ld      DE,     $618E
         ld      C,      $01
 @_11:   ld      A,      C
-        ld      [D288], A
+        ld      [RAM_D288],     A
 @_:     ld      L,      [IX+Mob.unknown12]
         ld      H,      $00
         add     HL,     DE
@@ -14850,7 +14850,7 @@ badnick_crabmeat_process:                                               ;$65EE
 
 @_1:    ld      HL,     @_66c5
         add     HL,     DE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      [HL]
         and     A
         jr      nz,     @_2
@@ -14896,9 +14896,9 @@ badnick_crabmeat_process:                                               ;$65EE
         jp      nz,     @_7
 
         ld      HL,     $FFFF
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $FFFC
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         call    findEmptyMob
         jp      c,      @_7
@@ -14909,9 +14909,9 @@ badnick_crabmeat_process:                                               ;$65EE
         call    _ac96
 
         ld      HL,     $0001
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $FFFC
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         call    findEmptyMob
         jr      c,      @_7
@@ -14950,7 +14950,7 @@ badnick_crabmeat_process:                                               ;$65EE
         ld      [IX+Mob.Yspeed+0],  L
         ld      [IX+Mob.Yspeed+1],  H
         ld      [IX+Mob.Ydirection],        A
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      A,      [HL]
         add     A,      A
         ld      E,      A
@@ -14963,11 +14963,11 @@ badnick_crabmeat_process:                                               ;$65EE
         call    animateMob
 
         ld      HL,     $0A04
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      HL,     $0804
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ret
@@ -15016,13 +15016,13 @@ platform_swinging_process:                                              ;$673C
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      HL,     $0020
-        ld      [SCROLLZONE_OVERRIDE_LEFT],     HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_LEFT],         HL
         ld      HL,     $0048
-        ld      [SCROLLZONE_OVERRIDE_RIGHT],    HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_RIGHT],        HL
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -15042,7 +15042,7 @@ platform_swinging_process:                                              ;$673C
         ld      [IX+Mob.height],        16
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      HL,     @_682f
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
@@ -15060,10 +15060,10 @@ platform_swinging_process:                                              ;$673C
         add     HL,     DE
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
-        ld      DE,     [TEMP1]
+        ld      DE,     [RAM_TEMP1]
         and     A
         sbc     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         inc     BC
         ld      D,      $00
         ld      A,      [BC]
@@ -15078,24 +15078,24 @@ platform_swinging_process:                                              ;$673C
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_4
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_4
 
-        ld      HL,     [SONIC.X]
-        ld      DE,     [TEMP1]
+        ld      HL,     [RAM_SONIC.X]
+        ld      DE,     [RAM_TEMP1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],  HL
         ld      BC,     $0010
         ld      DE,     $0000
         call    _LABEL_7CC1_12
 @_4:    ld      HL,     spriteLayouts@_6911
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      z,      @_5
 
@@ -15278,19 +15278,19 @@ explosion_process:                                                      ;$693F
         bit     5,      [IY+Vars.flags0]
         jr      z,      @_1
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $12
         jr      z,      @_1
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rlca
         jr      c,      @_1
 
-        ld      A,      [D2E8]
-        ld      DE,     [D2E6]
+        ld      A,      [RAM_D2E8]
+        ld      DE,     [RAM_D2E6]
         inc     DE
         ld      C,      A
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
@@ -15298,15 +15298,15 @@ explosion_process:                                                      ;$693F
         cpl
         ld      H,      A
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_1
 
         cpl
         add     HL,     DE
         adc     A,      C
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
 
         ;-----------------------------------------------------------------------
 
@@ -15363,12 +15363,12 @@ platform_sinking_process:                                               ;$69E9
         ld      [IX+Mob.spriteLayout+0],    <spriteLayouts@_6911
         ld      [IX+Mob.spriteLayout+1],    >spriteLayouts@_6911
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_2
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
@@ -15425,12 +15425,12 @@ platform_falling_process:                                               ;$6A47
 @_1:    ld      [IX+Mob.width],         26
         ld      [IX+Mob.height],        16
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_2
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
@@ -15440,14 +15440,14 @@ platform_falling_process:                                               ;$6A47
         ld      D,      [IX+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
 @_2:    ld      HL,     spriteLayouts@_6911
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      z,      @_3
 
         ld      HL,     spriteLayouts@_6923
 @_3:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      DE,     $00c0
         add     HL,     DE
         ld      E,      [IX+Mob.Y+0]
@@ -15467,8 +15467,8 @@ unknown_6ac1_process:                                                   ;$6AC1
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     2
         ld      [IX+Mob.height],    2
-        ld      HL,     $0303
-        ld      [TEMP6],        HL
+        ld      HL,             $0303
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -15484,17 +15484,17 @@ unknown_6ac1_process:                                                   ;$6AC1
         ld      [IX+Mob.Ydirection],        A
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP4],    HL
+        ld      [RAM_TEMP6],    HL
         ld      [IX+Mob.spriteLayout+0],    L
         ld      [IX+Mob.spriteLayout+1],    H
         ld      HL,     @_6b72
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $05
         jr      z,      @_1
 
@@ -15502,7 +15502,7 @@ unknown_6ac1_process:                                                   ;$6AC1
         jr      z,      @_1
 
         ld      HL,     @_6b70
-@_1:    ld      A,       [FRAMECOUNT]
+@_1:    ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         ld      E,      A
         ld      D,      $00
@@ -15515,7 +15515,7 @@ unknown_6ac1_process:                                                   ;$6AC1
         ld      H,      B
         ld      DE,     $FFF8
         add     HL,     DE
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         jr      c,      @_2
@@ -15531,7 +15531,7 @@ unknown_6ac1_process:                                                   ;$6AC1
         ld      H,      B
         ld      DE,     $0010
         add     HL,     DE
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         jr      c,      @_2
@@ -15571,7 +15571,7 @@ badnick_buzzbomber_process:                                             ;$6B74
         ld      [IX+Mob.Xspeed+1],  A
         ld      [IX+Mob.Xdirection],        A
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0100
         add     HL,     BC
         sbc     HL,     DE
@@ -15582,7 +15582,7 @@ badnick_buzzbomber_process:                                             ;$6B74
         ld      [IX+Mob.height],        32
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      c,      @_2
@@ -15601,7 +15601,7 @@ badnick_buzzbomber_process:                                             ;$6B74
 
 @_3:    ld      HL,     $6CD7
         add     HL,     DE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      [HL]
         and     A
         jr      nz,     @_4
@@ -15617,7 +15617,7 @@ badnick_buzzbomber_process:                                             ;$6B74
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0030
         add     HL,     DE
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_5
@@ -15705,7 +15705,7 @@ badnick_buzzbomber_process:                                             ;$6B74
         add     HL,     DE
         ld      [IX+Mob.unknown11], L
         ld      [IX+$12],   H
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      A,      [HL]
         add     A,      A
         ld      E,      A
@@ -15718,11 +15718,11 @@ badnick_buzzbomber_process:                                             ;$6B74
         call    animateMob
 
         ld      HL,     $1000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      HL,     $1004
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ret
@@ -15770,29 +15770,29 @@ platform_moving_process:                                                ;$6D65
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $07                                             ;Jungle act 2?
         jr      z,      @_1
 
         ld      HL,     $0020
-        ld      [SCROLLZONE_OVERRIDE_LEFT],     HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_LEFT],         HL
         ld      HL,     $0048
-        ld      [SCROLLZONE_OVERRIDE_RIGHT],    HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_RIGHT],        HL
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
 @_1:    ld      [IX+Mob.width],         26
         ld      [IX+Mob.height],        16
         ld      C,      $00
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_2
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      C,      $00
@@ -15834,12 +15834,12 @@ platform_moving_process:                                                ;$6D65
         and     A
         jr      z,      @_5
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],  HL
 
 @_5:    ld      HL,     spriteLayouts@_6911
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      z,      @_6
 
@@ -15884,15 +15884,15 @@ badnick_motobug_process:                                                ;$6E0C
         ;=======================================================================
         ; NOTE: this row MUST be index 0 as the code works on that basis
         ;
-        ; in    IX      Address of the current mob being processed
-        ;       DE      the high-byte of the mob's counter,
-        ;               provided in the low-byte of DE
-        ; out   TEMP6   Address within the animation table, for the current
-        ;               frame (this tells the mob what to do each frame)
+        ; in    IX              Address of the current mob being processed
+        ;       DE              the high-byte of the mob's counter,
+        ;                       provided in the low-byte of DE
+        ; out   RAM_TEMP6       Address within animation table, for the current
+        ;                       frame (this tells the mob what to do each frame)
         ;-----------------------------------------------------------------------
         ld      HL,     badnick_motobug_behaviour
         add     HL,     DE
-        ld      [TEMP6],HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      [HL]
         and     A
         jr      nz,     @@moveLeft
@@ -15953,7 +15953,7 @@ badnick_motobug_process:                                                ;$6E0C
         ; in    IX      Address of the current mob being processed
         ;       HL
         ;       C
-        ;       TEMP6
+        ;       RAM_TEMP6
         ;-----------------------------------------------------------------------
         ; apply the chosen direction and speed
         ld      [IX+Mob.Xspeed+0],      L
@@ -15976,26 +15976,26 @@ badnick_motobug_process:                                                ;$6E0C
 
         ;-----------------------------------------------------------------------
 
-        ld      HL,      [TEMP6]
-        ld      A,   [HL]
-        add     A,       A
-        ld      E,       A
-        ld      D,       $00
+        ld      HL,     [RAM_TEMP6]
+        ld      A,      [HL]
+        add     A,      A
+        ld      E,      A
+        ld      D,      $00
         ld      HL,     badnick_motobobug_actions
         add     HL,     DE
-        ld      C, [HL]
+        ld      C,      [HL]
         inc     HL
-        ld      B, [HL]
+        ld      B,      [HL]
         ld      DE,     badnick_motobug_spriteLayout
         call    animateMob
 
         ld      HL,     $0203
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ; if hit, place the explosion in the centre (0,0 offset)
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ret
@@ -16098,7 +16098,7 @@ badnick_newtron_process:                                                ;$6F08
         and     A
         jr      nz,     @_4
 
-@_1:    ld      A,                   [FRAMECOUNT]
+@_1:    ld      A,      [RAM_FRAMECOUNT]
         and     $01
         jr      z,      @_2
 
@@ -16189,10 +16189,10 @@ badnick_newtron_process:                                                ;$6F08
 @_7:    ld      [IX+Mob.spriteLayout+0],        C
         ld      [IX+Mob.spriteLayout+1],        B
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ret
@@ -16242,10 +16242,10 @@ boss_greenHill_process:                                                 ;$700C
         .ENDIF
 
         xor     A
-        ld      [D2EC], A
-        ld      [IX+Mob.unknown12], A
-        ld      [IX+Mob.unknown14], $A1
-        ld      [IX+Mob.unknown15], $72
+        ld      [RAM_D2EC],             A
+        ld      [IX+Mob.unknown12],     A
+        ld      [IX+Mob.unknown14],     $A1
+        ld      [IX+Mob.unknown15],     $72
 
         ld      HL,     $0760
         ld      DE,     $00E8
@@ -16273,7 +16273,7 @@ boss_greenHill_process:                                                 ;$700C
         ld      L,      [IX+Mob.unknown14]
         ld      H,      [IX+Mob.unknown15]
         add     HL,     DE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      [HL]
         and     A
         jr      nz,     @_5
@@ -16294,7 +16294,7 @@ boss_greenHill_process:                                                 ;$700C
         ld      H,      [HL]
         ld      L,      A
         jp      [HL]
-        ld      HL,     [LEVEL_LEFT]
+        ld      HL,     [RAM_LEVEL_LEFT]
         ld      DE,     $0006
         add     HL,     DE
         ld      E,      [IX+Mob.X+0]
@@ -16319,7 +16319,7 @@ boss_greenHill_process:                                                 ;$700C
         res     1,      [IX+Mob.unknown11]
         jp      @_9
 
-        ld      HL,     [LEVEL_LEFT]
+        ld      HL,     [RAM_LEVEL_LEFT]
         ld      DE,     $00e0
         add     HL,     DE
         ld      E,      [IX+Mob.X+0]
@@ -16347,7 +16347,7 @@ boss_greenHill_process:                                                 ;$700C
         ld      [IX+Mob.Yspeed+0],  $60
         ld      [IX+Mob.Yspeed+1],  $00
         ld      [IX+Mob.Ydirection],        $00
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      DE,     $0074
         add     HL,     DE
         ld      E,      [IX+Mob.Y+0]
@@ -16371,7 +16371,7 @@ boss_greenHill_process:                                                 ;$700C
         ld      [IX+Mob.Yspeed+0],  $60
         ld      [IX+Mob.Yspeed+1],  $00
         ld      [IX+Mob.Ydirection],        $00
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      DE,     $0074
         add     HL,     DE
         ld      E,      [IX+Mob.Y+0]
@@ -16409,7 +16409,7 @@ boss_greenHill_process:                                                 ;$700C
         ld      [IX+Mob.Yspeed+0],  $00
         ld      [IX+Mob.Yspeed+1],  $FF
         ld      [IX+Mob.Ydirection],        $FF
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      DE,     $001A
         add     HL,     DE
         ld      E,      [IX+Mob.Y+0]
@@ -16422,7 +16422,7 @@ boss_greenHill_process:                                                 ;$700C
         jp      c,      @_9
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [LEVEL_LEFT]
+        ld      DE,     [RAM_LEVEL_LEFT]
         xor     A
         sbc     HL,     DE
         ld      C,      A
@@ -16442,7 +16442,7 @@ boss_greenHill_process:                                                 ;$700C
 @_9:    ld      [IX+Mob.Xspeed+0],      L
         ld      [IX+Mob.Xspeed+1],      H
         ld      [IX+Mob.Xdirection],    C
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      E,      [HL]
         ld      D,      $00
         ld      HL,     @_72c8
@@ -16460,8 +16460,8 @@ boss_greenHill_process:                                                 ;$700C
         ld      [IX+Mob.flags],     A
         ld      [IX+Mob.spriteLayout+0],    L
         ld      [IX+Mob.spriteLayout+1],    H
-        ld      HL,     $0012
-        ld      [D216], HL
+        ld      HL,             $0012
+        ld      [RAM_D216],     HL
         call    _77be
         call    _79fa
         inc     [IX+Mob.unknown13]
@@ -16521,7 +16521,7 @@ boss_capsule_process:                                                   ;$732C
         jr      z,      @_2
 
         ld      HL,     @_757c
-@_2:    ld      A,       [FRAMECOUNT]
+@_2:    ld      A,      [RAM_FRAMECOUNT]
         rrca
         jr      nc,     @_3
 
@@ -16535,47 +16535,47 @@ boss_capsule_process:                                                   ;$732C
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     BC
-        ld      [D2AB], HL
+        ld      [RAM_D2AB],     HL
         ex      DE,     HL
         ld      C,      [HL]
         inc     HL
         ld      B,      [HL]
         inc     HL
-        ld      [D2AF], HL
+        ld      [RAM_D2AF],     HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     BC
-        ld      [D2AD], HL
+        ld      [RAM_D2AD],     HL
         ld      HL,     @_752e
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $10
         jr      z,      @_4
 
         ld      HL,     @_7552
 @_4:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
-        ld      HL,     [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],       HL
 
         ;something to do with scrolling
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $FF90
         add     HL,     DE
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],      HL
 
-        ld      HL,     $0002
-        ld      [TEMP6],        HL
+        ld      HL,             $0002
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jp      c,      @_8
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_8
 
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         and     A
         sbc     HL,     DE
         jr      c,      @_6
@@ -16585,7 +16585,7 @@ boss_capsule_process:                                                   ;$732C
         ld      DE,     $0010
         add     HL,     DE
         ld      DE,     $FFEA
-        ld      BC,     [SONIC.X]
+        ld      BC,     [RAM_SONIC.X]
         and     A
         sbc     HL,     BC
         jr      nc,     @_5
@@ -16594,10 +16594,10 @@ boss_capsule_process:                                                   ;$732C
 @_5:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],  HL
         jp      @_7
 
-@_6:    ld      HL,      [SONIC.X]
+@_6:    ld      HL,     [RAM_SONIC.X]
         ld      BC,     $000C
         add     HL,     BC
         ld      C,      L
@@ -16627,12 +16627,12 @@ boss_capsule_process:                                                   ;$732C
         ld      DE,     $FFE0
         add     HL,     DE
         add     HL,     BC
-        ld      [SONIC.Y],      HL
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
-        ld      HL,     SONIC.flags
+        ld      [RAM_SONIC.Y],  HL
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
+        ld      HL,     RAM_SONIC.flags
         set     7,      [HL]
         ld      A,      C
         cp      $03
@@ -16649,8 +16649,8 @@ boss_capsule_process:                                                   ;$732C
 @_7:    xor     A
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
 
 @_8:    bit     1,      [IY+Vars.flags6]
         ret     z
@@ -16672,8 +16672,8 @@ boss_capsule_process:                                                   ;$732C
 @_10:   bit     1,      [IX+Mob.flags]
         jr      nz,     @_11
 
-        ld      A,      $A0
-        ld      [D289], A
+        ld      A,              $A0
+        ld      [RAM_D289],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -16683,10 +16683,10 @@ boss_capsule_process:                                                   ;$732C
 
         set     1,      [IX+Mob.flags]
 @_11:   xor     A
-        ld      [IX+Mob.spriteLayout+0],    A
-        ld      [IX+Mob.spriteLayout+1],    A
+        ld      [IX+Mob.spriteLayout+0],A
+        ld      [IX+Mob.spriteLayout+1],A
         res     5,      [IY+Vars.flags0]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $0F
         ret     nz
 
@@ -16704,7 +16704,7 @@ boss_capsule_process:                                                   ;$732C
 
         ;-----------------------------------------------------------------------
 
-@_74b6: ld      [D216], A                                               ;$74B6
+@_74b6: ld      [RAM_D216],     A                                       ;$74B6
         call    findEmptyMob
         ret     c
 
@@ -16715,7 +16715,7 @@ boss_capsule_process:                                                   ;$732C
         push    IX
         push    HL
         pop     IX
-        ld      A,      [D216]
+        ld      A,      [RAM_D216]
         ld      [IX+Mob.type],      A
 
         xor     A                                          ;set A to 0
@@ -16777,7 +16777,7 @@ boss_freeBird_process:                                                  ;$7594
         ld      [IX+Mob.Yspeed+1],  $FD
         ld      [IX+Mob.Ydirection],        $FF
 @_1:    ld      DE,     $0012
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03
         jr      nz,     @_2
 
@@ -16800,7 +16800,7 @@ boss_freeBird_process:                                                  ;$7594
         ld      [IX+Mob.Yspeed+1],      H
         ld      [IX+Mob.Ydirection],    C
         ld      HL,     $FE00
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03
         jr      nz,     @_4
 
@@ -16809,7 +16809,7 @@ boss_freeBird_process:                                                  ;$7594
         ld      [IX+Mob.Xspeed+1],      H
         ld      [IX+Mob.Xdirection],    $FF
         ld      BC,     @_7629
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      z,      @_5
 
@@ -16825,7 +16825,7 @@ boss_freeBird_process:                                                  ;$7594
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0010
         add     HL,     DE
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         ret     nc
@@ -16872,7 +16872,7 @@ boss_freeRabbit_process:                                                ;$7699
         ld      [IX+Mob.height],    32
 
         ld      HL,     @_7760
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
         jr      z,      @_1
 
@@ -16899,7 +16899,7 @@ boss_freeRabbit_process:                                                ;$7699
         ld      [IX+Mob.Xdirection],        A
 
         ld      HL,     @_7752
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         ld      C,      A
         and     A
         jr      z,      @_2
@@ -16993,52 +16993,52 @@ _77be:                                                                  ;$77BE
 ;
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $08
         jr      nc,     @_4
-        ld      A,      [D2B1]
+        ld      A,      [RAM_D2B1]
         and     A
         jp      nz,     @_2
         ld      HL,     $0c08
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ret     c
 
         bit     0,      [IY+Vars.scrollRingFlags]
         ret     nz
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rrca
         jr      c,      @_1
         and     %00000010
         jp      z,      hitPlayer@_35fd
 @_1:    ld      DE,     $0001
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
 
         ;stop Sonic's movement (reset speed and direction)
         xor     A                          ;set A to 0
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
 
-        ld      A,      $18
-        ld      [D2B1], A
-        ld      A,      $8F
-        ld      [D2B1+1],       A
-        ld      A,      $3F
-        ld      [D2B3], A
+        ld      A,              $18
+        ld      [RAM_D2B1],     A
+        ld      A,              $8F
+        ld      [RAM_D2B1+1],   A
+        ld      A,              $3F
+        ld      [RAM_D2B3],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -17047,11 +17047,11 @@ _77be:                                                                  ;$77BE
         .ENDIF
 
         ;TODO: Wouldn't just `LD HL, D2EC` & `INC [HL]` be quicker?
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         inc     A
-        ld      [D2EC], A
+        ld      [RAM_D2EC],     A
 
-@_2:    ld      HL,      [D216]
+@_2:    ld      HL,     [RAM_D216]
         ld      DE,     @_7922
         add     HL,     DE
         bit     1,      [IX+Mob.flags]
@@ -17061,7 +17061,7 @@ _77be:                                                                  ;$77BE
 @_3:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
 
-        ld      HL,     D2ED
+        ld      HL,     RAM_D2ED
         ld      [HL],   $18
         inc     HL
         ld      [HL],   $00
@@ -17078,7 +17078,7 @@ _77be:                                                                  ;$77BE
         ld      [IX+Mob.Ydirection],        A
 
         ld      DE,     $0024
-        ld      HL,     [D216]
+        ld      HL,     [RAM_D216]
         bit     1,      [IX+Mob.flags]
         jr      z,      @_5
         ld      DE,     $0036
@@ -17087,7 +17087,7 @@ _77be:                                                                  ;$77BE
         add     HL,     DE
         ld      [IX+Mob.spriteLayout+0],    L
         ld      [IX+Mob.spriteLayout+1],    H
-        ld      HL,     D2ED+1                                ;lo-addr of D2ED
+        ld      HL,     RAM_D2ED+1      ; lo-addr of D2ED
         ld      A,      [HL]
         cp      $0A
         jp      nc,     @_6
@@ -17100,7 +17100,7 @@ _77be:                                                                  ;$77BE
         call    _7a3a
         ret
 
-@_6:    ld      A,       [D2ED+1]                              ;lo-addr of D2ED
+@_6:    ld      A,      [RAM_D2ED+1]                              ;lo-addr of D2ED
         cp      $3A
         jr      nc,     @_7
         ld      L,      [IX+Mob.Ysubpixel]
@@ -17112,7 +17112,7 @@ _77be:                                                                  ;$77BE
         ld      [IX+Mob.Ysubpixel], L
         ld      [IX+Mob.Y+0],       H
         ld      [IX+Mob.Y+1],       A
-@_7:    ld      HL,     D2ED+1                                ;lo-addr of D2ED
+@_7:    ld      HL,     RAM_D2ED+1                                ;lo-addr of D2ED
         ld      A,      [HL]
         cp      $5A
         jr      nc,     @_8
@@ -17124,7 +17124,7 @@ _77be:                                                                  ;$77BE
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                ld      A,       [LEVEL_MUSIC]
+                ld      A,      [RAM_LEVEL_MUSIC]
                 rst     $18     ;=rst_playMusic
         .ENDIF
 
@@ -17145,24 +17145,24 @@ _77be:                                                                  ;$77BE
         ld      [IX+Mob.spriteLayout+1],    >@_7922
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         inc     D
         and     A
         sbc     HL,     DE
         ret     c
 
         ;unlocks the screen?
-        ld      [IX+Mob.type],      $FF                     ;remove mob?
+        ld      [IX+Mob.type],  $FF                     ;remove mob?
         ld      HL,     $2000                   ;8192 -- max width of a level in pixels?
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],      HL
         ld      HL,     $0000
-        ld      [CAMERA_X_GOTO],        HL
+        ld      [RAM_CAMERA_X_GOTO],    HL
 
         set     5,      [IY+Vars.flags0]
         set     0,      [IY+Vars.flags2]
         res     1,      [IY+Vars.flags2]
 
-        ld      A,      [CURRENT_LEVEL]
+        ld      A,      [RAM_CURRENT_LEVEL]
         cp      $0B
         jr      nz,     @_10
 
@@ -17235,16 +17235,16 @@ _79fa:                                                                  ;$79FA
         ld      A,      [IX+Mob.Xspeed+0]
         or      [IX+Mob.Xspeed+1]
         ret     z
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         bit     0,      A
         ret     nz
         and     $02
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $FFF8
         ld      DE,     $0010
         ld      C,      $04
@@ -17254,8 +17254,8 @@ _79fa:                                                                  ;$79FA
 
         ld      HL,     $0028
         ld      C,      $00
-@_1:    ld      [TEMP4],        HL
-        ld      [TEMP6],        DE
+@_1:    ld      [RAM_TEMP4],    HL
+        ld      [RAM_TEMP6],    DE
         add     A,      C
         call    _3581
         ret
@@ -17275,12 +17275,12 @@ _7a3a:                                                                  ;$7A3A
         and     %00011111
         ld      L,      A
         ld      H,      $00
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    _0625
         and     %00011111
         ld      L,      A
         ld      H,      $00
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         pop     HL
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
@@ -17292,12 +17292,12 @@ _7a3a:                                                                  ;$7A3A
         xor     A                                          ;set A to 0
         ld      [IX+Mob.type],      $0A                     ;explosion
         ld      [IX+Mob.Xsubpixel], A
-        ld      HL,     [TEMP1]
+        ld      HL,     [RAM_TEMP1]
         add     HL,     DE
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
         ld      [IX+Mob.Ysubpixel], A
-        ld      HL,     [TEMP3]
+        ld      HL,     [RAM_TEMP3]
         add     HL,     BC
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
@@ -17330,26 +17330,26 @@ meta_trip_process:                                                      ;$7AA7
         ld      [IX+Mob.width],     64
         ld      [IX+Mob.height],    64
         ld      HL,     $0000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ret     c
 
         bit     6,      [IY+Vars.flags6]
         ret     nz
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         and     $80
         ret     z
 
         ld      HL,     $FFFB
         xor     A
-        ld      [SONIC.Yspeed+0],       A
-        ld      [SONIC.Yspeed+1],       HL
+        ld      [RAM_SONIC.Yspeed+0],   A
+        ld      [RAM_SONIC.Yspeed+1],   HL
         ld      HL,     $0003
         xor     A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       HL
-        ld      HL,     SONIC.flags
+        ld      [RAM_SONIC.Xspeed+0],   A
+        ld      [RAM_SONIC.Xspeed+1],   HL
+        ld      HL,     RAM_SONIC.flags
         res     1,      [HL]
         set     6,      [IY+Vars.flags6]
         ld      [IY+Vars.joypad],  $FF
@@ -17376,17 +17376,17 @@ flower_process:                                                         ;$7AED
 @_1:    ld      BC,     $0000
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [D2AB], HL
+        ld      [RAM_D2AB],     HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         jr      nc,     @_2
 
         ld      DE,     $0010
         add     HL,     DE
         inc     BC
-@_2:    ld      [D2AD], HL
+@_2:    ld      [RAM_D2AD],     HL
         ld      A,      [IX+Mob.unknown12]
         add     A,      A
         add     A,      A
@@ -17404,11 +17404,11 @@ flower_process:                                                         ;$7AED
         ld      D,      $00
         ld      HL,     @_7b5d
         add     HL,     DE
-        ld      [D2AF], HL
+        ld      [RAM_D2AF],     HL
         pop     HL
         inc     HL
         inc     HL
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         ret     c
 
@@ -17437,7 +17437,7 @@ meta_blink_process:                                                     ;$7B95
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         set     0,      [IY+Vars.flags9]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         jp      z,      @_1
 
@@ -17456,7 +17456,7 @@ meta_blink_process:                                                     ;$7B95
         ld      A,      [HL]
         ld      [IX+Mob.spriteLayout+0],    E
         ld      [IX+Mob.spriteLayout+1],    D
-        ld      [D302], A
+        ld      [RAM_D302],     A
         jr      @_2
 
 @_1:    ld      [IX+Mob.spriteLayout+0],        A
@@ -17472,7 +17472,7 @@ meta_blink_process:                                                     ;$7B95
         ld      [IX+Mob.Ydirection],        A
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         inc     H
         xor     A
         sbc     HL,     DE
@@ -17566,7 +17566,7 @@ findEmptyMob:                                                           ;$7C7B
 ;       B       mob slot index number (0-31)
 ;       HL      address of the empty mob slot selected
 ;-------------------------------------------------------------------------------
-        ld      HL,     MOBS
+        ld      HL,     RAM_MOBS
         ld      DE,     _sizeof_Mob
         ld      B,      31                                      ;number of mob slots, less Sonic?
 
@@ -17588,29 +17588,29 @@ _7c8c:                                                                  ;$7C8C
 ; in    HL
 ;       DE
 ;-------------------------------------------------------------------------------
-        ld      [CAMERA_X_GOTO],        HL
-        ld      [CAMERA_Y_GOTO],        DE
+        ld      [RAM_CAMERA_X_GOTO],    HL
+        ld      [RAM_CAMERA_Y_GOTO],    DE
 
-        ld      HL,     [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
-        ld      [LEVEL_RIGHT],  HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],       HL
+        ld      [RAM_LEVEL_RIGHT],      HL
 
-        ld      HL,     [CAMERA_Y]
-        ld      [LEVEL_TOP],    HL
-        ld      [LEVEL_BOTTOM], HL
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      [RAM_LEVEL_TOP],        HL
+        ld      [RAM_LEVEL_BOTTOM],     HL
         ret
         ;
 
 _7ca6:                                                                  ;$7CA6
 ;===============================================================================
-        ld      HL,     [CAMERA_X_GOTO]
-        ld      DE,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X_GOTO]
+        ld      DE,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         ret     nz
 
-        ld      HL,     [CAMERA_Y_GOTO]
-        ld      DE,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y_GOTO]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         ret     nz
@@ -17641,18 +17641,18 @@ _LABEL_7CC1_12:                                                         ;$7CC1
         ld      L,      H
         ld      H,      A
         add     HL,     BC
-        ld      A,      [SONIC.height]
+        ld      A,      [RAM_SONIC.height]
         ld      C,      A
         xor     A
         ld      B,      A
         sbc     HL,     BC
-        ld      [SONIC.Y],      HL
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Y],  HL
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
 
-        ld      HL,     SONIC.flags
+        ld      HL,     RAM_SONIC.flags
         set     7,      [HL]
 
         ret
@@ -17765,11 +17765,11 @@ badnick_chopper_process:                                                ;$7CF6
         ld      [IX+Mob.spriteLayout+1],    (>@_7df7)
 
 @_6:    ld      HL,     $0204
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ret
@@ -17796,9 +17796,9 @@ mob_platform_fallVert:                                                  ;$7E02
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
 
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_LEFT],     HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_LEFT], HL
         ld      HL,     $0058
-        ld      [SCROLLZONE_OVERRIDE_RIGHT],    HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_RIGHT],HL
 
         ld      [IX+Mob.width],     $0C
         ld      [IX+Mob.height],    $10
@@ -17817,12 +17817,12 @@ mob_platform_fallVert:                                                  ;$7E02
         ld      [IX+Mob.Yspeed+1],      A
         ld      [IX+Mob.Ydirection],    A
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_1
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -17830,7 +17830,7 @@ mob_platform_fallVert:                                                  ;$7E02
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
-@_1:    ld      A,       [FRAMECOUNT]
+@_1:    ld      A,      [RAM_FRAMECOUNT]
         and     $03
         ret     nz
         inc     [IX+Mob.unknown11]
@@ -17862,9 +17862,9 @@ mob_platform_fallHoriz:                                                 ;$7E9B
         set     5,      [IX+Mob.flags]               ;mob does not collide with the floor
 
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_LEFT],     HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_LEFT], HL
         ld      HL,     $0058
-        ld      [SCROLLZONE_OVERRIDE_RIGHT],    HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_RIGHT],HL
 
         ld      [IX+Mob.width],     $1A
         ld      [IX+Mob.height],    $10
@@ -17915,19 +17915,19 @@ mob_platform_roll:                                                      ;$7EE6
         ld      [IX+Mob.Yspeed+1],  $FF
         ld      [IX+Mob.Ydirection],        $FF
 
-@_2:    ld      A,       [SONIC.Ydirection]
+@_2:    ld      A,       [RAM_SONIC.Ydirection]
         and     A
         jp      m,      mob_platform_roll_continue@_8003
 
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jp      c,      mob_platform_roll_continue@_8003
         ld      BC,     $0010
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
         call    _LABEL_7CC1_12
-        ld      HL,     [SONIC.Xspeed]
+        ld      HL,     [RAM_SONIC.Xspeed]
         ld      A,      L
         or      H
         jr      z,      @_4
@@ -17939,7 +17939,7 @@ mob_platform_roll:                                                      ;$7EE6
         call    getFloorLayoutRAMAddressForMob
         ld      E,      [HL]
         ld      D,      $00
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         add     A,      A
         ld      C,      A
         ld      B,      D
@@ -17955,8 +17955,8 @@ mob_platform_roll:                                                      ;$7EE6
         ld      A,      D
         ld      E,      D
         jr      nz,     @_5
-@_4:    ld      A,       [SONIC.Xspeed+0]
-        ld      DE,     [SONIC.Xspeed+1]
+@_4:    ld      A,      [RAM_SONIC.Xspeed+0]
+        ld      DE,     [RAM_SONIC.Xspeed+1]
         sra     D
         rr      E
         rra
@@ -17967,11 +17967,11 @@ mob_platform_roll:                                                      ;$7EE6
         ld      [IX+Mob.Xsubpixel], A
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
-        ld      [SONIC.Xsubpixel],      A
+        ld      [RAM_SONIC.Xsubpixel],  A
         ld      DE,     $FFFC
         add     HL,     DE
-        ld      [SONIC.X],      HL
-        ld      DE,     [SONIC.Xspeed]
+        ld      [RAM_SONIC.X],  HL
+        ld      DE,     [RAM_SONIC.Xspeed]
         bit     7,      D
         jr      z,      @_6
         ld      A,      E
@@ -18048,13 +18048,13 @@ boss_jungle_process:                                                    ;$8053
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $00E0
         and     A
         sbc     HL,     DE
         ret     nc
 
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rlca
         ret     nc
 
@@ -18075,21 +18075,21 @@ boss_jungle_process:                                                    ;$8053
         .ENDIF
 
         xor     A
-        ld      [D2EC], A
+        ld      [RAM_D2EC],     A
 
         ;there's a routine at `_7c8c` for setting the scroll positions that should
          ;have been used here?
-        ld      HL,     [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
-        ld      [LEVEL_RIGHT],  HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],       HL
+        ld      [RAM_LEVEL_RIGHT],      HL
 
-        ld      HL,     [CAMERA_Y]
-        ld      [LEVEL_TOP],    HL
-        ld      [LEVEL_BOTTOM], HL
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      [RAM_LEVEL_TOP],        HL
+        ld      [RAM_LEVEL_BOTTOM],     HL
         ld      HL,     $01F0
-        ld      [CAMERA_X_GOTO],        HL
+        ld      [RAM_CAMERA_X_GOTO],    HL
         ld      HL,     $0048
-        ld      [CAMERA_Y_GOTO],        HL
+        ld      [RAM_CAMERA_Y_GOTO],    HL
 
         set     0,      [IX+Mob.flags]
 
@@ -18178,7 +18178,7 @@ boss_jungle_process:                                                    ;$8053
 @_7:    ld      A,       [IX+Mob.unknown11]
         xor     $02
         ld      [IX+Mob.unknown11], A
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $08
         jr      nc,     @_8
 
@@ -18219,7 +18219,7 @@ boss_jungle_process:                                                    ;$8053
         ld      [IX+Mob.unknown12], A
         pop     IX
 @_8:    ld      HL,     $005A
-        ld      [D216], HL
+        ld      [RAM_D216],     HL
         call    _77be
         call    _79fa
         ret
@@ -18241,7 +18241,7 @@ unknown_8218_process:                                                   ;$8218
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    16
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -18276,10 +18276,10 @@ unknown_8218_process:                                                   ;$8218
 @_2:    ld      [IX+Mob.Yspeed+0],      L
         ld      [IX+Mob.Yspeed+1],      H
         ld      [IX+Mob.Ydirection],    C
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         add     A,      [IX+Mob.unknown11]
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
         ld      A,      [IX+Mob.unknown11]
         cp      [IX+Mob.unknown12]
         jr      nc,     @_3
@@ -18290,7 +18290,7 @@ unknown_8218_process:                                                   ;$8218
         ret
 
 @_3:    jr      nz,     @_4
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         ret     z
 
@@ -18338,17 +18338,17 @@ badnick_yadrin_process:                                                 ;$82E6
         ld      [IX+Mob.width],     16
         ld      [IX+Mob.height],    15
         ld      HL,     $0408
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
         ld      [IX+Mob.width],     20
         ld      [IX+Mob.height],    32
         ld      HL,     $1006
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ld      HL,     $0404
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ld      L,      [IX+Mob.Yspeed+0]
@@ -18378,7 +18378,7 @@ badnick_yadrin_process:                                                 ;$82E6
         ld      DE,     @_837e
         ld      BC,     @_8374
         call    animateMob
-@_2:    ld      A,       [FRAMECOUNT]
+@_2:    ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         ret     nz
 
@@ -18426,7 +18426,7 @@ platform_bridge_process:                                                ;$83C1
         ld      [IX+Mob.spriteLayout+1],    A
         ld      L, A
         ld      H, A
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
 
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -18440,20 +18440,20 @@ platform_bridge_process:                                                ;$83C1
         jp      nz,     @_4
 
         ld      [IX+Mob.unknown11], $01
-        ld      A,      [D2AB+1]
+        ld      A,      [RAM_D2AB+1]
         and     $80
         jp      z,      @_4
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [D2AB], HL
+        ld      [RAM_D2AB],     HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $000e
         add     HL,     DE
-        ld      [D2AD], HL
+        ld      [RAM_D2AD],     HL
         ld      HL,     @_848e
-        ld      [D2AF], HL
+        ld      [RAM_D2AF],     HL
         set     0,      [IX+Mob.flags]
 
         ; (we can compile with, or without, sound)
@@ -18479,8 +18479,8 @@ platform_bridge_process:                                                ;$83C1
 @_3:    ld      [IX+Mob.Yspeed+0],      L
         ld      [IX+Mob.Yspeed+1],      H
         ld      [IX+Mob.Ydirection],    C
-        ld      [TEMP1],        HL
-        ld      DE,     [CAMERA_Y]
+        ld      [RAM_TEMP1],    HL
+        ld      DE,     [RAM_CAMERA_Y]
         inc     D
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
@@ -18492,15 +18492,15 @@ platform_bridge_process:                                                ;$83C1
         ret
 
 @_4:    ld      HL,     $0402
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ret     c
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         ret     m
 
-        ld      DE,     [TEMP1]
+        ld      DE,     [RAM_TEMP1]
         ld      BC,     $0010
         call    _LABEL_7CC1_12
         ret
@@ -18539,7 +18539,7 @@ mob_boss_bridge:                                                        ;$8496
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
         xor     A
-        ld      [D2EC], A
+        ld      [RAM_D2EC],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -18605,11 +18605,11 @@ mob_boss_bridge:                                                        ;$8496
         jp      nz,     @_6
 
         inc     [IX+Mob.unknown11]
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $08
         jr      nc,     @_6
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
         and     A
@@ -18630,26 +18630,26 @@ mob_boss_bridge:                                                        ;$8496
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     BC
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         pop     HL
         ld      B,      $03
 
 @loop:  push    BC
         ld      A,      [HL]
-        ld      [TEMP4],        A
+        ld      [RAM_TEMP4],    A
         inc     HL
         ld      A,      [HL]
-        ld      [TEMP5],        A
+        ld      [RAM_TEMP5],    A
         inc     HL
         ld      A,      [HL]
-        ld      [TEMP6],        A
+        ld      [RAM_TEMP6],    A
         inc     HL
         ld      A,      [HL]
-        ld      [TEMP7],        A
+        ld      [RAM_TEMP7],    A
         inc     HL
         push    HL
         ld      C,      $10
@@ -18678,8 +18678,8 @@ mob_boss_bridge:                                                        ;$8496
 
         ld      [IX+Mob.unknown11], A
 
-@_6:    ld      HL,     $00A2
-        ld      [D216], HL
+@_6:    ld      HL,             $00A2
+        ld      [RAM_D216],     HL
         call    _77be
         ret
         ;
@@ -18700,21 +18700,21 @@ _85d1:                                                                  ;$85D1
         pop     IX
         xor     A                                          ;set A to 0
         ld      [IX+Mob.type],      $0D                     ;unknown mob
-        ld      HL,     [TEMP1]
-        ld      [IX+Mob.Xsubpixel], A
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
-        ld      HL,     [TEMP3]
-        ld      [IX+Mob.Ysubpixel], A
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
-        ld      [IX+Mob.unknown11], A
-        ld      [IX+Mob.unknown13], C
-        ld      [IX+Mob.unknown14], A
-        ld      [IX+Mob.unknown15], A
-        ld      [IX+Mob.unknown16], A
-        ld      [IX+Mob.unknown17], A
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP1]
+        ld      [IX+Mob.Xsubpixel],     A
+        ld      [IX+Mob.X+0],           L
+        ld      [IX+Mob.X+1],           H
+        ld      HL,     [RAM_TEMP3]
+        ld      [IX+Mob.Ysubpixel],     A
+        ld      [IX+Mob.Y+0],           L
+        ld      [IX+Mob.Y+1],           H
+        ld      [IX+Mob.unknown11],     A
+        ld      [IX+Mob.unknown13],     C
+        ld      [IX+Mob.unknown14],     A
+        ld      [IX+Mob.unknown15],     A
+        ld      [IX+Mob.unknown16],     A
+        ld      [IX+Mob.unknown17],     A
+        ld      HL,     [RAM_TEMP4]
         xor     A
         bit     7,      H
         jr      z,      @_1
@@ -18723,7 +18723,7 @@ _85d1:                                                                  ;$85D1
 @_1:    ld      [IX+Mob.Xspeed+0],      L
         ld      [IX+Mob.Xspeed+1],      H
         ld      [IX+Mob.Xdirection],    A
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         xor     A
         bit     7,      H
         jr      z,      @_2
@@ -18814,10 +18814,10 @@ platform_balance_process:                                               ;$866C
         ld      A,      L
         or      H
         jr      nz,     @_3
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
         jr      @_4
 
 @_3:    ld      A,      L
@@ -18827,12 +18827,12 @@ platform_balance_process:                                               ;$866C
         cpl
         ld      H,      A
         inc     HL
-        ld      DE,     [D2E6]
+        ld      DE,     [RAM_D2E6]
         add     HL,     DE
-        ld      [SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Yspeed],     HL
 
         ld      A,      $FF
-        ld      [SONIC.Ydirection],     A                       ;set Sonic as currently jumping
+        ld      [RAM_SONIC.Ydirection], A                       ;set Sonic as currently jumping
 
 @_4:    ld      A,      $1C
         sub     C
@@ -18858,79 +18858,79 @@ platform_balance_process:                                               ;$866C
         ld      [IX+Mob.unknown16], A
 @_7:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      L,      [IX+Mob.unknown11]
         ld      DE,     $0010
         add     HL,     DE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      HL,     @_8830
         call    @_881a
         ld      HL,     $0028
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      A,      $1C
         sub     [IX+Mob.unknown11]
         ld      L,      A
         ld      H,      $00
         ld      DE,     $0010
         add     HL,     DE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      HL,     @_8830
         call    @_881a
         ld      HL,     $002c
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      L,      [IX+Mob.unknown15]
         ld      H,      [IX+Mob.unknown16]
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      HL,     @_8834
         call    @_881a
         res     1,      [IX+Mob.flags]
         ld      [IX+Mob.width],     $14
         ld      A,      $02
-        ld      [TEMP6],        A
+        ld      [RAM_TEMP6],    A
         ld      A,      [IX+Mob.unknown11]
         ld      C,      A
         add     A,      $08
         ld      [IX+Mob.height],    A
         ld      A,      C
         add     A,      $04
-        ld      [TEMP7],        A
+        ld      [RAM_TEMP7],    A
         call    detectCollisionWithSonic
         jr      nc,     @_8
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         ret     m
 
         ld      [IX+Mob.width],     $3C
         ld      A,      $2A
-        ld      [TEMP6],        A
+        ld      [RAM_TEMP6],    A
         ld      A,      $1C
         sub     [IX+Mob.unknown11]
         add     A,      $08
-        ld      [IX+Mob.height],    A
+        ld      [IX+Mob.height],        A
         ld      A,      $1C
         sub     [IX+Mob.unknown11]
         add     A,      $04
-        ld      [TEMP7],        A
+        ld      [RAM_TEMP7],    A
         call    detectCollisionWithSonic
         jr      nc,     @_9
         ret
 
 @_8:    set     1,      [IX+Mob.flags]
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         ret     m
 
         ld      A,      [IX+Mob.unknown11]
         cp      $1C
         jr      z,      @_9
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
@@ -18940,31 +18940,31 @@ platform_balance_process:                                               ;$866C
         inc     HL
         ld      [IX+Mob.unknown12], L
         ld      [IX+Mob.unknown13], H
-        ld      A,      [SONIC.Yspeed+1]
+        ld      A,      [RAM_SONIC.Yspeed+1]
         add     A,      [IX+Mob.unknown11]
         ld      [IX+Mob.unknown11], A
         cp      $1C
         jr      c,      @_10
 
         ld      [IX+Mob.unknown11], $1C
-@_9:    ld      A,       [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
-@_10:   ld      L,       [IX+Mob.Y+0]
+@_9:    ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
+@_10:   ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      BC,     $0010
         add     HL,     BC
-        ld      A,      [TEMP7]
+        ld      A,      [RAM_TEMP7]
         sub     $04
         ld      C,      A
         add     HL,     BC
-        ld      A,      [SONIC.height]
+        ld      A,      [RAM_SONIC.height]
         ld      C,      A
         xor     A
         sbc     HL,     BC
-        ld      [SONIC.Y],      HL
-        ld      HL,     SONIC.flags
+        ld      [RAM_SONIC.Y],  HL
+        ld      HL,     RAM_SONIC.flags
         set     7,      [HL]
         ret
 
@@ -18976,10 +18976,10 @@ platform_balance_process:                                               ;$866C
 
         push    HL
         call    _3581
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         pop     HL
         inc     HL
         jp      @_881a
@@ -19007,11 +19007,11 @@ badnick_jaws_process:                                                   ;$8837
         ld      [IX+Mob.height],    12
 
         ld      HL,     $0A02
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      HL,     $0008
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ld      DE,     @_88be
@@ -19027,18 +19027,18 @@ badnick_jaws_process:                                                   ;$8837
         ld      [IX+Mob.height],    12
 
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
 
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         call    nc,     hitPlayer
 
         ld      DE,     @_88be
         ld      BC,     @_88b9
         call    animateMob
 
-@_2:    ld      A,                   [FRAMECOUNT]
+@_2:    ld      A,                   [RAM_FRAMECOUNT]
         and     $07
         ret     nz
 
@@ -19121,7 +19121,7 @@ trap_spikeBall_process:                                                 ;$88FB
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
         ld      HL,     $0204
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -19340,20 +19340,20 @@ trap_spear_process:                                                     ;$8AF6
         set     0,      [IX+Mob.flags]
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
-        ld      A,      [FRAMECOUNT]
+        ld      [RAM_TEMP4],    HL
+        ld      A,      [RAM_FRAMECOUNT]
         rlca
         rlca
         and     $03
         jr      nz,     @_2
 
         ld      HL,     @_8bbc
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $3F
         ld      E,      A
         cp      $08
@@ -19374,7 +19374,7 @@ trap_spear_process:                                                     ;$8AF6
         jr      nz,     @_4
 
         ld      HL,     @_8bc4
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $3f
         ld      E,      A
         cp      $08
@@ -19406,7 +19406,7 @@ trap_spear_process:                                                     ;$8AF6
         jp      m,      @_6
         push    HL
         ld      D,      $00
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],    DE
         call    _3581
         pop     HL
 @_6:    pop     BC
@@ -19416,7 +19416,7 @@ trap_spear_process:                                                     ;$8AF6
         ld      [IX+Mob.spriteLayout+1],    B
         ld      D,      [HL]
         ld      E,      $04
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],    DE
         inc     HL
         ld      A,      [HL]
         ld      [IX+Mob.width],     $01
@@ -19424,7 +19424,7 @@ trap_spear_process:                                                     ;$8AF6
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         cp      $80
         ret     nz
 
@@ -19532,20 +19532,20 @@ trap_fireball_process:                                                  ;$8C16
         jr      nz,     @_7
 
         ld      HL,     $0402
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $FFF0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_7
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0110
         add     HL,     BC
         and     A
@@ -19554,14 +19554,14 @@ trap_fireball_process:                                                  ;$8C16
 
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFF0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_7
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00d0
         add     HL,     BC
         and     A
@@ -19616,7 +19616,7 @@ meta_water_process:                                                     ;$8D48
         ld      [IX+Mob.Y+1],       A
         ld      L,      H
         ld      H,      [IX+Mob.Y+1]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $0F
         jr      nz,     @_2
 
@@ -19626,8 +19626,8 @@ meta_water_process:                                                     ;$8D48
         jr      c,      @_2
 
         ld      [IX+Mob.unknown11], $00
-@_2:    ld      [D2DC], HL
-        ld      DE,     [CAMERA_Y]
+@_2:    ld      [RAM_D2DC],     HL
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         ld      A,      $FF
         sbc     HL,     DE
@@ -19645,7 +19645,7 @@ meta_water_process:                                                     ;$8D48
         jr      c,      @_3
 
         ld      A,      E
-@_3:    ld      [WATERLINE],    A
+@_3:    ld      [RAM_WATERLINE],        A
         and     A
         ret     z
 
@@ -19655,18 +19655,18 @@ meta_water_process:                                                     ;$8D48
         add     A,      $09
         ld      L,      A
         ld      H,      $00
-        ld      [TEMP6],        HL
-        ld      HL,     [CAMERA_X]
-        ld      [TEMP1],        HL
-        ld      HL,     [CAMERA_Y]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP6],    HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_TEMP1],    HL
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      [RAM_TEMP3],    HL
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         push    AF
         push    HL
         ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      A,      [FRAMECOUNT]
+        ld      [RAM_SPRITETABLE_ADDR], HL
+        ld      A,      [RAM_FRAMECOUNT]
         and     $03
         add     A,      A
         add     A,      A
@@ -19680,18 +19680,18 @@ meta_water_process:                                                     ;$8D48
         ld      C,      [HL]
         inc     HL
         push    HL
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $0F
         add     A,      C
         ld      L,      A
         ld      H,      $00
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      A,      $00
         call    _3581
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      A,      $02
         call    _3581
         pop     HL
@@ -19700,7 +19700,7 @@ meta_water_process:                                                     ;$8D48
 
         pop     HL
         pop     AF
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ld      [IY+Vars.spriteUpdateCount],       A
         ret
 
@@ -19730,12 +19730,12 @@ powerups_bubbles_process:                                               ;$8E56
         bit     0,      [HL]
         call    nz,     _91eb
 
-@_1:    ld      L,       [IX+Mob.X+0]
+@_1:    ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      A,      [IX+Mob.unknown11]
         add     A,      A
         ld      E,      A
@@ -19743,14 +19743,14 @@ powerups_bubbles_process:                                               ;$8E56
         ld      HL,     @_8eb6
         add     HL,     DE
         ld      E,      [HL]
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         inc     HL
         ld      E,      [HL]
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         ld      A,      $0C
         call    _3581
         inc     [IX+Mob.unknown12]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         ret     nz
 
@@ -19759,7 +19759,7 @@ powerups_bubbles_process:                                               ;$8E56
         cp      $06
         ret     c
 
-        ld      [IX+Mob.unknown11], $00
+        ld      [IX+Mob.unknown11],     $00
         ret
 
 @_8eb6: .BYTE   $08 $05 $08 $04 $07 $03 $06 $02 $07 $01 $06 $00
@@ -19774,8 +19774,8 @@ _8eca:                                                                  ;$8ECA
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]
         xor     A
-        ld      [IX+Mob.spriteLayout+0],    A
-        ld      [IX+Mob.spriteLayout+1],    A
+        ld      [IX+Mob.spriteLayout+0],        A
+        ld      [IX+Mob.spriteLayout+1],        A
         ld      A,      [IX+Mob.unknown11]
         and     $0F
         jr      nz,     @_2
@@ -19797,9 +19797,9 @@ _8eca:                                                                  ;$8ECA
         ld      [IX+Mob.Ydirection],    $FF
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ex      DE,     HL
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0008
         xor     A
         sbc     HL,     BC
@@ -19811,7 +19811,7 @@ _8eca:                                                                  ;$8ECA
         sbc     HL,     DE
         jr      nc,     @_4
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0100
         add     HL,     BC
         and     A
@@ -19820,21 +19820,21 @@ _8eca:                                                                  ;$8ECA
 
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ex      DE,     HL
-        ld      HL,     [D2DC]
+        ld      HL,     [RAM_D2DC]
         and     A
         sbc     HL,     DE
         jr      nc,     @_4
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $fff0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_4
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00C0
         add     HL,     BC
         and     A
@@ -19843,8 +19843,8 @@ _8eca:                                                                  ;$8ECA
 
 @_4:    ld      [IX+Mob.type],  $FF                     ;remove mob?
 @_5:    ld      HL,     $0000
-        ld      [TEMP4],        HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP6],        HL
         ld      A,      $0C
         call    _3581
         inc     [IX+Mob.unknown11]
@@ -19868,13 +19868,13 @@ badnick_burrobot_process:                                               ;$8F6D
         ;check for collision with Sonic. use a 2px offset on the sprite
         ;TODO: need a means of dynamically generating this 16-bit number from mob specification
         ld      HL,      $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
 
         ;if carry is clear, the play took a hit:
         ;define the x/y offset of where to place the explosion
         ld      HL,     $0800
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         call    nc,     hitPlayer
 
         ld      L,      [IX+Mob.Yspeed+0]
@@ -19904,7 +19904,7 @@ badnick_burrobot_process:                                               ;$8F6D
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      nc,     @_2
@@ -19922,7 +19922,7 @@ badnick_burrobot_process:                                               ;$8F6D
         ld      [IX+Mob.Ydirection],        $FF
 @_2:    ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      c,      @_3
@@ -20023,7 +20023,7 @@ platform_float_process:                                                 ;$90C0
         call    getFloorLayoutRAMAddressForMob
         ld      E,      [HL]
         ld      D,      $00
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         add     A,      A
         ld      C,      A
         ld      B,      D
@@ -20064,14 +20064,14 @@ platform_float_process:                                                 ;$90C0
         ld      [IX+Mob.Ydirection],    C
 @_3:    ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $FFE0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_4
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         inc     H
         and     A
         sbc     HL,     DE
@@ -20079,14 +20079,14 @@ platform_float_process:                                                 ;$90C0
 
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFE0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_4
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00e0
         add     HL,     BC
         and     A
@@ -20114,12 +20114,12 @@ platform_float_process:                                                 ;$90C0
         ;-----------------------------------------------------------------------
 
 @_5:    ld      HL,     $0E02
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ret     c
 
         set     0,      [IX+Mob.flags]
-        ld      A,      [SONIC.Yspeed+1]
+        ld      A,      [RAM_SONIC.Yspeed+1]
         and     A
         jp      p,      @_6
 
@@ -20231,7 +20231,7 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
         xor     A
-        ld      [D2EC], A
+        ld      [RAM_D2EC], A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -20322,16 +20322,16 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $000F
         add     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      BC,     $0022
         add     HL,     BC
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      A,      [IX+Mob.unknown13]
         and     A
         jp      z,      @_9432
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $08
         jp      nc,     @_
 
@@ -20344,11 +20344,11 @@ mob_boss_labyrinth:                                                     ;$9267
 
         xor     A                                          ;set A to 0
         ld      [IX+Mob.type],      $2F                     ;unknown mob
-        ld      HL,     [TEMP1]
+        ld      HL,     [RAM_TEMP1]
         ld      [IX+Mob.Xsubpixel], A
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
-        ld      HL,     [TEMP3]
+        ld      HL,     [RAM_TEMP3]
         ld      [IX+Mob.Ysubpixel], A
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
@@ -20402,9 +20402,9 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      [IX+Mob.unknown13], $00
 
 @_:     ld      HL,     $00A2
-        ld      [D216], HL
+        ld      [RAM_D216], HL
         call    _77be
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $08
         ret     nc
 
@@ -20413,15 +20413,15 @@ mob_boss_labyrinth:                                                     ;$9267
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $0010
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $0030
-        ld      [TEMP6],        HL
-        ld      A,      [FRAMECOUNT]
+        ld      [RAM_TEMP6],        HL
+        ld      A,      [RAM_FRAMECOUNT]
         and     $02
         call    _3581
         ret
@@ -20432,25 +20432,25 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0004
         add     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFFA
         add     HL,     DE
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $FF00
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FF00
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      C,      $04
         call    _85d1
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0020
         add     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      HL,     $0100
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      C,      $04
         call    _85d1
 
@@ -20482,7 +20482,7 @@ unknown_94a5_process:                                                   ;$94A5
         ld      [IX+Mob.width],     8
         ld      [IX+Mob.height],    10
         ld      HL,     $0404
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -20490,7 +20490,7 @@ unknown_94a5_process:                                                   ;$94A5
         jr      nz,     @_1
 
         set     1,      [IX+Mob.flags]
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      DE,     $000C
         add     HL,     DE
         ex      DE,     HL
@@ -20516,7 +20516,7 @@ unknown_94a5_process:                                                   ;$94A5
         ld      HL,     @_9688
 @_2:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
         and     A
@@ -20532,7 +20532,7 @@ unknown_94a5_process:                                                   ;$94A5
         ld      B,      [IX+Mob.X+1]
         ld      HL,     $FFF0
         add     HL,     BC
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     DE
         jr      c,      @_4
@@ -20548,7 +20548,7 @@ unknown_94a5_process:                                                   ;$94A5
         ld      B,      [IX+Mob.Y+1]
         ld      HL,     $FFF0
         add     HL,     BC
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         jr      c,      @_4
@@ -20593,7 +20593,7 @@ unknown_94a5_process:                                                   ;$94A5
 @_8:    ld      [IX+Mob.Xspeed+0],      L
         ld      [IX+Mob.Xspeed+1],      H
         ld      [IX+Mob.Xdirection],    C
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0010
         add     HL,     DE
         ex      DE,     HL
@@ -20681,11 +20681,11 @@ unknown_94a5_process:                                                   ;$94A5
 
         ld      DE,     $000F
 @_15:   add     HL,     DE
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
-        ld      A,      [FRAMECOUNT]
+        ld      [RAM_TEMP3],        HL
+        ld      A,      [RAM_FRAMECOUNT]
         and     $0F
         ret     nz
 
@@ -20697,11 +20697,11 @@ unknown_94a5_process:                                                   ;$94A5
         pop     IX
         xor     A                                          ;set A to 0
         ld      [IX+Mob.type],      $2A                     ;unknown object
-        ld      HL,     [TEMP1]
+        ld      HL,     [RAM_TEMP1]
         ld      [IX+Mob.Xsubpixel], A
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
-        ld      HL,     [TEMP3]
+        ld      HL,     [RAM_TEMP3]
         ld      [IX+Mob.Ysubpixel], A
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
@@ -20735,14 +20735,14 @@ unknown_96a8_process:                                                   ;$96A8
         ld      [IX+Mob.spriteLayout+1],    A
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      L, A
         ld      H, A
-        ld      [TEMP4],        HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP6],        HL
         ld      E,      [IX+Mob.unknown12]
         ld      D,      $00
         ld      HL,     @_96f5
@@ -20775,10 +20775,10 @@ unknown_96f8_process:                                                   ;$96F8
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         push    AF
         push    HL
-        ld      A,      [D2DE]
+        ld      A,      [RAM_D2DE]
         cp      $24
         jr      nc,     @_3
 
@@ -20786,16 +20786,16 @@ unknown_96f8_process:                                                   ;$96F8
         ld      D,      $00
         ld      HL,     RAM_SPRITETABLE
         add     HL,     DE
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR],     HL
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP6],        HL
         ld      A,      [IX+Mob.unknown12]
         and     A
         jr      z,      @_1
@@ -20804,24 +20804,24 @@ unknown_96f8_process:                                                   ;$96F8
         jr      nc,     @_1
 
         ld      HL,     $0004
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      A,      $0C
         jr      @_2
 
 @_1:    ld      A,      $40
         call    _3581
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      A,      $42
 @_2:    call    _3581
-        ld      A,      [D2DE]
+        ld      A,      [RAM_D2DE]
         add     A,      $06
-        ld      [D2DE], A
+        ld      [RAM_D2DE], A
 @_3:    pop     HL
         pop     AF
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR],     HL
         ld      [IY+Vars.spriteUpdateCount],       A
         ld      [IX+Mob.width],     $0A
         ld      [IX+Mob.height],    $0C
@@ -20842,11 +20842,11 @@ unknown_96f8_process:                                                   ;$96F8
         jp      @_6
 
 @_4:    ld      HL,     $0206
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_5
 
-        ld      BC,     [SONIC.Y]
+        ld      BC,     [RAM_SONIC.Y]
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
         ld      HL,     $FFF8
@@ -20868,13 +20868,13 @@ unknown_96f8_process:                                                   ;$96F8
         xor     A
         ld      L, A
         ld      H, A
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
-        ld      [D28E], A
-        ld      [D29B], HL
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
+        ld      [RAM_D28E], A
+        ld      [RAM_D29B], HL
         set     2,      [IY+Vars.unknown0]
         ld      A,      $20
-        ld      [D2FB], A
+        ld      [RAM_D2FB], A
         ld      [IX+Mob.unknown12], $10
 
         ; (we can compile with, or without, sound)
@@ -20905,7 +20905,7 @@ unknown_96f8_process:                                                   ;$96F8
 @_7:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ex      DE,     HL
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0008
         xor     A
         sbc     HL,     BC
@@ -20917,7 +20917,7 @@ unknown_96f8_process:                                                   ;$96F8
         sbc     HL,     DE
         jr      nc,     @_9
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0100
         add     HL,     BC
         and     A
@@ -20927,19 +20927,19 @@ unknown_96f8_process:                                                   ;$96F8
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ex      DE,     HL
-        ld      HL,     [D2DC]
+        ld      HL,     [RAM_D2DC]
         and     A
         sbc     HL,     DE
         jr      nc,     @_9
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFF0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_9
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00C0
         add     HL,     BC
         and     A
@@ -20980,7 +20980,7 @@ platform_flipper_process:                                               ;$9866
         jr      nc,     @_3
 
         ld      HL,     $140C
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $16
         call    detectCollisionWithSonic
@@ -20990,17 +20990,17 @@ platform_flipper_process:                                               ;$9866
         call    @_9aaf
         ret     nc
 
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         ld      DE,     $FFFC
-        ld      HL,     [SONIC.Xspeed]
-        ld      A,      [SONIC.Xdirection]
+        ld      HL,     [RAM_SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xdirection]
         add     HL,     DE
         adc     A,      $FF
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
         ret
 
 @_3:    cp      $04
@@ -21008,7 +21008,7 @@ platform_flipper_process:                                               ;$9866
         ld      [IX+Mob.spriteLayout+0],    <@_9a90
         ld      [IX+Mob.spriteLayout+1],    >@_9a90
         ld      HL,     $080f
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $16
         call    detectCollisionWithSonic
@@ -21022,7 +21022,7 @@ platform_flipper_process:                                               ;$9866
         cp      [IX+Mob.unknown11]
         ret     nc
 
-        ld      A,      [SONIC.X]
+        ld      A,      [RAM_SONIC.X]
         add     A,      $0C
         and     %00011111
         add     A,      A
@@ -21033,50 +21033,50 @@ platform_flipper_process:                                               ;$9866
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-        ld      HL,     [SONIC.Xspeed]
-        ld      A,      [SONIC.Xdirection]
+        ld      HL,     [RAM_SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xdirection]
         add     HL,     DE
         adc     A,      $FF
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
         ld      HL,     @_9a3e
         add     HL,     BC
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $FF
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         ret
 
         ;unused section of code?
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         ld      DE,     $0008
-        ld      HL,     [SONIC.Xspeed]
-        ld      A,      [SONIC.Xdirection]
+        ld      HL,     [RAM_SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xdirection]
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
         ret
 
 @_4:    ld      [IX+Mob.spriteLayout+0],        <@_9aa2
         ld      [IX+Mob.spriteLayout+1],        >@_9aa2
         ld      HL,     $021A
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $16
         call    detectCollisionWithSonic
@@ -21086,17 +21086,17 @@ platform_flipper_process:                                               ;$9866
         call    @_9aaf
         ret     nc
 
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         ld      DE,     $001a
-        ld      HL,     [SONIC.Xspeed]
-        ld      A,      [SONIC.Xdirection]
+        ld      HL,     [RAM_SONIC.Xspeed]
+        ld      A,      [RAM_SONIC.Xdirection]
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
         ret
 
 @_999e: .BYTE   $FF $FF $FE $FE $FE $FD $FD $FD $FC $FC $FC $FC $FB $FB $FB $FB
@@ -21127,11 +21127,11 @@ platform_flipper_process:                                               ;$9866
 
         ;-----------------------------------------------------------------------
 
-@_9aaf: ld      A,      [SONIC.Ydirection]                              ;$9AAF
+@_9aaf: ld      A,      [RAM_SONIC.Ydirection]                              ;$9AAF
         and     A
         ret     m
 
-        ld      A,      [SONIC.X]
+        ld      A,      [RAM_SONIC.X]
         add     A,      $0c
         and     %00011111
         ld      L,      A
@@ -21146,8 +21146,8 @@ platform_flipper_process:                                               ;$9866
 @_5:    ld      L,       [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         add     HL,     BC
-        ld      [SONIC.Y],      HL
-        ld      A,      [SONIC.Yspeed+1]
+        ld      [RAM_SONIC.Y],      HL
+        ld      A,      [RAM_SONIC.Yspeed+1]
         cp      $03
         jr      nc,     @_6
 
@@ -21155,22 +21155,22 @@ platform_flipper_process:                                               ;$9866
         ret
 
 @_6:    ld      DE,     $0001
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $00
         sra     A
         rr      H
         rr      L
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         and     A
         ret
         ;
@@ -21204,29 +21204,29 @@ platform_bumper_process:                                                ;$9AFB
         jr      nz,     @_3
 
         ld      HL,     $0602
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ret     c
 
-        ld      A,      [D2E8]
-        ld      DE,     [D2E6]
+        ld      A,      [RAM_D2E8]
+        ld      DE,     [RAM_D2E6]
         ld      C,      A
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      C
         ld      DE,     $0001
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         ld      [IX+Mob.unknown11], $08
 
         ; (we can compile with, or without, sound)
@@ -21253,7 +21253,7 @@ unknown_9b75_process:                                                   ;$9B75
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    96
         ld      HL,     $0000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
@@ -21291,9 +21291,9 @@ unknown_9b75_process:                                                   ;$9B75
 
         inc     HL
         ld      A,      [HL]
-        ld      [D2D3], A
+        ld      [RAM_D2D3], A
         ld      A,      $01
-        ld      [D289], A
+        ld      [RAM_D289], A
         set     4,      [IY+Vars.flags6]
         jp      @_2
 
@@ -21343,7 +21343,7 @@ unknown_9be8_process:                                                   ;$9BE8
         jr      nc,     @_2
 
         ld      HL,     $0400
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -21428,12 +21428,12 @@ mob_trap_flameThrower:                                                  ;$9C8E
         set     0,      [IX+Mob.flags]
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      A,      [IX+Mob.unknown11]
         srl     A
         srl     A
@@ -21474,7 +21474,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
         inc     HL
         ld      D,      $00
         push    HL
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         call    _3581
         pop     HL
         pop     BC
@@ -21485,7 +21485,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
         jr      z,      @_2
 
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -21539,12 +21539,12 @@ mob_door_left:                                                          ;$9DFA
         jr      nc,     @_2
 
         ld      HL,     $0005
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      DE,     $0005
-        ld      A,      [SONIC.Xdirection]
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      m,      @_1
 
@@ -21552,17 +21552,17 @@ mob_door_left:                                                          ;$9DFA
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
         xor     A
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
 @_2:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $FFC8
         add     HL,     DE
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21577,7 +21577,7 @@ mob_door_left:                                                          ;$9DFA
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFE0
         add     HL,     DE
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21744,12 +21744,12 @@ mob_door_right:                                                         ;$9F62
         jr      nc,     @_2
 
         ld      HL,     $0005
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      DE,     $0005
-        ld      A,      [SONIC.Xdirection]
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      m,      @_1
 
@@ -21757,18 +21757,18 @@ mob_door_right:                                                         ;$9F62
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
 
         xor     A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],       A
+        ld      [RAM_SONIC.Xspeed+1],       A
+        ld      [RAM_SONIC.Xdirection],     A
 
 @_2:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $FFF0
         add     HL,     DE
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21785,7 +21785,7 @@ mob_door_right:                                                         ;$9F62
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $ffe0
         add     HL,     DE
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21833,12 +21833,12 @@ mob_door:                                                               ;$A025
         jr      nc,     @_2
 
         ld      HL,     $0005
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      DE,     $0005
-        ld      A,      [SONIC.Xdirection]
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      m,      @_1
 
@@ -21846,18 +21846,18 @@ mob_door:                                                               ;$A025
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
 
         xor     A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],       A
+        ld      [RAM_SONIC.Xspeed+1],       A
+        ld      [RAM_SONIC.Xdirection],     A
 
 @_2:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $FFC8
         add     HL,     DE
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21874,7 +21874,7 @@ mob_door:                                                               ;$A025
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFE0
         add     HL,     DE
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         xor     A
         sbc     HL,     DE
         jr      nc,     @_3
@@ -21947,7 +21947,7 @@ trap_electric_process:                                                  ;$A0E8
         .ENDIF
 
 @_2:    ld      HL,     $0000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -22003,11 +22003,11 @@ badnick_ballhog_process:                                                ;$A1AA
         ld      [IX+Mob.height],    32
 
         ld      HL,     $0803
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
 
         ld      HL,     $0E00
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         call    nc,     hitPlayer
 
         ld      [IX+Mob.Yspeed+0],  $00
@@ -22018,7 +22018,7 @@ badnick_ballhog_process:                                                ;$A1AA
         ld      DE,     $000A
         add     HL,     DE
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         ld      BC,     $000C
         add     HL,     BC
         and     A
@@ -22163,7 +22163,7 @@ unknown_a33c_process:                                                   ;$A33C
         ld      [IX+Mob.width],     $0A
         ld      [IX+Mob.height],    $0F
         ld      HL,     $0101
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -22255,17 +22255,17 @@ door_switch_process:                                                    ;$A3F8
         set     0,      [IX+Mob.flags]
 
 @_1:    ld      HL,     $0001
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_3
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_3
 
         ld      [IX+Mob.spriteLayout+0],    <@_a48b
         ld      [IX+Mob.spriteLayout+1],    >@_a48b
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03
         jr      nz,     @_2
 
@@ -22280,7 +22280,7 @@ door_switch_process:                                                    ;$A3F8
         jr      nz,     @_4
 
         set     1,      [IX+Mob.flags]
-        ld      HL,     D317
+        ld      HL,     RAM_D317
         call    getLevelBitFlag
         ld      A,      [HL]
         xor     C
@@ -22299,7 +22299,7 @@ door_switch_process:                                                    ;$A3F8
 @_3:    res     1,      [IX+Mob.flags]
         ld      [IX+Mob.spriteLayout+0],    <@_a493
         ld      [IX+Mob.spriteLayout+1],    >@_a493
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03
         jr      nz,     @_4
 
@@ -22342,12 +22342,12 @@ door_switching_process:                                                 ;$A4AB
         jr      nc,     @_2
 
         ld      HL,     $0005
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      DE,     $0005
-        ld      A,      [SONIC.Xdirection]
+        ld      A,      [RAM_SONIC.Xdirection]
         and     A
         jp      m,      @_1
 
@@ -22355,16 +22355,16 @@ door_switching_process:                                                 ;$A4AB
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
 
         xor     A
-        ld      [SONIC.Xspeed+0],       A
-        ld      [SONIC.Xspeed+1],       A
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed+0],       A
+        ld      [RAM_SONIC.Xspeed+1],       A
+        ld      [RAM_SONIC.Xdirection],     A
 
         ;-----------------------------------------------------------------------
 
-@_2:    ld      HL,     D317
+@_2:    ld      HL,     RAM_D317
         call    getLevelBitFlag
         bit     1,      [IX+Mob.flags]
         jr      z,      @_3
@@ -22419,7 +22419,7 @@ badnick_caterkiller_process:                                            ;$A551
         ld      [IX+Mob.width],     6
         ld      [IX+Mob.height],    16
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         jr      nz,     @_5
 
@@ -22468,10 +22468,10 @@ badnick_caterkiller_process:                                            ;$A551
 @_4:    ld      [IX+Mob.unknown14],     C
 @_5:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_7
 
@@ -22494,10 +22494,10 @@ badnick_caterkiller_process:                                            ;$A551
 
         ld      [IX+Mob.width],     $06
         ld      HL,     $0802
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         jr      c,      @_6
 
         call    hitPlayer
@@ -22505,7 +22505,7 @@ badnick_caterkiller_process:                                            ;$A551
 
 @_6:    ld      [IX+Mob.width], $16
         ld      HL,     $0806
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
         jr      @_9
@@ -22529,7 +22529,7 @@ badnick_caterkiller_process:                                            ;$A551
 
         ld      [IX+Mob.width],     $10
         ld      HL,     $0401
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_8
 
@@ -22538,14 +22538,14 @@ badnick_caterkiller_process:                                            ;$A551
 
 @_8:    ld      [IX+Mob.width], $16
         ld      HL,     $0410
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ld      HL,     $0000
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         call    nc,     hitPlayer
 
 @_9:    ld      [IX+Mob.Yspeed+1],      $01
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         ret     nz
 
@@ -22572,10 +22572,10 @@ badnick_caterkiller_process:                                            ;$A551
         push    HL
         ld      E,      [HL]
         ld      D,      $00
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         ld      L,      [IX+Mob.unknown13]
         ld      H,      [IX+Mob.unknown14]
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    _3581
         pop     HL
         ld      DE,     $0016
@@ -22588,9 +22588,9 @@ badnick_caterkiller_process:                                            ;$A551
         push    HL
         ld      E,      [HL]
         ld      D,      $00
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         ld      HL,     $0000
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    _3581
         pop     HL
         ld      DE,     $0016
@@ -22639,18 +22639,18 @@ boss_scrapBrain_process:                                                ;$A7ED
         jr      nz,     @_1
 
         ld      HL,     $0340
-        ld      [LEVEL_LEFT],   HL
+        ld      [RAM_LEVEL_LEFT],   HL
 
         ;lock the screen at 1344 pixels, 42 blocks
         ;(near the boss lift in Scrap Brain Act 3)
         ld      HL,     $0540
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],  HL
 
-        ld      HL,     [CAMERA_Y]
-        ld      [LEVEL_TOP],    HL
-        ld      [LEVEL_BOTTOM], HL
+        ld      HL,     [RAM_CAMERA_Y]
+        ld      [RAM_LEVEL_TOP],    HL
+        ld      [RAM_LEVEL_BOTTOM], HL
         ld      HL,     $0220
-        ld      [CAMERA_Y_GOTO],        HL
+        ld      [RAM_CAMERA_Y_GOTO],        HL
 
         ;UNKNOWN
         ld      HL,     $EF3F
@@ -22672,20 +22672,20 @@ boss_scrapBrain_process:                                                ;$A7ED
 @_1:    bit     1,      [IX+Mob.flags]
         jr      nz,     @_4
 
-        ld      HL,     [CAMERA_X]
-        ld      [LEVEL_LEFT],   HL
+        ld      HL,     [RAM_CAMERA_X]
+        ld      [RAM_LEVEL_LEFT],   HL
         ld      DE,     _baf9
         ld      BC,     @_a9b7
         call    animateMob
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         xor     A
         sbc     HL,     DE
         ld      DE,     $0040
         xor     A
-        ld      BC,     [SONIC.Xspeed]
+        ld      BC,     [RAM_SONIC.Xspeed]
         bit     7,      B
         jr      nz,     @_2
 
@@ -22708,8 +22708,8 @@ boss_scrapBrain_process:                                                ;$A7ED
         ld      H,      A
         ld      [IX+Mob.Xspeed+0],  A
         ld      [IX+Mob.Xspeed+1],  A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
         set     1,      [IX+Mob.flags]
         jp      @_9
 
@@ -22750,7 +22750,7 @@ boss_scrapBrain_process:                                                ;$A7ED
 @_6:    bit     4,      [IX+Mob.flags]                      ;mob underwater?
         jr      nz,     @_8
 
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         ld      HL,     $0596
         and     A
         sbc     HL,     DE
@@ -22764,7 +22764,7 @@ boss_scrapBrain_process:                                                ;$A7ED
         or      [IX+Mob.unknown11]
         jr      nz,     @_7
 
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $028D
         xor     A
         sbc     HL,     DE
@@ -22772,12 +22772,12 @@ boss_scrapBrain_process:                                                ;$A7ED
 
         ld      L, A
         ld      H, A
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
 @_7:    ld      A,      $80
-        ld      [SONIC.flags],  A
+        ld      [RAM_SONIC.flags],  A
         ld      HL,     $05A0
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
 
         ld      [IY+Vars.joypad],  $FF
         ld      E,      [IX+Mob.unknown11]
@@ -22785,20 +22785,20 @@ boss_scrapBrain_process:                                                ;$A7ED
         ld      HL,     $028E
         xor     A                                          ;set A to 0
         sbc     HL,     DE
-        ld      [SONIC.Ysubpixel],      A
-        ld      [SONIC.Y],      HL
-        ld      A,      [D2E8]
-        ld      HL,     [D2E6]
-        ld      [SONIC.Yspeed], HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Ysubpixel],      A
+        ld      [RAM_SONIC.Y],      HL
+        ld      A,      [RAM_D2E8]
+        ld      HL,     [RAM_D2E6]
+        ld      [RAM_SONIC.Yspeed], HL
+        ld      [RAM_SONIC.Ydirection],     A
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $C0
         jr      nz,     @_9
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         inc     H
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
         set     4,      [IX+Mob.flags]                      ;set mob underwater
 
         ; (we can compile with, or without, sound)
@@ -22808,7 +22808,7 @@ boss_scrapBrain_process:                                                ;$A7ED
         .ENDIF
 
         ld      A,      $A0
-        ld      [D289], A
+        ld      [RAM_D289], A
         set     1,      [IY+Vars.flags6]
         ret
 
@@ -22830,12 +22830,12 @@ boss_scrapBrain_process:                                                ;$A7ED
         ld      HL,     $02AF
         and     A
         sbc     HL,     DE
-        ld      BC,     [CAMERA_Y]
+        ld      BC,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     BC
         ex      DE,     HL
         ld      HL,     $05A0
-        ld      BC,     [CAMERA_X]
+        ld      BC,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     BC
         ld      BC,     @_a9c0                                  ;address of sprite layout
@@ -22868,10 +22868,10 @@ meta_clouds_process:                                                    ;$A9C7
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         push    AF
         push    HL
-        ld      A,      [D2DE]
+        ld      A,      [RAM_D2DE]
         cp      $24
         jr      nc,     @_1
 
@@ -22879,10 +22879,10 @@ meta_clouds_process:                                                    ;$A9C7
         ld      D,      $00
         ld      HL,     RAM_SPRITETABLE
         add     HL,     DE
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      A,      [D2A3]
+        ld      [RAM_SPRITETABLE_ADDR],     HL
+        ld      A,      [RAM_D2A3]
         ld      C,      A
-        ld      DE,     [D2A1]
+        ld      DE,     [RAM_D2A1]
         ld      L,      [IX+Mob.Ysubpixel]
         ld      H,      [IX+Mob.Y+0]
         ld      A,      [IX+Mob.Y+1]
@@ -22890,27 +22890,27 @@ meta_clouds_process:                                                    ;$A9C7
         adc     A,      C
         ld      L,      H
         ld      H,      A
-        ld      BC,     [CAMERA_Y]
+        ld      BC,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     BC
         ex      DE,     HL
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      BC,     [CAMERA_X]
+        ld      BC,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     BC
         ld      BC,     @_aa63                                  ;address of sprite layout
         call    processSpriteLayout
 
-        ld      A,      [D2DE]
+        ld      A,      [RAM_D2DE]
         add     A,      $0C
-        ld      [D2DE], A
+        ld      [RAM_D2DE], A
 
 @_1:    pop     HL
         pop     AF
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR],     HL
         ld      [IY+Vars.spriteUpdateCount],       A
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      DE,     $FFE0
         add     HL,     DE
         ex      DE,     HL
@@ -22925,7 +22925,7 @@ meta_clouds_process:                                                    ;$A9C7
         add     A,      A
         ld      C,      A
         rl      B
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      DE,     $01B4
         add     HL,     DE
         add     HL,     BC
@@ -22969,10 +22969,10 @@ trap_propeller_process:                                                 ;$AA6A
         set     0,      [IX+Mob.flags]
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
         ld      HL,     @_ab01
@@ -22986,11 +22986,11 @@ trap_propeller_process:                                                 ;$AA6A
         ld      A,      [DE]
         ld      L,      A
         ld      H,      $00
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         inc     DE
         ld      A,      [DE]
         ld      L,      A
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         inc     DE
         ld      A,      [DE]
         inc     DE
@@ -23003,7 +23003,7 @@ trap_propeller_process:                                                 ;$AA6A
         djnz    @loop
 
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -23039,7 +23039,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      DE,     $FFC8
         add     HL,     DE
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      c,      @_1
@@ -23049,7 +23049,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      DE,     $002C
         add     HL,     DE
         ex      DE,     HL
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      nc,     @_1
@@ -23088,9 +23088,9 @@ mob_badnick_bomb:                                                       ;$AB21
         jp      nz,     @_7
 
         ld      HL,     $FFFE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FFFC
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    findEmptyMob
         jp      c,      @_8
 
@@ -23099,9 +23099,9 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      B,      D
         call    _ac96
         ld      HL,     $0003
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FFFC
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    findEmptyMob
         jp      c,      @_8
 
@@ -23111,9 +23111,9 @@ mob_badnick_bomb:                                                       ;$AB21
         call    _ac96
 
         ld      HL,     $FFFE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FFFE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    findEmptyMob
         jp      c,      @_8
 
@@ -23122,9 +23122,9 @@ mob_badnick_bomb:                                                       ;$AB21
         call    _ac96
 
         ld      HL,     $0003
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FFFE
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    findEmptyMob
         jp      c,      @_8
 
@@ -23179,11 +23179,11 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      [IX+Mob.Yspeed+1],      $00
         ld      [IX+Mob.Ydirection],    $00
 @_8:    ld      HL,             $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $3F
         ret     nz
 
@@ -23230,12 +23230,12 @@ _ac96:                                                                  ;$AC96
         ld      [IX+Mob.unknown17], A
         ld      [IX+Mob.Xspeed+0],  A
 
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         ld      [IX+Mob.Xspeed+1],  L
         ld      [IX+Mob.Xdirection],        H
         ld      [IX+Mob.Yspeed+0],  A
 
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         ld      [IX+Mob.Yspeed+1],  L
         ld      [IX+Mob.Ydirection],        H
 
@@ -23395,7 +23395,7 @@ trap_cannonball_process:                                                ;$AE35
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    12
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      DE,     $0110
         add     HL,     DE
         ld      E,      [IX+Mob.X+0]
@@ -23406,7 +23406,7 @@ trap_cannonball_process:                                                ;$AE35
 
         ld      [IX+Mob.type],      $FF                     ;remove object?
 @_1:    ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
@@ -23441,7 +23441,7 @@ badnick_unidos_process:                                                 ;$AE88
         set     0,      [IX+Mob.flags]
 @_1:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      c,      @_2
@@ -23454,7 +23454,7 @@ badnick_unidos_process:                                                 ;$AE88
 
         ;set speed + direction of shot?
         ld      HL,     $FF80
-        ld      [D216], HL
+        ld      [RAM_D216], HL
         call    @_af98
 
         ld      [IX+Mob.unknown16], $01
@@ -23470,25 +23470,25 @@ badnick_unidos_process:                                                 ;$AE88
 
         ;set speed + direction of shot?
         ld      HL,     $0080
-        ld      [D216], HL
+        ld      [RAM_D216], HL
         call    @_af98
 
         ld      [IX+Mob.unknown16],     $FF
 @_3:    ld      [IX+Mob.width],         $1C
         ld      [IX+Mob.height],        $1C
         ld      HL,     $1212
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ld      HL,     $1010
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         call    nc,     hitPlayer
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         push    IX
         pop     HL
         ld      DE,     $0011
@@ -23508,24 +23508,24 @@ badnick_unidos_process:                                                 ;$AE88
         add     HL,     DE
         push    HL
         ld      E,      [HL]
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         inc     HL
         ld      E,      [HL]
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         ld      A,      $24
         call    _3581
         pop     HL
         ld      A,      [HL]
         inc     A
         inc     A
-        ld      [TEMP6],        A
+        ld      [RAM_TEMP6],        A
         add     A,      $04
         ld      [IX+Mob.width],     A
         inc     HL
         ld      A,      [HL]
         inc     A
         inc     A
-        ld      [TEMP7],        A
+        ld      [RAM_TEMP7],        A
         add     A,      $04
         ld      [IX+Mob.height],    A
         call    detectCollisionWithSonic
@@ -23555,7 +23555,7 @@ badnick_unidos_process:                                                 ;$AE88
         inc     HL
         djnz    @loop
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         ret     z
         ld      A,      [IX+Mob.unknown15]
@@ -23571,7 +23571,7 @@ badnick_unidos_process:                                                 ;$AE88
         cp      $C8
         ret     nz
 
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $03
         ret     nz
 
@@ -23579,7 +23579,7 @@ badnick_unidos_process:                                                 ;$AE88
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFD0
         add     HL,     DE
-        ld      DE,     [SONIC.Y]
+        ld      DE,     [RAM_SONIC.Y]
         and     A
         sbc     HL,     DE
         ret     nc
@@ -23637,7 +23637,7 @@ badnick_unidos_process:                                                 ;$AE88
         add     HL,     BC
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
-        ld      HL,     [D216]
+        ld      HL,     [RAM_D216]
         ld      [IX+Mob.Xspeed+0],  L
         ld      [IX+Mob.Xspeed+1],  H
         xor     A
@@ -23688,22 +23688,22 @@ unknown_b0f4_process:                                                   ;$B0F4
         ld      [IX+Mob.width],     $04
         ld      [IX+Mob.height],    $0A
         ld      HL,     $0602
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ex      DE,     HL
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $FFF0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_1
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $0110
         add     HL,     BC
         and     A
@@ -23712,16 +23712,16 @@ unknown_b0f4_process:                                                   ;$B0F4
 
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ex      DE,     HL
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFF0
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_1
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00D0
         add     HL,     BC
         and     A
@@ -23729,8 +23729,8 @@ unknown_b0f4_process:                                                   ;$B0F4
         jr      c,      @_1
 
         ld      HL,     $0000
-        ld      [TEMP4],        HL
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP6],        HL
         ld      A,      $24
         call    _3581
         ret
@@ -23755,10 +23755,10 @@ trap_turretRotating_process:                                            ;$B16C
         ld      [IX+Mob.spriteLayout+1],        $00
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      A,      [IX+Mob.unknown11]
         add     A,      A
         add     A,      A
@@ -23776,7 +23776,7 @@ trap_turretRotating_process:                                            ;$B16C
         jr      z,      @_2
 
         ld      D,      $FF
-@_2:    ld      [TEMP4],        DE
+@_2:    ld      [RAM_TEMP4],        DE
         inc     HL
         ld      D,      $00
         ld      E,      [HL]
@@ -23784,7 +23784,7 @@ trap_turretRotating_process:                                            ;$B16C
         jr      z,      @_3
 
         ld      D,      $FF
-@_3:    ld      [TEMP6],        DE
+@_3:    ld      [RAM_TEMP6],        DE
         inc     HL
         ld      A,      [HL]
         inc     HL
@@ -23798,7 +23798,7 @@ trap_turretRotating_process:                                            ;$B16C
 @_4:    pop     BC
         djnz    @loop
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     $3F
         jr      nz,     @_5
 
@@ -23825,11 +23825,11 @@ trap_turretRotating_process:                                            ;$B16C
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         inc     HL
         ld      E,      [HL]
         ld      D,      $00
@@ -23878,9 +23878,9 @@ platform_flyingRight_process:                                           ;$B297
 
         set     0,      [IX+Mob.flags]
 
-@_1:    ld      A,       [D2A3]
+@_1:    ld      A,       [RAM_D2A3]
         ld      C,      A
-        ld      DE,     [D2A1]
+        ld      DE,     [RAM_D2A1]
         ld      L,      [IX+Mob.unknown12]
         ld      H,      [IX+Mob.unknown13]
         ld      A,      [IX+Mob.unknown14]
@@ -23890,21 +23890,21 @@ platform_flyingRight_process:                                           ;$B297
         ld      [IX+Mob.Y+0],       H
         ld      [IX+Mob.Y+1],       A
 
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_2
 
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $10
         ld      HL,     $0A02
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      HL,     $0030
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],      HL
         ld      HL,     $0030           ;TODO: not needed; HL is already $0030
-        ld      [SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],   HL
 
         ld      BC,     $0010
         ld      DE,     $0000
@@ -23918,20 +23918,20 @@ platform_flyingRight_process:                                           ;$B297
         ld      [IX+Mob.Xsubpixel], L
         ld      [IX+Mob.X+0],       H
         ld      [IX+Mob.X+1],       A
-        ld      HL,     [SONIC.Xsubpixel]
-        ld      A,      [SONIC.X+1]
+        ld      HL,     [RAM_SONIC.Xsubpixel]
+        ld      A,      [RAM_SONIC.X+1]
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Xsubpixel],      HL
-        ld      [SONIC.X+1],    A
+        ld      [RAM_SONIC.Xsubpixel],      HL
+        ld      [RAM_SONIC.X+1],    A
 @_2:    ld      L,       [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $FFF8
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
         ld      HL,     @_b388
@@ -23942,7 +23942,7 @@ platform_flyingRight_process:                                           ;$B297
         ld      E,      [HL]
         ld      D,      $00
         inc     HL
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         ld      A,      [HL]
         inc     HL
         cp      $FF
@@ -23993,7 +23993,7 @@ trap_spikewall_process:                                                 ;$B398
         ld      [IX+Mob.spriteLayout+0],        <@_b45b
         ld      [IX+Mob.spriteLayout+1],        >@_b45b
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
 
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
@@ -24006,18 +24006,18 @@ trap_spikewall_process:                                                 ;$B398
         adc     A,      $00
         ld      L,      H
         ld      H,      A
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [TEMP3],        HL
+        ld      [RAM_TEMP3],        HL
         ld      HL,     $0000
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      HL,     $FFF0
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      A,      $16
         call    _3581
         ld      HL,     $0008
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      A,      $18
         call    _3581
         ld      L,      [IX+Mob.X+0]
@@ -24033,7 +24033,7 @@ trap_spikewall_process:                                                 ;$B398
         ld      B,      [IX+Mob.Y+1]
         ld      HL,     $0040
         add     HL,     BC
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         jr      nc,     @_2
@@ -24042,7 +24042,7 @@ trap_spikewall_process:                                                 ;$B398
         ld      [IX+Mob.X+0],       A
         ld      A,      [IX+Mob.unknown12]
         ld      [IX+Mob.X+1],       A
-@_2:    ld      DE,      [SONIC.Y]
+@_2:    ld      DE,      [RAM_SONIC.Y]
         ld      HL,     $FFE0
         add     HL,     BC
         xor     A
@@ -24109,12 +24109,12 @@ trap_turretFixed_process:                                               ;$B46D
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [TEMP6],        DE
+        ld      [RAM_TEMP6],        DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
@@ -24126,7 +24126,7 @@ trap_turretFixed_process:                                               ;$B46D
         exx
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         ld      A,      H
@@ -24138,7 +24138,7 @@ trap_turretFixed_process:                                               ;$B46D
         exx
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         and     A
         sbc     HL,     DE
         ld      A,      H
@@ -24160,7 +24160,7 @@ platform_flyingUpDown_process:                                          ;$B50E
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      HL,     platform_flyingRight_process@_b37b
-        ld      A,      [LEVEL_SOLIDITY]
+        ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $01
         jr      nz,     @_1
 
@@ -24168,7 +24168,7 @@ platform_flyingUpDown_process:                                          ;$B50E
 @_1:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
         ld      A,      $50
-        ld      [D216], A
+        ld      [RAM_D216], A
         call    @_b53b
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
@@ -24180,7 +24180,7 @@ platform_flyingUpDown_process:                                          ;$B50E
 
         ;-----------------------------------------------------------------------
 
-@_b53b: ld      A,       [D216]                                  ;$B53B
+@_b53b: ld      A,       [RAM_D216]                                  ;$B53B
         ld      L,      A
         ld      DE,     $0010
         ld      C,      $00
@@ -24225,14 +24225,14 @@ platform_flyingUpDown_process:                                          ;$B50E
         ld      [IX+Mob.Yspeed+1],  $02
         ld      [IX+Mob.Ydirection],        $00
 
-@_4:    ld      A,       [SONIC.Ydirection]
+@_4:    ld      A,       [RAM_SONIC.Ydirection]
         and     A
         ret     m
 
         ld      [IX+Mob.width],     $1E
         ld      [IX+Mob.height],    $1C
         ld      HL,     $0802
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         ret     c
 
@@ -24287,7 +24287,7 @@ _b5c2:                                                                  ;$B5C2
         ld      [IX+Mob.unknown15], A
         ld      [IX+Mob.unknown16], A
         ld      [IX+Mob.unknown17], A
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         bit     7,      H
         jr      z,      @_1
 
@@ -24296,7 +24296,7 @@ _b5c2:                                                                  ;$B5C2
         ld      [IX+Mob.Xspeed+1],      H
         ld      [IX+Mob.Xdirection],    A
         xor     A
-        ld      HL,     [TEMP6]
+        ld      HL,     [RAM_TEMP6]
         bit     7,      H
         jr      z,      @_2
 
@@ -24350,7 +24350,7 @@ boss_skyBase_process:                                                   ;$B634
         ld      [IX+Mob.unknown13], L
         ld      [IX+Mob.unknown14], H
         xor     A
-        ld      [D2EC], A
+        ld      [RAM_D2EC], A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -24365,7 +24365,7 @@ boss_skyBase_process:                                                   ;$B634
         jp      nz,     @_4
 
         call    @_b99f
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         jp      nz,     @_8
 
@@ -24473,7 +24473,7 @@ boss_skyBase_process:                                                   ;$B634
         jr      z,      @_9
 
         ld      HL,     @_ba3b
-@_9:    ld      DE,     TEMP1
+@_9:    ld      DE,     RAM_TEMP1
         ldi
         ldi
         ldi
@@ -24486,14 +24486,14 @@ boss_skyBase_process:                                                   ;$B634
         inc     HL
         push    HL
         call    _3581
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         pop     HL
         ld      A,      [HL]
         call    _3581
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $0C
         ret     c
 
@@ -24515,19 +24515,19 @@ boss_skyBase_process:                                                   ;$B634
 
         ;-----------------------------------------------------------------------
 
-@_b7e6: ld      A,      [D2B1]                                          ;$B7E6
+@_b7e6: ld      A,      [RAM_D2B1]                                          ;$B7E6
         and     A
         ret     nz
         bit     0,      [IY+Vars.scrollRingFlags]
         ret     nz
-        ld      A,      [SONIC.flags]
+        ld      A,      [RAM_SONIC.flags]
         rrca
         jr      c,      @_10
 
         and     $02
         ret     z
 
-@_10:   ld      HL,      [SONIC.X]
+@_10:   ld      HL,      [RAM_SONIC.X]
         ld      DE,     $0410
         and     A
         sbc     HL,     DE
@@ -24535,9 +24535,9 @@ boss_skyBase_process:                                                   ;$B634
 
         ld      HL,     $FD00
         ld      A,      $FF
-        ld      [SONIC.Xspeed], HL
-        ld      [SONIC.Xdirection],     A
-        ld      HL,     D2B1
+        ld      [RAM_SONIC.Xspeed], HL
+        ld      [RAM_SONIC.Xdirection],     A
+        ld      HL,     RAM_D2B1
         ld      [HL],   $18
         inc     HL
         ld      [HL],   $0C
@@ -24550,7 +24550,7 @@ boss_skyBase_process:                                                   ;$B634
                 rst     $28     ;=rst_playSFX
         .ENDIF
 
-        ld      HL,     D2EC
+        ld      HL,     RAM_D2EC
         inc     [HL]
         ret
 
@@ -24577,13 +24577,13 @@ boss_skyBase_process:                                                   ;$B634
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [D2AB], DE
+        ld      [RAM_D2AB], DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [D2AD], DE
-        ld      [D2AF], HL
+        ld      [RAM_D2AD], DE
+        ld      [RAM_D2AF], HL
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $0F
@@ -24594,7 +24594,7 @@ boss_skyBase_process:                                                   ;$B634
 
         ;something to do with scrolling
         ld      HL,     $0550
-        ld      [LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],  HL
 
 @_11:   ld      E,       [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
@@ -24608,12 +24608,12 @@ boss_skyBase_process:                                                   ;$B634
         jp      @_15
 
 @_12:   ex      DE,     HL
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         xor     A
         sbc     HL,     DE
         ld      DE,     $0040
         xor     A
-        ld      BC,     [SONIC.Xspeed]
+        ld      BC,     [RAM_SONIC.Xspeed]
         bit     7,      B
         jr      nz,     @_13
 
@@ -24714,7 +24714,7 @@ boss_skyBase_process:                                                   ;$B634
         jr      nc,     @_22
 
         ld      C,      A
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
         jr      nz,     @_21
 
@@ -24878,7 +24878,7 @@ boss_electricBeam_process:                                              ;$BB84
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
 
         ld      HL,     $0008
-        ld      [SCROLLZONE_OVERRIDE_TOP],      HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],      HL
 
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -24892,18 +24892,18 @@ boss_electricBeam_process:                                              ;$BB84
         ld      [IX+Mob.unknown12], $01
         set     0,      [IX+Mob.flags]
 @_1:    ld      HL,     $0390
-        ld      [TEMP1],        HL
+        ld      [RAM_TEMP1],        HL
         ld      L,      [IX+Mob.unknown11]
         ld      H,      $00
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         ld      L,      H
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         ld      DE,     $011A
         ld      HL,     @_bcdd
         call    @_bca5
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
-        ld      [TEMP4],        DE
+        ld      [RAM_TEMP4],        DE
         ld      DE,     $01D2
         ld      HL,     @_bcdd
         call    @_bca5
@@ -24913,7 +24913,7 @@ boss_electricBeam_process:                                              ;$BB84
         bit     1,      [IX+Mob.flags]
         jr      z,      @_2
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         bit     0,      A
         ret     nz
 
@@ -24945,7 +24945,7 @@ boss_electricBeam_process:                                              ;$BB84
         ld      B,      H
         ld      HL,     $000C
         add     HL,     BC
-        ld      DE,     [SONIC.X]
+        ld      DE,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         jr      c,      @_2
@@ -24959,7 +24959,7 @@ boss_electricBeam_process:                                              ;$BB84
         bit     0,      [IY+Vars.scrollRingFlags]
         call    z,      hitPlayer@_35fd
 
-@_2:    ld      A,       [D2EC]
+@_2:    ld      A,       [RAM_D2EC]
         cp      $06
         jr      nc,     @_5
 
@@ -24972,7 +24972,7 @@ boss_electricBeam_process:                                              ;$BB84
         cp      $80
         ret     c
 
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         ld      C,      A
         and     %00000001
         ret     nz
@@ -24980,7 +24980,7 @@ boss_electricBeam_process:                                              ;$BB84
         set     1,      [IX+Mob.flags]
         ret
 
-@_3:    ld      A,       [FRAMECOUNT]
+@_3:    ld      A,       [RAM_FRAMECOUNT]
         and     $0F
         jr      nz,     @_4
 
@@ -24997,7 +24997,7 @@ boss_electricBeam_process:                                              ;$BB84
         res     1,      [IX+Mob.flags]
         ret
 
-@_5:    ld      HL,      [SONIC.X]
+@_5:    ld      HL,      [RAM_SONIC.X]
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
         and     A
@@ -25017,12 +25017,12 @@ boss_electricBeam_process:                                              ;$BB84
 
         inc     [IX+Mob.unknown11]
 @_7:    res     1,      [IX+Mob.flags]
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         ld      C,      A
         and     $40
         ret     nz
 
-        ld      A,      [D2EC]
+        ld      A,      [RAM_D2EC]
         cp      $06
         ret     z
 
@@ -25041,7 +25041,7 @@ boss_electricBeam_process:                                              ;$BB84
 
         ;-----------------------------------------------------------------------
 
-@_bca5: ld      [TEMP3],        DE                                      ;$BAC5
+@_bca5: ld      [RAM_TEMP3],        DE                                      ;$BAC5
         ld      A,      [HL]
         inc     HL
         push    HL
@@ -25050,14 +25050,14 @@ boss_electricBeam_process:                                              ;$BB84
         ld      A,      [HL]
         inc     HL
         push    HL
-        ld      HL,     [TEMP4]
+        ld      HL,     [RAM_TEMP4]
         push    HL
         ld      DE,     $0008
         add     HL,     DE
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         call    _3581
         pop     HL
-        ld      [TEMP4],        HL
+        ld      [RAM_TEMP4],        HL
         pop     HL
         ret
 
@@ -25075,7 +25075,7 @@ unknown_bcdf_process:                                                   ;$BCDF
         set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         set     5,      [IY+Vars.unknown0]
         ld      HL,     $0202
-        ld      [TEMP6],        HL
+        ld      [RAM_TEMP6],        HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -25090,20 +25090,20 @@ unknown_bcdf_process:                                                   ;$BCDF
 
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $FFF4
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jp      nc,     @_8
 
-        ld      HL,     [CAMERA_X]
+        ld      HL,     [RAM_CAMERA_X]
         inc     H
         and     A
         sbc     HL,     DE
         jp      c,      @_8
 
-        ld      HL,     [SONIC.X]
+        ld      HL,     [RAM_SONIC.X]
         and     A
         sbc     HL,     DE
         ld      L,      [IX+Mob.Xspeed+0]
@@ -25132,21 +25132,21 @@ unknown_bcdf_process:                                                   ;$BCDF
         ld      [IX+Mob.Xdirection],    A
         ld      E,      [IX+Mob.Y+0]
         ld      D,      [IX+Mob.Y+1]
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFF4
         add     HL,     BC
         and     A
         sbc     HL,     DE
         jr      nc,     @_8
 
-        ld      HL,     [CAMERA_Y]
+        ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $00c0
         add     HL,     DE
         and     A
         sbc     HL,     DE
         jr      c,      @_8
 
-        ld      HL,     [SONIC.Y]
+        ld      HL,     [RAM_SONIC.Y]
         and     A
         sbc     HL,     DE
         ld      L,      [IX+Mob.Yspeed+0]
@@ -25218,15 +25218,15 @@ cutscene_final_process:                                                 ;$BDF9
 
         ;remove the player (i.e. prevent player interaction)
         ld      A,      $FF
-        ld      [SONIC],        A
+        ld      [RAM_SONIC],        A
         ;move Sonic off the level
         ld      HL,     $0000
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],      HL
 
         ld      [IX+$12],       $FF
         set     6,      [IY+Vars.timeLightningFlags]      ;lock the screen - no scrolling
         set     1,      [IX+Mob.flags]
-@_1:    ld      A,       [FRAMECOUNT]
+@_1:    ld      A,       [RAM_FRAMECOUNT]
         rrca
         jr      c,      @_2
 
@@ -25241,14 +25241,14 @@ cutscene_final_process:                                                 ;$BDF9
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $003C
         add     HL,     DE
-        ld      [SONIC.X],      HL
+        ld      [RAM_SONIC.X],      HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFC0
         add     HL,     DE
-        ld      [SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],      HL
         xor     A                                          ;set A to 0
-        ld      [SONIC],        A
+        ld      [RAM_SONIC],        A
         set     6,      [IY+Vars.unknown0]
 
         ; (we can compile with, or without, sound)
@@ -25269,7 +25269,7 @@ cutscene_final_process:                                                 ;$BDF9
         bit     6,      [IY+Vars.timeLightningFlags]
         jr      z,      @_3
 
-        ld      DE,     [CAMERA_X]
+        ld      DE,     [RAM_CAMERA_X]
         ld      HL,     $0040
         add     HL,     DE
         ld      C,      [IX+Mob.X+0]
@@ -25279,31 +25279,31 @@ cutscene_final_process:                                                 ;$BDF9
         jr      nc,     @_3
 
         inc     DE
-        ld      [CAMERA_X],     DE
+        ld      [RAM_CAMERA_X],     DE
 @_3:    ld      [IX+Mob.spriteLayout+0],<@_bf21
         ld      [IX+Mob.spriteLayout+1],>@_bf21
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_4
 
         ld      HL,     $1008
-        ld      [TEMP6],HL
+        ld      [RAM_TEMP6],HL
         call    detectCollisionWithSonic
         jr      c,      @_4
 
         ld      DE,     $0001
-        ld      HL,     [SONIC.Yspeed]
+        ld      HL,     [RAM_SONIC.Yspeed]
         ld      A,      L
         cpl
         ld      L,      A
         ld      A,      H
         cpl
         ld      H,      A
-        ld      A,      [SONIC.Ydirection]
+        ld      A,      [RAM_SONIC.Ydirection]
         cpl
         add     HL,     DE
         adc     A,      $00
-        ld      [SONIC.Yspeed],         HL
-        ld      [SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed],         HL
+        ld      [RAM_SONIC.Ydirection],     A
         res     6,      [IY+Vars.timeLightningFlags]
         set     0,      [IX+Mob.flags]
         ld      [IX+Mob.unknown11],     $01
@@ -25334,19 +25334,19 @@ cutscene_final_process:                                                 ;$BDF9
         cp      $0A
         ret     c
 
-        ld      A,      [D27F]
+        ld      A,      [RAM_D27F]
         cp      $06
         jr      c,      @_5
 
         set     7,      [IY+Vars.unknown0]
         ret
 
-@_5:    ld      A,      [D289]
+@_5:    ld      A,      [RAM_D289]
         and     A
         ret     nz
 
         ld      A,      $20
-        ld      [D289], A
+        ld      [RAM_D289], A
         set     2,      [IY+Vars.unknown_0D]
         ret
 
@@ -25354,7 +25354,7 @@ cutscene_final_process:                                                 ;$BDF9
         .BYTE   $4A $4C $4E $50 $52 $FF
         .BYTE   $6A $6C $6E $70 $72 $FF
 
-        ;sprite layout
+        ; sprite layout
 @_bf33: .BYTE   $2A $34 $36 $38 $32 $FF
         .BYTE   $4A $4C $4E $50 $52 $FF
         .BYTE   $6A $6C $6E $70 $72 $FF
@@ -25366,17 +25366,17 @@ cutscene_emeralds_process:                                              ;$BF4C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
 
-        ;load the emerald image into VRAM,
-        ;not more than one power-up can be on screen at a time
+        ; load the emerald image into VRAM,
+        ; not more than one power-up can be on screen at a time
         ld      HL,     $5400                           ;$15400 - emerald image
         call    loadPowerUpIcon
 
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
         ld      [IX+Mob.spriteLayout+0],A
         ld      [IX+Mob.spriteLayout+1],A
         ld      [IX+Mob.Xspeed+0],      A
@@ -25403,44 +25403,44 @@ cutscene_emeralds_process:                                              ;$BF4C
         ld      [IX+Mob.Yspeed+1],      $FF
         ld      [IX+Mob.Ydirection],    $FF
 @_3:    ld      HL,     @_bff1
-        ld      A,      [FRAMECOUNT]
+        ld      A,      [RAM_FRAMECOUNT]
         rrca
         jr      nc,     @_4
 
         ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [SPRITETABLE_ADDR]
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
         push    AF
         push    HL
         ld      HL,     RAM_SPRITETABLE
-        ld      [SPRITETABLE_ADDR],     HL
+        ld      [RAM_SPRITETABLE_ADDR], HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         ex      DE,     HL
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      BC,     [CAMERA_X]
+        ld      BC,     [RAM_CAMERA_X]
         and     A
         sbc     HL,     BC
-        ld      BC,     @_bff1                                  ;address of sprite layout
+        ld      BC,     @_bff1          ; address of sprite layout
         call    processSpriteLayout
         pop     HL
         pop     AF
-        ld      [SPRITETABLE_ADDR],     HL
-        ld      [IY+Vars.spriteUpdateCount],       A
+        ld      [RAM_SPRITETABLE_ADDR],         HL
+        ld      [IY+Vars.spriteUpdateCount],    A
 @_4:    ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $0020
         add     HL,     DE
-        ld      DE,     [CAMERA_Y]
+        ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,     DE
         ret     nc
 
         ld      A,      $01
-        ld      [D289], A
+        ld      [RAM_D289], A
         set     2,      [IY+Vars.unknown_0D]
         ret
 
