@@ -6,4 +6,8 @@
 # these are binary, will change often,
 # and can be recreated anytime
 *.o
+*.lib
+
+# WLA temp files / error dumps
+.wla*
 

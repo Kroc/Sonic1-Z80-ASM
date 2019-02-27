@@ -1,5 +1,3 @@
-;;.INCLUDE        "inc/sms.asm"           ; hardware definitions
-
 ; This sound driver was disassembled by Valley Bell, to whom I am eternally
 ; grateful as I have no understanding of sound theory and could not have hoped
 ; to make sense of this.
@@ -79,7 +77,7 @@
         channelVolume                   DB                              ;+$2C
 .ENDST
 
-.RAMSECTION "sound_RAM"         ;;SLOT 3
+.RAMSECTION     "sound_RAM"
 ;===============================================================================
 ; name                          ; size  ; note                          ; addr
 ;-------------------------------------------------------------------------------
@@ -118,12 +116,10 @@ loopStack                       DW
 
 .ENDS
 
-; This is the public interface that passes forward to the internal
-; implementation; this style of implementation is unique to the sound driver
-; -- perhaps it's reused in other Ancient games, or it could be a 3rd-party
-; piece of code.
+; This is the public interface that forwards to the internal implementation;
+; this style of implementation is unique to the sound driver -- perhaps it's
+; reused in other Ancient games, or it could be a 3rd-party piece of code.
 ;
-;;.BANK   3       SLOT    1
 .SECTION        "sound_driver"          NAMESPACE "sound"
 
 update:
@@ -1483,147 +1479,147 @@ sfx_pointers:                                                           ;$C740
 ;===============================================================================
         .DEFINE SFX_ID_00       $00
         .EXPORT SFX_ID_00
-        .WORD   sfx_fb27_data $0002    ;=$7B27 [$FB27]
+        .WORD   sfx_fb27        $0002   ;=$7B27 [$FB27]
         
         .DEFINE SFX_ID_01       $01
         .EXPORT SFX_ID_01
-        .WORD   sfx_fb43_data $0002    ;=$7B43 [$FB43]
+        .WORD   sfx_fb43        $0002   ;=$7B43 [$FB43]
         
         .DEFINE SFX_ID_02       $02
         .EXPORT SFX_ID_02
-        .WORD   sfx_fb74_data $0002    ;=$7B74 [$FB74]
+        .WORD   sfx_fb74        $0002   ;=$7B74 [$FB74]
         
         .DEFINE SFX_ID_03       $03
         .EXPORT SFX_ID_03
-        .WORD   sfx_fb98_data $0002    ;=$7B98 [$FB98]
+        .WORD   sfx_fb98        $0002   ;=$7B98 [$FB98]
         
         .DEFINE SFX_ID_04       $04
         .EXPORT SFX_ID_04
-        .WORD   sfx_fbbf_data $0002    ;=$7BBF [$FBBF]
+        .WORD   sfx_fbbf        $0002   ;=$7BBF [$FBBF]
         
         .DEFINE SFX_ID_05       $05
         .EXPORT SFX_ID_05
-        .WORD   sfx_fbe6_data $0002    ;=$7BE6 [$FBE6]
+        .WORD   sfx_fbe6        $0002   ;=$7BE6 [$FBE6]
         
         .DEFINE SFX_ID_06       $06
         .EXPORT SFX_ID_06
-        .WORD   sfx_fc18_data $0002    ;=$7C18 [$FC18]
+        .WORD   sfx_fc18        $0002   ;=$7C18 [$FC18]
         
         .DEFINE SFX_ID_07       $07
         .EXPORT SFX_ID_07
-        .WORD   sfx_fc42_data $0002    ;=$7C42 [$FC42]
+        .WORD   sfx_fc42        $0002   ;=$7C42 [$FC42]
         
         .DEFINE SFX_ID_08       $08
         .EXPORT SFX_ID_08
-        .WORD   sfx_fc5e_data $0001    ;=$7C5E [$FC5E]
+        .WORD   sfx_fc5e        $0001   ;=$7C5E [$FC5E]
         
         .DEFINE SFX_ID_09       $09
         .EXPORT SFX_ID_09
-        .WORD   sfx_fc8e_data $0001    ;=$7C8E [$FC8E]
+        .WORD   sfx_fc8e        $0001   ;=$7C8E [$FC8E]
         
         .DEFINE SFX_ID_0A       $0A
         .EXPORT SFX_ID_0A
-        .WORD   sfx_fcb7_data $0002    ;=$7CB7 [$FCB7]
+        .WORD   sfx_fcb7        $0002   ;=$7CB7 [$FCB7]
         
         .DEFINE SFX_ID_0B       $0B
         .EXPORT SFX_ID_0B
-        .WORD   sfx_fcd8_data $0001    ;=$7CD8 [$FCD8]
+        .WORD   sfx_fcd8        $0001   ;=$7CD8 [$FCD8]
         
         .DEFINE SFX_ID_0C       $0C
         .EXPORT SFX_ID_0C
-        .WORD   sfx_fcfd_data $0001    ;=$7CFD [$FCFD]
+        .WORD   sfx_fcfd        $0001   ;=$7CFD [$FCFD]
         
         .DEFINE SFX_ID_0D       $0D
         .EXPORT SFX_ID_0D
-        .WORD   sfx_fd24_data $0001    ;=$7D24 [$FD24]
+        .WORD   sfx_fd24        $0001   ;=$7D24 [$FD24]
         
         .DEFINE SFX_ID_0E       $0E
         .EXPORT SFX_ID_0E
-        .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        .WORD   sfx_fd62        $0002   ;=$7D62 [$FD62]
         
         .DEFINE SFX_ID_0F       $0F
         .EXPORT SFX_ID_0F
-        .WORD   sfx_fd62_data $0001    ;=$7D62 [$FD62]
+        .WORD   sfx_fd62        $0001   ;=$7D62 [$FD62]
         
         .DEFINE SFX_ID_10       $10
         .EXPORT SFX_ID_10
-        .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        .WORD   sfx_fd62        $0002   ;=$7D62 [$FD62]
         
         .DEFINE SFX_ID_11       $11
         .EXPORT SFX_ID_11
-        .WORD   sfx_fd62_data $0002    ;=$7D62 [$FD62]
+        .WORD   sfx_fd62        $0002   ;=$7D62 [$FD62]
         
         .DEFINE SFX_ID_12       $12
         .EXPORT SFX_ID_12
-        .WORD   sfx_fd88_data $0002    ;=$7D88 [$FD88]
+        .WORD   sfx_fd88        $0002   ;=$7D88 [$FD88]
         
         .DEFINE SFX_ID_13       $13
         .EXPORT SFX_ID_13
-        .WORD   sfx_fdb1_data $0001    ;=$7DB1 [$FDB1]
+        .WORD   sfx_fdb1        $0001   ;=$7DB1 [$FDB1]
         
         .DEFINE SFX_ID_14       $14
         .EXPORT SFX_ID_14
-        .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        .WORD   sfx_fdb1        $0002   ;=$7DB1 [$FDB1]
         
         .DEFINE SFX_ID_15       $15
         .EXPORT SFX_ID_15
-        .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        .WORD   sfx_fdb1        $0002   ;=$7DB1 [$FDB1]
         
         .DEFINE SFX_ID_16       $16
         .EXPORT SFX_ID_16
-        .WORD   sfx_fdb1_data $0002    ;=$7DB1 [$FDB1]
+        .WORD   sfx_fdb1        $0002   ;=$7DB1 [$FDB1]
         
         .DEFINE SFX_ID_17       $17
         .EXPORT SFX_ID_17
-        .WORD   sfx_fde6_data $0001    ;=$7DE6 [$FDE6]
+        .WORD   sfx_fde6        $0001   ;=$7DE6 [$FDE6]
         
         .DEFINE SFX_ID_18       $18
         .EXPORT SFX_ID_18
-        .WORD   sfx_fe0c_data $0001    ;=$7E0C [$FE0C]
+        .WORD   sfx_fe0c        $0001   ;=$7E0C [$FE0C]
         
         .DEFINE SFX_ID_19       $19
         .EXPORT SFX_ID_19
-        .WORD   sfx_fe2f_data $0002    ;=$7E2F [$FE2F]
+        .WORD   sfx_fe2f        $0002   ;=$7E2F [$FE2F]
         
         .DEFINE SFX_ID_1A       $1A
         .EXPORT SFX_ID_1A
-        .WORD   sfx_fe48_data $0001    ;=$7E48 [$FE48]
+        .WORD   sfx_fe48        $0001   ;=$7E48 [$FE48]
         
         .DEFINE SFX_ID_1B       $1B
         .EXPORT SFX_ID_1B
-        .WORD   sfx_fe5c_data $0001    ;=$7E5C [$FE5C]
+        .WORD   sfx_fe5c        $0001   ;=$7E5C [$FE5C]
         
         .DEFINE SFX_ID_1C       $1C
         .EXPORT SFX_ID_1C
-        .WORD   sfx_fe74_data $0001    ;=$7E74 [$FE74]
+        .WORD   sfx_fe74        $0001   ;=$7E74 [$FE74]
         
         .DEFINE SFX_ID_1D       $1D
         .EXPORT SFX_ID_1D
-        .WORD   sfx_fea4_data $0001    ;=$7EA4 [$FEA4]
+        .WORD   sfx_fea4        $0001   ;=$7EA4 [$FEA4]
         
         .DEFINE SFX_ID_1E       $1E
         .EXPORT SFX_ID_1E
-        .WORD   sfx_fecc_data $0002    ;=$7ECC [$FECC]
+        .WORD   sfx_fecc        $0002   ;=$7ECC [$FECC]
         
         .DEFINE SFX_ID_1F       $1F
         .EXPORT SFX_ID_1F
-        .WORD   sfx_fecc_data $0002    ;=$7ECC [$FECC]
+        .WORD   sfx_fecc        $0002   ;=$7ECC [$FECC]
         
         .DEFINE SFX_ID_20       $20
         .EXPORT SFX_ID_20
-        .WORD   sfx_fee8_data $0002    ;=$7EE8 [$FEE8]
+        .WORD   sfx_fee8        $0002   ;=$7EE8 [$FEE8]
         
         .DEFINE SFX_ID_21       $21
         .EXPORT SFX_ID_21
-        .WORD   sfx_ff08_data $0001    ;=$7F08 [$FF08]
+        .WORD   sfx_ff08        $0001   ;=$7F08 [$FF08]
         
         .DEFINE SFX_ID_22       $22
         .EXPORT SFX_ID_22
-        .WORD   sfx_ff4e_data $0001    ;=$7F4E [$FF4E]
+        .WORD   sfx_ff4e        $0001   ;=$7F4E [$FF4E]
         
         .DEFINE SFX_ID_23       $23
         .EXPORT SFX_ID_23
-        .WORD   sfx_ff83_data $0002    ;=$7F83 [$FF83]
+        .WORD   sfx_ff83        $0002   ;=$7F83 [$FF83]
         ;
 
 music_greenHill:                                                        ;$C7D0
@@ -4463,12 +4459,11 @@ music_emerald:                                                          ;$FA26
         .BYTE   $FF
         ;
 
-sfx_fb27_data:                                                          ;$FB27
+sfx_fb27:                                                               ;$FB27
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $83 $03 $01 $FA $F0 $FF
@@ -4477,12 +4472,11 @@ sfx_fb27_data:                                                          ;$FB27
         .BYTE   $FE
         ;
 
-sfx_fb43_data:                                                          ;$FB43
+sfx_fb43:                                                              ;$FB43
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $8A $01
@@ -4495,12 +4489,11 @@ sfx_fb43_data:                                                          ;$FB43
         .BYTE   $FE
         ;
 
-sfx_fb74_data:                                                          ;$FB74
+sfx_fb74:                                                              ;$FB74
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
         
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F $34 $04 $37 $04 $40 $04 $8C $8C $40 $04 $8C $8C $40 $04
@@ -4508,12 +4501,11 @@ sfx_fb74_data:                                                          ;$FB74
         .BYTE   $81 $00 $FE
         ;
 
-sfx_fb98_data:                                                          ;$FB98
+sfx_fb98:                                                              ;$FB98
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4526,12 +4518,11 @@ sfx_fb98_data:                                                          ;$FB98
         .BYTE   $FE
         ;
 
-sfx_fbbf_data:                                                          ;$FBBF
+sfx_fbbf:                                                              ;$FBBF
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4544,12 +4535,11 @@ sfx_fbbf_data:                                                          ;$FBBF
         .BYTE   $FE
         ;
 
-sfx_fbe6_data:                                                          ;FBE6
+sfx_fbe6:                                                              ;FBE6
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $83 $01 $01 $FA $F2 $FF
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4568,12 +4558,11 @@ sfx_fbe6_data:                                                          ;FBE6
         .BYTE   $FE
         ;
 
-sfx_fc18_data:                                                          ;$FC18
+sfx_fc18:                                                              ;$FC18
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $83 $01 $01 $FA $FE $FF
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4590,12 +4579,11 @@ sfx_fc18_data:                                                          ;$FC18
         .BYTE   $FE
         ;
 
-sfx_fc42_data:                                                          ;$FC42
+sfx_fc42:                                                              ;$FC42
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4607,12 +4595,11 @@ sfx_fc42_data:                                                          ;$FC42
         .BYTE   $FE
         ;
 
-sfx_fc5e_data:                                                          ;$FC5E
+sfx_fc5e:                                                              ;$FC5E
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $83 $01 $01 $FA $BF $FF
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4627,12 +4614,11 @@ sfx_fc5e_data:                                                          ;$FC5E
         .BYTE   $FE
         ;
 
-sfx_fc8e_data:                                                          ;$FC8E
+sfx_fc8e:                                                              ;$FC8E
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $8A $04
@@ -4645,12 +4631,11 @@ sfx_fc8e_data:                                                          ;$FC8E
         .BYTE   $FE
         ;
 
-sfx_fcb7_data:                                                          ;FCB7
+sfx_fcb7:                                                              ;FCB7
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4662,12 +4647,11 @@ sfx_fcb7_data:                                                          ;FCB7
         .BYTE   $FE
         ;
 
-sfx_fcd8_data:                                                          ;$FCD8
+sfx_fcd8:                                                              ;$FCD8
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $8A $01
@@ -4680,12 +4664,11 @@ sfx_fcd8_data:                                                          ;$FCD8
         .BYTE   $FE
         ;
 
-sfx_fcfd_data:                                                          ;$FCFD
+sfx_fcfd:                                                              ;$FCFD
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $1E $C8 $1E $0A $01
         .BYTE   $83 $01 $01 $FA $F0 $FF
@@ -4698,12 +4681,11 @@ sfx_fcfd_data:                                                          ;$FCFD
         .BYTE   $FE
         ;
 
-sfx_fd24_data:                                                          ;FD24
+sfx_fd24:                                                              ;FD24
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $00 $0A
         .BYTE   $83 $01 $01 $FA $C4 $FF
@@ -4730,12 +4712,11 @@ sfx_fd24_data:                                                          ;FD24
         .BYTE   $FE
         ;
 
-sfx_fd62_data:                                                          ;FD62
+sfx_fd62:                                                              ;FD62
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FF $00 $0A $01
         .BYTE   $81 $0F
@@ -4752,12 +4733,11 @@ sfx_fd62_data:                                                          ;FD62
         .BYTE   $FE
         ;
 
-sfx_fd88_data:                                                          ;$FD88
+sfx_fd88:                                                              ;$FD88
 ;===============================================================================
 @header:
-        .BYTE $03
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $03     $0001   $0001   $00
 
         .BYTE   $81 $0D
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4774,12 +4754,11 @@ sfx_fd88_data:                                                          ;$FD88
         .BYTE   $FE
         ;
 
-sfx_fdb1_data:                                                          ;$FDB1
+sfx_fdb1:                                                              ;$FDB1
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4797,12 +4776,11 @@ sfx_fdb1_data:                                                          ;$FDB1
         .BYTE   $FE
         ;
 
-sfx_fde6_data:                                                          ;$FDE6
+sfx_fde6:                                                              ;$FDE6
 ;===============================================================================
 @header:
-        .BYTE $03
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $03     $0001   $0001   $00
 
         .BYTE   $81 $07
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4820,12 +4798,11 @@ sfx_fde6_data:                                                          ;$FDE6
         .BYTE   $FE
         ;
 
-sfx_fe0c_data:                                                          ;$FE0C
+sfx_fe0c:                                                              ;$FE0C
 ;===============================================================================
 @header:
-        .BYTE $03
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $03     $0001   $0001   $00
 
         .BYTE   $81 $0F
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
@@ -4839,12 +4816,11 @@ sfx_fe0c_data:                                                          ;$FE0C
         .BYTE   $FE
         ;
 
-sfx_fe2f_data:                                                          ;$FE2F
+sfx_fe2f:                                                              ;$FE2F
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $00 $0A
         .BYTE   $81 $0E
@@ -4855,12 +4831,11 @@ sfx_fe2f_data:                                                          ;$FE2F
         .BYTE   $FE
         ;
 
-sfx_fe48_data:                                                          ;$FE48
+sfx_fe48:                                                              ;$FE48
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0D $49 $03
@@ -4868,12 +4843,11 @@ sfx_fe48_data:                                                          ;$FE48
         .BYTE   $FE
         ;
 
-sfx_fe5c_data:                                                          ;$FE5C
+sfx_fe5c:                                                              ;$FE5C
 ;===============================================================================
 @header:
-        .BYTE $03
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $03     $0001   $0001   $00
 
         .BYTE   $81 $0F
         .BYTE   $82 $FF $0A $96 $14 $50 $0A
@@ -4884,12 +4858,11 @@ sfx_fe5c_data:                                                          ;$FE5C
         .BYTE   $FE
         ;
 
-sfx_fe74_data:                                                          ;$FE74
+sfx_fe74:                                                              ;$FE74
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $8A $01
@@ -4903,12 +4876,11 @@ sfx_fe74_data:                                                          ;$FE74
         .BYTE   $FE
         ;
 
-sfx_fea4_data:                                                          ;$FEA4
+sfx_fea4:                                                              ;$FEA4
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
         
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4922,12 +4894,11 @@ sfx_fea4_data:                                                          ;$FEA4
         .BYTE   $FE
         ;
 
-sfx_fecc_data:                                                          ;$FECC
+sfx_fecc:                                                              ;$FECC
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4939,12 +4910,11 @@ sfx_fecc_data:                                                          ;$FECC
         .BYTE   $FE
         ;
 
-sfx_fee8_data:                                                          ;$FEE8
+sfx_fee8:                                                              ;$FEE8
 ;===============================================================================
 @header:
-        .BYTE $03
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $03     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $8A $03
@@ -4958,12 +4928,11 @@ sfx_fee8_data:                                                          ;$FEE8
         .BYTE   $FE
         ;
 
-sfx_ff08_data:                                                          ;$FF08
+sfx_ff08:                                                              ;$FF08
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
         
         .BYTE   $82 $FF $00 $FA $00 $32 $0A
         .BYTE   $81 $0F
@@ -4980,12 +4949,11 @@ sfx_ff08_data:                                                          ;$FF08
         .BYTE   $FE
         ;
 
-sfx_ff4e_data:                                                          ;$FF4E
+sfx_ff4e:                                                              ;$FF4E
 ;===============================================================================
 @header:
-        .BYTE $02
-        .WORD $0001 $0001
-        .BYTE $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $82 $FF $00 $FA $00 $00 $0A
         .BYTE   $81 $0B
@@ -4999,12 +4967,11 @@ sfx_ff4e_data:                                                          ;$FF4E
         .BYTE   $00
         ;
 
-sfx_ff83_data:                                                          ;$FF83
+sfx_ff83:                                                              ;$FF83
 ;===============================================================================
 @header:
-        .BYTE   $02
-        .WORD   $0001 $0001
-        .BYTE   $00
+        .TABLE  BYTE    WORD    WORD    BYTE
+        .BYTE   $02     $0001   $0001   $00
 
         .BYTE   $83 $01 $01 $FA $F2 $FF
         .BYTE   $82 $FF $00 $FA $00 $00 $0A
