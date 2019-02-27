@@ -3357,24 +3357,22 @@ _0e4b:                                                                  ;$04EB
 
 _0e72:                                                                  ;$0E72
 ;===============================================================================
-        .WORD _1129
-        .BYTE $04 $01
-        .WORD _113b
-        .BYTE $04 $00
+        .TABLE  WORD    BYT BYT
+        .ROW    _1129   $04 $01
+        .ROW    _113b   $04 $00
         ;
 
 _0e7a:                                                                  ;$0E7A
 ;===============================================================================
-        .WORD _114d
-        .BYTE $04 $01
-        .WORD _115f
-        .BYTE $04 $00
+        .TABLE  WORD    BYT BYT
+        .WORD   _114d   $04 $01
+        .WORD   _115f   $04 $00
         ;
 
 _0e82:                                                                  ;$0E82
 ;===============================================================================
-        .WORD _1183
-        .BYTE $04 $00
+        .TABLE  WORD    BYT BYT
+        .WORD   _1183   $04 $00
         ;
 
 _LABEL_E86_110:                                                         ;$0E86
@@ -3489,266 +3487,189 @@ _0edd:                                                                  ;$0EDD
 
 map1Palette:                                                            ;$0F0E
 ;===============================================================================
-;sms.palettes
-
-        .BYTE   $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
-        .BYTE   $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
+        .TABLE  DSB 16
+        .ROW    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        .ROW    $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
         ;
 
 map2Palette:                                                            ;$0F2E
 ;===============================================================================
-;sms.palettes
-
-        .BYTE   $25 $01 $06 $0B $04 $18 $2C $35 $2B $10 $2A $14 $15 $1F $00 $3F
-        .BYTE   $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $07 $2D $00 $3F
+        .TABLE  DSB 16
+        .ROW    $25 $01 $06 $0B $04 $18 $2C $35 $2B $10 $2A $14 $15 $1F $00 $3F
+        .ROW    $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $07 $2D $00 $3F
         ;
 
 _f4e:                                                                   ;$0F4E
 ;===============================================================================
 ; TODO: these rows need to be appended by the level definitons
 
-        .WORD _0f84
-        .BYTE $00       ; Green Hill Act 1
-        .WORD _0f93
-        .BYTE $00       ; Green Hill Act 2
-        .WORD _0fde
-        .BYTE $01       ; Green Hill Act 3
-        .WORD _0fa2
-        .BYTE $00       ; Bridge Act 1
-        .WORD _0fb1
-        .BYTE $00       ; Bridge Act 2
-        .WORD _107e
-        .BYTE $02       ; Bridge Act 3
-        .WORD _0fc0
-        .BYTE $00       ; Jungle Act 1
-        .WORD _0fcf
-        .BYTE $00       ; Jungle Act 2
-        .WORD _1088
-        .BYTE $03       ; Jungle Act 3
-        .WORD _100b
-        .BYTE $00       ; Labyrinth Act 1
-        .WORD _101a
-        .BYTE $00       ; Labyrinth Act 2
-        .WORD _1092
-        .BYTE $00       ; Labyrinth Act 3
-        .WORD _1029
-        .BYTE $00       ; Scrap Brain Act 1
-        .WORD _1038
-        .BYTE $00       ; Scrap Brain Act 2
-        .WORD _109c
-        .BYTE $00       ; Scrap Brain Act 3
-        .WORD _1047
-        .BYTE $00       ; Sky Base Act 1
-        .WORD _1056
-        .BYTE $00       ; Sky Base Act 2
-        .WORD _1056
-        .BYTE $00       ; Sky Base Act 3
+        .TABLE  WORD    BYTE
+        .ROW    _0f84   $00             ; Green Hill Act 1
+        .ROW    _0f93   $00             ; Green Hill Act 2
+        .ROW    _0fde   $01             ; Green Hill Act 3
+        .ROW    _0fa2   $00             ; Bridge Act 1
+        .ROW    _0fb1   $00             ; Bridge Act 2
+        .ROW    _107e   $02             ; Bridge Act 3
+        .ROW    _0fc0   $00             ; Jungle Act 1
+        .ROW    _0fcf   $00             ; Jungle Act 2
+        .ROW    _1088   $03             ; Jungle Act 3
+        .ROW    _100b   $00             ; Labyrinth Act 1
+        .ROW    _101a   $00             ; Labyrinth Act 2
+        .ROW    _1092   $00             ; Labyrinth Act 3
+        .ROW    _1029   $00             ; Scrap Brain Act 1
+        .ROW    _1038   $00             ; Scrap Brain Act 2
+        .ROW    _109c   $00             ; Scrap Brain Act 3
+        .ROW    _1047   $00             ; Sky Base Act 1
+        .ROW    _1056   $00             ; Sky Base Act 2
+        .ROW    _1056   $00             ; Sky Base Act 3
         ;
 
-_0f84:                                                                  ;$0F84
+_0f84:  ; Green Hill Act 1                                              ;$0F84
 ;===============================================================================
-        ; Green Hill Act 1
-        .WORD _10bd
-        .BYTE $50 $68 $1E
-        .WORD _10ab
-        .BYTE $50 $68 $1E
-        .WORD _0f84
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _10bd   $50 $68 $1E
+        .ROW    _10ab   $50 $68 $1E
+        .ROW    _0f84   $00 $00 $00
         ;
 
-_0f93:                                                                  ;$0F93
+_0f93:  ; Green Hill Act 2                                              ;$0F93
 ;===============================================================================
-        ; Green Hill Act 2
-        .WORD _10cf
-        .BYTE $50 $60 $1E
-        .WORD _10ab
-        .BYTE $50 $60 $1E
-        .WORD _0f93
-        .BYTE $00 $00 $00
-        ;
-_0fa2:                                                                  ;$0FA2
-;===============================================================================
-        ; Bridge Act 1
-        .WORD _10e1
-        .BYTE $60 $60 $1E
-        .WORD _10ab
-        .BYTE $60 $60 $1E
-        .WORD _0fa2
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _10cf   $50 $60 $1E
+        .ROW    _10ab   $50 $60 $1E
+        .ROW    _0f93   $00 $00 $00
         ;
 
-_0fb1:                                                                  ;$0FB1
+_0fa2:  ; Bridge Act 1                                                  ;$0FA2
 ;===============================================================================
-        ; Bridge Act 2
-        .WORD _10f3
-        .BYTE $80 $50 $1E
-        .WORD _10ab
-        .BYTE $80 $50 $1E
-        .WORD _0fb1
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _10e1   $60 $60 $1E
+        .ROW    _10ab   $60 $60 $1E
+        .ROW    _0fa2   $00 $00 $00
         ;
 
-_0fc0:                                                                  ;$0FC0
+_0fb1:  ; Bridge Act 2                                                  ;$0FB1
 ;===============================================================================
-        ; Jungle Act 1
-        .WORD _1105
-        .BYTE $70 $48 $1E
-        .WORD _10ab
-        .BYTE $70 $48 $1E
-        .WORD _0fc0
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _10f3   $80 $50 $1E
+        .ROW    _10ab   $80 $50 $1E
+        .ROW    _0fb1   $00 $00 $00
         ;
 
-_0fcf:                                                                  ;$0FCF
+_0fc0:  ; Jungle Act 1                                                  ;$0FC0
 ;===============================================================================
-        ; Jungle Act 2
-        .WORD _1117
-        .BYTE $70 $38 $1E
-        .WORD _10ab
-        .BYTE $70 $38 $1E
-        .WORD _0fcf
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _1105   $70 $48 $1E
+        .ROW    _10ab   $70 $48 $1E
+        .ROW    _0fc0   $00 $00 $00
         ;
 
-_0fde:                                                                  ;$0FDE
+_0fcf:  ; Jungle Act 2                                                  ;$0FCF
 ;===============================================================================
-        ; Green Hill Act 3
-        .WORD _1183
-        .BYTE $58 $58 $08
-        .WORD _1183
-        .BYTE $58 $58 $08
-        .WORD _1183
-        .BYTE $58 $56 $08
-        .WORD _1183
-        .BYTE $58 $56 $08
-        .WORD _1183
-        .BYTE $58 $55 $08
-        .WORD _1183
-        .BYTE $58 $55 $08
-        .WORD _1183
-        .BYTE $58 $56 $08
-        .WORD _1183
-        .BYTE $58 $56 $08
-        .WORD _0fde
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _1117   $70 $38 $1E
+        .ROW    _10ab   $70 $38 $1E
+        .ROW    _0fcf   $00 $00 $00
         ;
 
-_100b:                                                                  ;$100B
+_0fde:  ; Green Hill Act 3                                              ;$0FDE
 ;===============================================================================
-        ; Labyrinth Act 1
-        .WORD _1195
-        .BYTE $58 $68 $1E
-        .WORD _10ab
-        .BYTE $58 $68 $1E
-        .WORD _100b
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3
+        .ROW    _1183   $58 $58 $08
+        .ROW    _1183   $58 $58 $08
+        .ROW    _1183   $58 $56 $08
+        .ROW    _1183   $58 $56 $08
+        .ROW    _1183   $58 $55 $08
+        .ROW    _1183   $58 $55 $08
+        .ROW    _1183   $58 $56 $08
+        .ROW    _1183   $58 $56 $08
+        .ROW    _0fde   $00 $00 $00
         ;
 
-_101a:                                                                  ;$101A
+_100b:  ; Labyrinth Act 1                                               ;$100B
 ;===============================================================================
-        ; Labyrinth Act 2
-        .WORD _11a7
-        .BYTE $68 $78 $1E
-        .WORD _10ab
-        .BYTE $68 $78 $1E
-        .WORD _101a
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _1195   $58 $68 $1E
+        .ROW    _10ab   $58 $68 $1E
+        .ROW    _100b   $00 $00 $00
         ;
 
-_1029:                                                                  ;$1029
+_101a:  ; Labyrinth Act 2                                               ;$101A
 ;===============================================================================
-        ; Scrap Brain Act 1
-        .WORD _11b9
-        .BYTE $70 $58 $1E
-        .WORD _10ab
-        .BYTE $70 $58 $1E
-        .WORD _1029
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _11a7   $68 $78 $1E
+        .ROW    _10ab   $68 $78 $1E
+        .ROW    _101a   $00 $00 $00
         ;
 
-_1038:                                                                  ;$1038
+_1029:  ; Scrap Brain Act 1                                             ;$1029
 ;===============================================================================
-        ; Scrap Brain Act 2
-        .WORD _11cb
-        .BYTE $78 $48 $1E
-        .WORD _10ab
-        .BYTE $78 $48 $1E
-        .WORD _1038
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _11b9   $70 $58 $1E
+        .ROW    _10ab   $70 $58 $1E
+        .ROW    _1029   $00 $00 $00
         ;
 
-_1047:                                                                  ;$1047
+_1038:  ; Scrap Brain Act 2                                             ;$1038
 ;===============================================================================
-        ; Sky Base Act 1
-        .WORD _11dd
-        .BYTE $68 $28 $1E
-        .WORD _10ab
-        .BYTE $68 $28 $1E
-        .WORD _1047
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _11cb   $78 $48 $1E
+        .ROW    _10ab   $78 $48 $1E
+        .ROW    _1038   $00 $00 $00
         ;
 
-_1056:                                                                  ;$1056
+_1047:  ; Sky Base Act 1                                                ;$1047
 ;===============================================================================
-        ; Sky Base Act 2 / 3
-        .WORD _11ef
-        .BYTE $80 $28 $1E
-        .WORD _11ef
-        .BYTE $80 $26 $08
-        .WORD _11ef
-        .BYTE $80 $26 $08
-        .WORD _11ef
-        .BYTE $80 $25 $08
-        .WORD _11ef
-        .BYTE $80 $25 $08
-        .WORD _11ef
-        .BYTE $80 $26 $08
-        .WORD _11ef
-        .BYTE $80 $26 $08
-        .WORD _1056
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _11dd   $68 $28 $1E
+        .ROW    _10ab   $68 $28 $1E
+        .ROW    _1047   $00 $00 $00
         ;
 
-_107e:                                                                  ;$107E
+_1056:  ; Sky Base Act 2 / 3                                            ;$1056
 ;===============================================================================
-        ; Bridge Act 3
-        .WORD _1183
-        .BYTE $80 $48 $08
-        .WORD _107e
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _11ef   $80 $28 $1E
+        .ROW    _11ef   $80 $26 $08
+        .ROW    _11ef   $80 $26 $08
+        .ROW    _11ef   $80 $25 $08
+        .ROW    _11ef   $80 $25 $08
+        .ROW    _11ef   $80 $26 $08
+        .ROW    _11ef   $80 $26 $08
+        .ROW    _1056   $00 $00 $00
         ;
 
-_1088:                                                                  ;$1088
+_107e:  ; Bridge Act 3                                                  ;$107E
 ;===============================================================================
-        ; Jungle Act 3
-        .WORD _1183
-        .BYTE $78 $30 $08
-        .WORD _1088
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _1183   $80 $48 $08
+        .ROW    _107e   $00 $00 $00
         ;
 
-_1092:                                                                  ;$1092
+_1088:  ; Jungle Act 3                                                  ;$1088
 ;===============================================================================
-        ; Labyrinth Act 3
-        .WORD _1183
-        .BYTE $70 $60 $08
-        .WORD _1092
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _1183   $78 $30 $08
+        .ROW    _1088   $00 $00 $00
         ;
 
-_109c:                                                                  ;$109C
+_1092:  ; Labyrinth Act 3                                               ;$1092
 ;===============================================================================
-        ; Scrap Brain Act 3
-        .WORD _1129
-        .BYTE $68 $40 $08
-        .WORD _113b
-        .BYTE $68 $40 $08
-        .WORD _109c
-        .BYTE $00 $00 $00
+        .TABLE  WORD    DSB 3        
+        .ROW    _1183   $70 $60 $08
+        .ROW    _1092   $00 $00 $00
         ;
 
+_109c:  ; Scrap Brain Act 3                                             ;$109C
+;===============================================================================
+        .TABLE  WORD    DSB 3        
+        .ROW    _1129   $68 $40 $08
+        .ROW    _113b   $68 $40 $08
+        .ROW    _109c   $00 $00 $00
+        ;
 
 ; blank frame (to make it blink)
+
 _10ab:                                                                  ;$10AB
 ;===============================================================================
         ; why not self-terminating,
@@ -4097,56 +4018,32 @@ titleScreen:                                                            ;$1287
         .BYTE   $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $FF
 
 @_1372: ; wagging finger animation data:                                ;$1372
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-        .WORD @_13bd
-        .BYTE $08
-        .WORD @_13cf
-        .BYTE $08
-@_13b4: .WORD @_13bd
-        .BYTE $FF                                       ;$13B4
-        .WORD @_13bd
-        .BYTE $FF
-        .WORD @_13b4
-        .BYTE $00
+        .TABLE  WORD    BYTE
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+        .ROW    @_13bd  $08
+        .ROW    @_13cf  $08
+@_13b4: .ROW    @_13bd  $FF                                             ;$13B4
+        .ROW    @_13bd  $FF
+        .ROW    @_13b4  $00
 
 @_13bd: ; frame 1 sprite layout                                         ;$13BD
         .BYTE   $00 $02 $04 $FF $FF $FF
@@ -4159,10 +4056,9 @@ titleScreen:                                                            ;$1287
         .BYTE   $46 $48 $FF $FF $FF $FF
 
 @S1_TitleScreen_Palette:                                                ;$13E1
-        ;sms.palettes
-
-        .BYTE   $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
-        .BYTE   $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
+        .TABLE  DSB 16
+        .ROW    $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
+        .ROW    $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
         ;
 
 _1401:                                                                  ;$1401
@@ -4433,7 +4329,7 @@ _155e:                                                                  ;$155E
 @_3:    xor     A
         ld      [VDPSCROLL_HORZ],       A
         ld      [VDPSCROLL_VERT],       A
-        ld      HL,     $1B8D
+        ld      HL,     actComplete_Palette
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
         ld      A,      [CURRENT_LEVEL]
@@ -5278,12 +5174,11 @@ _1b69:                                                                  ;$1B69
 
 ;"Sonic Has Passed" screen palette:
 
-S1_ActComplete_Palette:                                                 ;$1B8D
+actComplete_Palette:                                                    ;$1B8D
 ;===============================================================================
-        ;sms.palettes
-
-        .BYTE   $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
-        .BYTE   $35 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
+        .TABLE  DSB 16
+        .ROW    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        .ROW    $35 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
         ;
 
 _1bad:                                                                  ;$1BAD
@@ -5909,20 +5804,20 @@ _1f49:                                                                  ;$1F49
 
 _1f9d:                                                                  ;$1F9D
 ;===============================================================================
-        .BYTE $02 $04
-        .WORD paletteData@skyBase_cycles
+        .TABLE  DSB 2   WORD
+        .ROW    $02 $04 paletteData@skyBase_cycles
         ;
 
 _1fa1:                                                                  ;$1FA1
 ;===============================================================================
-        .BYTE $02 $04
-        .WORD paletteData@skyBase_cycles_Lightning1
+        .TABLE  DSB 2   WORD
+        .ROW    $02 $04 paletteData@skyBase_cycles_Lightning1
         ;
 
 _1fa5:                                                                  ;$1FA5
 ;===============================================================================
-        .BYTE $02 $04
-        .WORD paletteData@skyBase_cycles_Lightning2
+        .TABLE  DSB 2   WORD
+        .ROW    $02 $04 paletteData@skyBase_cycles_Lightning2
         ;
 
 _1fa9:                                                                  ;$1FA9
@@ -6013,7 +5908,11 @@ _1fa9:                                                                  ;$1FA9
 
 _2023:                                                                  ;$2023
 ;===============================================================================
-        .WORD   $0000 _202d addExtraLife add10Rings _203f
+        .WORD   $0000
+        .WORD   _202d
+        .WORD   addExtraLife
+        .WORD   add10Rings
+        .WORD   _203f
         ;
 
 _202d:                                                                  ;$202D
@@ -7456,87 +7355,58 @@ _2828:                                                                  ;$2828
 ;===============================================================================
 ; Credits screen palette.
 ;
-        ;sms.palettes
-        .BYTE   $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
-        .BYTE   $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
+        .TABLE  DSB 16
+        .ROW    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        .ROW    $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
         ;
 
 _2848:                                                                  ;$2848
 ;===============================================================================
-
-        .BYTE $96
-        .WORD _2902
-        .BYTE $86
-        .WORD _289F
-        .BYTE $E9
-        .WORD _2902
-        .BYTE $6F
-        .WORD _289F
-        .BYTE $FF
-        .WORD _2848
+        .TABLE  BYTE    WORD
+        .ROW    $96     _2902
+        .ROW    $86     _289F
+        .ROW    $E9     _2902
+        .ROW    $6F     _289F
+        .ROW    $FF     _2848
         ;
 
 _2857:                                                                  ;$2857
 ;===============================================================================
-        
-        .BYTE $36
-        .WORD _28B1
-        .BYTE $48
-        .WORD _28BA
-        .BYTE $54
-        .WORD _28A8
-        .BYTE $1E
-        .WORD _28B1
-        .BYTE $44
-        .WORD _28BA
-        .BYTE $FF
-        .WORD _2857
+        .TABLE  BYTE    WORD
+        .ROW    $36     _28B1
+        .ROW    $48     _28BA
+        .ROW    $54     _28A8
+        .ROW    $1E     _28B1
+        .ROW    $44     _28BA
+        .ROW    $FF     _2857
         ;
 
 _2869:                                                                  ;$2869
 ;===============================================================================
-        
-        .BYTE $23
-        .WORD _28C3
-        .BYTE $23
-        .WORD _28CC
-        .BYTE $FF
-        .WORD _2869
+        .TABLE  BYTE    WORD
+        .ROW    $23     _28C3
+        .ROW    $23     _28CC
+        .ROW    $FF     _2869
         ;
 
 _2872:                                                                  ;$2872
 ;===============================================================================
-        
-        .BYTE $E4
-        .WORD _28F3
-        .BYTE $19
-        .WORD _28E4
-        .BYTE $19
-        .WORD _28D5
-        .BYTE $19
-        .WORD _28E4
-        .BYTE $19
-        .WORD _28D5
-        .BYTE $FA
-        .WORD _28F3
-        .BYTE $85
-        .WORD _28E4
-        .BYTE $E8
-        .WORD _28F3
-        .BYTE $19
-        .WORD _28E4
-        .BYTE $19
-        .WORD _28D5
-        .BYTE $19
-        .WORD _28E4
-        .BYTE $19
-        .WORD _28D5
-        .BYTE $19
-        .WORD _28E4
-        .BYTE $19
-        .WORD _28D5
-        .BYTE $FF
-        .WORD _2872
+        .TABLE  BYTE    WORD
+        .ROW    $E4     _28F3
+        .ROW    $19     _28E4
+        .ROW    $19     _28D5
+        .ROW    $19     _28E4
+        .ROW    $19     _28D5
+        .ROW    $FA     _28F3
+        .ROW    $85     _28E4
+        .ROW    $E8     _28F3
+        .ROW    $19     _28E4
+        .ROW    $19     _28D5
+        .ROW    $19     _28E4
+        .ROW    $19     _28D5
+        .ROW    $19     _28E4
+        .ROW    $19     _28D5
+        .ROW    $FF     _2872
         ;
 
 ;looks like the sprite layouts for the singing Sonic on the credits screen
@@ -7729,9 +7599,9 @@ creditsText:                                                            ;$2905
 
 creditsPalette:                                                         ;$2AD6
 ;===============================================================================
-        
-        .BYTE   $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
-        .BYTE   $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
+        .TABLE  DSB 16
+        .ROW    $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
+        .ROW    $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
         ;
 
 mobPointers:                                                            ;$2AF6
@@ -7931,92 +7801,93 @@ mobBounds:                                                              ;$2BA2
 ; 4.  the Y-distance the mob can be below of the camera without despawning
 ;     NOTE: this has to include the screen height of $00C0 (192)
 
-        .WORD   $0100 $0200 $0100 $0200      ;#00: Sonic
-        .WORD   $0020 $0120 $0020 $00E0      ;#01: monitor - ring
-        .WORD   $0020 $0120 $0020 $00E0      ;#02: monitor - speed shoes
-        .WORD   $0020 $0120 $0020 $00E0      ;#03: monitor - life
-        .WORD   $0020 $0120 $0020 $00E0      ;#04: monitor - shield
-        .WORD   $0020 $0120 $0020 $00E0      ;#05: monitor - invincibility
-        .WORD   $0020 $0120 $0020 $00E0      ;#06: chaos emerald
-        .WORD   $0020 $0120 $0060 $00E0      ;#07: end sign
-        .WORD   $0010 $0110 $0020 $00E0      ;#08: badnick - crabmeat
-        .WORD   $00A0 $01A0 $0040 $0100      ;#09: wooden platform - swinging (Green Hill)
-        .WORD   $0040 $0140 $0040 $0100      ;#0A: explosion
-        .WORD   $0020 $0120 $0020 $00E0      ;#0B: wooden platform (Green Hill)
-        .WORD   $0020 $0120 $0030 $00F0      ;#0C: wooden platform - falling (Green Hill)
-        .WORD   $0100 $0200 $0100 $01C0      ;#0D: UNKNOWN
-        .WORD   $0040 $0140 $0040 $0100      ;#0E: badnick - buzz bomber
-        .WORD   $00A0 $01A0 $0020 $00E0      ;#0F: wooden platform - moving (Green Hill)
-        .WORD   $0010 $0110 $0010 $00D0      ;#10: badnick - motobug
-        .WORD   $0010 $0110 $0010 $00D0      ;#11: badnick - newtron
-        .WORD   $00C0 $01C0 $0080 $0140      ;#12: boss (Green Hill)
-        .WORD   $0020 $0120 $0020 $00E0      ;#13: UNKNOWN - bullet?
-        .WORD   $0008 $0140 $0010 $00D0      ;#14: UNKNOWN - fireball right?
-        .WORD   $0040 $0108 $0010 $00D0      ;#15: UNKNOWN - fireball left?
-        .WORD   $0010 $0110 $0020 $00E0      ;#16: flame thrower (Scrap Brain)
-        .WORD   $0020 $0120 $0030 $00CC      ;#17: door - one way left (Scrap Brain)
-        .WORD   $0020 $0120 $0030 $00CC      ;#18: door - one way right (Scrap Brain)
-        .WORD   $0020 $0120 $0030 $00CC      ;#19: door (Scrap Brain)
-        .WORD   $0020 $0120 $0020 $00DA      ;#1A: electric sphere (Scrap Brain)
-        .WORD   $0030 $0130 $0030 $00F0      ;#1B: badnick - ball hog (Scrap Brain)
-        .WORD   $0100 $0180 $0100 $01C0      ;#1C: UNKNOWN - ball from ball hog?
-        .WORD   $0010 $0110 $0010 $00D0      ;#1D: switch
-        .WORD   $0020 $0120 $0030 $00C8      ;#1E: switch door
-        .WORD   $0020 $0120 $0020 $00E0      ;#1F: badnick - caterkiller
-        .WORD   $0020 $0120 $0020 $00E0      ;#20: UNKNOWN
-        .WORD   $0020 $0120 $0080 $0140      ;#21: moving bumper (Special Stage)
-        .WORD   $0010 $0110 $0080 $00F0      ;#22: boss (Scrap Brain)
-        .WORD   $0020 $0120 $0010 $00D0      ;#23: free animal - rabbit
-        .WORD   $0020 $0120 $0010 $00D0      ;#24: free animal - bird
-        .WORD   $0020 $0120 $0020 $00E0      ;#25: capsule
-        .WORD   $0010 $0110 $0060 $0100      ;#26: badnick - chopper
-        .WORD   $0028 $0128 $0100 $01C0      ;#27: log - vertical (Jungle)
-        .WORD   $0028 $0128 $0100 $01C0      ;#28: log - horizontal (Jungle)
-        .WORD   $0010 $0110 $0010 $00D0      ;#29: log - floating (Jungle)
-        .WORD   $0020 $0120 $0020 $00E0      ;#2A: UNKNOWN
-        .WORD   $0010 $0110 $0010 $00D0      ;#2B: UNKNOWN
-        .WORD   $0040 $0140 $00C0 $0180      ;#2C: boss (Jungle)
-        .WORD   $0010 $0110 $0010 $00D0      ;#2D: badnick - yadrin (Bridge)
-        .WORD   $0080 $0180 $0040 $01C0      ;#2E: falling bridge (Bridge)
-        .WORD   $0020 $0120 $0020 $00E0      ;#2F: UNKNOWN - wave moving projectile?
-        .WORD   $0800 $0800 $0030 $00F0      ;#30: meta - clouds (Sky Base)
-        .WORD   $0010 $0110 $0020 $00E0      ;#31: propeller (Sky Base)
-        .WORD   $0020 $0120 $0020 $00E0      ;#32: badnick - bomb (Sky Base)
-        .WORD   $0000 $0100 $0000 $00C0      ;#33: cannon (Sky Base)
-        .WORD   $0200 $0300 $0200 $02C0      ;#34: cannon ball (Sky Base)
-        .WORD   $0010 $0110 $0010 $00D0      ;#35: badnick - unidos (Sky Base)
-        .WORD   $0040 $0140 $0040 $0100      ;#36: UNKNOWN - stationary, lethal
-        .WORD   $0010 $0110 $0010 $00D0      ;#37: rotating turret (Sky Base)
-        .WORD   $0040 $0140 $0020 $00E0      ;#38: flying platform (Sky Base)
-        .WORD   $0080 $0180 $0050 $00D0      ;#39: moving spiked wall (Sky Base)
-        .WORD   $0010 $0110 $0010 $00D0      ;#3A: fixed turret (Sky Base)
-        .WORD   $0010 $0110 $0060 $0120      ;#3B: flying platform - up/down (Sky Base)
-        .WORD   $0010 $0110 $0010 $00D0      ;#3C: badnick - jaws (Labyrinth)
-        .WORD   $0060 $0160 $0060 $0120      ;#3D: spike ball (Labyrinth)
-        .WORD   $0010 $0110 $0010 $00D0      ;#3E: spear (Labyrinth)
-        .WORD   $0020 $0120 $0020 $00E0      ;#3F: fire ball head (Labyrinth)
-        .WORD   $2000 $2100 $0020 $00E0      ;#40: meta - water line position
-        .WORD   $0008 $0108 $0008 $00C8      ;#41: bubbles (Labyrinth)
-        .WORD   $0020 $0120 $0020 $00E0      ;#42: UNKNOWN
-        .WORD   $0020 $0120 $0020 $00E0      ;#43: NO-CODE
-        .WORD   $0020 $0120 $0020 $00E0      ;#44: badnick - burrobot
-        .WORD   $0028 $0128 $0028 $00E8      ;#45: platform - float up (Labyrinth)
-        .WORD   $0060 $0160 $0020 $00E0      ;#46: boss - electric beam (Sky Base)
-        .WORD   $0100 $0200 $0100 $01C0      ;#47: UNKNOWN
-        .WORD   $0010 $0110 $0010 $00D0      ;#48: boss (Bridge)
-        .WORD   $0010 $0110 $0100 $01C0      ;#49: boss (Labyrinth)
-        .WORD   $0010 $0110 $0010 $00D0      ;#4A: boss (Sky Base)
-        .WORD   $0010 $0110 $0010 $00D0      ;#4B: trip zone (Green Hill)
-        .WORD   $0020 $0120 $0020 $00E0      ;#4C: Flipper (Special Stage)
-        .WORD   $0020 $0120 $0020 $00E0      ;#4D: RESET!
-        .WORD   $0038 $0128 $0030 $00F0      ;#4E: balance (Bridge)
-        .WORD   $0020 $0120 $0020 $00E0      ;#4F: RESET!
-        .WORD   $0010 $0110 $0010 $00D0      ;#50: flower (Green Hill)
-        .WORD   $0020 $0120 $0020 $00E0      ;#51: monitor - checkpoint
-        .WORD   $0020 $0120 $0020 $00E0      ;#52: monitor - continue
-        .WORD   $0100 $01E0 $00C0 $0180      ;#53: final animation
-        .WORD   $0100 $0200 $0100 $01C0      ;#54: all emeralds animation
-        .WORD   $0800 $0900 $0800 $08C0      ;#55: "make sonic blink"
+        .TABLE  WORD  WORD  WORD  WORD
+        .ROW    $0100 $0200 $0100 $0200      ;#00: Sonic
+        .ROW    $0020 $0120 $0020 $00E0      ;#01: monitor - ring
+        .ROW    $0020 $0120 $0020 $00E0      ;#02: monitor - speed shoes
+        .ROW    $0020 $0120 $0020 $00E0      ;#03: monitor - life
+        .ROW    $0020 $0120 $0020 $00E0      ;#04: monitor - shield
+        .ROW    $0020 $0120 $0020 $00E0      ;#05: monitor - invincibility
+        .ROW    $0020 $0120 $0020 $00E0      ;#06: chaos emerald
+        .ROW    $0020 $0120 $0060 $00E0      ;#07: end sign
+        .ROW    $0010 $0110 $0020 $00E0      ;#08: badnick - crabmeat
+        .ROW    $00A0 $01A0 $0040 $0100      ;#09: wooden platform - swinging (Green Hill)
+        .ROW    $0040 $0140 $0040 $0100      ;#0A: explosion
+        .ROW    $0020 $0120 $0020 $00E0      ;#0B: wooden platform (Green Hill)
+        .ROW    $0020 $0120 $0030 $00F0      ;#0C: wooden platform - falling (Green Hill)
+        .ROW    $0100 $0200 $0100 $01C0      ;#0D: UNKNOWN
+        .ROW    $0040 $0140 $0040 $0100      ;#0E: badnick - buzz bomber
+        .ROW    $00A0 $01A0 $0020 $00E0      ;#0F: wooden platform - moving (Green Hill)
+        .ROW    $0010 $0110 $0010 $00D0      ;#10: badnick - motobug
+        .ROW    $0010 $0110 $0010 $00D0      ;#11: badnick - newtron
+        .ROW    $00C0 $01C0 $0080 $0140      ;#12: boss (Green Hill)
+        .ROW    $0020 $0120 $0020 $00E0      ;#13: UNKNOWN - bullet?
+        .ROW    $0008 $0140 $0010 $00D0      ;#14: UNKNOWN - fireball right?
+        .ROW    $0040 $0108 $0010 $00D0      ;#15: UNKNOWN - fireball left?
+        .ROW    $0010 $0110 $0020 $00E0      ;#16: flame thrower (Scrap Brain)
+        .ROW    $0020 $0120 $0030 $00CC      ;#17: door - one way left (Scrap Brain)
+        .ROW    $0020 $0120 $0030 $00CC      ;#18: door - one way right (Scrap Brain)
+        .ROW    $0020 $0120 $0030 $00CC      ;#19: door (Scrap Brain)
+        .ROW    $0020 $0120 $0020 $00DA      ;#1A: electric sphere (Scrap Brain)
+        .ROW    $0030 $0130 $0030 $00F0      ;#1B: badnick - ball hog (Scrap Brain)
+        .ROW    $0100 $0180 $0100 $01C0      ;#1C: UNKNOWN - ball from ball hog?
+        .ROW    $0010 $0110 $0010 $00D0      ;#1D: switch
+        .ROW    $0020 $0120 $0030 $00C8      ;#1E: switch door
+        .ROW    $0020 $0120 $0020 $00E0      ;#1F: badnick - caterkiller
+        .ROW    $0020 $0120 $0020 $00E0      ;#20: UNKNOWN
+        .ROW    $0020 $0120 $0080 $0140      ;#21: moving bumper (Special Stage)
+        .ROW    $0010 $0110 $0080 $00F0      ;#22: boss (Scrap Brain)
+        .ROW    $0020 $0120 $0010 $00D0      ;#23: free animal - rabbit
+        .ROW    $0020 $0120 $0010 $00D0      ;#24: free animal - bird
+        .ROW    $0020 $0120 $0020 $00E0      ;#25: capsule
+        .ROW    $0010 $0110 $0060 $0100      ;#26: badnick - chopper
+        .ROW    $0028 $0128 $0100 $01C0      ;#27: log - vertical (Jungle)
+        .ROW    $0028 $0128 $0100 $01C0      ;#28: log - horizontal (Jungle)
+        .ROW    $0010 $0110 $0010 $00D0      ;#29: log - floating (Jungle)
+        .ROW    $0020 $0120 $0020 $00E0      ;#2A: UNKNOWN
+        .ROW    $0010 $0110 $0010 $00D0      ;#2B: UNKNOWN
+        .ROW    $0040 $0140 $00C0 $0180      ;#2C: boss (Jungle)
+        .ROW    $0010 $0110 $0010 $00D0      ;#2D: badnick - yadrin (Bridge)
+        .ROW    $0080 $0180 $0040 $01C0      ;#2E: falling bridge (Bridge)
+        .ROW    $0020 $0120 $0020 $00E0      ;#2F: UNKNOWN - wave moving projectile?
+        .ROW    $0800 $0800 $0030 $00F0      ;#30: meta - clouds (Sky Base)
+        .ROW    $0010 $0110 $0020 $00E0      ;#31: propeller (Sky Base)
+        .ROW    $0020 $0120 $0020 $00E0      ;#32: badnick - bomb (Sky Base)
+        .ROW    $0000 $0100 $0000 $00C0      ;#33: cannon (Sky Base)
+        .ROW    $0200 $0300 $0200 $02C0      ;#34: cannon ball (Sky Base)
+        .ROW    $0010 $0110 $0010 $00D0      ;#35: badnick - unidos (Sky Base)
+        .ROW    $0040 $0140 $0040 $0100      ;#36: UNKNOWN - stationary, lethal
+        .ROW    $0010 $0110 $0010 $00D0      ;#37: rotating turret (Sky Base)
+        .ROW    $0040 $0140 $0020 $00E0      ;#38: flying platform (Sky Base)
+        .ROW    $0080 $0180 $0050 $00D0      ;#39: moving spiked wall (Sky Base)
+        .ROW    $0010 $0110 $0010 $00D0      ;#3A: fixed turret (Sky Base)
+        .ROW    $0010 $0110 $0060 $0120      ;#3B: flying platform - up/down (Sky Base)
+        .ROW    $0010 $0110 $0010 $00D0      ;#3C: badnick - jaws (Labyrinth)
+        .ROW    $0060 $0160 $0060 $0120      ;#3D: spike ball (Labyrinth)
+        .ROW    $0010 $0110 $0010 $00D0      ;#3E: spear (Labyrinth)
+        .ROW    $0020 $0120 $0020 $00E0      ;#3F: fire ball head (Labyrinth)
+        .ROW    $2000 $2100 $0020 $00E0      ;#40: meta - water line position
+        .ROW    $0008 $0108 $0008 $00C8      ;#41: bubbles (Labyrinth)
+        .ROW    $0020 $0120 $0020 $00E0      ;#42: UNKNOWN
+        .ROW    $0020 $0120 $0020 $00E0      ;#43: NO-CODE
+        .ROW    $0020 $0120 $0020 $00E0      ;#44: badnick - burrobot
+        .ROW    $0028 $0128 $0028 $00E8      ;#45: platform - float up (Labyrinth)
+        .ROW    $0060 $0160 $0020 $00E0      ;#46: boss - electric beam (Sky Base)
+        .ROW    $0100 $0200 $0100 $01C0      ;#47: UNKNOWN
+        .ROW    $0010 $0110 $0010 $00D0      ;#48: boss (Bridge)
+        .ROW    $0010 $0110 $0100 $01C0      ;#49: boss (Labyrinth)
+        .ROW    $0010 $0110 $0010 $00D0      ;#4A: boss (Sky Base)
+        .ROW    $0010 $0110 $0010 $00D0      ;#4B: trip zone (Green Hill)
+        .ROW    $0020 $0120 $0020 $00E0      ;#4C: Flipper (Special Stage)
+        .ROW    $0020 $0120 $0020 $00E0      ;#4D: RESET!
+        .ROW    $0038 $0128 $0030 $00F0      ;#4E: balance (Bridge)
+        .ROW    $0020 $0120 $0020 $00E0      ;#4F: RESET!
+        .ROW    $0010 $0110 $0010 $00D0      ;#50: flower (Green Hill)
+        .ROW    $0020 $0120 $0020 $00E0      ;#51: monitor - checkpoint
+        .ROW    $0020 $0120 $0020 $00E0      ;#52: monitor - continue
+        .ROW    $0100 $01E0 $00C0 $0180      ;#53: final animation
+        .ROW    $0100 $0200 $0100 $01C0      ;#54: all emeralds animation
+        .ROW    $0800 $0900 $0800 $08C0      ;#55: "make sonic blink"
         ;
 
 hudRingLayout:                                                          ;$2E52
@@ -10790,7 +10661,6 @@ solidityBlocks:                                                         ;$3A65
         .BYTE   $00 $10 $10 $16 $00 $10 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
         .BYTE   $16 $00 $00 $00 $00 $00 $00 $00 $00 $10 $00 $00 $00 $00 $00 $00
         .BYTE   $00 $1E $00 $00 $00 $1E $1E $10 $00 $00 $10 $10 $1E $1E $16 $16
-;OVERFLOW!
         .BYTE   $1E $1E $1E $1E $1E $00 $10 $1E $1E $10 $10 $1E $00 $02 $0A $16
         .BYTE   $00 $00 $00 $00 $00 $00 $10 $1E $16 $1E $00 $10 $10 $10 $10 $10
         .BYTE   $1E $00 $10 $00 $00 $10 $10 $10 $10 $1E $90 $00 $00 $00 $00 $00
@@ -14832,154 +14702,135 @@ paletteCyclePointers:                                                   ;$628C
         .WORD   paletteData@skyBaseExt_cycles
         ;
 
-;the regular and cycle palettes are lumped together in one data-block,
-;the pointer tables above sort them into an order
+; the regular and cycle palettes are lumped together in one data-block,
+; the pointer tables above sort them into an order
 
 paletteData:                                                            ;$629E
 ;===============================================================================
-@greenHill:                                                     ;Green Hill                                     `$629E
-        ;sms.palettes
+@greenHill:                                                             ;$629E
+        .TABLE  DSB 16
+        .ROW    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
+        .ROW    $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
 
-        .BYTE   $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
-        .BYTE   $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
-
-@greenHill_cycles:                                              ;Green Hill Cycles x 3                          `$62BE
-        ;sms.palette
-
-        .BYTE   $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
-        .BYTE   $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3F $3C $3E $0F $00 $3F
-        .BYTE   $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3E $3F $3C $0F $00 $3F
+@greenHill_cycles:                                                      ;$62BE
+        .TABLE  DSB 16
+        .ROW    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
+        .ROW    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3F $3C $3E $0F $00 $3F
+        .ROW    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3E $3F $3C $0F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@bridge:                                                        ;Bridge                                         `$62EE
-        ;sms.palettes
+@bridge:                                                                ;$62EE
+        .TABLE  DSB 16
+        .ROW    $38 $01 $06 $0B $2A $3A $0C $19 $3D $24 $38 $3C $3F $1F $00 $3F
+        .ROW    $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
 
-        .BYTE   $38 $01 $06 $0B $2A $3A $0C $19 $3D $24 $38 $3C $3F $1F $00 $3F
-        .BYTE   $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
-
-@bridge_cycles:                                                 ;Bridge Cycles                                  `$630E
-        ;sms.palette
-
-        .BYTE   $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $38 $3C $3F $1F $00 $3F
-        .BYTE   $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3F $38 $3C $1F $00 $3F
-        .BYTE   $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3C $3F $38 $1F $00 $3F
+@bridge_cycles:                                                         ;$630E
+        .TABLE  DSB 16
+        .ROW    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $38 $3C $3F $1F $00 $3F
+        .ROW    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3F $38 $3C $1F $00 $3F
+        .ROW    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3C $3F $38 $1F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@jungle:                                                        ;Jungle                                         `$633E
-        ;sms.palettes
+@jungle:                                                                ;$633E
+        .TABLE  DSB 16
+        .ROW    $04 $08 $0C $06 $0B $05 $25 $01 $03 $10 $34 $38 $3E $1F $00 $3F
+        .ROW    $04 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
 
-        .BYTE   $04 $08 $0C $06 $0B $05 $25 $01 $03 $10 $34 $38 $3E $1F $00 $3F
-        .BYTE   $04 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
-
-@jungle_cycles:                                                 ;Jungle Cycles                                  `$635E
-        ;sms.palette
-
-        .BYTE   $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $34 $38 $3E $0F $00 $3F
-        .BYTE   $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $3E $34 $38 $0F $00 $3F
-        .BYTE   $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $38 $3E $34 $0F $00 $3F
+@jungle_cycles:                                                         ;$635E
+        .TABLE  DSB 16
+        .ROW    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $34 $38 $3E $0F $00 $3F
+        .ROW    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $3E $34 $38 $0F $00 $3F
+        .ROW    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $38 $3E $34 $0F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@labyrinth:                                                     ;Labyrinth                                      `$638E
-        ;sms.palettes
-
-        .BYTE   $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
+@labyrinth:                                                             ;$638E
+        .TABLE  DSB 16
+        .ROW    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
         ;the water line raster split refers directly to this sprite palette:
-        .BYTE   $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $15
+        .ROW    $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $15
 
-@labyrinth_cycles:                                              ;Labyrinth Cycles                               `$63AE
-        ;sms.palette
-
-        .BYTE   $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
-        .BYTE   $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $09 $04 $1E $0F $00 $3F
-        .BYTE   $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $04 $1E $09 $0F $00 $3F
-
-        ;-----------------------------------------------------------------------
-
-@scrapBrain:                                                    ;Scrap Brain                                    `$63DE
-        ;sms.palettes
-
-        .BYTE   $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
-        .BYTE   $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3D $15 $0F $27 $10 $29
-
-@scrapBrain_cycles:                                             ;Scrap Brain Cycles                             `$63FE
-        ;sms.palette
-
-        .BYTE   $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
-        .BYTE   $00 $10 $15 $29 $3D $01 $14 $02 $3F $05 $0A $0F $07 $0F $00 $3F
-        .BYTE   $00 $10 $15 $29 $3D $01 $14 $02 $0F $3F $05 $0A $07 $0F $00 $3F
-        .BYTE   $00 $10 $15 $29 $3D $01 $14 $02 $0A $0F $3F $05 $07 $0F $00 $3F
+@labyrinth_cycles:                                                      ;$63AE
+        .TABLE  DSB 16
+        .ROW    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
+        .ROW    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $09 $04 $1E $0F $00 $3F
+        .ROW    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $04 $1E $09 $0F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@skyBaseExt:                                                    ;Sky Base 1/2 Exterior                          `$643E
-        ;sms.palettes
+@scrapBrain:                                                            ;$63DE
+        .TABLE  DSB 16
+        .ROW    $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
+        .ROW    $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3D $15 $0F $27 $10 $29
 
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
-        .BYTE   $10 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $15 $00
-
-@skyBase_cycles:                                                ;Sky Base 1 Cycles                              `$645E
-        ;sms.palette
-
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $3F $3D $39 $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $39 $3D $3F $3D $24 $00 $38
-
-@skyBase_cycles_Lightning1:                                     ;Sky Base 1 Lightning Cycles 1                  `$649E
-        ;sms.palette
-
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $20 $3D $3F $3D $39 $24 $00 $38
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $2A $39 $3D $3F $3D $24 $00 $38
-
-@skyBase_cycles_Lightning2:                                     ;Sky Base 1 Lightning Cycles 2                  `$64DE
-        ;sms.palette
-
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $2F $3D $39 $3D $3F $24 $00 $38
-        .BYTE   $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
-        .BYTE   $10 $10 $20 $34 $30 $10 $11 $25 $3F $3D $3F $3D $39 $24 $00 $38
-        .BYTE   $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
-
-@skyBaseExt_cycles:                                             ;Sky Base 2                                     `$651E
-        ;sms.palette
-
-        .BYTE   $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $39 $3D $3F $0F $00 $3F
-        .BYTE   $10 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
-        .BYTE   $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $3F $3D $39 $0F $00 $3F
-        .BYTE   $10 $14 $29 $2E $3A $01 $02 $17 $10 $39 $3D $3F $3D $0F $00 $3F
+@scrapBrain_cycles:                                                     ;$63FE
+        .TABLE  DSB 16
+        .ROW    $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
+        .ROW    $00 $10 $15 $29 $3D $01 $14 $02 $3F $05 $0A $0F $07 $0F $00 $3F
+        .ROW    $00 $10 $15 $29 $3D $01 $14 $02 $0F $3F $05 $0A $07 $0F $00 $3F
+        .ROW    $00 $10 $15 $29 $3D $01 $14 $02 $0A $0F $3F $05 $07 $0F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@specialStage:                                                  ;Special Stage                                  `$655E
-        ;sms.palettes
+@skyBaseExt:                                                            ;$643E
+        .TABLE  DSB 16
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        .ROW    $10 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $15 $00
 
-        .BYTE   $10 $04 $3B $1B $19 $2D $21 $32 $17 $13 $12 $27 $30 $1F $00 $3F
-        .BYTE   $10 $20 $35 $1B $16 $2A $00 $3F $19 $13 $12 $27 $04 $1F $21 $30
+@skyBase_cycles:                                                        ;$645E
+        .TABLE  DSB 16
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $3F $3D $39 $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $39 $3D $3F $3D $24 $00 $38
 
-@specialStage_cycles:                                           ;Special Stage Cycles                           `$657E
-        ;sms.palette
+@skyBase_cycles_Lightning1:                                             ;$649E
+        .TABLE  DSB 16
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $20 $3D $3F $3D $39 $24 $00 $38
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $2A $39 $3D $3F $3D $24 $00 $38
 
-        .BYTE   $10 $04 $3B $1B $19 $2D $11 $32 $17 $13 $12 $27 $30 $1F $00 $3F
+@skyBase_cycles_Lightning2:                                             ;$64DE
+        .TABLE  DSB 16
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $2F $3D $39 $3D $3F $24 $00 $38
+        .ROW    $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+        .ROW    $10 $10 $20 $34 $30 $10 $11 $25 $3F $3D $3F $3D $39 $24 $00 $38
+        .ROW    $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+
+@skyBaseExt_cycles:                                                     ;$651E
+        .TABLE  DSB 16
+        .ROW    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $39 $3D $3F $0F $00 $3F
+        .ROW    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+        .ROW    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $3F $3D $39 $0F $00 $3F
+        .ROW    $10 $14 $29 $2E $3A $01 $02 $17 $10 $39 $3D $3F $3D $0F $00 $3F
 
         ;-----------------------------------------------------------------------
 
-@skyBaseInt:                                                    ;Sky Base 2/3 Interior                          `$658E
-        ;sms.palettes
+@specialStage:                                                          ;$655E
+        .TABLE  DSB 16
+        .ROW    $10 $04 $3B $1B $19 $2D $21 $32 $17 $13 $12 $27 $30 $1F $00 $3F
+        .ROW    $10 $20 $35 $1B $16 $2A $00 $3F $19 $13 $12 $27 $04 $1F $21 $30
 
-        .BYTE   $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
-        .BYTE   $00 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
+@specialStage_cycles:                                                   ;$657E
+        .TABLE  DSB 16
+        .ROW    $10 $04 $3B $1B $19 $2D $11 $32 $17 $13 $12 $27 $30 $1F $00 $3F
 
-@skyBaseInt_cycles:                                             ;Sky Base 2/3 Interior Cycles                   `$65AE
-        ;sms.palette
+        ;-----------------------------------------------------------------------
 
-        .BYTE   $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
-        .BYTE   $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $28 $14 $39 $0F $00 $3F
-        .BYTE   $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $14 $14 $39 $0F $00 $3F
-        .BYTE   $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $00 $14 $39 $0F $00 $3F
+@skyBaseInt:                                                            ;$658E
+        .TABLE  DSB 16
+        .ROW    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
+        .ROW    $00 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
+
+@skyBaseInt_cycles:                                                     ;$65AE
+        .TABLE  DSB 16
+        .ROW    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
+        .ROW    $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $28 $14 $39 $0F $00 $3F
+        .ROW    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $14 $14 $39 $0F $00 $3F
+        .ROW    $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $00 $14 $39 $0F $00 $3F
 
         ;
 
@@ -15274,119 +15125,120 @@ platform_swinging_process:                                              ;$673C
         ret
 
 @_682f: ;this is swinging position data
-        .BYTE   $B3 $00
-        .BYTE   $B3 $01
-        .BYTE   $B3 $02
-        .BYTE   $B3 $02
-        .BYTE   $B3 $03
-        .BYTE   $B3 $04
-        .BYTE   $B3 $05
-        .BYTE   $B3 $06
-        .BYTE   $B4 $07
-        .BYTE   $B4 $08
-        .BYTE   $B4 $09
-        .BYTE   $B4 $0B
-        .BYTE   $B4 $0C
-        .BYTE   $B4 $0D
-        .BYTE   $B5 $0E
-        .BYTE   $B5 $0F
-        .BYTE   $B5 $11
-        .BYTE   $B5 $12
-        .BYTE   $B6 $13
-        .BYTE   $B6 $15
-        .BYTE   $B7 $16
-        .BYTE   $B7 $18
-        .BYTE   $B8 $19
-        .BYTE   $B8 $1B
-        .BYTE   $B9 $1D
-        .BYTE   $B9 $1E
-        .BYTE   $BA $20
-        .BYTE   $BB $22
-        .BYTE   $BC $23
-        .BYTE   $BD $25
-        .BYTE   $BE $27
-        .BYTE   $BF $29
-        .BYTE   $C0 $2B
-        .BYTE   $C2 $2D
-        .BYTE   $C3 $2F
-        .BYTE   $C4 $31
-        .BYTE   $C6 $32
-        .BYTE   $C8 $34
-        .BYTE   $CA $36
-        .BYTE   $CC $38
-        .BYTE   $CE $3A
-        .BYTE   $D0 $3C
-        .BYTE   $D2 $3E
-        .BYTE   $D4 $3F
-        .BYTE   $D7 $41
-        .BYTE   $DA $43
-        .BYTE   $DC $44
-        .BYTE   $DF $45
-        .BYTE   $E2 $47
-        .BYTE   $E5 $48
-        .BYTE   $E8 $49
-        .BYTE   $EC $4A
-        .BYTE   $EF $4B
-        .BYTE   $F2 $4C
-        .BYTE   $F6 $4C
-        .BYTE   $F9 $4C
-        .BYTE   $FC $4D
-        .BYTE   $00 $4D
-        .BYTE   $03 $4D
-        .BYTE   $07 $4C
-        .BYTE   $0A $4C
-        .BYTE   $0E $4C
-        .BYTE   $11 $4B
-        .BYTE   $14 $4A
-        .BYTE   $18 $49
-        .BYTE   $1B $48
-        .BYTE   $1E $47
-        .BYTE   $21 $45
-        .BYTE   $24 $44
-        .BYTE   $27 $42
-        .BYTE   $29 $41
-        .BYTE   $2C $3F
-        .BYTE   $2E $3D
-        .BYTE   $31 $3B
-        .BYTE   $33 $3A
-        .BYTE   $35 $38
-        .BYTE   $37 $36
-        .BYTE   $39 $34
-        .BYTE   $3A $32
-        .BYTE   $3C $30
-        .BYTE   $3E $2E
-        .BYTE   $3F $2C
-        .BYTE   $40 $2A
-        .BYTE   $41 $28
-        .BYTE   $43 $26
-        .BYTE   $44 $24
-        .BYTE   $45 $23
-        .BYTE   $45 $21
-        .BYTE   $46 $1F
-        .BYTE   $47 $1D
-        .BYTE   $48 $1C
-        .BYTE   $48 $1A
-        .BYTE   $49 $18
-        .BYTE   $49 $17
-        .BYTE   $4A $15
-        .BYTE   $4A $14
-        .BYTE   $4B $12
-        .BYTE   $4B $11
-        .BYTE   $4B $0F
-        .BYTE   $4B $0E
-        .BYTE   $4C $0D
-        .BYTE   $4C $0C
-        .BYTE   $4C $0A
-        .BYTE   $4C $09
-        .BYTE   $4C $08
-        .BYTE   $4C $07
-        .BYTE   $4D $06
-        .BYTE   $4D $05
-        .BYTE   $4D $04
-        .BYTE   $4D $03
-        .BYTE   $4D $02
-        .BYTE   $4D $01
-        .BYTE   $4D $00
+        .TABLE  BYT BYT
+        .ROW    $B3 $00
+        .ROW    $B3 $01
+        .ROW    $B3 $02
+        .ROW    $B3 $02
+        .ROW    $B3 $03
+        .ROW    $B3 $04
+        .ROW    $B3 $05
+        .ROW    $B3 $06
+        .ROW    $B4 $07
+        .ROW    $B4 $08
+        .ROW    $B4 $09
+        .ROW    $B4 $0B
+        .ROW    $B4 $0C
+        .ROW    $B4 $0D
+        .ROW    $B5 $0E
+        .ROW    $B5 $0F
+        .ROW    $B5 $11
+        .ROW    $B5 $12
+        .ROW    $B6 $13
+        .ROW    $B6 $15
+        .ROW    $B7 $16
+        .ROW    $B7 $18
+        .ROW    $B8 $19
+        .ROW    $B8 $1B
+        .ROW    $B9 $1D
+        .ROW    $B9 $1E
+        .ROW    $BA $20
+        .ROW    $BB $22
+        .ROW    $BC $23
+        .ROW    $BD $25
+        .ROW    $BE $27
+        .ROW    $BF $29
+        .ROW    $C0 $2B
+        .ROW    $C2 $2D
+        .ROW    $C3 $2F
+        .ROW    $C4 $31
+        .ROW    $C6 $32
+        .ROW    $C8 $34
+        .ROW    $CA $36
+        .ROW    $CC $38
+        .ROW    $CE $3A
+        .ROW    $D0 $3C
+        .ROW    $D2 $3E
+        .ROW    $D4 $3F
+        .ROW    $D7 $41
+        .ROW    $DA $43
+        .ROW    $DC $44
+        .ROW    $DF $45
+        .ROW    $E2 $47
+        .ROW    $E5 $48
+        .ROW    $E8 $49
+        .ROW    $EC $4A
+        .ROW    $EF $4B
+        .ROW    $F2 $4C
+        .ROW    $F6 $4C
+        .ROW    $F9 $4C
+        .ROW    $FC $4D
+        .ROW    $00 $4D
+        .ROW    $03 $4D
+        .ROW    $07 $4C
+        .ROW    $0A $4C
+        .ROW    $0E $4C
+        .ROW    $11 $4B
+        .ROW    $14 $4A
+        .ROW    $18 $49
+        .ROW    $1B $48
+        .ROW    $1E $47
+        .ROW    $21 $45
+        .ROW    $24 $44
+        .ROW    $27 $42
+        .ROW    $29 $41
+        .ROW    $2C $3F
+        .ROW    $2E $3D
+        .ROW    $31 $3B
+        .ROW    $33 $3A
+        .ROW    $35 $38
+        .ROW    $37 $36
+        .ROW    $39 $34
+        .ROW    $3A $32
+        .ROW    $3C $30
+        .ROW    $3E $2E
+        .ROW    $3F $2C
+        .ROW    $40 $2A
+        .ROW    $41 $28
+        .ROW    $43 $26
+        .ROW    $44 $24
+        .ROW    $45 $23
+        .ROW    $45 $21
+        .ROW    $46 $1F
+        .ROW    $47 $1D
+        .ROW    $48 $1C
+        .ROW    $48 $1A
+        .ROW    $49 $18
+        .ROW    $49 $17
+        .ROW    $4A $15
+        .ROW    $4A $14
+        .ROW    $4B $12
+        .ROW    $4B $11
+        .ROW    $4B $0F
+        .ROW    $4B $0E
+        .ROW    $4C $0D
+        .ROW    $4C $0C
+        .ROW    $4C $0A
+        .ROW    $4C $09
+        .ROW    $4C $08
+        .ROW    $4C $07
+        .ROW    $4D $06
+        .ROW    $4D $05
+        .ROW    $4D $04
+        .ROW    $4D $03
+        .ROW    $4D $02
+        .ROW    $4D $01
+        .ROW    $4D $00
         ;
 
 spriteLayouts:                                                          ;$6911
@@ -17647,18 +17499,13 @@ meta_blink_process:                                                     ;$7B95
         ld      [IX+Mob.unknown12], $00
         ret
 
-@_7c17: .WORD   @_7c29
-        .BYTE   $1C
-        .WORD   @_7c31
-        .BYTE   $1C
-        .WORD   @_7c39
-        .BYTE   $1C
-        .WORD   @_7c29
-        .BYTE   $1D
-        .WORD   @_7c31
-        .BYTE   $1D
-        .WORD   @_7c39
-        .BYTE   $1D
+@_7c17: .TABLE  WORD    BYTE                                            ;$7C17
+        .ROW    @_7c29  $1C
+        .ROW    @_7c31  $1C
+        .ROW    @_7c39  $1C
+        .ROW    @_7c29  $1D
+        .ROW    @_7c31  $1D
+        .ROW    @_7c39  $1D
 
         ;sprite layout
 @_7c29: .BYTE   $B4 $B6 $FF $FF $FF $FF
