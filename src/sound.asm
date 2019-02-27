@@ -1,4 +1,4 @@
-.INCLUDE        "inc/sms.asm"           ; hardware definitions
+;;.INCLUDE        "inc/sms.asm"           ; hardware definitions
 
 ; This sound driver was disassembled by Valley Bell, to whom I am eternally
 ; grateful as I have no understanding of sound theory and could not have hoped
@@ -79,7 +79,7 @@
         channelVolume                   DB                              ;+$2C
 .ENDST
 
-.RAMSECTION "sound_RAM"         SLOT 3
+.RAMSECTION "sound_RAM"         ;;SLOT 3
 ;===============================================================================
 ; name                          ; size  ; note                          ; addr
 ;-------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ loopStack                       DW
 ; -- perhaps it's reused in other Ancient games, or it could be a 3rd-party
 ; piece of code.
 ;
-.BANK   3       SLOT    1
+;;.BANK   3       SLOT    1
 .SECTION        "sound_driver"          NAMESPACE "sound"
 
 update:
