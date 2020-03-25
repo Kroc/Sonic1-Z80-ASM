@@ -5976,7 +5976,39 @@ _2067:                                                                  ;$2067
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ;wait until the water raster effect has finished its work (it requires three interrupts to produce)
+        dec     A
+        ld	    [RAM_D287],     A
+        jp      nz, _LABEL_1CED_131@_1de2
+	
+        ;demo mode?
+        bit     1,  [IY+Vars.scrollRingFlags]
+        jr	    nz, _20b8
+        bit	    4,  [IY+Vars.origFlags6]
+        jr	    z,  +
+        set	    4,  [IY+Vars.flags6]
++	    bit	    7,  [IY+Vars.flags6]
+        call	nz, _20a4
+        ld	    A,  [RAM_LIVES]
+        and	    A
+        ld	    A,  $02
+        ret	    nz
+	
+        call	fadeOut
+        call	hideSprites
+        res	    5,  [IY+Vars.flags0]
+        call	_1401
+        ld	    A,  $00
+        ret	nc
+	
+        ld	    A,  $03
+        ld	    [RAM_LIVES],    A
+        ld	    A,  $01
+        ret
+
+_20a4:                                                                  ;$20A4
+;===============================================================================
+        ; wait until the water raster effect has finished its work
+        ; (it requires three interrupts to produce)
         ld      A,      [RAM_RASTERSPLIT_STEP]
         and     A
         jr      nz,     _2067

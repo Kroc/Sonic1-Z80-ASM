@@ -39,11 +39,17 @@
 ; sprites or tiles and a minuscule VBlank period
 .DEF    SMS_SCREEN_HEIGHT_SUPEREXTENDED 240
 
-.STRUCT SMSTile
+.STRUCT SMSBitPlane
         bitplane1       BYTE
         bitplane2       BYTE
         bitplane3       BYTE
         bitplane4       BYTE
+.ENDST
+
+.STRUCT SMSTile
+        ;; this makes the link very slow if we include thousands of properties
+        ;;rows            INSTANCEOF SMSBitPlane 8
+        pixels          DSB 32
 .ENDST
 
 ; the layout of the Sprite Attribute Table in VRAM is rather odd. instead of
