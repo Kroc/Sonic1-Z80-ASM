@@ -1,6 +1,6 @@
-.INCLUDE        "inc/sms.asm"           ; hardware definitions
-.INCLUDE        "inc/vars.asm"
-.INCLUDE        "inc/mob.asm"
+.INC    "inc/sms.asm"           ; hardware definitions
+.INC    "inc/vars.asm"
+.INC    "inc/mob.asm"
 
 .RAMSECTION "sonic1"            SLOT 3
 ;===============================================================================

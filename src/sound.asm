@@ -22,6 +22,8 @@
 ;       is for sound-effects. Since there are only four actual hardware
 ;       channels, the SFX track overrides the noise channel of the song
 ;
+;TODO: use the linker
+.INC    "inc/sms.asm"
 
 .STRUCT Track
 ;===============================================================================
@@ -77,7 +79,7 @@
         channelVolume                   DB                              ;+$2C
 .ENDST
 
-.RAMSECTION     "sound_RAM"
+.RAMSECTION     "sound_RAM"     SLOT "RAM" ORGA $dc04 FORCE
 ;===============================================================================
 ; name                          ; size  ; note                          ; addr
 ;-------------------------------------------------------------------------------
@@ -118,10 +120,11 @@ loopStack                       DW
 
 ; This is the public interface that forwards to the internal implementation;
 ; this style of implementation is unique to the sound driver -- perhaps it's
-; reused in other Ancient games, or it could be a 3rd-party piece of code.
+; reused in other Ancient games, or it could be a 3rd-party piece of code
 ;
+.BANK       3   SLOT   "SLOT1"
 .SECTION        "sound_driver"          NAMESPACE "sound"
-
+;===============================================================================
 update:
         jp      doUpdate
         ;
@@ -301,63 +304,37 @@ initTrackValues_words:
 
 initTrackValues_bytes:
 ;===============================================================================
-        .WORD   track0vars.channelFrequencyPSG        
-        .BYTE   %10000000
-        .WORD   track0vars.channelVolumePSG           
-        .BYTE   %10010000
-        .WORD   track1vars.channelFrequencyPSG        
-        .BYTE   %10100000
-        .WORD   track1vars.channelVolumePSG           
-        .BYTE   %10110000
-        .WORD   track2vars.channelFrequencyPSG        
-        .BYTE   %11000000
-        .WORD   track2vars.channelVolumePSG           
-        .BYTE   %11010000
-        .WORD   track3vars.channelFrequencyPSG        
-        .BYTE   %11100000
-        .WORD   track3vars.channelVolumePSG           
-        .BYTE   %11110000
-        .WORD   track0vars.flags                      
-        .BYTE   %00000010
-        .WORD   track1vars.flags                      
-        .BYTE   %00000010
-        .WORD   track2vars.flags                      
-        .BYTE   %00000010
-        .WORD   track3vars.flags                      
-        .BYTE   %00000010
-        .WORD   track4vars.flags                      
-        .BYTE   %00000000
+        .TABLE  WORD                                    BYTE
+        .ROW    track0vars.channelFrequencyPSG          %10000000
+        .ROW    track0vars.channelVolumePSG             %10010000
+        .ROW    track1vars.channelFrequencyPSG          %10100000
+        .ROW    track1vars.channelVolumePSG             %10110000
+        .ROW    track2vars.channelFrequencyPSG          %11000000
+        .ROW    track2vars.channelVolumePSG             %11010000
+        .ROW    track3vars.channelFrequencyPSG          %11100000
+        .ROW    track3vars.channelVolumePSG             %11110000
+        .ROW    track0vars.flags                        %00000010
+        .ROW    track1vars.flags                        %00000010
+        .ROW    track2vars.flags                        %00000010
+        .ROW    track3vars.flags                        %00000010
+        .ROW    track4vars.flags                        %00000000
 
         ; TODO: is there a reason this var is not set using the WORD table
         ;       above instead of two separate bytes as is the case here?
-        .WORD   track0vars.initModulationDelay+0      
-        .BYTE   $00
-        .WORD   track1vars.initModulationDelay+0      
-        .BYTE   $00
-        .WORD   track2vars.initModulationDelay+0      
-        .BYTE   $00
-        .WORD   track3vars.initModulationDelay+0      
-        .BYTE   $00
-        .WORD   track0vars.initModulationDelay+1      
-        .BYTE   $00
-        .WORD   track1vars.initModulationDelay+1      
-        .BYTE   $00
-        .WORD   track2vars.initModulationDelay+1      
-        .BYTE   $00
-        .WORD   track3vars.initModulationDelay+1      
-        .BYTE   $00
-        .WORD   track0vars.id                         
-        .BYTE   $00
-        .WORD   track1vars.id                         
-        .BYTE   $01
-        .WORD   track2vars.id                         
-        .BYTE   $02
-        .WORD   track3vars.id                         
-        .BYTE   $03
-        .WORD   SFXpriority                           
-        .BYTE   $00
-        .WORD   playbackMode                          
-        .BYTE   %00000000
+        .ROW    track0vars.initModulationDelay+0        $00
+        .ROW    track1vars.initModulationDelay+0        $00
+        .ROW    track2vars.initModulationDelay+0        $00
+        .ROW    track3vars.initModulationDelay+0        $00
+        .ROW    track0vars.initModulationDelay+1        $00
+        .ROW    track1vars.initModulationDelay+1        $00
+        .ROW    track2vars.initModulationDelay+1        $00
+        .ROW    track3vars.initModulationDelay+1        $00
+        .ROW    track0vars.id                           $00
+        .ROW    track1vars.id                           $01
+        .ROW    track2vars.id                           $02
+        .ROW    track3vars.id                           $03
+        .ROW    SFXpriority                             $00
+        .ROW    playbackMode                            %00000000
 
         .WORD   $FFFF
         ;
@@ -410,7 +387,7 @@ doStop:
         ; mute all sound channels by sending
         ; the right bytes to the sound chip
         ld      B,      4
-        ld      C,      sms.ports.psg
+        ld      C,      SMS_PORTS_PSG
         ld      HL,     initPSGValues
         ; TODO: 4x `oti` will be faster. we could even use `out` with static
         ;       values (instead of `initPSGValues` table), so that we no longer
@@ -459,7 +436,7 @@ doLoadSFX:
         ; (fetch the mask used for that PSG channel)
         ld      A,      [track4vars.channelVolumePSG]
         or      %00001111               ; set volume to "%1111" (mute)
-        out     [sms.ports.psg],        A
+        out     [SMS_PORTS_PSG],        A
 
         ; SFX header:
         ;-----------------------------------------------------------------------
@@ -832,7 +809,7 @@ doTrackSoundOut:
         ld      A,      C
         ld      [noiseMode],    A
         or      %11100000               ; noise channel frequency?
-        out     [sms.ports.psg],        A
+        out     [SMS_PORTS_PSG],        A
         jp      @sendVolume
 
 @doModulation:
@@ -891,7 +868,7 @@ doTrackSoundOut:
 @_4:    ld      A,      L
         and     %00001111
         or      [IX+Track.channelFrequencyPSG]
-        out     [sms.ports.psg],       A
+        out     [SMS_PORTS_PSG],       A
         ld      A,      H
         rlca
         rlca
@@ -906,7 +883,7 @@ doTrackSoundOut:
         rrca
         and     %00001111
         or      c
-        out     [sms.ports.psg],       A
+        out     [SMS_PORTS_PSG],       A
 
 @sendVolume:
         ld      A,      [IX+Track.fadeTicks+1]
@@ -925,7 +902,7 @@ doTrackSoundOut:
 @_5:    and     [IX+Track.effectiveVolume]
         xor     %00001111
         or      [IX+Track.channelVolumePSG]
-        out     [sms.ports.psg],        A
+        out     [SMS_PORTS_PSG],        A
         ld      A,      [playbackMode]
         and     %00001000
         ret     z
@@ -989,7 +966,7 @@ cmdFE_stopSFX:
         res     1,      [IX+Track.flags]
         ld      A,      %00001111
         or      [IX+Track.channelVolumePSG]
-        out     [sms.ports.psg],        A
+        out     [SMS_PORTS_PSG],        A
         ret
         ;
 
@@ -4472,7 +4449,7 @@ sfx_fb27:                                                               ;$FB27
         .BYTE   $FE
         ;
 
-sfx_fb43:                                                              ;$FB43
+sfx_fb43:                                                               ;$FB43
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4489,7 +4466,7 @@ sfx_fb43:                                                              ;$FB43
         .BYTE   $FE
         ;
 
-sfx_fb74:                                                              ;$FB74
+sfx_fb74:                                                               ;$FB74
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4501,7 +4478,7 @@ sfx_fb74:                                                              ;$FB74
         .BYTE   $81 $00 $FE
         ;
 
-sfx_fb98:                                                              ;$FB98
+sfx_fb98:                                                               ;$FB98
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4518,7 +4495,7 @@ sfx_fb98:                                                              ;$FB98
         .BYTE   $FE
         ;
 
-sfx_fbbf:                                                              ;$FBBF
+sfx_fbbf:                                                               ;$FBBF
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4535,7 +4512,7 @@ sfx_fbbf:                                                              ;$FBBF
         .BYTE   $FE
         ;
 
-sfx_fbe6:                                                              ;FBE6
+sfx_fbe6:                                                               ;FBE6
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4558,7 +4535,7 @@ sfx_fbe6:                                                              ;FBE6
         .BYTE   $FE
         ;
 
-sfx_fc18:                                                              ;$FC18
+sfx_fc18:                                                               ;$FC18
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4579,7 +4556,7 @@ sfx_fc18:                                                              ;$FC18
         .BYTE   $FE
         ;
 
-sfx_fc42:                                                              ;$FC42
+sfx_fc42:                                                               ;$FC42
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4595,7 +4572,7 @@ sfx_fc42:                                                              ;$FC42
         .BYTE   $FE
         ;
 
-sfx_fc5e:                                                              ;$FC5E
+sfx_fc5e:                                                               ;$FC5E
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4614,7 +4591,7 @@ sfx_fc5e:                                                              ;$FC5E
         .BYTE   $FE
         ;
 
-sfx_fc8e:                                                              ;$FC8E
+sfx_fc8e:                                                               ;$FC8E
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4631,7 +4608,7 @@ sfx_fc8e:                                                              ;$FC8E
         .BYTE   $FE
         ;
 
-sfx_fcb7:                                                              ;FCB7
+sfx_fcb7:                                                               ;FCB7
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4647,7 +4624,7 @@ sfx_fcb7:                                                              ;FCB7
         .BYTE   $FE
         ;
 
-sfx_fcd8:                                                              ;$FCD8
+sfx_fcd8:                                                               ;$FCD8
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4664,7 +4641,7 @@ sfx_fcd8:                                                              ;$FCD8
         .BYTE   $FE
         ;
 
-sfx_fcfd:                                                              ;$FCFD
+sfx_fcfd:                                                               ;$FCFD
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4681,7 +4658,7 @@ sfx_fcfd:                                                              ;$FCFD
         .BYTE   $FE
         ;
 
-sfx_fd24:                                                              ;FD24
+sfx_fd24:                                                               ;FD24
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4712,7 +4689,7 @@ sfx_fd24:                                                              ;FD24
         .BYTE   $FE
         ;
 
-sfx_fd62:                                                              ;FD62
+sfx_fd62:                                                               ;FD62
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4733,7 +4710,7 @@ sfx_fd62:                                                              ;FD62
         .BYTE   $FE
         ;
 
-sfx_fd88:                                                              ;$FD88
+sfx_fd88:                                                               ;$FD88
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4754,7 +4731,7 @@ sfx_fd88:                                                              ;$FD88
         .BYTE   $FE
         ;
 
-sfx_fdb1:                                                              ;$FDB1
+sfx_fdb1:                                                               ;$FDB1
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4776,7 +4753,7 @@ sfx_fdb1:                                                              ;$FDB1
         .BYTE   $FE
         ;
 
-sfx_fde6:                                                              ;$FDE6
+sfx_fde6:                                                               ;$FDE6
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4798,7 +4775,7 @@ sfx_fde6:                                                              ;$FDE6
         .BYTE   $FE
         ;
 
-sfx_fe0c:                                                              ;$FE0C
+sfx_fe0c:                                                               ;$FE0C
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4816,7 +4793,7 @@ sfx_fe0c:                                                              ;$FE0C
         .BYTE   $FE
         ;
 
-sfx_fe2f:                                                              ;$FE2F
+sfx_fe2f:                                                               ;$FE2F
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4831,7 +4808,7 @@ sfx_fe2f:                                                              ;$FE2F
         .BYTE   $FE
         ;
 
-sfx_fe48:                                                              ;$FE48
+sfx_fe48:                                                               ;$FE48
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4843,7 +4820,7 @@ sfx_fe48:                                                              ;$FE48
         .BYTE   $FE
         ;
 
-sfx_fe5c:                                                              ;$FE5C
+sfx_fe5c:                                                               ;$FE5C
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4858,7 +4835,7 @@ sfx_fe5c:                                                              ;$FE5C
         .BYTE   $FE
         ;
 
-sfx_fe74:                                                              ;$FE74
+sfx_fe74:                                                               ;$FE74
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4876,7 +4853,7 @@ sfx_fe74:                                                              ;$FE74
         .BYTE   $FE
         ;
 
-sfx_fea4:                                                              ;$FEA4
+sfx_fea4:                                                               ;$FEA4
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4894,7 +4871,7 @@ sfx_fea4:                                                              ;$FEA4
         .BYTE   $FE
         ;
 
-sfx_fecc:                                                              ;$FECC
+sfx_fecc:                                                               ;$FECC
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4910,7 +4887,7 @@ sfx_fecc:                                                              ;$FECC
         .BYTE   $FE
         ;
 
-sfx_fee8:                                                              ;$FEE8
+sfx_fee8:                                                               ;$FEE8
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4928,7 +4905,7 @@ sfx_fee8:                                                              ;$FEE8
         .BYTE   $FE
         ;
 
-sfx_ff08:                                                              ;$FF08
+sfx_ff08:                                                               ;$FF08
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
@@ -4949,7 +4926,7 @@ sfx_ff08:                                                              ;$FF08
         .BYTE   $FE
         ;
 
-sfx_ff4e:                                                              ;$FF4E
+sfx_ff4e:                                                               ;$FF4E
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE

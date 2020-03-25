@@ -1,6 +1,6 @@
-.INCLUDE        "inc/sms.asm"           ; hardware definitions
-.INCLUDE        "inc/vars.asm"
-.INCLUDE        "inc/mob.asm"
+.INC    "inc/sms.asm"                   ; hardware definitions
+.INC    "inc/vars.asm"
+.INC    "inc/mob.asm"
 
 ; position on the screen of the player's lives display
 .DEFINE HUD_LIVES_X     16
@@ -10,7 +10,7 @@
 ; number of frames to wait before the idle animation kicks in
 .DEFINE IDLE_TIME       6 * 60
 
-.BANK   0       SLOT 0
+.BANK   0       SLOT "SLOT0"
 
 start:                                                                  ;$0000
 ;===============================================================================
@@ -129,7 +129,6 @@ interruptHandler:                                                       ;$0073
 
         ; initialise raster split:
         ;-----------------------------------------------------------------------
-
         ; check the water line height:
         ld      A,      [RAM_WATERLINE]
         and     A
@@ -379,10 +378,10 @@ loadPaletteFromInterrupt_water:                                         ;$01BA
 
         ; get the position of the water line on screen
         ld      A,      [RAM_WATERLINE]
-        and     A
-        jr      z,      @_2     ; is it 0? (above the screen)
-        cp      $FF             ; or $FF? (below the screen)
-        jr      nz,     @_2     ; ...skip ahead
+        and     A                       ; set the CPU flags based on its value
+        jr      z,      @_2             ; is it 0? (above the screen)
+        cp      $FF                     ; or $FF? (below the screen)
+        jr      nz,     @_2             ; ...skip ahead
 
         ; below water:
         ;-----------------------------------------------------------------------
@@ -496,10 +495,10 @@ doRasterSplit:                                                          ;$01F2
         djnz    @loop
 
         ld      A,      [RAM_VDPREGISTER_0]
-        and     %11101111       ; remove bit 4: disable line interrupts
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,                              SMS_VDP_REGISTER_0
-        out     [SMS_PORTS_VDP_CONTROL],        A
+        and     %11101111               ; remove bit 4: disable line interrupts
+        out     [SMS_PORTS_VDP_CONTROL],A
+        ld      A,                      SMS_VDP_REGISTER_0
+        out     [SMS_PORTS_VDP_CONTROL],A
 
 @_3:    pop     BC
         pop     DE
@@ -510,15 +509,17 @@ doRasterSplit:                                                          ;$01F2
 
 underwaterPalette:                                                      ;$024B
 ;===============================================================================
-@tile:  .BYTE   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:.BYTE   $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
+        .TABLE  DSB 16
+@tile:  .ROW    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite:.ROW    $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
 
 underwaterPalette_Boss:                                                 ;$026B
 ;===============================================================================
 ; TODO: this should be provided by the mob, not the interrupts
 ; (i.e. it can be excluded if no underwater used)
-@tile:  .BYTE   $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:.BYTE   $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
+        .TABLE  DSB 16
+@tile:  .ROW    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
+@sprite:.ROW    $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
 
 init:                                                                   ;$028B
 ;===============================================================================
@@ -570,7 +571,7 @@ init:                                                                   ;$028B
 
         ; move all sprites off the bottom of the screen!
         ; (set 64 bytes of VRAM from $3F00 to 224)
-        ld      HL,     $3F00
+        ld      HL,     SMS_VRAM_SPRITES_YPOS
         ld      BC,     SMS_SPRITES
         ld      A,      SMS_SCREEN_HEIGHT
         call    clearVRAM
@@ -599,8 +600,8 @@ call_playMusic:                                                         ;$02D7
         di      ; disable interrupts
         push    AF
 
-        ; switch page 1 (Z80:$4000-$7FFF)
-        ; to bank 3 ($C000-$FFFF)
+        ; switch slot 1 (Z80:$4000-$7FFF)
+        ; to bank 3 (ROM:$C000-$FFFF)
         ld      A,                      :sound.playMusic
         ld      [SMS_MAPPER_SLOT1],     A
 
@@ -637,7 +638,7 @@ call_muteSound:                                                         ;$02ED
 call_playSFX:                                                           ;$02FE
 ;===============================================================================
 ; switch banks to the sound module and play the given SFX. the previous bank
-; is restored afterwards. the ;rst $28` instruction ends up here.
+; is restored afterwards. the `rst $28` instruction ends up here.
 ;
 ; in    A      index number of SFX to play
 ;-------------------------------------------------------------------------------
@@ -3365,14 +3366,14 @@ _0e72:                                                                  ;$0E72
 _0e7a:                                                                  ;$0E7A
 ;===============================================================================
         .TABLE  WORD    BYT BYT
-        .WORD   _114d   $04 $01
-        .WORD   _115f   $04 $00
+        .ROW    _114d   $04 $01
+        .ROW    _115f   $04 $00
         ;
 
 _0e82:                                                                  ;$0E82
 ;===============================================================================
         .TABLE  WORD    BYT BYT
-        .WORD   _1183   $04 $00
+        .ROW    _1183   $04 $00
         ;
 
 _LABEL_E86_110:                                                         ;$0E86
@@ -3828,32 +3829,32 @@ _11ef:                                                                  ;$11EF
 
 _1201:                                                                  ;$1201
 ;===============================================================================
-        .WORD   _0dd9
-        .WORD   _0e24
-        .WORD   _0e4b
-        .WORD   _0dd9
+        .ADDR   _0dd9
+        .ADDR   _0e24
+        .ADDR   _0e4b
+        .ADDR   _0dd9
         ;
 
 zoneTitles:                                                             ;$1209
 ;===============================================================================
-        .WORD   @greenHill              ; Green Hill Act 1
-        .WORD   @greenHill              ; Green Hill Act 2
-        .WORD   @greenHill              ; Green Hill Act 3
-        .WORD   @bridge                 ; Bridge Act 1
-        .WORD   @bridge                 ; Bridge Act 2
-        .WORD   @bridge                 ; Bridge Act 3
-        .WORD   @jungle                 ; Jungle Act 1
-        .WORD   @jungle                 ; Jungle Act 2
-        .WORD   @jungle                 ; Jungle Act 3
-        .WORD   @labyrinth              ; Labyrinth Act 1
-        .WORD   @labyrinth              ; Labyrinth Act 2
-        .WORD   @labyrinth              ; Labyrinth Act 3
-        .WORD   @scrapBrain             ; Scrap Brain Act 1
-        .WORD   @scrapBrain             ; Scrap Brain Act 2
-        .WORD   @scrapBrain             ; Scrap Brain Act 3
-        .WORD   @skyBase                ; Sky Base Act 1
-        .WORD   @skyBase                ; Sky Base Act 2
-        .WORD   @skyBase                ; Sky Base Act 3
+        .ADDR   @greenHill              ; Green Hill Act 1
+        .ADDR   @greenHill              ; Green Hill Act 2
+        .ADDR   @greenHill              ; Green Hill Act 3
+        .ADDR   @bridge                 ; Bridge Act 1
+        .ADDR   @bridge                 ; Bridge Act 2
+        .ADDR   @bridge                 ; Bridge Act 3
+        .ADDR   @jungle                 ; Jungle Act 1
+        .ADDR   @jungle                 ; Jungle Act 2
+        .ADDR   @jungle                 ; Jungle Act 3
+        .ADDR   @labyrinth              ; Labyrinth Act 1
+        .ADDR   @labyrinth              ; Labyrinth Act 2
+        .ADDR   @labyrinth              ; Labyrinth Act 3
+        .ADDR   @scrapBrain             ; Scrap Brain Act 1
+        .ADDR   @scrapBrain             ; Scrap Brain Act 2
+        .ADDR   @scrapBrain             ; Scrap Brain Act 3
+        .ADDR   @skyBase                ; Sky Base Act 1
+        .ADDR   @skyBase                ; Sky Base Act 2
+        .ADDR   @skyBase                ; Sky Base Act 3
 
 @greenHill:     ; "GREEN HILL"                                          ;$122D
         .BYTE   $10 $13 $46 $62 $44 $44 $51 $EB $47 $40 $43 $43 $EB $EB $FF
@@ -5908,11 +5909,11 @@ _1fa9:                                                                  ;$1FA9
 
 _2023:                                                                  ;$2023
 ;===============================================================================
-        .WORD   $0000
-        .WORD   _202d
-        .WORD   addExtraLife
-        .WORD   add10Rings
-        .WORD   _203f
+        .ADDR   $0000
+        .ADDR   _202d
+        .ADDR   addExtraLife
+        .ADDR   add10Rings
+        .ADDR   _203f
         ;
 
 _202d:                                                                  ;$202D
@@ -7609,187 +7610,188 @@ mobPointers:                                                            ;$2AF6
 ; this is the list of mobs defined in the game,
 ; with the order of this table providing the mob IDs
 ;
+.ENUMID 0       EXPORT
 @sonic:                                 ; Sonic
-        .DEFINE MOB_ID_SONIC            $00
-        .WORD   sonic_process           
+        .ENUMID MOB_ID_SONIC                                            ;=$00
+        .ADDR   sonic_process
 @powerUp_ring:                          ; 10 rings monitor
-        .DEFINE MOB_ID_RINGS            $01
-        .WORD   powerups_ring_process   
+        .ENUMID MOB_ID_RINGS                                            ;=$01
+        .ADDR   powerups_ring_process   
 @powerUp_speed:                         ; speed shoes monitor
-        .DEFINE MOB_ID_SPEEDUP          $02
-        .WORD   powerups_speed_process  
+        .ENUMID MOB_ID_SPEEDUP                                          ;=$02
+        .ADDR   powerups_speed_process  
 @powerUp_life:                          ; extra life monitor
-        .DEFINE MOB_ID_1UP              $03
-        .WORD   powerups_life_process   
+        .ENUMID MOB_ID_1UP                                              ;=$03
+        .ADDR   powerups_life_process   
 @powerUp_shield:                        ; sheild monitor
-        .DEFINE MOB_ID_SHIELD           $04
-        .WORD   powerups_shield_process 
+        .ENUMID MOB_ID_SHIELD                                           ;=$04
+        .ADDR   powerups_shield_process 
 @powerUp_invincibility:                 ; invincibility monitor
-        .DEFINE MOB_ID_INVINCIBILITY    $05
-        .WORD   powerups_invincibility_process
+        .ENUMID MOB_ID_INVINCIBILITY                                    ;=$05
+        .ADDR   powerups_invincibility_process
 @powerUp_emerald:                       ; chaos emerald
-        .DEFINE MOB_ID_EMERALD          $06
-        .WORD   powerups_emerald_process
+        .ENUMID MOB_ID_EMERALD                                          ;=$06
+        .ADDR   powerups_emerald_process
 @boss_endSign:                          ; end sign
-        .DEFINE MOB_ID_ENDSIGN          $07
-        .WORD   boss_endSign_process
+        .ENUMID MOB_ID_ENDSIGN                                          ;=$07
+        .ADDR   boss_endSign_process
 @badnick_crabMeat:                      ; badnick - crabmeat
-        .DEFINE MOB_ID_CRABMEAT         $08
-        .WORD   badnick_crabmeat_process
+        .ENUMID MOB_ID_CRABMEAT                                         ;=$08
+        .ADDR   badnick_crabmeat_process
 @platform_swinging:                     ;#09: wooden platform - swinging (Green Hill)
-        .WORD   platform_swinging_process
+        .ADDR   platform_swinging_process
 @explosion:                             ;#0A: explosion
-        .WORD   explosion_process
+        .ADDR   explosion_process
 @platform:                              ;#0B: wooden platform (Green Hill)
-        .WORD   platform_sinking_process
+        .ADDR   platform_sinking_process
 @platform_falling:                      ;#0C: wooden platform - falling (Green Hill)
-        .WORD   platform_falling_process
+        .ADDR   platform_falling_process
 @_6ac1:                                 ;#0D: UNKNOWN
-        .WORD   unknown_6ac1_process
+        .ADDR   unknown_6ac1_process
 @badnick_buzzBomber:                    ;#0E: badnick - buzz bomber
-        .WORD   badnick_buzzbomber_process
+        .ADDR   badnick_buzzbomber_process
 @platform_leftRight:                    ;#0F: wooden platform - moving (Green Hill)
-        .WORD   platform_moving_process
+        .ADDR   platform_moving_process
 @badnick_motobug:                       ;#10: badnick - motobug
-        .WORD   badnick_motobug_process
+        .ADDR   badnick_motobug_process
 @badnick_newtron:                       ;#11: badnick - newtron
-        .WORD   badnick_newtron_process
+        .ADDR   badnick_newtron_process
 @boss_greenHill:                        ;#12: boss (Green Hill)
-        .WORD   boss_greenHill_process
+        .ADDR   boss_greenHill_process
 @_9b75:                                 ;#13: UNKNOWN - bullet?
-        .WORD   unknown_9b75_process
+        .ADDR   unknown_9b75_process
 @_9be8:                                 ;#14: UNKNOWN - fireball right?
-        .WORD   unknown_9be8_process
+        .ADDR   unknown_9be8_process
 @_9c70:                                 ;#15: UNKNOWN - fireball left?
-        .WORD   _9c70
+        .ADDR   _9c70
 @trap_flameThrower:                     ;#16: flame thrower (Scrap Brain)
-        .WORD   mob_trap_flameThrower
+        .ADDR   mob_trap_flameThrower
 @door_left:                             ;#17: door - one way left (Scrap Brain)
-        .WORD   mob_door_left
+        .ADDR   mob_door_left
 @door_right:                            ;#18: door - one way right (Scrap Brain)
-        .WORD   mob_door_right
+        .ADDR   mob_door_right
 @door_door:                             ;#19: door (Scrap Brain)
-        .WORD   mob_door
+        .ADDR   mob_door
 @trap_electric:                         ;#1A: electric sphere (Scrap Brain)
-        .WORD   trap_electric_process
+        .ADDR   trap_electric_process
 @badnick_ballHog:                       ;#1B: badnick - ball hog (Scrap Brain)
-        .WORD   badnick_ballhog_process
+        .ADDR   badnick_ballhog_process
 @_a33c:                                 ;#1C: UNKNOWN - ball from ball hog?
-        .WORD   unknown_a33c_process
+        .ADDR   unknown_a33c_process
 @switch:                                ;#1D: switch
-        .WORD   door_switch_process
+        .ADDR   door_switch_process
 @door_switchActivated:                  ;#1E: switch door
-        .WORD   door_switching_process
+        .ADDR   door_switching_process
 @badnick_caterkiller:                   ;#1F: badnick - caterkiller
-        .WORD   badnick_caterkiller_process
+        .ADDR   badnick_caterkiller_process
 @_96f8:                                 ;#20: UNKNOWN
-        .WORD   unknown_96f8_process
+        .ADDR   unknown_96f8_process
 @platform_bumper:                       ;#21: moving bumper (Special Stage)
-        .WORD   platform_bumper_process
+        .ADDR   platform_bumper_process
 @boss_scrapBrain:                       ;#22: boss (Scrap Brain)
-        .WORD   boss_scrapBrain_process
+        .ADDR   boss_scrapBrain_process
 @boss_freeRabbit:                       ;#23: free animal - rabbit
-        .WORD   boss_freeRabbit_process
+        .ADDR   boss_freeRabbit_process
 @boss_freeBird:                         ;#24: free animal - bird
-        .WORD   boss_freeBird_process
+        .ADDR   boss_freeBird_process
 @boss_capsule:                          ;#25: capsule
-        .WORD   boss_capsule_process
+        .ADDR   boss_capsule_process
 @badnick_chopper:                       ;#26: badnick - chopper
-        .WORD   badnick_chopper_process
+        .ADDR   badnick_chopper_process
 @platform_fallVert:                     ;#27: log - vertical (Jungle)
-        .WORD   mob_platform_fallVert
+        .ADDR   mob_platform_fallVert
 @platform_fallHoriz:                    ;#28: log - horizontal (Jungle)
-        .WORD   mob_platform_fallHoriz
+        .ADDR   mob_platform_fallHoriz
 @platform_roll:                         ;#29: log - floating (Jungle)
-        .WORD   mob_platform_roll
+        .ADDR   mob_platform_roll
 @_96a8:                                 ;#2A: UNKNOWN
-        .WORD   unknown_96a8_process
+        .ADDR   unknown_96a8_process
 @_8218:                                 ;#2B: UNKNOWN
-        .WORD   unknown_8218_process
+        .ADDR   unknown_8218_process
 @boss_jungle:                           ;#2C: boss (Jungle)
-        .WORD   boss_jungle_process
+        .ADDR   boss_jungle_process
 @badnick_yadrin:                        ;#2D: badnick - yadrin (Bridge)
-        .WORD   badnick_yadrin_process
+        .ADDR   badnick_yadrin_process
 @platform_bridge:                       ;#2E: falling bridge (Bridge)
-        .WORD   platform_bridge_process
+        .ADDR   platform_bridge_process
 @_94a5:                                 ;#2F: UNKNOWN - wave moving projectile?
-        .WORD   unknown_94a5_process
+        .ADDR   unknown_94a5_process
 @meta_clouds:                           ;#30: meta - clouds (Sky Base)
-        .WORD   meta_clouds_process
+        .ADDR   meta_clouds_process
 @trap_propeller:                        ;#31: propeller (Sky Base)
-        .WORD   trap_propeller_process
+        .ADDR   trap_propeller_process
 @badnick_bomb:                          ;#32: badnick - bomb (Sky Base)
-        .WORD   mob_badnick_bomb
+        .ADDR   mob_badnick_bomb
 @trap_cannon:                           ;#33: cannon (Sky Base)
-        .WORD   trap_cannon_process
+        .ADDR   trap_cannon_process
 @trap_cannonBall:                       ;#34: cannon ball (Sky Base)
-        .WORD   trap_cannonball_process
+        .ADDR   trap_cannonball_process
 @badnick_unidos:                        ;#35: badnick - unidos (Sky Base)
-        .WORD   badnick_unidos_process
+        .ADDR   badnick_unidos_process
 @_b0f4:                                 ;#36: UNKNOWN - stationary, lethal
-        .WORD   unknown_b0f4_process
+        .ADDR   unknown_b0f4_process
 @trap_turretRotating:                   ;#37: rotating turret (Sky Base)
-        .WORD   trap_turretRotating_process
+        .ADDR   trap_turretRotating_process
 @platform_flyingRight:                  ;#38: flying platform (Sky Base)
-        .WORD   platform_flyingRight_process
+        .ADDR   platform_flyingRight_process
 @_b398:                                 ;#39: moving spiked wall (Sky Base)
-        .WORD   trap_spikewall_process
+        .ADDR   trap_spikewall_process
 @trap_turretFixed:                      ;#3A: fixed turret (Sky Base)
-        .WORD   trap_turretFixed_process
+        .ADDR   trap_turretFixed_process
 @platform_flyingUpDown:                 ;#3B: flying platform - up/down (Sky Base)
-        .WORD   platform_flyingUpDown_process
+        .ADDR   platform_flyingUpDown_process
 @badnick_jaws:                          ;#3C: badnick - jaws (Labyrinth)
-        .WORD   badnick_jaws_process
+        .ADDR   badnick_jaws_process
 @trap_spikeBall:                        ;#3D: spike ball (Labyrinth)
-        .WORD   trap_spikeBall_process
+        .ADDR   trap_spikeBall_process
 @trap_spear:                            ;#3E: spear (Labyrinth)
-        .WORD   trap_spear_process
+        .ADDR   trap_spear_process
 @trap_fireball:                         ;#3F: fire ball head (Labyrinth)
-        .WORD   trap_fireball_process
+        .ADDR   trap_fireball_process
 @meta_water:                            ;#40: meta - water line position
-        .WORD   meta_water_process
+        .ADDR   meta_water_process
 @powerUp_bubbles:                       ;#41: bubbles (Labyrinth)
-        .WORD   powerups_bubbles_process
+        .ADDR   powerups_bubbles_process
 @_8eca:                                 ;#42: UNKNOWN
-        .WORD   _8eca
+        .ADDR   _8eca
 @null:                                  ;#43: NO-CODE
-        .WORD   null_process
+        .ADDR   null_process
 @badnick_burrobot:                      ;#44: badnick - burrobot
-        .WORD   badnick_burrobot_process
+        .ADDR   badnick_burrobot_process
 @platform_float:                        ;#45: platform - float up (Labyrinth)
-        .WORD   platform_float_process
+        .ADDR   platform_float_process
 @boss_electricBeam:                     ;#46: boss - electric beam (Sky Base)
-        .WORD   boss_electricBeam_process
+        .ADDR   boss_electricBeam_process
 @_bcdf:                                 ;#47: UNKNOWN
-        .WORD   unknown_bcdf_process
+        .ADDR   unknown_bcdf_process
 @boss_bridge:                           ;#48: boss (Bridge)
-        .WORD   mob_boss_bridge
+        .ADDR   mob_boss_bridge
 @boss_labyrinth:                        ;#49: boss (Labyrinth)
-        .WORD   mob_boss_labyrinth
+        .ADDR   mob_boss_labyrinth
 @boss_skybase:                          ;#4A: boss (Sky Base)
-        .WORD   boss_skyBase_process
+        .ADDR   boss_skyBase_process
 @meta_trip:                             ;#4B: trip zone (Green Hill)
-        .WORD   meta_trip_process
+        .ADDR   meta_trip_process
 @platform_flipper:                      ;#4C: Flipper (Special Stage)
-        .WORD   platform_flipper_process
+        .ADDR   platform_flipper_process
 @_0000_1                                ;#4D: RESET!
-        .WORD   $0000
+        .ADDR   $0000
 @platform_balance:                      ;#4E: balance (Bridge)
-        .WORD   platform_balance_process
+        .ADDR   platform_balance_process
 @_0000_2                                ;#4F: RESET!
-        .WORD   $0000
+        .ADDR   $0000
 @flower:                                ;#50: flower (Green Hill)
-        .WORD   flower_process
+        .ADDR   flower_process
 @powerUp_checkpoint:                    ;#51: monitor - checkpoint
-        .WORD   powerups_checkpoint_process
+        .ADDR   powerups_checkpoint_process
 @powerUp_continue:                      ;#52: monitor - continue
-        .WORD   powerups_continue_process
+        .ADDR   powerups_continue_process
 @anim_final:                            ;#53: final animation
-        .WORD   cutscene_final_process
+        .ADDR   cutscene_final_process
 @anim_emeralds:                         ;#54: all emeralds animation
-        .WORD   cutscene_emeralds_process
+        .ADDR   cutscene_emeralds_process
 @_7b95:                                 ;#55: "make sonic blink"
-        .WORD   meta_blink_process
+        .ADDR   meta_blink_process
         ;
 
 mobBounds:                                                              ;$2BA2
@@ -10460,7 +10462,7 @@ updateTime:                                                             ;$3A03
         ; wait 60 frames for a second
         ; (TODO: detect PAL/NTSC and use the correct frame rate?)
         ;
-        ld      A,       [HL]           ; load the current frame-count
+        ld      A,      [HL]            ; load the current frame-count
         inc     A                       ; add another frame
         cp      60                      ; is it 60 or less?
         jr      c,      @_1             ; if so, keep going
@@ -10501,7 +10503,7 @@ updateTime:                                                             ;$3A03
         ; wait 60 frames for a second
         ; (TODO: this is a repeat of above, so could be re-organised to share)
 
-        ld      A,       [HL]           ; load the current frame-count
+        ld      A,      [HL]            ; load the current frame-count
         inc     A                       ; add another frame
         cp      60                      ; is it 60 or less?
         jr      c,      @_5             ; if so, keep going
@@ -10548,9 +10550,9 @@ solidityBlocks:                                                         ;$3A65
 ; solidity pointer table
 ;
         ;TODO: this should be populated by the tilesets
-        .WORD   @greenHill     @bridge        @jungle
-        .WORD   @labyrinth     @scrapBrain    @skyBaseInterior
-        .WORD   @specialStage  @skyBaseExterior
+        .ADDR   @greenHill     @bridge        @jungle
+        .ADDR   @labyrinth     @scrapBrain    @skyBaseInterior
+        .ADDR   @specialStage  @skyBaseExterior
 
         ;00 = sky
         ;16 = solid
@@ -10704,7 +10706,7 @@ UnknownCollision:                                                       ;$3FBF
 @_3FF0: ; 47 entries, according to number of solidity types             ;$3FF0
         .BYTE   $00 $08 $08 $08 $08 $06 $06 $06 $06 $06 $06 $03 $03 $03 $03 $03
 
-.BANK   1       SLOT    1
+.BANK   1       SLOT    "SLOT1"
 .ORG    $0000
                                                                         ;$4000
         .BYTE   $03 $08 $03 $03 $03 $03 $03 $03 $00 $00 $00 $00 $00 $00 $00 $00 
@@ -10721,12 +10723,12 @@ Unknown:                                                                ;$4020
 ;===============================================================================
 
         ; this is a lookup table using block solidity as index
-@_4020: .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E  ;$4020
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_409E @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_40BE @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_40DE
-        .WORD   @_40FE @_407E @_407E @_407E @_407E @_407E @_407E
+@_4020: .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E  ;$4020
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_409E @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_40BE @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_40DE
+        .ADDR   @_40FE @_407E @_407E @_407E @_407E @_407E @_407E
 
 
 @_407E: .BYTE   %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 %10000000 ;=$80                  `$407E
@@ -10756,12 +10758,12 @@ Unknown:                                                                ;$4020
 
         ;-----------------------------------------------------------------------
 
-@_411E: .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E         ;$411E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_417C @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_418C @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_41AC
-        .WORD   @_41AC @_407E @_407E @_407E @_407E @_407E @_407E
+@_411E: .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E         ;$411E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_417C @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_418C @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_41AC
+        .ADDR   @_41AC @_407E @_407E @_407E @_407E @_407E @_407E
 
 
 @_417C: .BYTE   $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 $04 ;$417C
@@ -10778,12 +10780,12 @@ Unknown:                                                                ;$4020
 
         ;-----------------------------------------------------------------------
 
-@_41EC: .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E         ;$41EC
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_424A @_407E
-        .WORD   @_426A @_428A @_42AA @_42CA @_42EA @_430A @_432A @_434A
-        .WORD   @_436A @_438A @_43AA @_43CA @_43EA @_440A @_442A @_444A
-        .WORD   @_446A @_407E @_407E @_407E @_407E @_407E @_407E
+@_41EC: .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E         ;$41EC
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_424A @_407E
+        .ADDR   @_426A @_428A @_42AA @_42CA @_42EA @_430A @_432A @_434A
+        .ADDR   @_436A @_438A @_43AA @_43CA @_43EA @_440A @_442A @_444A
+        .ADDR   @_446A @_407E @_407E @_407E @_407E @_407E @_407E
         
 
 @_424A: .BYTE   $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F $1F ;$424A
@@ -10842,12 +10844,12 @@ Unknown:                                                                ;$4020
 
         ;-----------------------------------------------------------------------
 
-@_448A: .WORD   @_407E @_45E8 @_4608 @_4628 @_4648 @_4668 @_4688 @_46A8         ;$448A
-        .WORD   @_46C8 @_46E8 @_4608 @_4628 @_4648 @_4668 @_4688 @_46A8
-        .WORD   @_46C8 @_46E8 @_4708 @_4728 @_4748 @_4768 @_4788 @_47A8
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
-        .WORD   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_47C8
-        .WORD   @_47E8 @_4808 @_4828 @_4848 @_4868 @_4888 @_48A8
+@_448A: .ADDR   @_407E @_45E8 @_4608 @_4628 @_4648 @_4668 @_4688 @_46A8         ;$448A
+        .ADDR   @_46C8 @_46E8 @_4608 @_4628 @_4648 @_4668 @_4688 @_46A8
+        .ADDR   @_46C8 @_46E8 @_4708 @_4728 @_4748 @_4768 @_4788 @_47A8
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_407E
+        .ADDR   @_407E @_407E @_407E @_407E @_407E @_407E @_407E @_47C8
+        .ADDR   @_47E8 @_4808 @_4828 @_4848 @_4868 @_4888 @_48A8
 
 
 @_45E8: .BYTE   $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $1A $1B $1C $1D $1E $1F ;$45E8
@@ -10961,24 +10963,25 @@ sonic_process:                                                          ;$49C8
         bit     7,      [IX+Mob.flags]
         call    nz,     @_4e88
 
-        ;flag to update the Sonic sprite frame
+        ; flag to update the Sonic sprite frame
         set     7,      [IY+Vars.timeLightningFlags]
 
-        ;is Sonic dead?
+        ; is Sonic dead?
         bit     0,      [IY+Vars.scrollRingFlags]
         jp      nz,     @_543c
 
-        ;reduce this number until it hits 0. appears to only be set when changing
-        ;direction from left to right; something to do with acceleration/skidding?
+        ; reduce this number until it hits 0. appears to only be set when
+        ; changing direction from left to right; something to do with
+        ; acceleration/skidding?
         ld      A,      [RAM_SONIC.unknown16]
         and     A
         call    nz,     @_4ff0
 
-        ;configure the flags on Sonic so that he adheres to the ground.
-        ;I'm not sure why this is done every frame
+        ; configure the flags on Sonic so that he adheres to the ground.
+        ; I'm not sure why this is done every frame
         res     5,      [IX+Mob.flags]
 
-        ;is Sonic in damage state?
+        ; is Sonic in damage state?
         bit     6,      [IY+Vars.flags6]
         call    nz,     @_510a
 
@@ -10986,15 +10989,15 @@ sonic_process:                                                          ;$49C8
         and     A
         call    nz,     @_568f
 
-        ;special stage? (time is centred)
+        ; special stage? (time is centred)
         bit     0,      [IY+Vars.timeLightningFlags]
         call    nz,     @_5100
 
         bit     0,      [IY+Vars.unknown0]
         call    nz,     @_4ff5
 
-        ;is Sonic underwater? -- count down oxygen...
-        bit     4,      [IX+Mob.flags]                     ;check mob underwater flag
+        ; is Sonic underwater? -- count down oxygen...
+        bit     4,      [IX+Mob.flags]  ; check mob underwater flag
         call    nz,     @drownTimer
 
         ld      A,      [RAM_D28B]
@@ -11013,7 +11016,7 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-        bit     4,      [IX+Mob.flags]                     ;mob underwater?
+        bit     4,      [IX+Mob.flags]  ; mob underwater?
         jp      z,      @_1
 
         ld      HL,     @_4ddd
@@ -11035,7 +11038,7 @@ sonic_process:                                                          ;$49C8
         and     A
         jr      nz,     @_4
 
-        ;special stage?
+        ; special stage?
         bit     0,      [IY+Vars.timeLightningFlags]
         jr      nz,     @_3
 
@@ -11093,16 +11096,15 @@ sonic_process:                                                          ;$49C8
 
         ;-----------------------------------------------------------------------
 
-        ;is up pressed on the joypad?
-@_5:    bit     1,      [IY+Vars.joypad]                   ;joypad up?
+        ; is up pressed on the joypad?
+@_5:    bit     1,      [IY+Vars.joypad]
         call    z,      @_50c1
 
-        bit     1,      [IY+Vars.joypad]                   ;joypad not up?
+        bit     1,      [IY+Vars.joypad]
         call    nz,     @_50e3
 
-        ;handle collision with tile underneath Sonic:
+        ; handle collision with tile underneath Sonic:
         ;-----------------------------------------------------------------------
-
         ld      A,                      15
         ld      [SMS_MAPPER_SLOT2],     A
         ld      [RAM_SLOT2],            A
@@ -11111,66 +11113,67 @@ sonic_process:                                                          ;$49C8
         ;0010, 00C4, 0154, 01F4, 02B4, 0374, 044C, 04CC
         ;  (180) (144) (160) (192) (192) (216) (128)
 
-        ;locate which block is underneath Sonic?
-        ld      BC,        12
-        ld      DE,        16
+        ; locate which block is underneath Sonic?
+        ld      BC,     12
+        ld      DE,     16
         call    getFloorLayoutRAMAddressForMob
 
-         ;get the block index from the Floor Layout address returned
-        ld      E,        [HL]
-        ld      D, 0
+        ; get the block index from the Floor Layout address returned
+        ld      E,      [HL]
+        ld      D,      0
 
-        ;get the solidity index for the current level
-        ld      A,     [RAM_LEVEL_SOLIDITY]
-        ;double it to look it up in a list of pointers (2 bytes each)
-        add     A,     A
-        ;transfer it into HL so as to add it to the pointer table address
-        ld      L,     A
-        ld      H,     D
-        ;access the table of data offsets at $3F9ED (bank 15)
-        ld      BC,       $B9ED                           ;=$3F9ED
-        ;lookup the solidity index in the table of offsets
-        add     HL,    BC
-        ;read the 2-byte offset value into HL
-        ld      A,       [HL]
+        ; get the solidity index for the current level
+        ld      A,      [RAM_LEVEL_SOLIDITY]
+        ; double it to look it up in a list of pointers (2 bytes each)
+        add     A,      A
+        ; transfer it into HL so as to add it to the pointer table address
+        ld      L,      A
+        ld      H,      D
+        ; access the table of data offsets at $3F9ED (bank 15)
+        ld      BC,     $B9ED           ;=$3F9ED
+        ; lookup the solidity index in the table of offsets
+        add     HL,     BC
+        ; read the 2-byte offset value into HL
+        ld      A,      [HL]
         inc     HL
-        ld      H,       [HL]
-        ld      L,       A
-        ;make an absolute address: $3F9ED + offset for solidity + block index
-        add     HL,      DE
-        add     HL,      BC
-        ;read the byte of data for the particular block index
-        ld      A, [HL]
-        ;if it's higher than the number of solidity types, skip ahead
-        cp      $1C                                             ;=number of entries in @_58e5
+        ld      H,      [HL]
+        ld      L,      A
+        ; make an absolute address: $3F9ED + offset for solidity + block index
+        add     HL,     DE
+        add     HL,     BC
+        ; read the byte of data for the particular block index
+        ld      A,      [HL]
+        ; if it's higher than the number of solidity types, skip ahead
+        cp      $1C     ;=number of entries in @_58e5
         jr      nc,     @callback
 
-        ;double the data byte read and transfer to HL for 16-bit use
-        add     A, A
+        ; double the data byte read and transfer to HL for 16-bit use
+        add     A,      A
         ld      L,      A
         ld      H,      D
         ld      DE,     @_58e5
         add     HL,     DE
-        ;load HL with the address in the lookup table
+        ; load HL with the address in the lookup table
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
 
-        ;load DE with the callback address
-        ld      DE,    @callback
+        ; load DE with the callback address
+        ld      DE,     @callback
 
-        ;switch back to the regular bank layout (where the mob code is)
+        ; switch back to the regular bank layout (where the mob code is)
         ld      A,                      2
         ld      [SMS_MAPPER_SLOT2],     A
         ld      [RAM_SLOT2],            A
 
-        ;keep a copy of the callback address and jump to the specific solidity routine for the tile under Sonic
+        ; keep a copy of the callback address and jump to the specific
+        ; solidity routine for the tile under Sonic
         push    DE
         jp      [HL]
 
 @callback:
-        ;has Sonic fallen out of the level?
+        ; has Sonic fallen out of the level?
         ;-----------------------------------------------------------------------
         ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $0024           ; height of Sonic?
@@ -11183,19 +11186,20 @@ sonic_process:                                                          ;$49C8
         sbc     HL,     DE
         call    c,      hitPlayer@kill  ; if over, die!
 
-        ;idle timer:
+        ; idle timer:
         ;-----------------------------------------------------------------------
-        ld      HL,       $0000                           ;reset the idle timer?
+        ld      HL,     $0000           ; reset the idle timer?
 
-        ld      A,      [IY+Vars.joypad]                   ;check joypad state
-        cp      $FF                                             ;is any button being pressed?
-        jr      nz,     @_7                                     ;skip the idle timer update
+        ld      A,      [IY+Vars.joypad]; check joypad state
+        cp      $FF                     ; is any button being pressed?
+        jr      nz,     @_7             ; skip the idle timer update
 
-        ;is player moving left or right?
-        ld      DE,     [RAM_SONIC.Xspeed]                          ;get the horizontal speed
-        ld      A,      E                                       ;shift E into A for next instruction
-        or      D                                               ;combine E & D
-        jr      nz,     @_7                                     ;if it's not zero, skip
+        ; is player moving left or right?
+        ; get the horizontal speed:
+        ld      DE,     [RAM_SONIC.Xspeed]
+        ld      A,      E               ; shift E into A for next instruction
+        or      D                       ; combine E & D
+        jr      nz,     @_7             ; if it's not zero, skip
 
         ld      A,      [RAM_SONIC.flags]
         rlca
@@ -11204,7 +11208,7 @@ sonic_process:                                                          ;$49C8
         ld      HL,     [RAM_IDLE_TIMER]
         inc     HL
 
-        ;update the idle timer
+        ; update the idle timer
 @_7:    ld      [RAM_IDLE_TIMER],       HL
 
         ;-----------------------------------------------------------------------
@@ -11212,31 +11216,31 @@ sonic_process:                                                          ;$49C8
         bit     7,      [IY+Vars.flags6]
         call    nz,     @_50e8
 
-        ld      [IX+Mob.unknown14], $05
+        ld      [IX+Mob.unknown14],     $05
         ld      HL,     [RAM_IDLE_TIMER]
         ld      DE,     IDLE_TIME       ; idle time until waiting animation
         and     A                       ; clear the carry flag for below
         sbc     HL,    DE
         call    nc,     @_5105
 
-        ;is up pressed?
+        ; is up pressed?
         ld      A,      [IY+Vars.joypad]
         cp      %11111110
         call    z,      @_4edd
 
-        ;up not pressed?
+        ; up not pressed?
         bit     0,      [IY+Vars.joypad]
         call    nz,     @_4fd3
 
         bit     0,      [IX+Mob.flags]
         jp      nz,     @_532e
 
-        ;ducking or spinning?
+        ; ducking or spinning?
         ld      A,      [IX+Mob.height]
         cp      $20
         jr      z,      @_8
 
-        ;falling?
+        ; falling?
         ld      HL,     [RAM_SONIC.Y]
         ld      DE,     $FFF8
         add     HL,     DE
@@ -11250,11 +11254,11 @@ sonic_process:                                                          ;$49C8
         ld      E,      C
         ld      D,      C
 
-        ;is right pressed?
+        ; is right pressed?
         bit     3,      [IY+Vars.joypad]
         jp      z,      @_4f01
 
-        ;is left pressed?
+        ; is left pressed?
         bit     2,      [IY+Vars.joypad]
         jp      z,      @_4f5c
 
@@ -11263,7 +11267,7 @@ sonic_process:                                                          ;$49C8
         or      B
         jr      z,      @_4b1b
 
-        ld      [IX+Mob.unknown14], $01
+        ld      [IX+Mob.unknown14],     $01
         bit     7,      B
         jr      nz,     @_9
 
@@ -11296,12 +11300,12 @@ sonic_process:                                                          ;$49C8
         inc     DE
         ld      C,      $FF
         ld      A,      [RAM_D216]
-        ld      [IX+Mob.unknown14], A
+        ld      [IX+Mob.unknown14],     A
         jp      @_4b1b
 
         ;-----------------------------------------------------------------------
 
-@_9:    ld      DE,      [RAM_TEMP4]
+@_9:    ld      DE,     [RAM_TEMP4]
         ld      C,      $00
 
         push    HL
@@ -11322,7 +11326,7 @@ sonic_process:                                                          ;$49C8
 
         ld      DE,     [RAM_TEMP1]
         ld      A,      [RAM_D216]
-        ld      [IX+Mob.unknown14], A
+        ld      [IX+Mob.unknown14],     A
 @_4b1b:
         ld      A,      B
         and     A
@@ -13579,10 +13583,10 @@ sonic_process:                                                          ;$49C8
         ; lookup table to the functions above
         ; (these probably handle the different solidity values)
 
-@_58e5: .WORD   @_54bc @_54c6 @_54ce @_550f @_552d @_5556 @_5578 @_5590  ;$58E5
-        .WORD   @_55a8 @_55b6 @_55e2 @_55eb @_565c @_567c @_56a6 @_56b6
-        .WORD   @_56c6 @_56d6 @_5761 @_5771 @_5781 @_5791 @_57cd @_57f6
-        .WORD   @_5808 @_584b @_5883 @_58d0
+@_58e5: .ADDR   @_54bc @_54c6 @_54ce @_550f @_552d @_5556 @_5578 @_5590  ;$58E5
+        .ADDR   @_55a8 @_55b6 @_55e2 @_55eb @_565c @_567c @_56a6 @_56b6
+        .ADDR   @_56c6 @_56d6 @_5761 @_5771 @_5781 @_5791 @_57cd @_57f6
+        .ADDR   @_5808 @_584b @_5883 @_58d0
 
         ;=======================================================================
         ; sprite layouts
@@ -14662,43 +14666,43 @@ boss_endSign_process:                                                   ;$5F17
 palettePointers:                                                        ;$627C
 ;===============================================================================
 @greenHill:
-        .WORD   paletteData@greenHill
+        .ADDR   paletteData@greenHill
 @bridge:
-        .WORD   paletteData@bridge
+        .ADDR   paletteData@bridge
 @jungle:
-        .WORD   paletteData@jungle
+        .ADDR   paletteData@jungle
 @labyrinth:
-        .WORD   paletteData@labyrinth
+        .ADDR   paletteData@labyrinth
 @scrapBrain:
-        .WORD   paletteData@scrapBrain
+        .ADDR   paletteData@scrapBrain
 @skyBaseExt:
-        .WORD   paletteData@skyBaseExt
+        .ADDR   paletteData@skyBaseExt
 @skyBaseInt:
-        .WORD   paletteData@skyBaseInt
+        .ADDR   paletteData@skyBaseInt
 @specialStage:
-        .WORD   paletteData@specialStage
+        .ADDR   paletteData@specialStage
         ;
 
 paletteCyclePointers:                                                   ;$628C
 ;===============================================================================
 @greenHill:
-        .WORD   paletteData@greenHill_cycles
+        .ADDR   paletteData@greenHill_cycles
 @bridge:
-        .WORD   paletteData@bridge_cycles
+        .ADDR   paletteData@bridge_cycles
 @jungle:
-        .WORD   paletteData@jungle_cycles
+        .ADDR   paletteData@jungle_cycles
 @labyrinth:
-        .WORD   paletteData@labyrinth_cycles
+        .ADDR   paletteData@labyrinth_cycles
 @scrapBrain:
-        .WORD   paletteData@scrapBrain_cycles
+        .ADDR   paletteData@scrapBrain_cycles
 @skyBase1:
-        .WORD   paletteData@skyBase_cycles
+        .ADDR   paletteData@skyBase_cycles
 @skyBaseInt:
-        .WORD   paletteData@skyBaseInt_cycles
+        .ADDR   paletteData@skyBaseInt_cycles
 @specialStage:
-        .WORD   paletteData@specialStage_cycles
+        .ADDR   paletteData@specialStage_cycles
 @skyBaseExt:
-        .WORD   paletteData@skyBaseExt_cycles
+        .ADDR   paletteData@skyBaseExt_cycles
         ;
 
 ; the regular and cycle palettes are lumped together in one data-block,
@@ -14985,7 +14989,7 @@ badnick_crabmeat_process:                                               ;$65EE
         .BYTE   $00
 
 @_66e0: 
-        .WORD   @_66ea @_66ea @_66ea @_66f3 @_66f6
+        .ADDR   @_66ea @_66ea @_66ea @_66f3 @_66f6
 
 @_66ea: .BYTE   $00 $0C $01 $0C $02 $0C $01 $0C $FF
 @_66f3: .BYTE   $01 $01 $FF
@@ -15731,7 +15735,7 @@ badnick_buzzbomber_process:                                             ;$6B74
 @_6cd7: .BYTE   $01 $01 $01 $01 $00 $02 $02 $03 $01 $01 $00
 
         ;animation frame order
-@_6ce2: .WORD   @_6cea @_6cea @_6cef @_6cf4
+@_6ce2: .ADDR   @_6cea @_6cea @_6cef @_6cf4
 
 @_6cea: .BYTE   $00 $02 $01 $02 $FF
 @_6cef: .BYTE   $02 $02 $03 $02 $FF
@@ -16018,15 +16022,15 @@ badnick_motobobug_actions:                                              ;$6EB1
 
         ; since the "loop" action is just a list-terminator,
         ; the following is a dummy entry
-        .WORD   badnick_motobug_animations@moveLeft
+        .ADDR   badnick_motobug_animations@moveLeft
         ; here we map the "moveLeft" action to the "moveLeft" animation
-        .WORD   badnick_motobug_animations@moveLeft
+        .ADDR   badnick_motobug_animations@moveLeft
         ; here we map the "moveRight" action to the "moveRight" animation
-        .WORD   badnick_motobug_animations@moveRight
+        .ADDR   badnick_motobug_animations@moveRight
         ; the "idleLeft" action has to be added to the actions table
-        .WORD   badnick_motobug_animations@idleLeft
+        .ADDR   badnick_motobug_animations@idleLeft
         ; here we map the "idleRight" action to the "idleRight" animation
-        .WORD   badnick_motobug_animations@idleRight
+        .ADDR   badnick_motobug_animations@idleRight
         ;
 
 badnick_motobug_animations:                                             ;$6EBB
@@ -18005,7 +18009,7 @@ mob_platform_roll:                                                      ;$7EE6
 
 ; ROM header goes here
 
-.BANK   2       SLOT    2
+.BANK   2       SLOT    "SLOT2"
 .ORG    $0003
 
 mob_platform_roll_continue:                                             ;$8003
@@ -23667,7 +23671,7 @@ badnick_unidos_process:                                                 ;$AE88
         .BYTE   $08 $04 $07 $05 $07 $05 $06 $06 $06 $06 $05 $07 $05 $07 $04 $08
         .BYTE   $04 $09 $04 $09 $03 $0A $03 $0B $03
 
-        ;sprite layout
+        ; sprite layout
 @_b0d5:                                                                 ;$B0D5
         .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $FE $26 $28 $FF $FF $FF
@@ -23682,19 +23686,19 @@ unknown_b0f4_process:                                                   ;$B0F4
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
-        ld      [IX+Mob.spriteLayout+0],    $00
-        ld      [IX+Mob.spriteLayout+1],    $00
-        ld      [IX+Mob.width],     $04
-        ld      [IX+Mob.height],    $0A
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
+        ld      [IX+Mob.spriteLayout+0],$00
+        ld      [IX+Mob.spriteLayout+1],$00
+        ld      [IX+Mob.width],         $04
+        ld      [IX+Mob.height],        $0A
         ld      HL,     $0602
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [RAM_TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ex      DE,     HL
         ld      HL,     [RAM_CAMERA_X]
         ld      BC,     $FFF0
@@ -23712,7 +23716,7 @@ unknown_b0f4_process:                                                   ;$B0F4
 
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [RAM_TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ex      DE,     HL
         ld      HL,     [RAM_CAMERA_Y]
         ld      BC,     $FFF0
@@ -23729,13 +23733,13 @@ unknown_b0f4_process:                                                   ;$B0F4
         jr      c,      @_1
 
         ld      HL,     $0000
-        ld      [RAM_TEMP4],        HL
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP4],    HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      $24
         call    _3581
         ret
 
-@_1:    ld      [IX+Mob.type],  $FF                      ;remove mob?
+@_1:    ld      [IX+Mob.type],  $FF     ; remove mob?
         ret
         ;
 
@@ -23743,22 +23747,22 @@ trap_turretRotating_process:                                            ;$B16C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
         call    _0625
         and     %00000111
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
         set     0,      [IX+Mob.flags]
 @_1:    ld      [IX+Mob.spriteLayout+0],        $00
         ld      [IX+Mob.spriteLayout+1],        $00
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [RAM_TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [RAM_TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      A,      [IX+Mob.unknown11]
         add     A,      A
         add     A,      A
@@ -23776,7 +23780,7 @@ trap_turretRotating_process:                                            ;$B16C
         jr      z,      @_2
 
         ld      D,      $FF
-@_2:    ld      [RAM_TEMP4],        DE
+@_2:    ld      [RAM_TEMP4],    DE
         inc     HL
         ld      D,      $00
         ld      E,      [HL]
@@ -23784,7 +23788,7 @@ trap_turretRotating_process:                                            ;$B16C
         jr      z,      @_3
 
         ld      D,      $FF
-@_3:    ld      [RAM_TEMP6],        DE
+@_3:    ld      [RAM_TEMP6],    DE
         inc     HL
         ld      A,      [HL]
         inc     HL
@@ -23805,13 +23809,13 @@ trap_turretRotating_process:                                            ;$B16C
         ld      A,      [IX+Mob.unknown11]
         inc     A
         and     %00000111
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
 @_5:    inc     [IX+Mob.unknown12]
         ld      A,      [IX+Mob.unknown12]
         cp      $1A
         ret     nz
 
-        ld      [IX+Mob.unknown12], $00
+        ld      [IX+Mob.unknown12],     $00
         ld      A,      [IX+Mob.unknown11]
         add     A,      A
         ld      E,      A
@@ -23825,11 +23829,11 @@ trap_turretRotating_process:                                            ;$B16C
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [RAM_TEMP4],        DE
+        ld      [RAM_TEMP4],    DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
-        ld      [RAM_TEMP6],        DE
+        ld      [RAM_TEMP6],    DE
         inc     HL
         ld      E,      [HL]
         ld      D,      $00
@@ -23868,17 +23872,17 @@ platform_flyingRight_process:                                           ;$B297
         jr      nz,     @_1
 
         ld      A,      [IX+Mob.Ysubpixel]
-        ld      [IX+Mob.unknown12], A
+        ld      [IX+Mob.unknown12],     A
 
         ld      A,      [IX+Mob.Y+0]
-        ld      [IX+Mob.unknown13], A
+        ld      [IX+Mob.unknown13],     A
 
         ld      A,      [IX+Mob.Y+1]
-        ld      [IX+Mob.unknown14], A
+        ld      [IX+Mob.unknown14],     A
 
         set     0,      [IX+Mob.flags]
 
-@_1:    ld      A,       [RAM_D2A3]
+@_1:    ld      A,      [RAM_D2A3]
         ld      C,      A
         ld      DE,     [RAM_D2A1]
         ld      L,      [IX+Mob.unknown12]
@@ -23886,25 +23890,25 @@ platform_flyingRight_process:                                           ;$B297
         ld      A,      [IX+Mob.unknown14]
         add     HL,     DE
         adc     A,      C
-        ld      [IX+Mob.Ysubpixel], L
-        ld      [IX+Mob.Y+0],       H
-        ld      [IX+Mob.Y+1],       A
+        ld      [IX+Mob.Ysubpixel],     L
+        ld      [IX+Mob.Y+0],           H
+        ld      [IX+Mob.Y+1],           A
 
         ld      A,      [RAM_SONIC.Ydirection]
         and     A
         jp      m,      @_2
 
-        ld      [IX+Mob.width],     $1E
-        ld      [IX+Mob.height],    $10
-        ld      HL,     $0A02
-        ld      [RAM_TEMP6],        HL
+        ld      [IX+Mob.width],         $1E
+        ld      [IX+Mob.height],        $10
+        ld      HL,             $0A02
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_2
 
         ld      HL,     $0030
-        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],      HL
-        ld      HL,     $0030           ;TODO: not needed; HL is already $0030
-        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],   HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
+        ld      HL,     $0030           ; TODO: not needed; HL is already $0030
+        ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
         ld      BC,     $0010
         ld      DE,     $0000
@@ -23915,23 +23919,23 @@ platform_flyingRight_process:                                           ;$B297
         ld      DE,     $0080
         add     HL,     DE
         adc     A,      $00
-        ld      [IX+Mob.Xsubpixel], L
-        ld      [IX+Mob.X+0],       H
-        ld      [IX+Mob.X+1],       A
+        ld      [IX+Mob.Xsubpixel],     L
+        ld      [IX+Mob.X+0],           H
+        ld      [IX+Mob.X+1],           A
         ld      HL,     [RAM_SONIC.Xsubpixel]
         ld      A,      [RAM_SONIC.X+1]
         add     HL,     DE
         adc     A,      $00
-        ld      [RAM_SONIC.Xsubpixel],      HL
-        ld      [RAM_SONIC.X+1],    A
-@_2:    ld      L,       [IX+Mob.X+0]
+        ld      [RAM_SONIC.Xsubpixel],  HL
+        ld      [RAM_SONIC.X+1],        A
+@_2:    ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [RAM_TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [RAM_TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $FFF8
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
         ld      HL,     @_b388
@@ -23942,7 +23946,7 @@ platform_flyingRight_process:                                           ;$B297
         ld      E,      [HL]
         ld      D,      $00
         inc     HL
-        ld      [RAM_TEMP6],        DE
+        ld      [RAM_TEMP6],    DE
         ld      A,      [HL]
         inc     HL
         cp      $FF
@@ -23954,18 +23958,18 @@ platform_flyingRight_process:                                           ;$B297
 @_3:    pop     BC
         djnz    @loop
 
-        ld      [IX+Mob.spriteLayout+0],    <@_b37b
-        ld      [IX+Mob.spriteLayout+1],    >@_b37b
+        ld      [IX+Mob.spriteLayout+0],        <@_b37b
+        ld      [IX+Mob.spriteLayout+1],        >@_b37b
         ld      A,      [IX+Mob.unknown11]
         add     A,      $04
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
         cp      $10
         ret     c
 
-        ld      [IX+Mob.unknown11], $00
+        ld      [IX+Mob.unknown11],     $00
         ret
 
-        ;sprite layout
+        ; sprite layout
 @_b37b:                                                                 ;$B37B
         .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $36 $36 $36 $36 $FF $FF
@@ -23979,21 +23983,21 @@ trap_spikewall_process:                                                 ;$B398
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
-        ld      [IX+Mob.unknown11], L
-        ld      [IX+Mob.unknown12], H
+        ld      [IX+Mob.unknown11],     L
+        ld      [IX+Mob.unknown12],     H
         set     0,      [IX+Mob.flags]
 @_1:    ld      [IX+Mob.width],                 12
         ld      [IX+Mob.height],                46
         ld      [IX+Mob.spriteLayout+0],        <@_b45b
         ld      [IX+Mob.spriteLayout+1],        >@_b45b
         ld      HL,     $0202
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
 
         call    detectCollisionWithSonic
         call    nc,     hitPlayer@_35fd
@@ -24006,27 +24010,27 @@ trap_spikewall_process:                                                 ;$B398
         adc     A,      $00
         ld      L,      H
         ld      H,      A
-        ld      [RAM_TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
-        ld      [RAM_TEMP3],        HL
+        ld      [RAM_TEMP3],    HL
         ld      HL,     $0000
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      HL,     $FFF0
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      A,      $16
         call    _3581
         ld      HL,     $0008
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      A,      $18
         call    _3581
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0580
         xor     A
-        ld      [IX+Mob.Xspeed+0],  A
-        ld      [IX+Mob.Xspeed+1],  A
-        ld      [IX+Mob.Xdirection],        A
+        ld      [IX+Mob.Xspeed+0],      A
+        ld      [IX+Mob.Xspeed+1],      A
+        ld      [IX+Mob.Xdirection],    A
         sbc     HL,     DE
         ret     nc
         ld      C,      [IX+Mob.Y+0]
@@ -24039,10 +24043,10 @@ trap_spikewall_process:                                                 ;$B398
         jr      nc,     @_2
 
         ld      A,      [IX+Mob.unknown11]
-        ld      [IX+Mob.X+0],       A
+        ld      [IX+Mob.X+0],   A
         ld      A,      [IX+Mob.unknown12]
-        ld      [IX+Mob.X+1],       A
-@_2:    ld      DE,      [RAM_SONIC.Y]
+        ld      [IX+Mob.X+1],   A
+@_2:    ld      DE,     [RAM_SONIC.Y]
         ld      HL,     $FFE0
         add     HL,     BC
         xor     A
@@ -24055,13 +24059,12 @@ trap_spikewall_process:                                                 ;$B398
         sbc     HL,     DE
         ret     c
 
-        ld      [IX+Mob.Xspeed+0],  $80
-        ld      [IX+Mob.Xspeed+1],  A
-        ld      [IX+Mob.Xdirection],        A
+        ld      [IX+Mob.Xspeed+0],      $80
+        ld      [IX+Mob.Xspeed+1],      A
+        ld      [IX+Mob.Xdirection],    A
         ret
 
-        ;sprite layout
-        
+        ; sprite layout
 @_b45b: .BYTE   $16 $18 $FF $FF $FF $FF
         .BYTE   $16 $18 $FF $FF $FF $FF
         .BYTE   $16 $18 $FF $FF $FF $FF
@@ -24071,7 +24074,7 @@ trap_turretFixed_process:                                               ;$B46D
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
@@ -24084,7 +24087,7 @@ trap_turretFixed_process:                                               ;$B46D
         cp      $04
         ret     nc
 
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
         set     0,      [IX+Mob.flags]
 
 @_1:    inc     [IX+Mob.unknown12]
@@ -24109,12 +24112,12 @@ trap_turretFixed_process:                                               ;$B46D
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [RAM_TEMP4],        DE
+        ld      [RAM_TEMP4],    DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [RAM_TEMP6],        DE
+        ld      [RAM_TEMP6],    DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
@@ -24158,7 +24161,7 @@ platform_flyingUpDown_process:                                          ;$B50E
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         ld      HL,     platform_flyingRight_process@_b37b
         ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $01
@@ -24167,20 +24170,20 @@ platform_flyingUpDown_process:                                          ;$B50E
         ld      HL,     @_b5b5
 @_1:    ld      [IX+Mob.spriteLayout+0],        L
         ld      [IX+Mob.spriteLayout+1],        H
-        ld      A,      $50
-        ld      [RAM_D216], A
+        ld      A,              $50
+        ld      [RAM_D216],     A
         call    @_b53b
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $A0
         ret     c
 
-        ld      [IX+Mob.unknown11], $00
+        ld      [IX+Mob.unknown11],     $00
         ret
 
         ;-----------------------------------------------------------------------
 
-@_b53b: ld      A,       [RAM_D216]                                  ;$B53B
+@_b53b: ld      A,      [RAM_D216]                                      ;$B53B
         ld      L,      A
         ld      DE,     $0010
         ld      C,      $00
@@ -24190,14 +24193,14 @@ platform_flyingUpDown_process:                                          ;$B50E
 
         dec     C
         ld      DE,     $FFF0
-@_2:    ld      L,       [IX+Mob.Yspeed+0]
+@_2:    ld      L,      [IX+Mob.Yspeed+0]
         ld      H,      [IX+Mob.Yspeed+1]
         ld      A,      [IX+Mob.Ydirection]
         add     HL,     DE
         adc     A,      C
-        ld      [IX+Mob.Yspeed+0],  L
-        ld      [IX+Mob.Yspeed+1],  H
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.Yspeed+0],      L
+        ld      [IX+Mob.Yspeed+1],      H
+        ld      [IX+Mob.Ydirection],    A
         ld      A,      H
         and     A
         jp      p,      @_3
@@ -24213,26 +24216,26 @@ platform_flyingUpDown_process:                                          ;$B50E
         cp      $02
         jr      c,      @_4
 
-        ld      [IX+Mob.Yspeed+0],  $00
-        ld      [IX+Mob.Yspeed+1],  $FE
-        ld      [IX+Mob.Ydirection],        $FF
+        ld      [IX+Mob.Yspeed+0],      $00
+        ld      [IX+Mob.Yspeed+1],      $FE
+        ld      [IX+Mob.Ydirection],    $FF
         jr      @_4
 
 @_3:    cp      $02
         jr      c,      @_4
 
-        ld      [IX+Mob.Yspeed+0],  $00
-        ld      [IX+Mob.Yspeed+1],  $02
-        ld      [IX+Mob.Ydirection],        $00
+        ld      [IX+Mob.Yspeed+0],      $00
+        ld      [IX+Mob.Yspeed+1],      $02
+        ld      [IX+Mob.Ydirection],    $00
 
-@_4:    ld      A,       [RAM_SONIC.Ydirection]
+@_4:    ld      A,      [RAM_SONIC.Ydirection]
         and     A
         ret     m
 
-        ld      [IX+Mob.width],     $1E
-        ld      [IX+Mob.height],    $1C
-        ld      HL,     $0802
-        ld      [RAM_TEMP6],        HL
+        ld      [IX+Mob.width],         $1E
+        ld      [IX+Mob.height],        $1C
+        ld      HL,             $0802
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         ret     c
 
@@ -24243,8 +24246,7 @@ platform_flyingUpDown_process:                                          ;$B50E
 
         ret
 
-        ;sprite layout
-        
+        ; sprite layout
 @_b5b5: .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $6C $6E $6C $6E $FF $FF
         .BYTE   $FF
@@ -24273,20 +24275,20 @@ _b5c2:                                                                  ;$B5C2
         ld      C,      L
         ld      B,      H
         pop     IX
-        xor     A                                          ;set A to 0
-        ld      [IX+Mob.type],      $0D                     ;unknown mob?
-        ld      [IX+Mob.Xsubpixel], A
-        ld      [IX+Mob.X+0],       E
-        ld      [IX+Mob.X+1],       D
-        ld      [IX+Mob.Ysubpixel], A
-        ld      [IX+Mob.Y+0],       C
-        ld      [IX+Mob.Y+1],       B
-        ld      [IX+Mob.unknown11], A
-        ld      [IX+Mob.unknown13], A
-        ld      [IX+Mob.unknown14], A
-        ld      [IX+Mob.unknown15], A
-        ld      [IX+Mob.unknown16], A
-        ld      [IX+Mob.unknown17], A
+        xor     A                               ; set A to 0
+        ld      [IX+Mob.type],          $0D     ; unknown mob?
+        ld      [IX+Mob.Xsubpixel],     A
+        ld      [IX+Mob.X+0],           E
+        ld      [IX+Mob.X+1],           D
+        ld      [IX+Mob.Ysubpixel],     A
+        ld      [IX+Mob.Y+0],           C
+        ld      [IX+Mob.Y+1],           B
+        ld      [IX+Mob.unknown11],     A
+        ld      [IX+Mob.unknown13],     A
+        ld      [IX+Mob.unknown14],     A
+        ld      [IX+Mob.unknown15],     A
+        ld      [IX+Mob.unknown16],     A
+        ld      [IX+Mob.unknown17],     A
         ld      HL,     [RAM_TEMP4]
         bit     7,      H
         jr      z,      @_1
@@ -24318,9 +24320,9 @@ boss_skyBase_process:                                                   ;$B634
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ld      [IX+Mob.width],     30
-        ld      [IX+Mob.height],    47
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        ld      [IX+Mob.width],         30
+        ld      [IX+Mob.height],        47
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         bit     2,      [IX+Mob.flags]
         jp      nz,     @_b821
 
@@ -24337,20 +24339,20 @@ boss_skyBase_process:                                                   ;$B634
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
-        ld      [IX+Mob.unknown11], L
-        ld      [IX+Mob.unknown12], H
+        ld      [IX+Mob.X+0],           L
+        ld      [IX+Mob.X+1],           H
+        ld      [IX+Mob.unknown11],     L
+        ld      [IX+Mob.unknown12],     H
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $0010
         add     HL,     DE
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
-        ld      [IX+Mob.unknown13], L
-        ld      [IX+Mob.unknown14], H
+        ld      [IX+Mob.Y+0],           L
+        ld      [IX+Mob.Y+1],           H
+        ld      [IX+Mob.unknown13],     L
+        ld      [IX+Mob.unknown14],     H
         xor     A
-        ld      [RAM_D2EC], A
+        ld      [RAM_D2EC],     A
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -24360,7 +24362,7 @@ boss_skyBase_process:                                                   ;$B634
 
         set     4,      [IY+Vars.unknown0]
         set     0,      [IX+Mob.flags]
-@_1:    ld      A,       [IX+Mob.unknown15]
+@_1:    ld      A,      [IX+Mob.unknown15]
         and     A
         jp      nz,     @_4
 
@@ -24384,25 +24386,25 @@ boss_skyBase_process:                                                   ;$B634
         cp      $28
         jp      c,      @_8
 
-        ld      [IX+Mob.unknown16], $00
+        ld      [IX+Mob.unknown16],     $00
         inc     [IX+Mob.unknown15]
         jp      @_8
 
 @_4:    dec     A
         jr      nz,     @_5
 
-        ld      [IX+Mob.Yspeed+0],  $40
-        ld      [IX+Mob.Yspeed+1],  $FE
-        ld      [IX+Mob.Ydirection],        $FF
+        ld      [IX+Mob.Yspeed+0],      $40
+        ld      [IX+Mob.Yspeed+1],      $FE
+        ld      [IX+Mob.Ydirection],    $FF
         inc     [IX+Mob.unknown15]
         ld      L,      [IX+Mob.unknown11]
         ld      H,      [IX+Mob.unknown12]
         ld      DE,     $0004
         add     HL,     DE
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
-        ld      [IX+Mob.spriteLayout+0],    <_bb1d
-        ld      [IX+Mob.spriteLayout+1],    >_bb1d
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
+        ld      [IX+Mob.spriteLayout+0],<_bb1d
+        ld      [IX+Mob.spriteLayout+1],>_bb1d
         jp      @_8
 
 @_5:    dec     A
@@ -24421,11 +24423,11 @@ boss_skyBase_process:                                                   ;$B634
         jr      c,      @_6
 
         ld      HL,     $0200
-@_6:    ld      [IX+Mob.Yspeed+0],              L
-        ld      [IX+Mob.Yspeed+1],              H
-        ld      [IX+Mob.Ydirection],            C
-        ld      [IX+Mob.spriteLayout+0],        <_bb1d
-        ld      [IX+Mob.spriteLayout+1],        >_bb1d
+@_6:    ld      [IX+Mob.Yspeed+0],      L
+        ld      [IX+Mob.Yspeed+1],      H
+        ld      [IX+Mob.Ydirection],    C
+        ld      [IX+Mob.spriteLayout+0],<_bb1d
+        ld      [IX+Mob.spriteLayout+1],>_bb1d
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         dec     HL
@@ -24435,13 +24437,13 @@ boss_skyBase_process:                                                   ;$B634
         sbc     HL,     DE
         jr      c,      @_8
 
-        ld      [IX+Mob.Y+0],       E
-        ld      [IX+Mob.Y+1],       D
+        ld      [IX+Mob.Y+0],   E
+        ld      [IX+Mob.Y+1],   D
         xor     A
-        ld      [IX+Mob.unknown16], A
-        ld      [IX+Mob.Yspeed+0],  A
-        ld      [IX+Mob.Yspeed+1],  A
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.unknown16],     A
+        ld      [IX+Mob.Yspeed+0],      A
+        ld      [IX+Mob.Yspeed+1],      A
+        ld      [IX+Mob.Ydirection],    A
         inc     [IX+Mob.unknown15]
         jp      @_8
 
@@ -24449,13 +24451,13 @@ boss_skyBase_process:                                                   ;$B634
         jp      nz,     @_8
         ld      L,      [IX+Mob.unknown11]
         ld      H,      [IX+Mob.unknown12]
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
         ld      A,      [IX+Mob.unknown16]
         and     A
         call    z,      @_b9d5
 
-        ld      [IX+Mob.unknown17], $02
+        ld      [IX+Mob.unknown17],     $02
         set     1,      [IX+Mob.flags]
         call    @_b99f
         inc     [IX+Mob.unknown16]
@@ -24465,10 +24467,10 @@ boss_skyBase_process:                                                   ;$B634
 
         res     1,      [IX+Mob.flags]
         xor     A
-        ld      [IX+Mob.unknown15], A
-        ld      [IX+Mob.unknown16], A
+        ld      [IX+Mob.unknown15],     A
+        ld      [IX+Mob.unknown16],     A
 
-@_8:    ld      HL,     $ba31           ;TODO!
+@_8:    ld      HL,     $ba31           ; TODO!
         bit     1,      [IX+Mob.flags]
         jr      z,      @_9
 
@@ -24489,7 +24491,7 @@ boss_skyBase_process:                                                   ;$B634
         ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         pop     HL
         ld      A,      [HL]
         call    _3581
@@ -24498,9 +24500,9 @@ boss_skyBase_process:                                                   ;$B634
         ret     c
 
         xor     A
-        ld      [IX+Mob.unknown11], A
-        ld      [IX+Mob.unknown16], A
-        ld      [IX+Mob.unknown17], A
+        ld      [IX+Mob.unknown11],     A
+        ld      [IX+Mob.unknown16],     A
+        ld      [IX+Mob.unknown17],     A
         set     2,      [IX+Mob.flags]
         res     4,      [IY+Vars.unknown0]
 
@@ -24515,7 +24517,7 @@ boss_skyBase_process:                                                   ;$B634
 
         ;-----------------------------------------------------------------------
 
-@_b7e6: ld      A,      [RAM_D2B1]                                          ;$B7E6
+@_b7e6: ld      A,      [RAM_D2B1]                                      ;$B7E6
         and     A
         ret     nz
         bit     0,      [IY+Vars.scrollRingFlags]
@@ -24527,7 +24529,7 @@ boss_skyBase_process:                                                   ;$B634
         and     $02
         ret     z
 
-@_10:   ld      HL,      [RAM_SONIC.X]
+@_10:   ld      HL,     [RAM_SONIC.X]
         ld      DE,     $0410
         and     A
         sbc     HL,     DE
@@ -24535,8 +24537,8 @@ boss_skyBase_process:                                                   ;$B634
 
         ld      HL,     $FD00
         ld      A,      $FF
-        ld      [RAM_SONIC.Xspeed], HL
-        ld      [RAM_SONIC.Xdirection],     A
+        ld      [RAM_SONIC.Xspeed],     HL
+        ld      [RAM_SONIC.Xdirection], A
         ld      HL,     RAM_D2B1
         ld      [HL],   $18
         inc     HL
@@ -24559,7 +24561,7 @@ boss_skyBase_process:                                                   ;$B634
 @_b821: bit     3,      [IX+Mob.flags]                                  ;$B821
         jp      nz,     @_20
 
-        res     5,      [IX+Mob.flags]                      ;make mob adhere to the floor
+        res     5,      [IX+Mob.flags]  ; make mob adhere to the floor
         ld      A,      [IX+Mob.unknown11]
         cp      $0F
         jr      nc,     @_11
@@ -24577,13 +24579,13 @@ boss_skyBase_process:                                                   ;$B634
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [RAM_D2AB], DE
+        ld      [RAM_D2AB],     DE
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ld      [RAM_D2AD], DE
-        ld      [RAM_D2AF], HL
+        ld      [RAM_D2AD],     DE
+        ld      [RAM_D2AF],     HL
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $0F
@@ -24592,11 +24594,11 @@ boss_skyBase_process:                                                   ;$B634
         set     5,      [IY+Vars.flags0]
         res     1,      [IY+Vars.flags2]
 
-        ;something to do with scrolling
+        ; something to do with scrolling
         ld      HL,     $0550
-        ld      [RAM_LEVEL_RIGHT],  HL
+        ld      [RAM_LEVEL_RIGHT],      HL
 
-@_11:   ld      E,       [IX+Mob.X+0]
+@_11:   ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
         ld      HL,     $05E0
         xor     A
@@ -24622,9 +24624,9 @@ boss_skyBase_process:                                                   ;$B634
 
 @_13:   ld      BC,     $FF80
 @_14:   inc     B
-@_15:   ld      [IX+Mob.Xspeed+0],              C
-        ld      [IX+Mob.Xspeed+1],              B
-        ld      [IX+Mob.Xdirection],            A
+@_15:   ld      [IX+Mob.Xspeed+0],      C
+        ld      [IX+Mob.Xspeed+1],      B
+        ld      [IX+Mob.Xdirection],    A
         ld      A,      [IX+Mob.unknown17]
         cp      $06
         jr      nz,     @_16
@@ -24636,9 +24638,9 @@ boss_skyBase_process:                                                   ;$B634
         bit     7,      [IX+Mob.flags]
         jr      z,      @_16
 
-        ld      [IX+Mob.Yspeed+0],  $00
-        ld      [IX+Mob.Yspeed+1],  $FF
-        ld      [IX+Mob.Ydirection],        $FF
+        ld      [IX+Mob.Yspeed+0],      $00
+        ld      [IX+Mob.Yspeed+1],      $FF
+        ld      [IX+Mob.Ydirection],    $FF
 @_16:   ld      DE,     $0017
         ld      BC,     $0036
         call    getFloorLayoutRAMAddressForMob
@@ -24654,9 +24656,9 @@ boss_skyBase_process:                                                   ;$B634
         bit     7,      [IX+Mob.flags]
         jr      z,      @_17
 
-        ld      [IX+Mob.Yspeed+0],  $80
-        ld      [IX+Mob.Yspeed+1],  $FD
-        ld      [IX+Mob.Ydirection],        $FF
+        ld      [IX+Mob.Yspeed+0],      $80
+        ld      [IX+Mob.Yspeed+1],      $FD
+        ld      [IX+Mob.Ydirection],    $FF
 @_17:   ld      DE,     $0000
         ld      BC,     $0008
         call    getFloorLayoutRAMAddressForMob
@@ -24668,15 +24670,15 @@ boss_skyBase_process:                                                   ;$B634
         jr      z,      @_18
 
         xor     A
-        ld      [IX+Mob.unknown16], A
-        ld      [IX+Mob.unknown17], A
-        ld      [IX+Mob.Xspeed+0],  A
-        ld      [IX+Mob.Xspeed+1],  A
-        ld      [IX+Mob.Xdirection],        A
-        ld      [IX+Mob.unknown11], $E0
-        ld      [IX+Mob.unknown12], $05
-        ld      [IX+Mob.unknown13], $60
-        ld      [IX+Mob.unknown14], $01
+        ld      [IX+Mob.unknown16],     A
+        ld      [IX+Mob.unknown17],     A
+        ld      [IX+Mob.Xspeed+0],      A
+        ld      [IX+Mob.Xspeed+1],      A
+        ld      [IX+Mob.Xdirection],    A
+        ld      [IX+Mob.unknown11],     $E0
+        ld      [IX+Mob.unknown12],     $05
+        ld      [IX+Mob.unknown13],     $60
+        ld      [IX+Mob.unknown14],     $01
 
         ld      HL,     $0550
         ld      DE,     $0120
@@ -24685,7 +24687,7 @@ boss_skyBase_process:                                                   ;$B634
         set     3,      [IX+Mob.flags]
         jp      @_20
 
-@_18:   ld      L,       [IX+Mob.Yspeed+0]
+@_18:   ld      L,      [IX+Mob.Yspeed+0]
         ld      H,      [IX+Mob.Yspeed+1]
         ld      A,      [IX+Mob.Ydirection]
         ld      DE,     $000E
@@ -24721,25 +24723,25 @@ boss_skyBase_process:                                                   ;$B634
         ld      A,      [IX+Mob.unknown17]
         inc     A
         and     %00000001
-        ld      [IX+Mob.unknown17], A
+        ld      [IX+Mob.unknown17],     A
         inc     [IX+Mob.unknown16]
 @_21:   ld      A,      C
         cp      $2C
         ret     c
 
-        ld      [IX+Mob.spriteLayout+0],    <_bb77
-        ld      [IX+Mob.spriteLayout+1],    >_bb77
+        ld      [IX+Mob.spriteLayout+0],        <_bb77
+        ld      [IX+Mob.spriteLayout+1],        >_bb77
         ret
 
 @_22:   xor     A
-        ld      [IX+Mob.spriteLayout+0],    A
-        ld      [IX+Mob.spriteLayout+1],    A
+        ld      [IX+Mob.spriteLayout+0],        A
+        ld      [IX+Mob.spriteLayout+1],        A
         inc     [IX+Mob.unknown16]
         ld      A,      [IX+Mob.unknown16]
         cp      $70
         ret     c
 
-        ld      [IX+Mob.type],      $FF                     ;remove mob?
+        ld      [IX+Mob.type],  $FF     ; remove mob?
         ret
 
         ;-----------------------------------------------------------------------
@@ -24760,23 +24762,23 @@ boss_skyBase_process:                                                   ;$B634
         inc     HL
         ld      H,      [HL]
         ld      L,      A
-        ld      [IX+Mob.spriteLayout+0],    L
-        ld      [IX+Mob.spriteLayout+1],    H
+        ld      [IX+Mob.spriteLayout+0],        L
+        ld      [IX+Mob.spriteLayout+1],        H
         ld      L,      [IX+Mob.unknown11]
         ld      H,      [IX+Mob.unknown12]
         add     HL,     BC
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
+        ld      [IX+Mob.X+0],   L
+        ld      [IX+Mob.X+1],   H
         ld      L,      [IX+Mob.unknown13]
         ld      H,      [IX+Mob.unknown14]
         add     HL,     DE
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
+        ld      [IX+Mob.Y+0],   L
+        ld      [IX+Mob.Y+1],   H
         ret
 
         ;-----------------------------------------------------------------------
 
-@_b9d5: bit     5,      [IY+Vars.unknown0]                 ;$B9D5
+@_b9d5: bit     5,      [IY+Vars.unknown0]                              ;$B9D5
         ret     nz
 
         call    findEmptyMob
@@ -24786,32 +24788,32 @@ boss_skyBase_process:                                                   ;$B634
         push    HL
         pop     IX
 
-        xor     A                                          ;set A to 0
-        ld      [IX+Mob.type],      $47                     ;unknown mob
-        ld      [IX+Mob.Xsubpixel],A
+        xor     A                               ; set A to 0
+        ld      [IX+Mob.type],          $47     ; unknown mob
+        ld      [IX+Mob.Xsubpixel],     A
         ld      HL,     $0420
-        ld      [IX+Mob.X+0],       L
-        ld      [IX+Mob.X+1],       H
-        ld      [IX+Mob.Ysubpixel], A
+        ld      [IX+Mob.X+0],           L
+        ld      [IX+Mob.X+1],           H
+        ld      [IX+Mob.Ysubpixel],     A
         ld      HL,     $012F
-        ld      [IX+Mob.Y+0],       L
-        ld      [IX+Mob.Y+1],       H
-        ld      [IX+Mob.unknown11], A
-        ld      [IX+Mob.flags],     A
-        ld      [IX+Mob.Xspeed+0],  A
-        ld      [IX+Mob.Xspeed+1],  A
-        ld      [IX+Mob.Xdirection],        A
-        ld      [IX+Mob.Yspeed+0],  A
-        ld      [IX+Mob.Yspeed+1],  A
-        ld      [IX+Mob.Ydirection],        A
+        ld      [IX+Mob.Y+0],           L
+        ld      [IX+Mob.Y+1],           H
+        ld      [IX+Mob.unknown11],     A
+        ld      [IX+Mob.flags],         A
+        ld      [IX+Mob.Xspeed+0],      A
+        ld      [IX+Mob.Xspeed+1],      A
+        ld      [IX+Mob.Xdirection],    A
+        ld      [IX+Mob.Yspeed+0],      A
+        ld      [IX+Mob.Yspeed+1],      A
+        ld      [IX+Mob.Ydirection],    A
 
         pop     IX
         ret
 
-@_ba1b: .BYTE   $C9                                                     ;unused?
+@_ba1b: .BYTE   $C9                     ; unused?
 @_ba1c: .BYTE   $00 $00 $F9 $BA $00 $02 $0B $BB $00 $07 $0B $BB
 @_ba28: .BYTE   $03 $08 $04 $07 $05 $08 $04 $07 $FF $30 $04 $A0 $01 $00 $00
-@_ba37: .BYTE   $00 $00 $20 $22                                         ;unused, or part of above?
+@_ba37: .BYTE   $00 $00 $20 $22         ; unused, or part of above?
 @_ba3b: .BYTE   $30 $04 $A0 $01 $00 $00 $00 $00 $24 $26 $20 $04 $60 $01 $37 $10
         .BYTE   $38 $10 $4A $10 $4B $10 $30 $04 $60 $01 $28 $10 $19 $10 $4C $10
         .BYTE   $4D $10 $40 $04 $60 $01 $00 $10 $2D $10 $4E $10 $4F $10 $20 $04
@@ -24828,7 +24830,6 @@ boss_skyBase_process:                                                   ;$B634
 
 _baf9:                                                                  ;$BAF9
 ;===============================================================================
-
         .BYTE   $FE $0A $0C $0E $FF $FF
         .BYTE   $28 $2A $2C $2E $FF $FF
         .BYTE   $FE $4A $4C $4E $FF $FF
@@ -24838,10 +24839,10 @@ _baf9:                                                                  ;$BAF9
         .BYTE   $FE $02 $04 $06 $FF $FF
         ;
 
-;part of sky boss only
 _bb1d:                                                                  ;$BB1D
 ;===============================================================================
-
+; part of sky boss only
+;
         .BYTE   $10 $12 $14 $16 $FF $FF
         .BYTE   $30 $32 $34 $FE $FF $FF
         .BYTE   $50 $52 $54 $FE $FF $FF
@@ -24865,7 +24866,6 @@ _bb1d:                                                                  ;$BB1D
 
 _bb77:                                                                  ;$BB77
 ;===============================================================================
-
         .BYTE   $FE $FF $FF $FF $FF $FF
         .BYTE   $FE $44 $46 $FF $FF $FF
         .BYTE   $FF
@@ -24875,10 +24875,10 @@ boss_electricBeam_process:                                              ;$BB84
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
 
         ld      HL,     $0008
-        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],      HL
+        ld      [RAM_SCROLLZONE_OVERRIDE_TOP],  HL
 
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
@@ -24889,21 +24889,21 @@ boss_electricBeam_process:                                              ;$BB84
         ld      A,      $0C
         call    decompressArt
 
-        ld      [IX+Mob.unknown12], $01
+        ld      [IX+Mob.unknown12],     $01
         set     0,      [IX+Mob.flags]
 @_1:    ld      HL,     $0390
-        ld      [RAM_TEMP1],        HL
+        ld      [RAM_TEMP1],    HL
         ld      L,      [IX+Mob.unknown11]
         ld      H,      $00
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         ld      L,      H
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         ld      DE,     $011A
         ld      HL,     @_bcdd
         call    @_bca5
         ld      E,      [IX+Mob.unknown11]
         ld      D,      $00
-        ld      [RAM_TEMP4],        DE
+        ld      [RAM_TEMP4],    DE
         ld      DE,     $01D2
         ld      HL,     @_bcdd
         call    @_bca5
@@ -24950,7 +24950,7 @@ boss_electricBeam_process:                                              ;$BB84
         sbc     HL,     DE
         jr      c,      @_2
 
-        ld      HL,     $000e
+        ld      HL,     $000E
         add     HL,     DE
         and     A
         sbc     HL,     BC
@@ -24959,7 +24959,7 @@ boss_electricBeam_process:                                              ;$BB84
         bit     0,      [IY+Vars.scrollRingFlags]
         call    z,      hitPlayer@_35fd
 
-@_2:    ld      A,       [RAM_D2EC]
+@_2:    ld      A,      [RAM_D2EC]
         cp      $06
         jr      nc,     @_5
 
@@ -24968,7 +24968,7 @@ boss_electricBeam_process:                                              ;$BB84
 
         ld      A,      [IX+Mob.unknown11]
         inc     A
-        ld      [IX+Mob.unknown11], A
+        ld      [IX+Mob.unknown11],     A
         cp      $80
         ret     c
 
@@ -24980,7 +24980,7 @@ boss_electricBeam_process:                                              ;$BB84
         set     1,      [IX+Mob.flags]
         ret
 
-@_3:    ld      A,       [RAM_FRAMECOUNT]
+@_3:    ld      A,      [RAM_FRAMECOUNT]
         and     $0F
         jr      nz,     @_4
 
@@ -24993,11 +24993,11 @@ boss_electricBeam_process:                                              ;$BB84
 @_4:    dec     [IX+Mob.unknown11]
         ret     nz
 
-        ld      [IX+Mob.unknown11], $00
+        ld      [IX+Mob.unknown11],     $00
         res     1,      [IX+Mob.flags]
         ret
 
-@_5:    ld      HL,      [RAM_SONIC.X]
+@_5:    ld      HL,     [RAM_SONIC.X]
         ld      E,      [IX+Mob.X+0]
         ld      D,      [IX+Mob.X+1]
         and     A
@@ -25011,7 +25011,7 @@ boss_electricBeam_process:                                              ;$BB84
         dec     [IX+Mob.unknown11]
         jr      @_7
 
-@_6:    ld      A,       [IX+Mob.unknown11]
+@_6:    ld      A,      [IX+Mob.unknown11]
         cp      $80
         jr      nc,     @_7
 
@@ -25041,7 +25041,7 @@ boss_electricBeam_process:                                              ;$BB84
 
         ;-----------------------------------------------------------------------
 
-@_bca5: ld      [RAM_TEMP3],        DE                                      ;$BAC5
+@_bca5: ld      [RAM_TEMP3],    DE                                      ;$BAC5
         ld      A,      [HL]
         inc     HL
         push    HL
@@ -25054,10 +25054,10 @@ boss_electricBeam_process:                                              ;$BB84
         push    HL
         ld      DE,     $0008
         add     HL,     DE
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         call    _3581
         pop     HL
-        ld      [RAM_TEMP4],        HL
+        ld      [RAM_TEMP4],    HL
         pop     HL
         ret
 
@@ -25075,7 +25075,7 @@ unknown_bcdf_process:                                                   ;$BCDF
         set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
         set     5,      [IY+Vars.unknown0]
         ld      HL,     $0202
-        ld      [RAM_TEMP6],        HL
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_1
 
@@ -25187,7 +25187,7 @@ unknown_bcdf_process:                                                   ;$BCDF
 
 @_bdc7: .BYTE   $00 $01 $01 $01 $02 $01 $FF
 
-        ;sprite layout
+        ; sprite layout
 @_bdce: .BYTE   $44 $46 $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
@@ -25204,10 +25204,10 @@ cutscene_final_process:                                                 ;$BDF9
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ;mob does not collide with the floor
+        ; mob does not collide with the floor
         set     5,      [IX+Mob.flags]
 
-        ;clear joypad input
+        ; clear joypad input
         ld      [IY+Vars.joypad],       $FF
 
         bit     1,      [IX+Mob.flags]
@@ -25216,17 +25216,18 @@ cutscene_final_process:                                                 ;$BDF9
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
 
-        ;remove the player (i.e. prevent player interaction)
+        ; remove the player (i.e. prevent player interaction)
         ld      A,      $FF
-        ld      [RAM_SONIC],        A
-        ;move Sonic off the level
+        ld      [RAM_SONIC],    A
+        ; move Sonic off the level
         ld      HL,     $0000
-        ld      [RAM_SONIC.Y],      HL
+        ld      [RAM_SONIC.Y],  HL
 
         ld      [IX+$12],       $FF
-        set     6,      [IY+Vars.timeLightningFlags]      ;lock the screen - no scrolling
+        ; lock the screen - no scrolling
+        set     6,      [IY+Vars.timeLightningFlags]
         set     1,      [IX+Mob.flags]
-@_1:    ld      A,       [RAM_FRAMECOUNT]
+@_1:    ld      A,      [RAM_FRAMECOUNT]
         rrca
         jr      c,      @_2
 
@@ -25241,14 +25242,14 @@ cutscene_final_process:                                                 ;$BDF9
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $003C
         add     HL,     DE
-        ld      [RAM_SONIC.X],      HL
+        ld      [RAM_SONIC.X],   HL
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $FFC0
         add     HL,     DE
-        ld      [RAM_SONIC.Y],      HL
-        xor     A                                          ;set A to 0
-        ld      [RAM_SONIC],        A
+        ld      [RAM_SONIC.Y],  HL
+        xor     A                       ; set A to 0
+        ld      [RAM_SONIC],    A
         set     6,      [IY+Vars.unknown0]
 
         ; (we can compile with, or without, sound)
@@ -25279,14 +25280,14 @@ cutscene_final_process:                                                 ;$BDF9
         jr      nc,     @_3
 
         inc     DE
-        ld      [RAM_CAMERA_X],     DE
+        ld      [RAM_CAMERA_X], DE
 @_3:    ld      [IX+Mob.spriteLayout+0],<@_bf21
         ld      [IX+Mob.spriteLayout+1],>@_bf21
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_4
 
-        ld      HL,     $1008
-        ld      [RAM_TEMP6],HL
+        ld      HL,             $1008
+        ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
         jr      c,      @_4
 
@@ -25302,8 +25303,8 @@ cutscene_final_process:                                                 ;$BDF9
         cpl
         add     HL,     DE
         adc     A,      $00
-        ld      [RAM_SONIC.Yspeed],         HL
-        ld      [RAM_SONIC.Ydirection],     A
+        ld      [RAM_SONIC.Yspeed],     HL
+        ld      [RAM_SONIC.Ydirection], A
         res     6,      [IY+Vars.timeLightningFlags]
         set     0,      [IX+Mob.flags]
         ld      [IX+Mob.unknown11],     $01
@@ -25345,8 +25346,8 @@ cutscene_final_process:                                                 ;$BDF9
         and     A
         ret     nz
 
-        ld      A,      $20
-        ld      [RAM_D289], A
+        ld      A,              $20
+        ld      [RAM_D289],     A
         set     2,      [IY+Vars.unknown_0D]
         ret
 
@@ -25370,7 +25371,7 @@ cutscene_emeralds_process:                                              ;$BF4C
 
         ; load the emerald image into VRAM,
         ; not more than one power-up can be on screen at a time
-        ld      HL,     $5400                           ;$15400 - emerald image
+        ld      HL,     $5400           ;=$15400 - emerald image
         call    loadPowerUpIcon
 
         bit     0,      [IX+Mob.flags]
@@ -25389,7 +25390,7 @@ cutscene_emeralds_process:                                              ;$BF4C
         ret     c
 
         set     0,      [IX+Mob.flags]
-        ld      [IX+Mob.unknown11], $64
+        ld      [IX+Mob.unknown11],     $64
         ret
 
 @_1:    ld      A,      [IX+Mob.unknown11]
@@ -25439,8 +25440,9 @@ cutscene_emeralds_process:                                              ;$BF4C
         sbc     HL,     DE
         ret     nc
 
-        ld      A,      $01
-        ld      [RAM_D289], A
+        ld      A,              $01
+        ld      [RAM_D289],     A
+
         set     2,      [IY+Vars.unknown_0D]
         ret
 

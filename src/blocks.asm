@@ -1,9 +1,10 @@
-.INCLUDE        "inc\sms.asm"
+.INC    "inc\sms.asm"
 
-.BANK   4       SLOT    1
+.BANK   4       SLOT    "SLOT1"
 .ORG    $0000
 
 blockMappings:                                                          ;$1:0000
+;===============================================================================
 
 ;;;[$10000]
 ;;S1_BlockMappings:

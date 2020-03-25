@@ -1,12 +1,16 @@
 ; the memory / ROM map must be defined for any object file
 
 .MEMORYMAP
-        SLOT            0       START $0000 SIZE $4000  ; ROM 0
-        SLOT            1       START $4000 SIZE $4000  ; ROM 1
-        SLOT            2       START $8000 SIZE $4000  ; ROM 2
-        SLOT            3       START $C000 SIZE $2000  ; 8KB RAM
-        SLOT            4       START $0000 SIZE $4000  ; VRAM
-        SLOT            5       START $0000 SIZE $10000 ; Z80 address space
+        ;=======================================================================
+        SLOT    0       START $0000 SIZE $4000  NAME "SLOT0"    ; ROM 0
+        SLOT    1       START $4000 SIZE $4000  NAME "SLOT1"    ; ROM 1
+        SLOT    2       START $8000 SIZE $4000  NAME "SLOT2"    ; ROM 2
+        SLOT    3       START $C000 SIZE $2000  NAME "RAM"      ; 8KB RAM
+        SLOT    4       START $0000 SIZE $8000  NAME "SLOT_MAIN"; SLOTs 0 & 1
+        ;-----------------------------------------------------------------------
+        SLOT    5       START $0000 SIZE $4000  NAME "VRAM"     ; VRAM
+        SLOT    6       START $0000 SIZE $10000 NAME "Z80"      ; address-space
+        
         DEFAULTSLOT     0
 .ENDME
 
@@ -31,7 +35,7 @@
 ; the super-extended display height is 240px. This leaves NTSC displays with no
 ; VBlank remaining causing the picture to roll around on the screen. This mode
 ; can be used on PAL displays, but leaves you with next to no VRAM left for
-; sprites or tiles and a miniscule VBlank period
+; sprites or tiles and a minuscule VBlank period
 .DEF    SMS_SCREEN_HEIGHT_SUPEREXTENDED 240
 
 .STRUCT SMSTile
