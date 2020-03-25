@@ -13381,7 +13381,7 @@ sonic_process:                                                          ;$48C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $15
 
-@_5791: ld      A,      [RAM_D2B1]                                          ;$5791
+@_5791: ld      A,      [RAM_D2B1]                                      ;$5791
         and     A
         ret     nz
 
@@ -13451,7 +13451,7 @@ sonic_process:                                                          ;$48C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $17
 
-@_57f6: ld      HL,     [RAM_D2E9]                                          ;$57F6
+@_57f6: ld      HL,     [RAM_D2E9]                                      ;$57F6
         ld      DE,     $0082
         and     A
         sbc     HL,     DE
@@ -13464,7 +13464,7 @@ sonic_process:                                                          ;$48C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $18
 
-@_5808: ld      A,      [RAM_SONIC.flags]                                   ;$5808
+@_5808: ld      A,      [RAM_SONIC.flags]                               ;$5808
         rlca
         ret     nc
 
@@ -13509,7 +13509,7 @@ sonic_process:                                                          ;$48C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $19
 
-@_584b: ld      HL,     [RAM_SONIC.X]                                       ;$584B
+@_584b: ld      HL,     [RAM_SONIC.X]                                   ;$584B
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -13548,7 +13548,7 @@ sonic_process:                                                          ;$48C8
         ;=======================================================================
         ;referenced by table at `_58e5` - index $1A
 
-@_5883: ld      HL,     [RAM_SONIC.X]                                       ;$5883
+@_5883: ld      HL,     [RAM_SONIC.X]                                   ;$5883
         ld      BC,     $000c
         add     HL,     BC
         ld      A,      L
@@ -16040,7 +16040,7 @@ badnick_motobug_behaviour:                                              ;$6E96
         .DSB    9, 1    ;=badnick_motobug_process@actions@moveLeft
         .DSB    4, 3    ;=badnick_motobug_process@actions@idleLeft?
         .DSB    9, 2    ;=badnick_motobug_process@actions@moveRight
-        .DSB    4, 5    ;=badnick_motobug_process@actions@apply
+        .DSB    4, 4    ;=badnick_motobug_process@actions@apply
         .DB        0    ;=badnick_motobug_process@actions@loop
         ;
 
@@ -16069,21 +16069,21 @@ badnick_motobug_animations:                                             ;$6EBB
 
         ; sprite layout         ;frame length
         ; ($FF terminates)      ;($FF for infinite)
-@moveLeft:                                                      ;@index = $00                                  `$6EBB
+@moveLeft:      ;@index = $00                                           ;$6EBB
         .BYTE   0               8       ;=badnick_motobug_spriteLayout@leftIdle
         .BYTE   1               8       ;=badnick_motobug_spriteLayout@leftMove
         .BYTE   $FF
 
-@moveRight:                                                     ;@index = $01                                  `$6EC0
+@moveRight:     ;@index = $01                                           ;$6EC0
         .BYTE   2               8       ;=badnick_motobug_spriteLayout@rightIdle
         .BYTE   3               8       ;=badnick_motobug_spriteLayout@rightMove
         .BYTE   $FF
 
-@idleLeft:                                                      ;@index = $02                                  `$6EC5
+@idleLeft:      ;@index = $02                                           ;$6EC5
         .BYTE   0               $FF     ;=badnick_motobug_spriteLayout@leftIdle
         .BYTE   $FF
 
-@idleRight:                                                     ;@index = $03                                  `$6EC8
+@idleRight:     ;@index = $03                                           ;$6EC8
         .BYTE   2               $FF     ;=badnick_motobug_spriteLayout@rightIdle
         .BYTE   $FF
         ;
