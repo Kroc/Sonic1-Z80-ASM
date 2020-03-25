@@ -5867,19 +5867,19 @@ _1fa9:                                                                  ;$1FA9
         .ENDIF
 
         bit     7,      [IY+Vars.flags6]
-        call    nz,     _2067
+        call    nz,     _20a4
 
         call    hideSprites
         call    _155e                                           ;Act Complete screen?
 
         ld      A,      [RAM_CURRENT_LEVEL]
-        cp      $1A
+        cp      $1A     ; TODO: which level?
         jr      nc,     @_3
 
         bit     0,      [IY+Vars.timeLightningFlags]
         jr      z,      @_2
 
-        ld      HL,     $2047
+        ld      HL,     $2047   ; TODO: what is this?
         call    _b60
         ld      A,      [RAM_CURRENT_LEVEL]
         push    AF
@@ -6010,7 +6010,7 @@ _20a4:                                                                  ;$20A4
         ; (it requires three interrupts to produce)
         ld      A,      [RAM_RASTERSPLIT_STEP]
         and     A
-        jr      nz,     _2067
+        jr      nz,     _20a4
 
         di
 
