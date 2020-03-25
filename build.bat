@@ -1,8 +1,8 @@
 @ECHO OFF
 CD %~dp0
 
-SET WLAZ80="bin\wla-z80.exe" -I "src"
-SET WLALINK="bin\wlalink.exe"
+SET WLAZ80="bin\wla-dx\wla-z80.exe" -I "src"
+SET WLALINK="bin\wla-dx\wlalink.exe"
 SET OPTIONS=-D OPTION_SOUND
 
 CLS
@@ -26,5 +26,7 @@ IF ERRORLEVEL 1 (
 )
 ECHO - link "sonic_the_hedgehog.sms"
 %WLALINK% -S "link.ini" "sonic_the_hedgehog.sms"
+
+IF %ERRORLEVEL% EQU 0 bin\VBinDiff\VBinDiff.exe "ROM.sms" "sonic_the_hedgehog.sms"
 
 ECHO * OK.
