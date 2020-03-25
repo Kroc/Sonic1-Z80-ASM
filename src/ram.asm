@@ -2,7 +2,7 @@
 .INC    "inc/vars.asm"
 .INC    "inc/mob.asm"
 
-.RAMSECTION "sonic1"            SLOT 3
+.RAMSECTION "sonic1"            SLOT "RAM"
 ;===============================================================================
 ; name                          ; size  ; note                          ; addr
 ;-------------------------------------------------------------------------------
@@ -12,9 +12,9 @@
 RAM_FLOORLAYOUT                 DSB 4096                                ;[$C000]
 
 ; X/Y/I data for the 64 sprites
-RAM_SPRITETABLE                 DSB 64 * 3                              ;[$D000]
+RAM_SPRITETABLE                 DSB SMS_SPRITES * 3                     ;[$D000]
         
-RAM_D0C0                        DSB 64  ; UNUSED                        ;[$D0C0]
+RAM_D0C0                        DSB SMS_SPRITES  ; UNUSED               ;[$D0C0]
         
 ; when the screen scrolls and new tiles need to be filled in, they are pulled
 ; from these caches which have the necessary tiles already in horizontal /
@@ -31,9 +31,9 @@ RAM_VARS                        INSTANCEOF Vars                         ;[$D200]
 
 ; these temporary variables are reused throughout, some times for passing extra
 ; parameters to functions and sometimes as extra working space within functions
-RAM_TEMP1                       DB                                      ;[$D20F]
-RAM_TEMP2                       DB                                      ;[$D210]
-RAM_TEMP3                       DB                                      ;[$D211]
+RAM_TEMP1                       DB                                      ;[$D20E]
+RAM_TEMP2                       DB                                      ;[$D20F]
+RAM_TEMP3                       DW                                      ;[$D210]
 RAM_TEMP4                       DB                                      ;[$D212]
 RAM_TEMP5                       DB                                      ;[$D213]
 RAM_TEMP6                       DB                                      ;[$D214]

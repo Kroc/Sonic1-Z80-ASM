@@ -26,8 +26,9 @@
 ; other than creating some kind of weird super-SMS emulator
 .DEF    SMS_SPRITES                     64
 
-; display dimensions, in pixels, of the SEGA Master System.
-; note that the VRAM contains a 256 x 224 px scrollable region for the display
+; display dimensions, in pixels, of the SEGA Master System:
+; note that the VRAM contains a 256 x 224 px scrollable
+; region for the display
 .DEF    SMS_SCREEN_WIDTH                256
 .DEF    SMS_SCREEN_HEIGHT               192
 ; notably used on CodeMasters' MicroMachines game
@@ -45,14 +46,16 @@
         bitplane4       BYTE
 .ENDST
 
-; The layout of the Sprite Attribute Table in VRAM is rather odd. Instead an
-; array of sprite X/Y/indices, the Y-positions for all sprites come first,
+; the layout of the Sprite Attribute Table in VRAM is rather odd. instead of
+; an array of sprite X/Y/indices, the Y-positions for all sprites come first,
 ; followed by an unused chunk of memory and then an array of interleaved
 ; X-positions / tile indices
+;
 .STRUCT SMSSpriteXI
+        ;=======================================================================
         xPos            BYTE
-        ; which tile to use for the sprite. As this is 8-bits instead of 9,
-        ; sprites can only use the first 256 tiles in VRAM.
+        ; which tile to use for the sprite. As this is 8-bits
+        ; instead of 9, sprites can only use the first 256 tiles in VRAM
         index           BYTE
 .ENDST
 
