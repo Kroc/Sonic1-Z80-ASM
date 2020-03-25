@@ -10,6 +10,15 @@
 ; number of frames to wait before the idle animation kicks in
 .DEFINE IDLE_TIME       6 * 60
 
+
+.SMSHEADER
+        PRODUCTCODE     $76, $70, 0     ; 2.5 bytes
+        VERSION         0               ; 0-15
+        REGIONCODE      4               ; 3-7
+        RESERVEDSPACE   $59, $59        ; 2 bytes
+.ENDSMS
+   
+
 .BANK   0       SLOT "SLOT0"
 .ORG    $0000
 
