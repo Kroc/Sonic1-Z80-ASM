@@ -11303,8 +11303,8 @@ sonic_process:                                                          ;$48C8
         ld      DE,     [RAM_TEMP4]
         ld      A,      E
         cpl
-        ld      A,      D
         ld      E,      A
+        ld      A,      D
         cpl
         ld      D,      A
         inc     DE
