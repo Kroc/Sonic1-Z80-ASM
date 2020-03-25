@@ -322,8 +322,6 @@ RAM_LEVEL_HEADER                DSB 40                                  ;[$D354]
         ;.zero                  ; UNUSED                                ;[$D377] 
         ;.music                 ; UNUSED                                ;[$D378] 
 
-RAM_D379                        DSB 3   ; UNUSED                        ;[$D379]
-
 ; a list of the active mobs in the level?
 RAM_ACTIVEMOBS                  DSW 32                                  ;[$D37C]
 
