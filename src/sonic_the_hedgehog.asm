@@ -11,11 +11,10 @@
 .DEFINE IDLE_TIME       6 * 60
 
 .BANK   0       SLOT "SLOT0"
+.ORG    $0000
 
 start:                                                                  ;$0000
 ;===============================================================================
-.ORG    $0000
-
         di                              ; disable interrupts
         im      1                       ; set the interrupt mode to 1 --
                                         ; $0038 will be called at 50/60Hz
@@ -28,30 +27,32 @@ start:                                                                  ;$0000
         jp      init
         ;
 
+.ORG    $0018
+
 rst_playMusic:                                                          ;$0018
 ;===============================================================================
 ; in    A       music ID
 ;-------------------------------------------------------------------------------
-.ORG    $0018
-        
         jp      call_playMusic
         ;
 
+.ORG    $0020
+
 rst_muteSound:                                                          ;$0020
 ;===============================================================================
-.ORG    $0020
-        
         jp      call_muteSound
         ;
+
+.ORG    $0028
 
 rst_playSFX:                                                            ;$0028
 ;===============================================================================
 ; in    A       sfx ID
 ;-------------------------------------------------------------------------------
-.ORG    $0028
-
         jp      call_playSFX
         ;
+
+.ORG    $0038
 
 irq:                                                                    ;$0038
 ;===============================================================================
@@ -59,8 +60,6 @@ irq:                                                                    ;$0038
 ; and control passes here. there's only a small amount of space between this
 ; routine and the pause handler, so we just jump to the routine proper
 ;-------------------------------------------------------------------------------
-.ORG    $0038
-        
         jp      interruptHandler
         ;
         
@@ -71,14 +70,14 @@ copyright:                                                              ;$003B
 
         .BYTE   "Developed By (C) 1991 Ancient - S" $A5 "Hayashi." $00
 
+.ORG    $0066
+
 pause:                                                                  ;$0066
 ;===============================================================================
 ; pressing the PAUSE button causes an interrupt and jumps to $0066.
 ;
 ; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-.ORG    $0066
-
         di      ; disable interrupts
         push    AF
 
@@ -4005,7 +4004,7 @@ titleScreen:                                                            ;$1287
 
         ; (we can compile with, or without, sound)
 @_5:    .IFDEF  OPTION_SOUND
-                rst     $20     ;=rst_muteSound
+                rst     rst_muteSound
         .ENDIF
         ret
 
@@ -4215,7 +4214,7 @@ _1401:                                                                  ;$1401
         ;-----------------------------------------------------------------------
 
 
-@_14de: .BYTE   $0F $80 $81 $FF                                      ;$14DE
+@_14de: .BYTE   $0F $80 $81 $FF                                         ;$14DE
         .BYTE   $10 $90 $91 $FF
 @_14e6: ; text                                                          ;$14E6
         .BYTE   $08 $0C $67 $68 $69 $6A $6B $6C $6D $6E $FF
@@ -5298,7 +5297,7 @@ _1c49:                                                                  ;$1C49
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                rst     $20     ;=rst_muteSound
+                rst     rst_muteSound
         .ENDIF
 
 @_3:    call    _LABEL_1CED_131
@@ -5603,7 +5602,7 @@ _1e9e:                                                                  ;$1E9E
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                rst     $20     ;=rst_muteSound
+                rst     rst_muteSound
         .ENDIF
 
 @_1:    ld      A,      [IY+Vars.spriteUpdateCount]
@@ -5864,7 +5863,7 @@ _1fa9:                                                                  ;$1FA9
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
-                rst     $20     ;=rst_muteSound
+                rst     rst_muteSound
         .ENDIF
 
         bit     7,      [IY+Vars.flags6]
