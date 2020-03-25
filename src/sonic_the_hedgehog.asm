@@ -573,7 +573,7 @@ init:                                                                   ;$028B
         ; (set 64 bytes of VRAM from $3F00 to 224)
         ld      HL,     SMS_VRAM_SPRITES_YPOS
         ld      BC,     SMS_SPRITES
-        ld      A,      SMS_SCREEN_HEIGHT
+        ld      A,      SMS_VRAM_HEIGHT
         call    clearVRAM
 
         ; if the sound module is being included,
@@ -776,7 +776,7 @@ updateVDPSprites:                                                       ;$033E
         ld      B,      A
 
         ; move remaining sprites off screen
-@yOff:  ld      A,      SMS_SCREEN_HEIGHT       ; =224
+@yOff:  ld      A,      SMS_VRAM_HEIGHT ; =224
         out     [SMS_PORTS_VDP_DATA],   A
         djnz    @yOff
 
@@ -1716,11 +1716,11 @@ updateVDPscroll:                                                        ;$063E
         ; camera moved down:
         ld      A,      L
         add     A,      B
-        cp      SMS_SCREEN_HEIGHT       ; if > 224 (bottom of the screen)
+        cp      SMS_VRAM_HEIGHT         ; if > 224 (bottom of the VRAM)
         jr      c,      @_3
 
         ; add 32 to wrap 224 around 256 back to 0+
-        add     A,      256-SMS_SCREEN_HEIGHT
+        add     A,      256-SMS_VRAM_HEIGHT
 
 @_3:    ld      B,      A
         res     7,      [IY+Vars.flags0]
@@ -1729,11 +1729,11 @@ updateVDPscroll:                                                        ;$063E
         ; camera moved up:
 @_4:    ld      A,      L
         add     A,      B
-        cp      SMS_SCREEN_HEIGHT       ; if > 224 (bottom of the screen)
+        cp      SMS_VRAM_HEIGHT         ; if > 224 (bottom of the VRAM)
         jr      c,      @_5
 
         ; subtract 32 to wrap 0 around 256 back to 224
-        sub     256-SMS_SCREEN_HEIGHT
+        sub     256-SMS_VRAM_HEIGHT
 
 @_5:    ld      B,      A
         set     7,      [IY+Vars.flags0]
@@ -1817,7 +1817,7 @@ fillOverscrollCache:                                                    ;$06BD
         ld      B,      $00
 
         ; look up the index in the solidity pointer table
-        ld      HL,     :solidityBlocks
+        ld      HL,     solidityBlocks
         add     HL,     BC
 
         ; load an address at the table
@@ -2368,7 +2368,7 @@ fillScreenWithFloorLayout:                                              ;$0966
         ;-----------------------------------------------------------------------
         ld      DE,     SMS_VRAM_SCREEN
         ; in 192-line mode the screen is 6 blocks tall,
-        ; in 224-line mode it's 7 blocks tall
+        ; TODO: in 224-line mode it's 7 blocks tall
         ld      B,      SMS_SCREEN_HEIGHT / 32
 
 @_1:    push    BC
@@ -2391,7 +2391,7 @@ fillScreenWithFloorLayout:                                              ;$0966
         ld      C',     A               ; put it into BC'
         ld      B',     $00
         ; get address of solidity pointer list
-        ld      HL',    :solidityBlocks
+        ld      HL',    solidityBlocks
         add     HL',    BC'             ; offset solidity index into the list
         ld      A,      [HL']           ; read the data pointer into HL'
         inc     HL'
@@ -10614,7 +10614,7 @@ solidityBlocks:                                                         ;$3A65
 @greenHill:                                                             ;$3A75
 ;-------------------------------------------------------------------------------
         ; TODO: the order of these numbers is determined by the Block Mappings,
-        ;       how do we propogate the definition and order?
+        ;       how do we propagate the definition and order?
 
         .BYTE   $00 $16 $10 $10 $10 $00 $00 $08 $09 $0A $05 $06 $07 $03 $04 $01
         .BYTE   $02 $10 $00 $00 $00 $10 $10 $00 $00 $00 $10 $00 $00 $00 $00 $00

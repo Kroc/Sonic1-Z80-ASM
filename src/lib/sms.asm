@@ -39,7 +39,7 @@
         SMS_VRAM_SPRITES       .DSB $FF                                 ;$3F00
         ;-----------------------------------------------------------------------
         SMS_VRAM_SPRITES_YPOS   DSB SMS_SPRITES                         ;$3F00
-        ; This region of the Sprite Attribute Table is unused for sprites and
+        ; this region of the Sprite Attribute Table is unused for sprites and
         ; can be re-purposed for storing some additional background tiles
         SMS_VRAM_SPRITES_UNUSED DSB SMS_SPRITES                         ;$3F40
         SMS_VRAM_SPRITES_XPOS   INSTANCEOF SMSSpriteXI SMS_SPRITES      ;$3F80
