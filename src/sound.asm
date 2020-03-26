@@ -4948,7 +4948,7 @@ sfx_ff83:                                                              ;$FF83
 ;===============================================================================
 @header:
         .TABLE  BYTE    WORD    WORD    BYTE
-        .BYTE   $02     $0001   $0001   $00
+        .ROW    $02     $0001   $0001   $00
 
         .BYTE   $83 $01 $01 $FA $F2 $FF
         .BYTE   $82 $FF $00 $FA $00 $00 $0A
@@ -4970,7 +4970,7 @@ sfx_ff83:                                                              ;$FF83
 ;===============================================================================
 
         ; the background text in the original ROM
-.BYTE   "Master System & Game Gear Version. '1991 (C)Ancient. (BANK0-4)" $A2
+.BYTE   "Master System & Game Gear Version.  '1991 (C)Ancient. (BANK0-4)" $A2
 .BYTE   "SONIC THE HEDGE"
         ;
 
