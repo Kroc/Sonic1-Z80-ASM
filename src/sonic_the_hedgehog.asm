@@ -19127,14 +19127,16 @@ trap_spikeBall_process:                                                 ;$88FB
         add     HL,     DE
         ld      [IX+Mob.unknown12], L
         ld      [IX+Mob.unknown13], H
+        
         ld      L,      [IX+Mob.Y+0]
         ld      H,      [IX+Mob.Y+1]
         ld      DE,     $0008
         add     HL,     DE
         ld      [IX+Mob.unknown14], L
         ld      [IX+Mob.unknown15], H
+        
         set     0,      [IX+Mob.flags]
-@_1:    ld      L,       [IX+Mob.unknown11]
+@_1:    ld      L,      [IX+Mob.unknown11]
         ld      H,      $00
         add     HL,     HL
         ld      DE,     @_898e
@@ -19151,17 +19153,19 @@ trap_spikeBall_process:                                                 ;$88FB
 @_2:    bit     7,      C
         jr      z,      @_3
 
-        dec     D
-@_3:    ld      L,       [IX+Mob.unknown12]
+        dec     B
+@_3:    ld      L,      [IX+Mob.unknown12]
         ld      H,      [IX+Mob.unknown13]
         add     HL,     DE
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
+        
         ld      L,      [IX+Mob.unknown14]
         ld      H,      [IX+Mob.unknown15]
         add     HL,     BC
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
+        
         ld      HL,     $0204
         ld      [RAM_TEMP6],    HL
         call    detectCollisionWithSonic
@@ -21574,7 +21578,8 @@ mob_door_left:                                                          ;$9DFA
 ;
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]               ;mob does not collide with the floor
+        ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]
         call    _9ed4
         ld      A,      [IX+Mob.unknown11]
         cp      $28
@@ -21779,7 +21784,8 @@ mob_door_right:                                                         ;$9F62
 ;
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
+        ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]
         call    _9ed4
         ld      A,      [IX+Mob.unknown11]
         cp      $28
@@ -21848,7 +21854,7 @@ mob_door_right:                                                         ;$9F62
 
         ;-----------------------------------------------------------------------
 
-@_9fee: ;sprite layout                                                                                         `$9FEE
+@_9fee: ;sprite layout                                                  ;$9FEE
         .BYTE   $36 $FF $FF $FF $FF $FF
         .BYTE   $3E $FF $FF $FF $FF $FF
         .BYTE   $36 $FF $FF $FF $FF $FF
