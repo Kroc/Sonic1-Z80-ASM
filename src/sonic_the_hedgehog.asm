@@ -11,6 +11,10 @@
 .DEFINE IDLE_TIME       6 * 60
 
 
+.BACKGROUND     "Sonic the Hedgehog (1991)(Sega).bin"
+.UNBACKGROUND   $0000,  $ffff
+.UNBACKGROUND   $7ff0,  $7ffb
+
 .SMSHEADER
         PRODUCTCODE     $76, $70, 0     ; 2.5 bytes
         VERSION         0               ; 0-15
