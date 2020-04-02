@@ -10,11 +10,15 @@ ECHO:
 ECHO * assemble source code:
 ECHO =======================
 ECHO - assemble "sms.asm"
-%WLAZ80% %OPTIONS% -i -o "build/sms.o" "src/lib/sms.asm"
+%WLAZ80% %OPTIONS% -i -o "build/sms.o" 		"src/lib/sms.asm"
 ECHO - assemble "ram.asm"
-%WLAZ80% %OPTIONS% -i -o "build/ram.o" "src/ram.asm"
+%WLAZ80% %OPTIONS% -i -o "build/ram.o" 		"src/ram.asm"
+ECHO - assemble "irqs.asm"
+%WLAZ80% %OPTIONS% -i -l "build/irqs.lib"	"src/irqs.asm"
+ECHO - assemble "orig.asm"
+%WLAZ80% %OPTIONS% -i -l "build/orig.lib"	"src/orig.asm"
 ECHO - assemble "blocks.asm"
-%WLAZ80% %OPTIONS% -i -o "build/blocks.o" "src/blocks.asm"
+%WLAZ80% %OPTIONS% -i -o "build/blocks.o" 	"src/blocks.asm"
 ECHO - assemble "sonic_the_hedgehog.asm"
 %WLAZ80% %OPTIONS% -i -o "build/sonic_the_hedgehog.o" "src/sonic_the_hedgehog.asm"
 
