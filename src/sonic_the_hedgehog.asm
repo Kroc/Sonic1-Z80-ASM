@@ -24,8 +24,9 @@
 .ENDSMS
    
 
-.BANK   0   .SLOT "SLOT0"
+.BANK   0   SLOT "SLOT0"
 .ORG    $73
+.SECTION    "main"          FORCE
 
 interruptHandler:                                                       ;$0073
 ;===============================================================================
@@ -130,7 +131,7 @@ interruptHandler:                                                       ;$0073
         bit     4,      [IY+Vars.joypad]        ; joypad button 1?
         call    z,      @setJoypadButtonB       ; set joypad button 2 too
 
-        call    _0625
+        call    main_0625
 
         ; check for the reset button:
         ; read 2nd joypad port which has extra bits for lightgun / reset button
@@ -1571,7 +1572,7 @@ _LABEL_60F_111:                                                         ;$060F
         ret
         ;
 
-_0625:                                                                  ;$0625
+main_0625:                                                              ;$0625
 ;===============================================================================
 ; random number generator?
 ;-------------------------------------------------------------------------------
@@ -7668,7 +7669,7 @@ mobPointers:                                                            ;$2AF6
 @_9be8:                                 ;#14: UNKNOWN - fireball right?
         .ADDR   unknown_9be8_process
 @_9c70:                                 ;#15: UNKNOWN - fireball left?
-        .ADDR   _9c70
+        .ADDR   mob_9c70
 @trap_flameThrower:                     ;#16: flame thrower (Scrap Brain)
         .ADDR   mob_trap_flameThrower
 @door_left:                             ;#17: door - one way left (Scrap Brain)
@@ -7758,7 +7759,7 @@ mobPointers:                                                            ;$2AF6
 @powerUp_bubbles:                       ;#41: bubbles (Labyrinth)
         .ADDR   powerups_bubbles_process
 @_8eca:                                 ;#42: UNKNOWN
-        .ADDR   _8eca
+        .ADDR   mob_8eca
 @null:                                  ;#43: NO-CODE
         .ADDR   null_process
 @badnick_burrobot:                      ;#44: badnick - burrobot
@@ -9483,7 +9484,7 @@ processSpriteLayout:                                                    ;$350F
         ret
         ;
 
-_3581:                                                                  ;$3581
+main_3581:                                                              ;$3581
 ;===============================================================================
 ; in    IY              Address of the common variables (used throughout)
 ;       RAM_TEMP3       y-position of some kind
@@ -9585,14 +9586,14 @@ hitPlayer:                                                              ;$35E5
         ret     nz      ; if so, leave now
 
         bit     0,      [IY+Vars.unknown0]
-        jp      nz,     _36be
+        jp      nz,     main_36be
 
         ld      A,      [RAM_SONIC.flags]
         rrca
-        jp      c,      _36be
+        jp      c,      main_36be
 
         and     %00000010
-        jp      nz,     _36be
+        jp      nz,     main_36be
 
 @_35fd:                                                                 ;$35FD
         ;-----------------------------------------------------------------------
@@ -9716,7 +9717,7 @@ dropRings:                                                              ;$3644
         ret
         ;
 
-_36be:                                                                  ;$36BE
+main_36be:                                                              ;$36BE
 ;===============================================================================
 ; in    IX              Address of the current mob being processed
 ;       TODO: could we use BC/DE as parameters instead of RAM addresses?
@@ -10711,8 +10712,11 @@ UnknownCollision:                                                       ;$3FBF
 @_3FF0: ; 47 entries, according to number of solidity types             ;$3FF0
         .BYTE   $00 $08 $08 $08 $08 $06 $06 $06 $06 $06 $06 $03 $03 $03 $03 $03
 
+.ENDS
+
 .BANK   1       SLOT    "SLOT1"
 .ORG    $0000
+.SECTION    "bank1"         FORCE
                                                                         ;$4000
         .BYTE   $03 $08 $03 $03 $03 $03 $03 $03 $00 $00 $00 $00 $00 $00 $00 $00 
         .BYTE   $00 $00 $00 $00 $00 $00 $00 $03 $03 $04 $04 $03 $03 $03 $03
@@ -11792,13 +11796,13 @@ sonic_process:                                                          ;$48C8
         jr      c,      @_34
 
         ld      A,      $B2
-        call    _3581
+        call    main_3581
         ld      HL,     $0008
         ld      [RAM_TEMP4],    HL
         ld      HL,     $0002
         ld      [RAM_TEMP6],    HL
 @_34:   ld      A,      $5A
-        call    _3581
+        call    main_3581
         ret
 
         ;-----------------------------------------------------------------------
@@ -11827,7 +11831,7 @@ sonic_process:                                                          ;$48C8
         ld      A,      $94
         jr      nc,     @_36
         ld      A,      $96
-@_36:   call    _3581
+@_36:   call    main_3581
         ld      A,      [RAM_FRAMECOUNT]
         ld      C,      A
         and     %00000111
@@ -11838,7 +11842,7 @@ sonic_process:                                                          ;$48C8
         jr      z,      @_37
         ld      HL,     RAM_D2F7
 @_37:   push    HL
-        call    _0625
+        call    main_0625
         pop     HL
         and     $0F
         ld      [HL],   A
@@ -12098,10 +12102,10 @@ sonic_process:                                                          ;$48C8
                 rst     rst_playMusic
         .ENDIF
 
-        call    _91eb
-        call    _91eb
-        call    _91eb
-        call    _91eb
+        call    mobs_91eb
+        call    mobs_91eb
+        call    mobs_91eb
+        call    mobs_91eb
         xor     A
 
         ;layout the oxygen countdown number
@@ -12445,7 +12449,7 @@ sonic_process:                                                          ;$48C8
 
         ld      A,      [RAM_FRAMECOUNT]
         and     A
-        call    z,      _91eb                                ;do this every 256 frames...?
+        call    z,      mobs_91eb       ;do this every 256 frames...?
 
         ret
 
@@ -13715,13 +13719,13 @@ powerups_ring_process:                                                  ;$5B09
         ld      [RAM_TEMP6],    HL
 
         ld      A,      $5C
-        call    _3581
+        call    main_3581
 
         ld      HL,     $000C
         ld      [RAM_TEMP4],    HL
 
         ld      A,      $5E
-        call    _3581
+        call    main_3581
 
         bit     1,      [IX+Mob.flags]
         ret     z
@@ -14125,7 +14129,7 @@ _5deb:                                                                  ;$5DEB
         and     A
         jp      m,      @_3
 
-@_2:    call    _36be
+@_2:    call    main_36be
         and     A
 
         ret
@@ -14915,7 +14919,7 @@ badnick_crabmeat_process:                                               ;$65EE
         ld      DE,     $0000
         ld      C,      E
         ld      B,      D
-        call    _ac96
+        call    mobs_ac96
 
         ld      HL,     $0001
         ld      [RAM_TEMP4],    HL
@@ -14927,7 +14931,7 @@ badnick_crabmeat_process:                                               ;$65EE
 
         ld      DE,     $000E
         ld      BC,     $0000
-        call    _ac96
+        call    mobs_ac96
 
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
@@ -15102,7 +15106,7 @@ platform_swinging_process:                                              ;$673C
         ld      [RAM_SONIC.X],  HL
         ld      BC,     $0010
         ld      DE,     $0000
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
 @_4:    ld      HL,     spriteLayouts@_6911
         ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
@@ -15393,7 +15397,7 @@ platform_sinking_process:                                               ;$69E9
         ld      [IX+Mob.Yspeed+1],      D
         ld      [IX+Mob.Ydirection],    $00
         ld      BC,     $0010
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ret
 
 @_2:    ld      C,      $00
@@ -15447,7 +15451,7 @@ platform_falling_process:                                               ;$6A47
         ld      BC,     $0010
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
 @_2:    ld      HL,     spriteLayouts@_6911
         ld      A,      [RAM_LEVEL_SOLIDITY]
         and     A
@@ -15517,7 +15521,7 @@ unknown_6ac1_process:                                                   ;$6AC1
         ld      D,      $00
         add     HL,     DE
         ld      A,      [HL]
-        call    _3581
+        call    main_3581
         ld      C,      [IX+Mob.X+0]
         ld      B,      [IX+Mob.X+1]
         ld      L,      C
@@ -15809,7 +15813,7 @@ platform_moving_process:                                                ;$6D65
 
         ld      BC,     $0010
         ld      DE,     $0000
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ld      C,      $01
 
         ;move right 1px
@@ -16223,7 +16227,7 @@ boss_greenHill_process:                                                 ;$700C
         set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
         ld      [IX+Mob.width],     32
         ld      [IX+Mob.height],    28
-        call    _7ca6
+        call    mobs_7ca6
         bit     0,      [IX+Mob.unknown11]
         jr      nz,     @_1
 
@@ -16258,7 +16262,7 @@ boss_greenHill_process:                                                 ;$700C
 
         ld      HL,     $0760
         ld      DE,     $00E8
-        call    _7c8c
+        call    mobs_7c8c
 
         set     0,      [IX+Mob.unknown11]
 @_1:    ld      A,       [IX+Mob.unknown13]
@@ -16471,8 +16475,8 @@ boss_greenHill_process:                                                 ;$700C
         ld      [IX+Mob.spriteLayout+1],    H
         ld      HL,             $0012
         ld      [RAM_D216],     HL
-        call    _77be
-        call    _79fa
+        call    mobs_77be
+        call    mobs_79fa
         inc     [IX+Mob.unknown13]
         ld      A,      [IX+Mob.unknown13]
         and     $0F
@@ -16674,7 +16678,7 @@ boss_capsule_process:                                                   ;$732C
         ret     c
 
         ld      [IX+Mob.unknown11],$00
-        call    _7a3a
+        call    mobs_7a3a
         inc     [IX+Mob.unknown12]
         ret
 
@@ -16699,7 +16703,7 @@ boss_capsule_process:                                                   ;$732C
         and     $0F
         ret     nz
 
-        call    _0625
+        call    main_0625
         and     %00000001
         add     A,      $23
         call    @_74b6
@@ -16740,9 +16744,9 @@ boss_capsule_process:                                                   ;$732C
         add     HL,     BC
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
-        call    _0625
+        call    main_0625
         ld      [IX+Mob.Yspeed+0],  A
-        call    _0625
+        call    main_0625
         and     %00000001
         inc     A
         inc     A
@@ -16996,7 +17000,7 @@ boss_freeRabbit_process:                                                ;$7699
         .BYTE   $FF
         ;
 
-_77be:                                                                  ;$77BE
+mobs_77be:                                                              ;$77BE
 ;===============================================================================
 ; called by the boss mob code -- probably the exploded egg ship
 ;
@@ -17106,7 +17110,7 @@ _77be:                                                                  ;$77BE
         ld      [HL],   $18
         inc     HL
         inc     [HL]
-        call    _7a3a
+        call    mobs_7a3a
         ret
 
 @_6:    ld      A,      [RAM_D2ED+1]                              ;lo-addr of D2ED
@@ -17235,7 +17239,7 @@ _77be:                                                                  ;$77BE
         .BYTE   $60 $62 $64 $66 $68 $FF
         ;
 
-_79fa:                                                                  ;$79FA
+mobs_79fa:                                                              ;$79FA
 ;===============================================================================
 ; called by green hill boss, jungle boss and final animation
 ;
@@ -17266,13 +17270,13 @@ _79fa:                                                                  ;$79FA
 @_1:    ld      [RAM_TEMP4],    HL
         ld      [RAM_TEMP6],    DE
         add     A,      C
-        call    _3581
+        call    main_3581
         ret
         ;
 
-_7a3a:                                                                  ;$7A3A
+mobs_7a3a:                                                              ;$7A3A
 ;===============================================================================
-; called by `_77be`, capsule and final animation
+; called by `mobs_77be`, capsule and final animation
 ;
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -17280,12 +17284,12 @@ _7a3a:                                                                  ;$7A3A
         ret     c
 
         push    HL
-        call    _0625
+        call    main_0625
         and     %00011111
         ld      L,      A
         ld      H,      $00
         ld      [RAM_TEMP1],    HL
-        call    _0625
+        call    main_0625
         and     %00011111
         ld      L,      A
         ld      H,      $00
@@ -17590,7 +17594,7 @@ findEmptyMob:                                                           ;$7C7B
         ret
         ;
 
-_7c8c:                                                                  ;$7C8C
+mobs_7c8c:                                                              ;$7C8C
 ;===============================================================================
 ; used by bosses to lock the screen?
 ;
@@ -17610,7 +17614,7 @@ _7c8c:                                                                  ;$7C8C
         ret
         ;
 
-_7ca6:                                                                  ;$7CA6
+mobs_7ca6:                                                              ;$7CA6
 ;===============================================================================
         ld      HL,     [RAM_CAMERA_X_GOTO]
         ld      DE,     [RAM_CAMERA_X]
@@ -17628,7 +17632,7 @@ _7ca6:                                                                  ;$7CA6
         ret
         ;
 
-_LABEL_7CC1_12:                                                         ;$7CC1
+mobs_7cc1:                                                              ;$7CC1
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;       D       bit 7 sets A to $FF instead of 0 -- direction?
@@ -17838,7 +17842,7 @@ mob_platform_fallVert:                                                  ;$7E02
         ld      BC,     $0010
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
 @_1:    ld      A,      [RAM_FRAMECOUNT]
         and     $03
         ret     nz
@@ -17935,7 +17939,7 @@ mob_platform_roll:                                                      ;$7EE6
         ld      BC,     $0010
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ld      HL,     [RAM_SONIC.Xspeed]
         ld      A,      L
         or      H
@@ -18014,8 +18018,11 @@ mob_platform_roll:                                                      ;$7EE6
 
 ; ROM header goes here
 
+.ENDS
+
 .BANK   2       SLOT    "SLOT2"
 .ORG    $0003
+.SECTION    "bank2"         FORCE
 
 mob_platform_roll_continue:                                             ;$8003
 ;===============================================================================
@@ -18086,8 +18093,8 @@ boss_jungle_process:                                                    ;$8053
         xor     A
         ld      [RAM_D2EC],     A
 
-        ;there's a routine at `_7c8c` for setting the scroll positions that should
-         ;have been used here?
+        ; there's a routine at `mobs_7c8c` for setting the
+        ; scroll positions that should have been used here?
         ld      HL,     [RAM_CAMERA_X]
         ld      [RAM_LEVEL_LEFT],       HL
         ld      [RAM_LEVEL_RIGHT],      HL
@@ -18102,7 +18109,7 @@ boss_jungle_process:                                                    ;$8053
 
         set     0,      [IX+Mob.flags]
 
-@_1:    call    _7ca6
+@_1:    call    mobs_7ca6
         bit     0,      [IX+Mob.unknown11]
         jr      nz,     @_2
 
@@ -18222,15 +18229,15 @@ boss_jungle_process:                                                    ;$8053
         ld      [IX+Mob.unknown11], A
         ld      [IX+Mob.unknown16], A
         ld      [IX+Mob.unknown17], A
-        call    _0625
+        call    main_0625
         and     $3F
         add     A,      $64
         ld      [IX+Mob.unknown12], A
         pop     IX
 @_8:    ld      HL,     $005A
         ld      [RAM_D216],     HL
-        call    _77be
-        call    _79fa
+        call    mobs_77be
+        call    mobs_79fa
         ret
 
         ;sprite layout
@@ -18440,7 +18447,7 @@ platform_bridge_process:                                                ;$83C1
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_1
 
-        call    _0625
+        call    main_0625
         and     %00011111
         inc     A
         ld      [IX+Mob.unknown11], A
@@ -18511,7 +18518,7 @@ platform_bridge_process:                                                ;$83C1
 
         ld      DE,     [RAM_TEMP1]
         ld      BC,     $0010
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ret
 
         ;sprite layout
@@ -18528,7 +18535,7 @@ mob_boss_bridge:                                                        ;$8496
         set     5,      [IX+Mob.flags]                     ;mob does not collide with the floor
         ld      [IX+Mob.width],     30
         ld      [IX+Mob.height],    28
-        call    _7ca6
+        call    mobs_7ca6
         ld      [IX+Mob.spriteLayout+0],    <_865a
         ld      [IX+Mob.spriteLayout+1],    >_865a
         bit     0,      [IX+Mob.flags]
@@ -18536,7 +18543,7 @@ mob_boss_bridge:                                                        ;$8496
 
         ld      HL,     $03A0
         ld      DE,     $0300
-        call    _7c8c
+        call    mobs_7c8c
 
         ;UNKNOWN
         ld      HL,     $E508
@@ -18561,7 +18568,7 @@ mob_boss_bridge:                                                        ;$8496
         and     A
         jr      nz,     @_2
 
-        call    _0625
+        call    main_0625
         and     %00000001
         add     A,      A
         add     A,      A
@@ -18689,7 +18696,7 @@ mob_boss_bridge:                                                        ;$8496
 
 @_6:    ld      HL,             $00A2
         ld      [RAM_D216],     HL
-        call    _77be
+        call    mobs_77be
         ret
         ;
 
@@ -18984,7 +18991,7 @@ platform_balance_process:                                               ;$866C
         ret     m
 
         push    HL
-        call    _3581
+        call    main_3581
         ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
@@ -19052,9 +19059,9 @@ badnick_jaws_process:                                                   ;$8837
         ret     nz
 
         inc     [IX+Mob.unknown11]
-        call    _0625
+        call    main_0625
         and     $1E
-        call    z,      _91eb
+        call    z,      mobs_91eb
 
         ret
 
@@ -19420,7 +19427,7 @@ trap_spear_process:                                                     ;$8AF6
         push    HL
         ld      D,      $00
         ld      [RAM_TEMP6],    DE
-        call    _3581
+        call    main_3581
         pop     HL
 @_6:    pop     BC
         djnz    @loop
@@ -19700,13 +19707,13 @@ meta_water_process:                                                     ;$8D48
         ld      H,      $00
         ld      [RAM_TEMP4],    HL
         ld      A,      $00
-        call    _3581
+        call    main_3581
         ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
         ld      [RAM_TEMP4],    HL
         ld      A,      $02
-        call    _3581
+        call    main_3581
         pop     HL
         pop     BC
         djnz    @loop
@@ -19734,14 +19741,14 @@ powerups_bubbles_process:                                               ;$8E56
         and     %01111111                                       ;=$7F
         jr      nz,     @_1
 
-        call    _0625
+        call    main_0625
         and     %00000111
         ld      E,      A
         ld      D,      $00
         ld      HL,     @_8ec2
         add     HL,     DE
         bit     0,      [HL]
-        call    nz,     _91eb
+        call    nz,     mobs_91eb
 
 @_1:    ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
@@ -19761,7 +19768,7 @@ powerups_bubbles_process:                                               ;$8E56
         ld      E,      [HL]
         ld      [RAM_TEMP6],        DE
         ld      A,      $0C
-        call    _3581
+        call    main_3581
         inc     [IX+Mob.unknown12]
         ld      A,      [RAM_FRAMECOUNT]
         and     %00000111
@@ -19779,7 +19786,7 @@ powerups_bubbles_process:                                               ;$8E56
 @_8ec2: .BYTE   $01 $00 $01 $01 $00 $01 $00 $01
         ;
 
-_8eca:                                                                  ;$8ECA
+mob_8eca:                                                               ;$8ECA
 ;===============================================================================
 ; unknown mob
 ;
@@ -19793,7 +19800,7 @@ _8eca:                                                                  ;$8ECA
         and     $0F
         jr      nz,     @_2
 
-        call    _0625
+        call    main_0625
         ld      BC,     $0020
         ld      D,      $00
         and     $3F
@@ -19859,7 +19866,7 @@ _8eca:                                                                  ;$8ECA
         ld      [RAM_TEMP4],        HL
         ld      [RAM_TEMP6],        HL
         ld      A,      $0C
-        call    _3581
+        call    main_3581
         inc     [IX+Mob.unknown11]
         ret
         ;
@@ -20143,7 +20150,7 @@ platform_float_process:                                                 ;$90C0
 @_6:    ld      E,       [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
         ld      BC,     $0010
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ret
 
         ;-----------------------------------------------------------------------
@@ -20155,7 +20162,7 @@ platform_float_process:                                                 ;$90C0
         .BYTE   $FF
         ;
 
-_91eb:                                                                  ;$91EB
+mobs_91eb:                                                              ;$91EB
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20168,7 +20175,7 @@ _91eb:                                                                  ;$91EB
         jr      nz,     @_1
 
         push    HL
-        call    _0625
+        call    main_0625
         and     $0F
         ld      E,      A
         ld      D,      $00
@@ -20187,7 +20194,7 @@ _91eb:                                                                  ;$91EB
         ld      [IX+Mob.type],      A
         xor     A                                          ;set A to 0
         ld      [IX+Mob.Xsubpixel], A
-        call    _0625
+        call    main_0625
         and     $0F
         ld      L,      A
         ld      H,      $00
@@ -20195,7 +20202,7 @@ _91eb:                                                                  ;$91EB
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
         ld      [IX+Mob.Ysubpixel], $00
-        call    _0625
+        call    main_0625
         and     $0F
         ld      L,      A
         xor     A
@@ -20222,7 +20229,7 @@ mob_boss_labyrinth:                                                     ;$9267
         set     5,      [IX+Mob.flags]
         ld      [IX+Mob.width],     32
         ld      [IX+Mob.height],    28
-        call    _7ca6
+        call    mobs_7ca6
         ld      [IX+Mob.spriteLayout+0],    <@_9493
         ld      [IX+Mob.spriteLayout+1],    >@_9493
         bit     0,      [IX+Mob.flags]
@@ -20230,7 +20237,7 @@ mob_boss_labyrinth:                                                     ;$9267
 
         ld      HL,     $02d0
         ld      DE,     $0290
-        call    _7c8c
+        call    mobs_7c8c
 
         set     1,      [IY+Vars.flags9]
 
@@ -20416,7 +20423,7 @@ mob_boss_labyrinth:                                                     ;$9267
 
 @_:     ld      HL,     $00A2
         ld      [RAM_D216], HL
-        call    _77be
+        call    mobs_77be
         ld      A,      [RAM_D2EC]
         cp      $08
         ret     nc
@@ -20436,7 +20443,7 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      [RAM_TEMP6],        HL
         ld      A,      [RAM_FRAMECOUNT]
         and     $02
-        call    _3581
+        call    main_3581
         ret
 
         ;-----------------------------------------------------------------------
@@ -20761,7 +20768,7 @@ unknown_96a8_process:                                                   ;$96A8
         ld      HL,     @_96f5
         add     HL,     DE
         ld      A,      [HL]
-        call    _3581
+        call    main_3581
         inc     [IX+Mob.unknown11]
         ld      A,      [IX+Mob.unknown11]
         cp      $0C
@@ -20822,13 +20829,13 @@ unknown_96f8_process:                                                   ;$96F8
         jr      @_2
 
 @_1:    ld      A,      $40
-        call    _3581
+        call    main_3581
         ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
         ld      [RAM_TEMP4],        HL
         ld      A,      $42
-@_2:    call    _3581
+@_2:    call    main_3581
         ld      A,      [RAM_D2DE]
         add     A,      $06
         ld      [RAM_D2DE], A
@@ -20903,7 +20910,7 @@ unknown_96f8_process:                                                   ;$96F8
         and     $0F
         jr      nz,     @_7
 
-        call    _0625
+        call    main_0625
         ld      BC,     $0020
         ld      D,      $00
         and     $3F
@@ -21397,7 +21404,7 @@ unknown_9be8_process:                                                   ;$9BE8
         .BYTE   $FF
         ;
 
-_9c70:                                                                  ;$9C70
+mob_9c70:                                                               ;$9C70
 ;===============================================================================
 ; unknown mob
 ;
@@ -21436,7 +21443,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
         add     HL,     DE
         ld      [IX+Mob.Y+0],       L
         ld      [IX+Mob.Y+1],       H
-        call    _0625
+        call    main_0625
         ld      [IX+Mob.unknown11], A
         set     0,      [IX+Mob.flags]
 @_1:    ld      L,       [IX+Mob.X+0]
@@ -21488,7 +21495,7 @@ mob_trap_flameThrower:                                                  ;$9C8E
         ld      D,      $00
         push    HL
         ld      [RAM_TEMP6],        DE
-        call    _3581
+        call    main_3581
         pop     HL
         pop     BC
         djnz    @loop
@@ -22289,7 +22296,7 @@ door_switch_process:                                                    ;$A3F8
 
 @_2:    ld      BC,     $0006
         ld      DE,     $0000
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
 
         bit     1,      [IX+Mob.flags]
         jr      nz,     @_4
@@ -22591,7 +22598,7 @@ badnick_caterkiller_process:                                            ;$A551
         ld      L,      [IX+Mob.unknown13]
         ld      H,      [IX+Mob.unknown14]
         ld      [RAM_TEMP6],        HL
-        call    _3581
+        call    main_3581
         pop     HL
         ld      DE,     $0016
         add     HL,     DE
@@ -22606,7 +22613,7 @@ badnick_caterkiller_process:                                            ;$A551
         ld      [RAM_TEMP4],        DE
         ld      HL,     $0000
         ld      [RAM_TEMP6],        HL
-        call    _3581
+        call    main_3581
         pop     HL
         ld      DE,     $0016
         add     HL,     DE
@@ -22733,7 +22740,7 @@ boss_scrapBrain_process:                                                ;$A7ED
 
         ld      HL,     $0530
         ld      DE,     $0220
-        call    _7c8c
+        call    mobs_7c8c
 
         ld      [IY+Vars.joypad],  $FF
         ld      HL,     $05A0
@@ -22935,7 +22942,7 @@ meta_clouds_process:                                                    ;$A9C7
         sbc     HL,     DE
         jr      nc,     @_2
 
-        call    _0625
+        call    main_0625
         ld      B,      $00
         add     A,      A
         ld      C,      A
@@ -23012,7 +23019,7 @@ trap_propeller_process:                                                 ;$AA6A
         and     A
         jp      m,      @_2
         push    DE
-        call    _3581
+        call    main_3581
         pop     DE
 @_2:    pop     BC
         djnz    @loop
@@ -23112,7 +23119,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ld      DE,     $0000
         ld      C,      E
         ld      B,      D
-        call    _ac96
+        call    mobs_ac96
         ld      HL,     $0003
         ld      [RAM_TEMP4],        HL
         ld      HL,     $FFFC
@@ -23123,7 +23130,7 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ld      DE,     $0008
         ld      BC,     $0000
-        call    _ac96
+        call    mobs_ac96
 
         ld      HL,     $FFFE
         ld      [RAM_TEMP4],        HL
@@ -23134,7 +23141,7 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ld      DE,     $0000
         ld      BC,     $0008
-        call    _ac96
+        call    mobs_ac96
 
         ld      HL,     $0003
         ld      [RAM_TEMP4],        HL
@@ -23145,7 +23152,7 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ld      DE,     $0008
         ld      BC,     $0008
-        call    _ac96
+        call    mobs_ac96
 
         ld      [IX+Mob.type],      $FF                     ;remove mob?
 
@@ -23211,7 +23218,7 @@ mob_badnick_bomb:                                                       ;$AB21
         ret
         ;
 
-_ac96:                                                                  ;$AC96
+mobs_ac96:                                                              ;$AC96
 ;===============================================================================
 ; crabmeat and bomb use this -- must be the spray shots
 ;
@@ -23330,7 +23337,7 @@ trap_cannon_process:                                                    ;$AD6C
         add     HL,     DE
         ld      [IX+Mob.X+0],       L
         ld      [IX+Mob.X+1],       H
-        call    _0625
+        call    main_0625
         ld      [IX+Mob.unknown11], A
         set     0,      [IX+Mob.flags]
 @_1:    ld      A,       [IX+Mob.unknown11]
@@ -23528,7 +23535,7 @@ badnick_unidos_process:                                                 ;$AE88
         ld      E,      [HL]
         ld      [RAM_TEMP6],        DE
         ld      A,      $24
-        call    _3581
+        call    main_3581
         pop     HL
         ld      A,      [HL]
         inc     A
@@ -23747,7 +23754,7 @@ unknown_b0f4_process:                                                   ;$B0F4
         ld      [RAM_TEMP4],    HL
         ld      [RAM_TEMP6],    HL
         ld      A,      $24
-        call    _3581
+        call    main_3581
         ret
 
 @_1:    ld      [IX+Mob.type],  $FF     ; remove mob?
@@ -23762,7 +23769,7 @@ trap_turretRotating_process:                                            ;$B16C
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
-        call    _0625
+        call    main_0625
         and     %00000111
         ld      [IX+Mob.unknown11],     A
         set     0,      [IX+Mob.flags]
@@ -23808,7 +23815,7 @@ trap_turretRotating_process:                                            ;$B16C
         jr      z,      @_4
 
         push    HL
-        call    _3581
+        call    main_3581
         pop     HL
 @_4:    pop     BC
         djnz    @loop
@@ -23923,7 +23930,7 @@ platform_flyingRight_process:                                           ;$B297
 
         ld      BC,     $0010
         ld      DE,     $0000
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
         ld      L,      [IX+Mob.Xsubpixel]
         ld      H,      [IX+Mob.X+0]
         ld      A,      [IX+Mob.X+1]
@@ -23964,7 +23971,7 @@ platform_flyingRight_process:                                           ;$B297
         jr      z,      @_3
 
         push    HL
-        call    _3581
+        call    main_3581
         pop     HL
 @_3:    pop     BC
         djnz    @loop
@@ -24030,11 +24037,11 @@ trap_spikewall_process:                                                 ;$B398
         ld      HL,     $FFF0
         ld      [RAM_TEMP6],    HL
         ld      A,      $16
-        call    _3581
+        call    main_3581
         ld      HL,     $0008
         ld      [RAM_TEMP4],    HL
         ld      A,      $18
-        call    _3581
+        call    main_3581
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         ld      DE,     $0580
@@ -24253,7 +24260,7 @@ platform_flyingUpDown_process:                                          ;$B50E
         ld      E,      [IX+Mob.Yspeed+0]
         ld      D,      [IX+Mob.Yspeed+1]
         ld      BC,     $0010
-        call    _LABEL_7CC1_12
+        call    mobs_7cc1
 
         ret
 
@@ -24337,14 +24344,14 @@ boss_skyBase_process:                                                   ;$B634
         bit     2,      [IX+Mob.flags]
         jp      nz,     @_b821
 
-        call    _7ca6
+        call    mobs_7ca6
         call    @_b7e6
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
         ld      HL,     $0350
         ld      DE,     $0120
-        call    _7c8c
+        call    mobs_7c8c
 
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
@@ -24498,14 +24505,14 @@ boss_skyBase_process:                                                   ;$B634
         ld      A,      [HL]
         inc     HL
         push    HL
-        call    _3581
+        call    main_3581
         ld      HL,     [RAM_TEMP4]
         ld      DE,     $0008
         add     HL,     DE
         ld      [RAM_TEMP4],    HL
         pop     HL
         ld      A,      [HL]
-        call    _3581
+        call    main_3581
         ld      A,      [RAM_D2EC]
         cp      $0C
         ret     c
@@ -24693,7 +24700,7 @@ boss_skyBase_process:                                                   ;$B634
 
         ld      HL,     $0550
         ld      DE,     $0120
-        call    _7c8c
+        call    mobs_7c8c
 
         set     3,      [IX+Mob.flags]
         jp      @_20
@@ -25056,7 +25063,7 @@ boss_electricBeam_process:                                              ;$BB84
         ld      A,      [HL]
         inc     HL
         push    HL
-        call    _3581
+        call    main_3581
         pop     HL
         ld      A,      [HL]
         inc     HL
@@ -25066,7 +25073,7 @@ boss_electricBeam_process:                                              ;$BB84
         ld      DE,     $0008
         add     HL,     DE
         ld      [RAM_TEMP4],    HL
-        call    _3581
+        call    main_3581
         pop     HL
         ld      [RAM_TEMP4],    HL
         pop     HL
@@ -25326,7 +25333,7 @@ cutscene_final_process:                                                 ;$BDF9
                 rst     rst_playSFX
         .ENDIF
 
-@_4:    call    _79fa
+@_4:    call    mobs_79fa
         bit     0,      [IX+Mob.flags]
         ret     z
 
@@ -25339,7 +25346,7 @@ cutscene_final_process:                                                 ;$BDF9
         dec     [IX+Mob.unknown11]
         ret     nz
 
-        call    _7a3a
+        call    mobs_7a3a
         ld      [IX+Mob.unknown11],     $18
         inc     [IX+Mob.unknown13]
         ld      A,      [IX+Mob.unknown13]
@@ -25464,3 +25471,4 @@ cutscene_emeralds_process:                                              ;$BF4C
 
         .BYTE   $49 $43 $20 $54 $48 $45 $20 $48
         ;
+.ENDS
