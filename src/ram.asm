@@ -1,3 +1,4 @@
+.INC    "inc/mem.asm"           ; memory layout
 .INC    "inc/sms.asm"           ; hardware definitions
 .INC    "inc/vars.asm"
 .INC    "inc/mob.asm"

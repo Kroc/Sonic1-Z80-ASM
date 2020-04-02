@@ -1,3 +1,4 @@
+.INC    "inc/mem.asm"                   ; memory layout
 .INC    "inc/sms.asm"                   ; hardware definitions
 .INC    "inc/vars.asm"
 .INC    "inc/mob.asm"
@@ -23,7 +24,7 @@
 .ENDSMS
    
 
-.BANK   0       SLOT "SLOT0"
+.BANK   0   .SLOT "SLOT0"
 .ORG    $0000
 
 start:                                                                  ;$0000
@@ -214,7 +215,7 @@ interruptHandler:                                                       ;$0073
 
         ; check for the reset button:
         ; read 2nd joypad port which has extra bits for lightgun / reset button
-        in      A,      [sms.ports.joy_b]      
+        in      A,      [SMS_PORTS_JOYB]      
         and     %00010000                       ; check bit 4
         jp      z,      start                   ; reset!
 
@@ -318,7 +319,7 @@ interruptHandler:                                                       ;$0073
 
 loadPaletteFromInterrupt:                                               ;$0174
 ;===============================================================================
-; loads a palette using the parameters set first by `loadPaletteOnInterrupt`.
+; loads a palette using the parameters set first by `loadPaletteOnInterrupt`:
 ;
 ; in    IY                      address of common variables (used throughout)
 ;       LOADPALETTE_ADDRESS     address to the palette data
@@ -527,7 +528,7 @@ underwaterPalette:                                                      ;$024B
 
 underwaterPalette_Boss:                                                 ;$026B
 ;===============================================================================
-; TODO: this should be provided by the mob, not the interrupts
+; TODO: this should be defined by the mob, not the interrupts
 ; (i.e. it can be excluded if no underwater used)
         .TABLE  DSB 16
 @tile:  .ROW    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
@@ -1452,7 +1453,7 @@ readJoypad:                                                             ;$05A7
 ; out   Vars.joypad
 ;-------------------------------------------------------------------------------
 
-        in      A, [sms.ports.joy_a]    ; read the joypad port
+        in      A, [SMS_PORTS_JOYA]     ; read the joypad port
         or      %11000000               ; mask out bits 7 & 6 -
                                         ; these are joypad 2 down / up
         ld      [IY+Vars.joypad], A     ; store the joypad value in $D203
@@ -1819,7 +1820,7 @@ fillOverscrollCache:                                                    ;$06BD
 
         ;-----------------------------------------------------------------------
         ; get the address of the solidity data for the level's tilemap:
-        ; TODO: we should just store the solidity data adress in the level
+        ; TODO: we should just store the solidity data address in the level
         ;       header, instead of an index
 
         ; get the solidity index for the level
@@ -2087,7 +2088,7 @@ fillScrollTiles:                                                        ;$07DB
         ld      C',     A
 
         ; BC will now hold the number of bytes needed to get from the beginning
-        ; of the scren name table in VRAM to the top-left corner of the visible
+        ; of the screen name table in VRAM to the top-left corner of the visible
         ; portion (the screen)
 
         ; add the VRAM base address to make an absolute address in VRAM
@@ -3514,7 +3515,7 @@ map2Palette:                                                            ;$0F2E
 
 _f4e:                                                                   ;$0F4E
 ;===============================================================================
-; TODO: these rows need to be appended by the level definitons
+; TODO: these rows need to be appended by the level definitions
 
         .TABLE  WORD    BYTE
         .ROW    _0f84   $00             ; Green Hill Act 1
@@ -3759,7 +3760,7 @@ _113b:                                                                  ;$113B
 _114d:                                                                  ;$114D
 ;===============================================================================
         ; Robotnik flying right frame 1
-        .BYTE   $50 $54 $56 $58 $FF $FF                                 ;referenced by table at `_0e7a`
+        .BYTE   $50 $54 $56 $58 $FF $FF ; referenced by table at `_0e7a`
         .BYTE   $70 $74 $76 $78 $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         ;
@@ -3767,7 +3768,7 @@ _114d:                                                                  ;$114D
 _115f:                                                                  ;$115F
 ;===============================================================================
         ; Robotnik flying right frame 2
-        .BYTE   $52 $54 $56 $58 $FF $FF                                 ;referenced by table at `_0e7a`
+        .BYTE   $52 $54 $56 $58 $FF $FF ; referenced by table at `_0e7a`
         .BYTE   $72 $74 $76 $78 $FF $FF
         .BYTE   $FF $FF $FF $FF $FF $FF
         ;
@@ -3887,62 +3888,63 @@ titleScreen:                                                            ;$1287
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
 
-        ;turn off screen
+        ; turn off screen
         ld      A,      [RAM_VDPREGISTER_1]
-        and     %10111111                                       ;remove bit 6 of $D219
+        and     %10111111               ; remove bit 6 of $D219
         ld      [RAM_VDPREGISTER_1],    A
 
-        ;refresh the screen
+        ; refresh the screen
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;load the title screen tile set
-        ;BANK 9 ($24000) + $2000 = $26000
+        ; load the title screen tile set
+        ; BANK 9 ($24000) + $2000 = $26000
         ld      HL,     $2000
         ld      DE,     $0000
         ld      A, 9
         call    decompressArt
 
-        ;load the title screen sprite set
-        ;BANK 9 ($24000) + $4B0A = $28B0A
+        ; load the title screen sprite set
+        ; BANK 9 ($24000) + $4B0A = $28B0A
         ld      HL,     $4B0A
         ld      DE,     $2000
         ld      A, 9
         call    decompressArt
 
-        ;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
+        ; now switch page 1 ($4000-$7FFF)
+        ; to bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;load the title screen itself
-        ld      HL,     $6000                                   ;ROM:$16000
+        ; load the title screen itself
+        ld      HL,     $6000           ; ROM:$16000
         ld      DE,     SMS_VRAM_SCREEN
         ld      BC,     $012E
         ld      A,      $00
         ld      [RAM_TEMP1],    A
         call    decompressScreen
 
-        ;reset horizontal / vertical scroll
-        xor     A                                          ;set A to zero
+        ; reset horizontal / vertical scroll
+        xor     A                       ; set A to zero
         ld      [RAM_VDPSCROLL_HORZ],   A
         ld      [RAM_VDPSCROLL_VERT],   A
 
-        ;load the palette
+        ; load the palette
         ld      HL,     @S1_TitleScreen_Palette
-        ld      A,      %00000011                               ;flags to load tile & sprite palettes
+        ld      A,      %00000011       ; flags to load tile & sprite palettes
         call    loadPaletteOnInterrupt
 
         set     1,      [IY+Vars.flags0]
 
-        ;play title screen music:
+        ; play title screen music:
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
                 ld      A,      MUSIC_ID_TITLESCREEN
                 rst     rst_playMusic
         .ENDIF
 
-        ;initialise the animation parameters?
+        ; initialise the animation parameters?
         xor     A
         ld      [RAM_D216],     A       ; reset the screen counter
         ld      A,      $01
@@ -3951,16 +3953,16 @@ titleScreen:                                                            ;$1287
         ld      [RAM_TEMP3],    HL
 
         ;-----------------------------------------------------------------------
-@_1:    ;switch screen on (set bit 6 of VDP register 1)
+@_1:    ; switch screen on (set bit 6 of VDP register 1)
         ld      A,      [RAM_VDPREGISTER_1]
         or      %01000000
         ld      [RAM_VDPREGISTER_1],    A
 
-        ;refresh the screen
+        ; refresh the screen
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;count to 100:
+        ; count to 100:
         ld      A,      [RAM_D216]      ; get the screen counter
         inc     A                       ; add one
         cp      100                     ; if less than 100,
@@ -3974,7 +3976,7 @@ titleScreen:                                                            ;$1287
         jr      c,      @_3
 
         ld      HL,     @_1362
-@_3:    xor     A                                          ;set A to 0
+@_3:    xor     A                       ;set A to 0
         ld      [RAM_TEMP1],    A
         call    print
 
@@ -3991,8 +3993,8 @@ titleScreen:                                                            ;$1287
         ld      A,      [HL]
         inc     HL
 
-        ;when the animation reaches the end,
-        ;exit the title screen (begin demo mode)
+        ; when the animation reaches the end,
+        ; exit the title screen (begin demo mode)
         and     A
         jr      z,      @_5
 
@@ -4000,7 +4002,7 @@ titleScreen:                                                            ;$1287
         ld      [RAM_TEMP3],    HL
         ld      [RAM_TEMP4],    DE
 
-        ;set the game's main sprite table as the table to use
+        ; set the game's main sprite table as the table to use
 @_4:    ld      HL,     RAM_SPRITETABLE
         ld      [RAM_SPRITETABLE_ADDR], HL
 
@@ -4009,7 +4011,7 @@ titleScreen:                                                            ;$1287
         ld      BC,     [RAM_TEMP4]
         call    processSpriteLayout
 
-        ;has the button been pressed? if not, repeat
+        ; has the button been pressed? if not, repeat
         bit     5,      [IY+Vars.joypad]
         jp      nz,     @_1
 
@@ -4080,29 +4082,30 @@ _1401:                                                                  ;$1401
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ;turn off the screen
+        ; turn off the screen
         ld      A,      [RAM_VDPREGISTER_1]
-        and     %10111111                                       ;remove bit 6 of VDP register 1
+        and     %10111111               ; remove bit 6 of VDP register 1
         ld      [RAM_VDPREGISTER_1],    A
 
-        ;refresh the screen
+        ; refresh the screen
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
         di
 
-        ;act complete sprite set
+        ; act complete sprite set
         ld      HL,     $351f
         ld      DE,     $0000
         ld      A, 9
         call    decompressArt
 
-        ;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
+        ; switch page 1 ($4000-$7FFF)
+        ; to bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;act complete background
+        ; act complete background
         ld      HL,     $67FE
         ld      BC,     $0032
         ld      DE,     SMS_VRAM_SCREEN
@@ -4122,12 +4125,12 @@ _1401:                                                                  ;$1401
 
         ld      B,      $78
 
-@_1:    ;turn the screen on
+@_1:    ; turn the screen on
         ld      A,      [RAM_VDPREGISTER_1]
-        or      %01000000                                       ;enable bit 6 on VDP register 1
+        or      %01000000               ; enable bit 6 on VDP register 1
         ld      [RAM_VDPREGISTER_1],    A
 
-        ;refresh the screen
+        ; refresh the screen
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
@@ -4207,21 +4210,21 @@ _1401:                                                                  ;$1401
         dec     [HL]
         jr      @_4
 
-        ;get the bit flag for the level
+        ; get the bit flag for the level
 @_6:    ld      HL,     RAM_D311
         call    getLevelBitFlag
         ld      A,      C
-        cpl                                                     ;invert the level bits (create a mask)
+        cpl                             ; invert the level bits (create a mask)
         ld      C,      A
 
         ld      A,      [HL]
-        and     C                                               ;remove the level bit
+        and     C                       ; remove the level bit
         ld      [HL],   A
 
         ld      HL,     RAM_D284
         dec     [HL]
-        scf                                                     ;set carry flag
-
+        
+        scf                             ; set carry flag
         ret
 
         ;-----------------------------------------------------------------------
@@ -4262,33 +4265,33 @@ _155e:                                                                  ;$155E
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;load HUD sprites
+        ; load HUD sprites
         ld      HL,     $B92E
         ld      DE,     $3000
         ld      A,      9
         call    decompressArt
 
-        ;level complete screen tile set
+        ; level complete screen tile set
         ld      HL,     $351f
         ld      DE,     $0000
         ld      A,      9
         call    decompressArt
 
-        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ; load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
         ld      A,      5
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;UNKNOWN
+        ; UNKNOWN
         ld      HL,     $612E
         ld      BC,     $00BB
         ld      DE,     SMS_VRAM_SCREEN
         ld      A,      [RAM_CURRENT_LEVEL]
-        cp      28                                              ;special stage?
+        cp      28                      ; special stage?
         jr      c,      @_1
 
-        ;UNKNOWN
-        ld      HL,     $61E9                                   ;$161E9?
+        ; UNKNOWN
+        ld      HL,     $61E9           ; $161E9?
         ld      BC,     $0095
         ld      DE,     SMS_VRAM_SCREEN
 
@@ -4806,7 +4809,7 @@ _1860:                                                                  ;$1860
         ret
         ;
 
-;these look like text boxes
+; these look like text boxes
 
 _1907:                                                                  ;$1907
 ;===============================================================================
@@ -4819,7 +4822,8 @@ _191c:                                                                  ;$191C
 ;===============================================================================
 
         .BYTE   $07 $0A
-        .BYTE   $EA $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EC
+        .BYTE   $EA $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB
+        .BYTE   $EB $EC
         .BYTE   $FF
         ;
 
@@ -4827,7 +4831,8 @@ _1931:                                                                  ;$1931
 ;===============================================================================
 
         .BYTE   $07 $0B
-        .BYTE   $FB $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FD
+        .BYTE   $FB $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC
+        .BYTE   $FC $FD
         .BYTE   $FF
         ;
 
@@ -5076,7 +5081,7 @@ _1a18:                                                                  ;$1A18
 
 _1aca:                                                                  ;$1ACA
 ;===============================================================================
-        ;load number of lives into HL
+        ; load number of lives into HL
         ld      A,      [RAM_LIVES]
         ld      L,      A
         ld      H,      $00
@@ -5185,10 +5190,10 @@ _1b69:                                                                  ;$1B69
         .BYTE   $00 $00 $00 $00
         ;
 
-;"Sonic Has Passed" screen palette:
-
 actComplete_Palette:                                                    ;$1B8D
 ;===============================================================================
+; "Sonic Has Passed" screen palette:
+;
         .TABLE  DSB 16
         .ROW    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         .ROW    $35 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
@@ -5231,24 +5236,26 @@ _1c49:                                                                  ;$1C49
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ;set bit 0 of the parameter address (IY=$D200);
-        ;`waitForInterrupt` will pause until an interrupt event switches bit 0 of $D200 on
+        ; set bit 0 of the parameter address (IY=$D200);
+        ;`waitForInterrupt` will pause until an interrupt
+        ; event switches bit 0 of $D200 on
         set     0,      [IY+Vars.flags0]
-        ei                                                      ;enable interrupts
+        ei                              ; enable interrupts
 
-        ;default to 3 lives
+        ; default to 3 lives
 @_1:    ld      A,              3
         ld      [RAM_LIVES],    A
 
-        ;set the number of thousands of pts per extra life
+        ; set the number of thousands of pts per extra life
         ld      A,              SCORE_1UP_PTS
         ld      [RAM_SCORE_1UP],A
 
         ld      A,              $1C
         ld      [RAM_D23F],     A
 
-        xor     A                               ; set A to 0
-        ld      [RAM_CURRENT_LEVEL],    A       ; set starting level!
+        xor     A                       ; set A to 0
+        ; set starting level!
+        ld      [RAM_CURRENT_LEVEL],    A
         ld      [RAM_FRAMECOUNT],       A
         ld      [IY+Vars.unknown_0D],   A
 
@@ -5279,7 +5286,7 @@ _1c49:                                                                  ;$1C49
         set     1,      [IY+Vars.scrollRingFlags]
 
 @_LABEL_1C9F_104:
-        ;are we on the end sequence?
+        ; are we on the end sequence?
         ld      A,      [RAM_CURRENT_LEVEL]
         cp      19
         jr      nc,     @_1
@@ -5301,7 +5308,7 @@ _1c49:                                                                  ;$1C49
         bit     4,      [IY+Vars.flags6]
         jr      nz,     @_3
 
-        ;wait at title screen for button press?
+        ; wait at title screen for button press?
 @_2:    ld      B,      $3C
 
 @wait:  res     0,      [IY+Vars.flags0]
@@ -5359,23 +5366,25 @@ _LABEL_1CED_131:                                                        ;$1CED
         ld      L,      A               ; put this into a 16-bit number
         ld      H,      $00
 
-        ;the level pointers table begins at $15580 (page 1 $4000 + $1580 remainder)
-        ;TODO: must confirm that this gets correctly calculated automatically
-        ld      DE,     $5580   ;\\levels\headers                ;=$5580
+        ; the level pointers table begins at $15580
+        ; (page 1, $4000 + $1580 remainder)
+        ; TODO: must confirm that this gets correctly calculated automatically
+        ld      DE,     $5580           ;=$5580
 
-        add     HL,     DE                                      ;offset into the pointers table
-        ld      A,      [HL]                                    ;read the low byte
-        inc     HL                                              ;move forward
-        ld      H,      [HL]                                    ;read the hi-byte
-        ld      L,      A                                       ;add the lo-byte to make 16-bit address
+        add     HL,     DE              ; offset into the pointers table
+        ld      A,      [HL]            ; read the low byte
+        inc     HL                      ; move forward
+        ld      H,      [HL]            ; read the hi-byte
+        ld      L,      A               ; add the lo-byte to make 16-bit address
 
-        ;is this a null level? (offset $0000)
-        ;the `or H` will set Z if the result is 0, this will only ever happen with $0000
+        ; is this a null level? (offset $0000)
+        ; the `or H` will set Z if the result is 0,
+        ; this will only ever happen with $0000
         or      H
         jp      z,      _LABEL_258B_133
 
-        ;add the pointer value to the level pointers table to find the start of the level header
-        ;(the level headers begin after the level pointers)
+        ; add the pointer value to the level pointers table to find the start
+        ; of the level header (level headers begin after the level pointers)
         add     HL,     DE
         call    loadLevel
 
@@ -5383,59 +5392,62 @@ _LABEL_1CED_131:                                                        ;$1CED
         set     1,      [IY+Vars.flags2]
         set     1,      [IY+Vars.flags0]
         set     3,      [IY+Vars.flags6]
-        res     3,      [IY+Vars.timeLightningFlags]       ;unknown
+        res     3,      [IY+Vars.timeLightningFlags]       ; unknown
         res     0,      [IY+Vars.flags9]
         res     6,      [IY+Vars.flags6]
         res     0,      [IY+Vars.unknown0]
-        res     6,      [IY+Vars.flags0]                   ;camera moved left flag
+        res     6,      [IY+Vars.flags0]        ; camera moved left flag
 
-        ;auto scroll right?
+        ; auto scroll right?
         bit     3,      [IY+Vars.scrollRingFlags]
-        call    nz,     lockCameraHorizontal       ;prevent the camera from scrolling manually
+        ; prevent the camera from scrolling manually
+        call    nz,     lockCameraHorizontal
 
-        ;loop 16 times...
+        ; loop 16 times...
         ;-----------------------------------------------------------------------
         ld      B,      16
 @_2:    push    BC
 
-        ;wait one frame
+        ; wait one frame
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ld      [IY+Vars.joypad],  $FF                     ;clear joypad input
+        ld      [IY+Vars.joypad],  $FF  ; clear joypad input
 
-        ;increase the frame counter
+        ; increase the frame counter
         ld      HL,     [RAM_FRAMECOUNT]
         inc     HL
         ld      [RAM_FRAMECOUNT],       HL
 
-        ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
+        ; switch page 1 ($4000-$7FFF)
+        ; to bank 11 ($2C000-$2FFFF)
         ld      A,                      11
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;are rings enabled?
+        ; are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
         call    nz,     animateFloorRing
 
-        ;establish the default zones around the edges of the screen which initiate scrolling.
-        ;mobs can provide a temporary override to this
-        ld      HL,                     $0060                   ;=96
+        ; establish the default zones around the edges of the screen which
+        ; initiate scrolling. mobs can provide a temporary override to this
+        ld      HL,     $0060           ;=96
         ld      [RAM_SCROLLZONE_LEFT],  HL
 
-        ld      HL,                     $0088                   ;=136
+        ld      HL,     $0088           ;=136
         ld      [RAM_SCROLLZONE_RIGHT], HL
 
-        ld      HL,                     $0060                   ;=96
+        ld      HL,     $0060           ;=96
         ld      [RAM_SCROLLZONE_TOP],   HL
 
-        ld      HL,                     $0070                   ;=112
+        ld      HL,     $0070           ;=112
         ld      [RAM_SCROLLZONE_BOTTOM],HL
 
-        ;animate ring?
+        ; animate ring?
         call    _239c
 
-        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ; switch pages 1 & 2 ($4000-$BFFF)
+        ; to banks 1 & 2 ($4000-$BFFF)
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
@@ -5454,7 +5466,7 @@ _LABEL_1CED_131:                                                        ;$1CED
 
         ;-----------------------------------------------------------------------
 
-        ;demo mode?
+        ; demo mode?
         bit     1,      [IY+Vars.scrollRingFlags]
         jr      z,      @_1dae
 
@@ -5465,19 +5477,20 @@ _LABEL_1CED_131:                                                        ;$1CED
 @_1dae: res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
+        ; switch page 1 ($4000-$7FFF)
+        ; to bank 11 ($2C000-$2FFFF)
         ld      A,                      11
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;are rings enabled?
+        ; are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
         call    nz,     animateFloorRing
 
         bit     3,      [IY+Vars.flags6]
         call    nz,     updateTime
 
-        ;every other frame?
+        ; every other frame?
         ld      A,      [RAM_FRAMECOUNT]
         and     %00000001
         jr      nz,     @_3
@@ -5493,59 +5506,62 @@ _LABEL_1CED_131:                                                        ;$1CED
 @_3:    ld      A,       [RAM_D287]
         and     A
         jp      nz,     _2067
-@_1de2:                                                         ;jump to here from _2067
+@_1de2:                                 ; jump to here from _2067
         ld      A,      [RAM_D2B1]
         and     A
         call    nz,     _1f06
 
-        ;is lightning effect enabled?
+        ; is lightning effect enabled?
         bit     1,      [IY+Vars.timeLightningFlags]
-        call    nz,     _1f49                                   ;if so, handle that
+        call    nz,     _1f49           ; if so, handle that
 
 @_4:    bit     1,      [IY+Vars.flags6]
         call    nz,     @_7
 
-        ;are we in demo mode?
+        ; are we in demo mode?
         bit     1,      [IY+Vars.scrollRingFlags]
-        jr      z,      @_5                                     ;no, skip ahead
+        jr      z,      @_5             ; no, skip ahead
 
-        bit     5,      [IY+Vars.joypad]                   ;is button pressed?
-        jp      z,      _20b8                                   ;if yes, end demo mode
+        ; is button pressed?
+        bit     5,      [IY+Vars.joypad]
+        jp      z,      _20b8           ; if yes, end demo mode
 
-        call    _1bad                                           ;process demo mode?
+        ; process demo mode?
+        call    _1bad
 
-        ;increase the frame counter
+        ; increase the frame counter
 @_5:    ld      HL,      [RAM_FRAMECOUNT]
         inc     HL
         ld      [RAM_FRAMECOUNT],       HL
 
-        ;auto scrolling to the right? (ala Bridge 2)
+        ; auto scrolling to the right? (ala Bridge 2)
         bit     3,      [IY+Vars.scrollRingFlags]
         call    nz,     autoscrollRight
 
-        ;auto scrolling upwards?
+        ; auto scrolling upwards?
         bit     4,      [IY+Vars.scrollRingFlags]
         call    nz,     autoscrollUp
 
-        ;no down scrolling (ala Jungle 2)
+        ; no down scrolling (ala Jungle 2)
         bit     7,      [IY+Vars.scrollRingFlags]
         call    nz,     dontScrollDown
 
         call    _23c9
 
-        ;are rings enabled?
+        ; are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
         call    nz,     _239c
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
         ld      [RAM_D302],     A
         ld      [RAM_D2DE],     A
 
         ld      [IY+Vars.spriteUpdateCount],       $15
-        ld      HL,                     $D03F                   ;lives icon sprite table entry
+        ; lives icon sprite table entry
+        ld      HL,     RAM_SPRITETABLE + (21 * 3) ;=$D0$3F
         ld      [RAM_SPRITETABLE_ADDR], HL
 
-        ld      HL,     RAM_SPRITETABLE+1                           ;sprite Y-value
+        ld      HL,     RAM_SPRITETABLE+1   ; sprite Y-value
         ld      B,      $07
         ld      DE,     $0003
         ld      A,      $E0
@@ -5558,7 +5574,8 @@ _LABEL_1CED_131:                                                        ;$1CED
         add     HL,     DE
         djnz    @_6
 
-        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ; switch pages 1 & 2 ($4000-$BFFF)
+        ; to banks 1 & 2 ($4000-$BFFF)
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
@@ -5573,7 +5590,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         ld      HL,     RAM_VDPREGISTER_1
         set     6,      [HL]
 
-        ;paused?
+        ; paused?
         bit     3,      [IY+Vars.timeLightningFlags]
         call    nz,     _1e9e
 
@@ -5588,7 +5605,7 @@ _LABEL_1CED_131:                                                        ;$1CED
         ex      DE,     HL
         ld      HL,     [RAM_SONIC.X]
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
         sbc     HL,     DE
         ret     c
 
@@ -5629,12 +5646,12 @@ _1e9e:                                                                  ;$1E9E
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;are rings enabled?
+        ; are rings enabled?
         bit     2,      [IY+Vars.scrollRingFlags]
         call    nz,     animateFloorRing
         call    _23c9
         call    _239c
-        ;paused?
+        ; paused?
         bit     3,      [IY+Vars.timeLightningFlags]
         jr      nz,     @_1
 
@@ -5668,27 +5685,32 @@ autoscrollRight:                                                        ;$1EE2
         rrca
         ret     nc
 
-        ;increase the left hand crop by a pixel
+        ; increase the left hand crop by a pixel
         ld      HL,     [RAM_LEVEL_LEFT]
         inc     HL
         ld      [RAM_LEVEL_LEFT],       HL
-        ;prevent scrolling to the right by limiting the width of the level to the same
-        ;NOTE: removing this would allow the player to continue running right, but not return left beyond a moving
-        ;      point -- this would be useful for some kind of chase scene (i.e. wall of lava)
+        ; prevent scrolling to the right by limiting
+        ; the width of the level to the same
+        ;
+        ; NOTE: removing this would allow the player to continue running right,
+        ;       but not return left beyond a moving point -- this could be
+        ;       useful for some kind of chase scene (i.e. wall of lava)
+        ;
         ld      [RAM_LEVEL_RIGHT],      HL
         ret
         ;
 
 autoscrollUp:                                                           ;$1EF2
 ;===============================================================================
-; autoscroll upwards -- unused by the game, but working
+; auto-scroll upwards -- unused by the game, but working
 ;-------------------------------------------------------------------------------
-        ;ensure there's a pause before starting to scroll upwards, otherwise the player won't have time to react!
+        ; ensure there's a pause before starting to scroll upwards,
+        ; otherwise the player won't have time to react!
         ld      A,      [RAM_FRAMECOUNT]
         rrca
         ret     nc
 
-        ;shift the bottom of the level up one pixel
+        ; shift the bottom of the level up one pixel
         ld      HL,     [RAM_LEVEL_BOTTOM]
         dec     HL
         ld      [RAM_LEVEL_BOTTOM],     HL
@@ -5751,7 +5773,7 @@ _1f06:                                                                  ;$1F06
 
 _1f49:                                                                  ;$1F49
 ;===============================================================================
-        ;lightning is enabled...
+        ; lightning is enabled...
 
         ld      DE,     [RAM_D2E9]
         ld      HL,     $00AA
@@ -5813,7 +5835,7 @@ _1f49:                                                                  ;$1F49
         ret
         ;
 
-;lightning palette control:
+; lightning palette control:
 
 _1f9d:                                                                  ;$1F9D
 ;===============================================================================
@@ -5846,7 +5868,7 @@ _1fa9:                                                                  ;$1FA9
 
         ;-----------------------------------------------------------------------
 
-        ;an action to take, according to table _2033?
+        ; an action to take, according to table _2033?
         ld      A,      [RAM_D288]
         add     A,      A
         ld      E,      A
@@ -5883,7 +5905,7 @@ _1fa9:                                                                  ;$1FA9
         call    nz,     _20a4
 
         call    hideSprites
-        call    _155e                                           ;Act Complete screen?
+        call    _155e                   ; Act Complete screen?
 
         ld      A,      [RAM_CURRENT_LEVEL]
         cp      $1A     ; TODO: which level?
@@ -5903,7 +5925,7 @@ _1fa9:                                                                  ;$1FA9
         call    _LABEL_1CED_131
         pop     AF
         ld      [RAM_CURRENT_LEVEL],    A
-@_2:    ld      HL,     RAM_CURRENT_LEVEL                           ;note use of HL here
+@_2:    ld      HL,     RAM_CURRENT_LEVEL       ; note use of HL here
         inc     [HL]
         ld      A,      $01
         ret
@@ -5912,7 +5934,7 @@ _1fa9:                                                                  ;$1FA9
         ld      A,      $FF
         ret
 
-@_4:    ld      HL,     RAM_CURRENT_LEVEL                           ;note use of HL here
+@_4:    ld      HL,     RAM_CURRENT_LEVEL       ; note use of HL here
         inc     [HL]
 @_5:    ld      A,      $FF
 
@@ -5930,8 +5952,6 @@ _2023:                                                                  ;$2023
 
 _202d:                                                                  ;$202D
 ;===============================================================================
-; TODO: should be a macro so as to exclude entirely without sound
-
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
                 ld      A,      SFX_ID_0E
@@ -5942,7 +5962,7 @@ _202d:                                                                  ;$202D
 
 addExtraLife:                                                           ;$2031
 ;===============================================================================
-        ;increases lives
+        ; increases lives
         ld      HL,     RAM_LIVES
         inc     [HL]
 
@@ -5956,7 +5976,7 @@ addExtraLife:                                                           ;$2031
 
 add10Rings:                                                             ;$2039
 ;===============================================================================
-        ;add 10 rings to the ring counter
+        ; add 10 rings to the ring counter
         ld      A,      $10
         call    increaseRings
         ret
@@ -5992,7 +6012,7 @@ _2067:                                                                  ;$2067
         ld	    [RAM_D287],     A
         jp      nz, _LABEL_1CED_131@_1de2
 	
-        ;demo mode?
+        ; demo mode?
         bit     1,  [IY+Vars.scrollRingFlags]
         jr	    nz, _20b8
         bit	    4,  [IY+Vars.origFlags6]
@@ -6027,9 +6047,10 @@ _20a4:                                                                  ;$20A4
 
         di
 
-        res     7,      [IY+Vars.flags6]                   ;underwater?
+        ; underwater?
+        res     7,      [IY+Vars.flags6]
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
         ld      [RAM_RASTERSPLIT_LINE], A
         ld      [RAM_WATERLINE],        A
 
@@ -6064,37 +6085,41 @@ loadLevel:                                                              ;$20CB
 ; in    IY      Address of the common variables (used throughout)
 ;       HL      Address of the level header
 ;-------------------------------------------------------------------------------
-        ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
+        ; PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
 
+        ; turn screen off:
         ld      A,      [RAM_VDPREGISTER_1]
-        and     %10111111                                       ;remove bit 6
+        and     %10111111               ; remove bit 6
         ld      [RAM_VDPREGISTER_1],    A
 
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;copy the level header from ROM to RAM starting at $D354
-        ;(this copies 40 bytes, even though level headers are 37 bytes long.
-        ;the developers probably removed header bytes later in development)
+        ; copy the level header from ROM to RAM starting at $D354
+        ; (this copies 40 bytes, even though level headers are 37 bytes long.
+        ; the developers probably removed header bytes later in development)
         ld      DE,     RAM_LEVEL_HEADER
         ld      BC,     40
         ldir
 
-        ld      HL,     RAM_LEVEL_HEADER                    ;position HL at the start of the header
-        push    HL                                       ;remember the start point
+        ;position HL at the start of the header
+        ld      HL,     RAM_LEVEL_HEADER
+        push    HL                      ; remember the start point
 
-        ;read the current Scrolling / Ring HUD value
-        ld      A,      [IY+Vars.scrollRingFlags]          ;take a copy
-        ld      [IY+Vars.origScrollRingFlags],     A
-        ld      A,      [IY+Vars.flags6]                   ;read the current underwater flag value
-        ld      [IY+Vars.origFlags6],      A               ;take a copy
+        ; read the current Scrolling / Ring HUD value, and take a copy
+        ld      A,      [IY+Vars.scrollRingFlags]
+        ld      [IY+Vars.origScrollRingFlags],      A
+        
+        ; read the current underwater flag value, and take a copy
+        ld      A,      [IY+Vars.flags6]
+        ld      [IY+Vars.origFlags6],      A
 
         ld      A,              $FF
         ld      [RAM_D2AB],     A
 
-        ;clear some variables
-        xor     A                                          ;set A to 0
-        ld      L, A                                  ;set HL to #$0000
+        ; clear some variables
+        xor     A                       ; set A to 0
+        ld      L, A                    ; set HL to #$0000
         ld      H, A
         ld      [RAM_VDPSCROLL_HORZ],   A
         ld      [RAM_VDPSCROLL_VERT],   A
@@ -6104,34 +6129,34 @@ loadLevel:                                                              ;$20CB
         ld      [RAM_RASTERSPLIT_STEP], A
         ld      [RAM_RASTERSPLIT_LINE], A
 
-        ;clear D287-$D2A4 (29 bytes)
+        ; clear D287-$D2A4 (29 bytes)
         ld      HL,     RAM_D287
         ld      B,      29
         call    fillMemoryWithValue
 
-        ;get the bit flag for the level:
-        ;C returns a byte with bit x set, where x is the level number mod 8
-        ;DE will be the level number divided by 8
-        ;HL will be D311 + the level number divided by 8
+        ; get the bit flag for the level:
+        ; C returns a byte with bit x set, where x is the level number mod 8
+        ; DE will be the level number divided by 8
+        ; HL will be D311 + the level number divided by 8
         ld      HL,     RAM_D311
         call    getLevelBitFlag
 
-        ;DE will now be D311 + the level number divided by 8
+        ; DE will now be D311 + the level number divided by 8
         ex      DE,     HL
 
         ld      HL,     $0800
         ld      A,      [RAM_CURRENT_LEVEL]
         cp      9
-        jr      c,      @_2                                     ;less than level 9? (Labyrinth Act 1)
+        jr      c,      @_2             ; less than level 9? (Labyrinth Act 1)
 
         cp      11
-        jr      z,      @_1                                     ;if level 11 (Labyrinth Act 3)
-        jr      nc,     @_2                                     ;if >= level 11 (Labyrinth Act 3)
+        jr      z,      @_1             ; if level 11 (Labyrinth Act 3)
+        jr      nc,     @_2             ; if >= level 11 (Labyrinth Act 3)
 
-        ;this must be level 9 or 10 (Labyrinth Act 1/2)
+        ; this must be level 9 or 10 (Labyrinth Act 1/2)
         ld      A,      [DE]
-        and     C                                               ;is the bit for the level set?
-        jr      z,      @_2                                     ;if so, skip this next part
+        and     C                       ; is the bit for the level set?
+        jr      z,      @_2             ; if so, skip this next part
 
 @_1:    ld      A,              $FF
         ld      [RAM_WATERLINE],A
@@ -6153,17 +6178,17 @@ loadLevel:                                                              ;$20CB
 
         ld      HL,     _2402
 
-        ;set number of collected rings to 0
-@_3:    xor     A                                          ;set A to 0
+        ; set number of collected rings to 0
+@_3:    xor     A                       ; set A to 0
         ld      [RAM_RINGS],    A
 
-        ;is this a special stage? (level number 28+)
-        ;TODO: this should be based on header, not level number
+        ; is this a special stage? (level number 28+)
+        ; TODO: this should be based on header, not level number
         ld      A,      [RAM_CURRENT_LEVEL]
         sub     28
-        jr      c,      @_4                                     ;skip ahead if level < 28
+        jr      c,      @_4             ; skip ahead if level < 28
 
-        ;triple the level number for a lookup table of 3-bytes each entry
+        ; triple the level number for a lookup table of 3-bytes each entry
         ld      C,      A
         add     A,      A
         add     A,      C
@@ -6172,21 +6197,23 @@ loadLevel:                                                              ;$20CB
         ld      HL,     _2405
         add     HL,     DE
 
-        ;copy 3 bytes from HL (`_2402` for regular levels, `_2405`+ for special stages) to D2CE/F/D0
-        ;set the level time?
+        ; copy 3 bytes from HL (`_2402` for regular levels,
+        ; `_2405`+ for special stages) to D2CE/F/D0
+        ; set the level time?
 @_4:    ld      DE,     RAM_TIME_MINUTES
         ld      BC,     $0003
         ldir
 
-@_5:    ;load HUD sprite set
+@_5:    ; load HUD sprite set
         ld      HL,     $B92E           ;=$2F92E
         ld      DE,     $3000
         ld      A,      9
         call    decompressArt
 
-        ;begin reading the level header:
-
-        pop     HL                                       ;get back the level header address
+        ; begin reading the level header:
+        ;get back the level header address
+        pop     HL
+        
         ;SP: Solidity Pointer
         ;-----------------------------------------------------------------------
         ld      A,      [HL]
@@ -6209,87 +6236,88 @@ loadLevel:                                                              ;$20CB
         inc     HL
         ld      [RAM_LEVEL_FLOORHEIGHT],DE
 
-        ;copy the next 8 bytes to $D273+
+        ; copy the next 8 bytes to $D273+
         ;-----------------------------------------------------------------------
-        ;$D273/4 - LX: Level X Offset
-        ;$D275/6 - LW: Level Width
-        ;$D277/8 - LY: Level Y Offset
-        ;$D279/A - LH: Level Height
+        ; $D273/4 - LX: Level X Offset
+        ; $D275/6 - LW: Level Width
+        ; $D277/8 - LY: Level Y Offset
+        ; $D279/A - LH: Level Height
         ld      DE,     RAM_LEVEL_LEFT
         ld      BC,     8
         ldir
 
-        ;player start position:
+        ; player start position:
         ;-----------------------------------------------------------------------
-        ;currently HL will be sitting on byte 14 ("SX") of the level header
+        ; currently HL will be sitting on byte 14 ("SX") of the level header
         push    HL
         push    HL
 
-        ;get the level bit flag:
-        ;C returns a byte with bit x set, where x is the level number mod 8
-        ;DE will be the level number divided by 8
-        ;HL will be D311 + the level number divided by 8
+        ; get the level bit flag:
+        ; C returns a byte with bit x set, where x is the level number mod 8
+        ; DE will be the level number divided by 8
+        ; HL will be D311 + the level number divided by 8
         ld      HL,     RAM_D311
         call    getLevelBitFlag
 
         ld      A,      [HL]
-        ex      DE,     HL                                      ;DE will now be D311+
+        ex      DE,     HL              ; DE will now be D311+
 
-        ;return to the "SX" byte in the level header,
-        ;A will have been set from D311+
+        ; return to the "SX" byte in the level header,
+        ; A will have been set from D311+
         pop     HL
 
         and     c
         jr      z,      @_6
 
-        cpl                                                     ;NOT A
+        cpl                         ; NOT A
         ld      C,      A
-        ld      A,      [DE]                                    ;Set A to the value at D311+0-7
-        and     C                                               ;unset the level bit
+        ld      A,      [DE]        ; set A to the value at D311+0-7
+        and     C                   ; unset the level bit
         ld      [DE],   A
 
-        ;copy 3 bytes from $2402 to D2CE, these will be $01, $30 & $00
-        ;(set level time?)
+        ; copy 3 bytes from $2402 to D2CE, these will be $01, $30 & $00
+        ; (set level time?)
         ld      HL,     _2402
         ld      DE,     RAM_TIME_MINUTES
         ld      BC,     $0003
         ldir
 
-        ld      A,      [RAM_CURRENT_LEVEL]                         ;get current level number
-        add     A,      A                                       ;double it (i.e. for 16-bit tables)
-        ld      E,      A                                       ;put it into DE
+        ;get current level number
+        ld      A,      [RAM_CURRENT_LEVEL]
+        add     A,      A               ; double it (i.e. for 16-bit tables)
+        ld      E,      A               ; put it into DE
         ld      D,      $00
 
         ld      HL,     RAM_D32E
-        add     HL,     DE                                      ;D32E + (level number * 2)
+        add     HL,     DE              ; D32E + (level number * 2)
 
-        ;NOTE: since other data in RAM begins at $D354 (a copy of the level header)
-        ;this places a limit -- 19 -- on the number of main levels.
-        ;special stages and levels visited by teleporter are not included -- AFAIK
+        ; NOTE: since other data in RAM begins at $D354 (a copy of the level
+        ;       header) this places a limit -- 19 -- on the number of main
+        ;       levels. special stages and levels visited by teleporter are
+        ;       not included -- AFAIK
 
-        ;set starting X position:
-
+        ; set starting X position:
 @_6:    ld      [RAM_D216],     HL
-        ld      A,      [HL]                                    ;get the value at that RAM address
+        ld      A,      [HL]            ; get the value at that RAM address
 
-        ;if the value is less than 3, just use 0
-        ;(this is so that if the player starting position is at the left of the level,
-        ; it doesn't try and place the camera before the level's left edge)
+        ; if the value is less than 3, just use 0
+        ; (this is so that if the player starting position is at the left of
+        ; the level, we don't place the camera before the level's left edge)
         sub     3
         jr      nc,     @_7
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
 @_7:    ld      [RAM_BLOCK_X],  A
 
-        ;using the number as the hi-byte, divide by 8 into DE
-        ;e.g.
-        ;4     A: 00000100 E: 00000000 (1024) -> A: 00000000 E: 10000000 (128)
-        ;5     A: 00000101 E: 00000000 (1280) -> A: 00000000 E: 10100000 (160)
-        ;6     A: 00000110 E: 00000000 (1536) -> A: 00000000 E: 11000000 (192)
-        ;7     A: 00000111 E: 00000000 (1792) -> A: 00000000 E: 11100000 (224)
-        ;8     A: 00001000 E: 00000000 (2048) -> A: 00000001 E: 00000000 (256)
-        
-        ;as you can see, the effective outcome is multiplying by 32!
+        ; using the number as the hi-byte, divide by 8 into DE
+        ; e.g.
+        ; 4     A: 00000100 E: 00000000 (1024) -> A: 00000000 E: 10000000 (128)
+        ; 5     A: 00000101 E: 00000000 (1280) -> A: 00000000 E: 10100000 (160)
+        ; 6     A: 00000110 E: 00000000 (1536) -> A: 00000000 E: 11000000 (192)
+        ; 7     A: 00000111 E: 00000000 (1792) -> A: 00000000 E: 11100000 (224)
+        ; 8     A: 00001000 E: 00000000 (2048) -> A: 00000001 E: 00000000 (256)
+        ;
+        ; as you can see, the effective outcome is multiplying by 32!
         ld      E,      $00
         rrca
         rr      E
@@ -6297,20 +6325,19 @@ loadLevel:                                                              ;$20CB
         rr      E
         rrca
         rr      E
-        and     %00011111                                       ;mask off top 3 bits from the rotation
+        and     %00011111               ; mask off top 3 bits from the rotation
         ld      D,      A
         ld      [RAM_CAMERA_X],         DE
         ld      [RAM_CAMERA_X_PREV],    DE
 
-        ;set starting Y position:
-
+        ; set starting Y position:
         inc     HL
         ld      A,      [HL]
 
         sub     3
         jr      nc,     @_8
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
 
 @_8:    ld      [RAM_BLOCK_Y],  A
         ld      E,      $00
@@ -6320,41 +6347,41 @@ loadLevel:                                                              ;$20CB
         rr      E
         rrca
         rr      E
-        and     %00011111                                       ;mask off top 3 bits from the rotation
+        and     %00011111               ; mask off top 3 bits from the rotation
         ld      D,      A
         ld      [RAM_CAMERA_Y],         DE
         ld      [RAM_CAMERA_Y_PREV],    DE
 
-        ;return to the "SX" byte in the level header
+        ; return to the "SX" byte in the level header
         pop     HL
-        inc     HL                                              ;skip over "SX"
-        inc     HL                                              ;and "SY"
+        inc     HL                      ; skip over "SX"
+        inc     HL                      ; and "SY"
 
-        ;since we skip Sonic's X/Y position, where do these get used?
-        ;assumedly from the level header copied to RAM at $D354+?
+        ; since we skip Sonic's X/Y position, where do these get used?
+        ; assumedly from the level header copied to RAM at $D354+?
 
-        ;load floor layout:
+        ; load floor layout:
         ;-----------------------------------------------------------------------
-        ;FL: Floor Layout address
+        ; FL: Floor Layout address
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
 
-        ;FS: Floor Size (in bytes)
+        ; FS: Floor Size (in bytes)
         ld      C,      [HL]
         inc     HL
         ld      B,      [HL]
         inc     HL
 
-        ;remember our place in the level header,
-        ;we're currently sitting at the "BM" Block Mapping bytes
+        ; remember our place in the level header,
+        ; we're currently sitting at the "BM" Block Mapping bytes
         push    HL
 
-        ex      DE,     HL                                      ;HL will be the Floor Layout address
-        ld      A,      H                                       ;look at the hi-byte of the FloorLayout
-        di                                                      ;disable interrupts
-        cp      $40                                             ;is it $40xx or above?
+        ex      DE,     HL              ; HL will be the Floor Layout address
+        ld      A,      H               ; look at hi-byte of the FloorLayout,
+        di                              ; (disable interrupts)
+        cp      $40                     ; is it $40xx or above?
         jr      c,      @_9
 
         sub     $40
@@ -6375,94 +6402,96 @@ loadLevel:                                                              ;$20CB
         ld      [SMS_MAPPER_SLOT2],     A
         ld      [RAM_SLOT2],            A
 
-@_10:   ei                                                      ;enable interrupts
+@_10:   ei                              ; enable interrupts
 
-        ;load the Floor Layout into RAM
-        ld      DE,     $4000                                   ;re-base the FloorLayout address to Page 1
+        ; load the Floor Layout into RAM
+        ld      DE,     $4000           ; re-base FloorLayout address to Page 1
         add     HL,     DE
         call    loadFloorLayout
 
-        ;return to our place in the level header
+        ; return to our place in the level header
         pop     HL
 
-        ;BM: Block Mapping address
+        ; BM: Block Mapping address
         ;-----------------------------------------------------------------------
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
 
-        ;swap DE & HL
-        ;DE will be current position in the level header
-        ;HL will be Block Mapping address
+        ; swap DE & HL
+        ; DE will be current position in the level header
+        ; HL will be Block Mapping address
         ex      DE,     HL
 
-        ;rebase the Block Mapping address to Page 1
+        ; rebase the Block Mapping address to Page 1
         ld      BC,     $4000
         add     HL,     BC
         ld      [RAM_BLOCKMAPPINGS],    HL
 
-        ;swap back DE & HL
-        ;HL will be current position in the level header
+        ; swap back DE & HL
+        ; HL will be current position in the level header
         ex      DE,     HL
 
-        ;LA : Level Art address
+        ; LA : Level Art address
         ;-----------------------------------------------------------------------
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
 
-        ;store the current position in the level header
+        ; store the current position in the level header
         push    HL
 
-        ;swap DE & HL
-        ;DE will be current position in the level header
-        ;HL will be Level Art address
+        ; swap DE & HL
+        ; DE will be current position in the level header
+        ; HL will be Level Art address
         ex      DE,     HL
 
-        ;load the level art from bank 12+ ($30000)
+        ; load the level art from bank 12+ ($30000)
         ld      DE,     $0000
         ld      A,      12
         call    decompressArt
 
-        ;return to our position in the level header
+        ; return to our position in the level header
         pop     HL
 
-        ;sprite art:
+        ; sprite art:
         ;-----------------------------------------------------------------------
-        ;SB: get the bank number for the sprite art
+        ; SB: get the bank number for the sprite art
         ld      A,      [HL]
         inc     HL
 
-        ;SA: Sprite Art address
+        ; SA: Sprite Art address
         ld      E,      [HL]
         inc     HL
         ld      D,      [HL]
         inc     HL
-        ;handle as with Level Art
+        ; handle as with Level Art
         push    HL
         ex      DE,     HL
         ld      DE,     $2000
         call    decompressArt
         pop     HL
 
-        ;palettes:
+        ; palettes:
         ;-----------------------------------------------------------------------
-        ;IP: Initial Palette
+        ; IP: Initial Palette
         ld      A,      [HL]
 
-        ;store our current position in the level header
+        ; store our current position in the level header
         push    HL
 
-        ;convert the value to 16-bit for a lookup in the palette pointers table
+        ; convert the value to 16-bit for a
+        ; lookup in the palette pointers table
         add     A,      A
         ld      E,      A
         ld      D,      $00
         ld      HL,     $627C
         add     HL,     DE
 
-        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ; switch pages 1 & 2 ($4000-$BFFF)
+        ; to banks 1 & 2 ($4000-$BFFF)
         di
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
@@ -6472,13 +6501,13 @@ loadLevel:                                                              ;$20CB
         ld      [RAM_SLOT2],            A
         ei
 
-        ;read the palette pointer into HL
+        ; read the palette pointer into HL
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
 
-        ;queue the palette to be loaded via the interrupt
+        ; queue the palette to be loaded via the interrupt
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
@@ -6490,41 +6519,42 @@ loadLevel:                                                              ;$20CB
         pop     HL
         inc     HL
 
-        ;CS: Cycle Speed
+        ; CS: Cycle Speed
         ld      DE,     RAM_CYCLEPALETTE_COUNTER
         ld      A,      [HL]
         ld      [DE],   A
         inc     DE
-        ;store a second copy at the next byte in RAM
+        ; store a second copy at the next byte in RAM
         ld      [DE],   A
         inc     DE
         inc     HL
-        ;store 0 at the next byte in RAM
-        ;(RAM_CYCLEPALETTE_INDEX)
-        xor     A                                          ;set A to 0
+        ; store 0 at the next byte in RAM
+        ; (RAM_CYCLEPALETTE_INDEX)
+        xor     A                       ; set A to 0
         ld      [DE],   A
         inc     DE
 
-        ;CC: Colour Cycles
+        ; CC: Colour Cycles
         ld      A,      [HL]
         ld      [DE],   A
 
-        ;CP: Cycle Palette
+        ; CP: Cycle Palette
         inc     HL
         ld      A,      [HL]
 
-        ;swap DE & HL
-        ;DE will be current position in the level header
+        ; swap DE & HL
+        ; DE will be current position in the level header
         ex      DE,     HL
 
-        add     A,      A                                       ;double the cycle palette index
-        ld      C,      A                                       ;put it into a 16-bit number
+        add     A,      A               ; double the cycle palette index
+        ld      C,      A               ; put it into a 16-bit number
         ld      B,      $00
-        ;offset into the cycle palette pointers table
+        ; offset into the cycle palette pointers table
         ld      HL,     paletteCyclePointers
         add     HL,     BC
 
-        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ; switch pages 1 & 2 ($4000-$BFFF)
+        ; to banks 1 & 2 ($4000-$BFFF)
         di
         ld      A,                      1
         ld      [SMS_MAPPER_SLOT1],     A
@@ -6534,18 +6564,18 @@ loadLevel:                                                              ;$20CB
         ld      [RAM_SLOT2],            A
         ei
 
-        ;read the cycle palette pointer
+        ; read the cycle palette pointer
         ld      A,      [HL]
         inc     HL
         ld      H,      [HL]
         ld      L,      A
         ld      [RAM_CYCLEPALETTE_POINTER],     HL
 
-        ;swap back DE & HL
-        ;HL will be the current position in the level header
+        ; swap back DE & HL
+        ; HL will be the current position in the level header
         ex      DE,     HL
 
-        ;ML: Mob Layout
+        ; ML: Mob Layout
         ;-----------------------------------------------------------------------
         inc     HL
         ld      E,      [HL]
@@ -6553,14 +6583,14 @@ loadLevel:                                                              ;$20CB
         ld      D,      [HL]
         inc     HL
 
-        ;store the current position in the level header
+        ; store the current position in the level header
         push    HL
 
-        ;the mob layouts are relative from $15580, which is just odd really
+        ; the mob layouts are relative from $15580, which is just odd really
         ld      HL,     $5580
         add     HL,     DE
 
-        ;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
+        ; switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
         ld      A,                      5
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
@@ -6568,7 +6598,7 @@ loadLevel:                                                              ;$20CB
 
         pop     HL
 
-        ;SR: Scrolling / Ring HUD flags
+        ; SR: Scrolling / Ring HUD flags
         ;-----------------------------------------------------------------------
         ld      C,      [HL]
         ld      A,      [IY+Vars.scrollRingFlags]
@@ -6576,37 +6606,41 @@ loadLevel:                                                              ;$20CB
         or      C
         ld      [IY+Vars.scrollRingFlags], A
 
-        ;UW: Underwater flag
+        ; UW: Underwater flag
         ;-----------------------------------------------------------------------
         inc     HL
         ld      A,      [HL]
         ld      [IY+Vars.flags6],  A
 
-        ;TL: Time HUD / Lightning effect flags
+        ; TL: Time HUD / Lightning effect flags
         ;-----------------------------------------------------------------------
         inc     HL
         ld      A,      [HL]
         ld      [IY+Vars.timeLightningFlags],      A
 
-        ;00: Unknown byte
+        ; 00: Unknown byte
         inc     HL
         ld      A,      [HL]
         ld      [IY+Vars.unknown0],        A
 
-        ;MU: Music
+        ; MU: Music
         ;-----------------------------------------------------------------------
+        ; check previously played music
         inc     HL
-        ld      A,      [RAM_PREVIOUS_MUSIC]                        ;check previously played music
+        ld      A,      [RAM_PREVIOUS_MUSIC]
         cp      [HL]
-        jr      z,      @_11                                    ;if current music is the same, skip ahead
+        jr      z,      @_11            ; if same music, skip ahead
 
-        ld      A,      [HL]                                    ;get the music number from the level header
-        and     A                                               ;this won't change the value of A, but it will
-                                                                ;update the flags, so that ...
-        jp      m,      @_11                                    ;we can check if the sign is negative,
-                                                                ;that is, A>127
+        ; get the music number from the level header
+        ld      A,      [HL]
+        ; NOTE: this won't change the value of A, but it will
+        ;       ;update the flags, so that...
+        and     A
+        ; we can check if the sign is negative,
+        ; that is, A>127
+        jp      m,      @_11                                    
 
-        ;remember the current level music to restore it after invincibility &c.
+        ; remember current level music to restore it after invincibility &c.
         ; (we can compile with, or without, sound)
         .IFDEF  OPTION_SOUND
                 ld      [RAM_LEVEL_MUSIC],      A
@@ -6615,10 +6649,10 @@ loadLevel:                                                              ;$20CB
 
         ;-----------------------------------------------------------------------
 
-        ;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
+        ; fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
 @_11:   ld      B,      32
         ld      HL,     RAM_ACTIVEMOBS
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
 
 @_12:   ld      [HL],   A
         inc     HL
@@ -6639,12 +6673,13 @@ loadMobList:                                                            ;$232B
 ;
 ; in    HL      Address of a mob layout list
 ;-------------------------------------------------------------------------------
-        ;NOTE: D2F2 is used only here -- perhaps a regular temp variable could be used
+        ; NOTE: D2F2 is used only here --
+        ;       perhaps a regular temp variable could be used
 
-        ;immediately put aside a copy of the mob layout list address
+        ; immediately put aside a copy of the mob layout list address
         push    HL
 
-        ;add Sonic to the list of active mobs first
+        ; add Sonic to the list of active mobs first
         ld      IX,     RAM_SONIC
         ld      DE,     _sizeof_Mob     ;=$001A (length of the mob?)
         ld      C,      $00             ;?
@@ -6652,7 +6687,7 @@ loadMobList:                                                            ;$232B
         ld      A,      MOB_ID_SONIC    ;=0
         call    loadMobFromList
 
-        ;return to the mob layout list originally provided
+        ; return to the mob layout list originally provided
         pop     HL
 
         ;-----------------------------------------------------------------------
@@ -6664,8 +6699,8 @@ loadMobList:                                                            ;$232B
         ld      B,     A                ; and set as the loop counter
 
         ; loop over the number of mobs:
-@_1:    ld      A,       [HL]                    ;read the mob type
-        inc     HL                                      ;move on to the X & Y position
+@_1:    ld      A,       [HL]           ; read the mob type
+        inc     HL                      ; move on to the X & Y position
         call    loadMobFromList
         djnz    @_1
 
@@ -6675,11 +6710,11 @@ loadMobList:                                                            ;$232B
         ld      B,      A
         ld      A,      $20
         sub     B
-        ret     z                                               ;exit if exactly 32 mobs!
+        ret     z                       ; exit if exactly 32 mobs!
 
-        ;remove the remaining mobs (out of 32)
+        ; remove the remaining mobs (out of 32)
         ld      B,      A
-@_2:    ld      [IX+Mob.type],      $FF                     ;remove mob?
+@_2:    ld      [IX+Mob.type],      $FF ; remove mob?
         add     IX,     DE
         djnz    @_2
 
@@ -6690,82 +6725,89 @@ loadMobFromList:                                                        ;$235E
 ;===============================================================================
 ; in    IX      Address of the mob structure to be setup
 ;       A       Mob type
-;       HL      address with the X & Y byte Block-offsets of the mob on the Floor
+;       HL      address with the X & Y position of the mob on the Floor
 ;       DE      size of the mob structure (to skip to the next one)
-; out   IX      IX will be updated to be pointing to the next mob structure in RAM
-;       HL      The pointer to the mob layout list will have been moved forward to the next mob in the list
+;
+; out   IX      IX will point to the next mob structure in RAM
+;       HL      The pointer to the mob layout list will have been moved
+;               forward to the next mob in the list
 ;-------------------------------------------------------------------------------
-        ld      [IX+Mob.type],      A               ;set the mob type
+        ld      [IX+Mob.type],      A   ; set the mob type
 
-        ;x position:
+        ; x position:
         ;-----------------------------------------------------------------------
-        ld      A, [HL]                          ;get X position from the mob layout
-        exx                                                     ;put aside parameters and switch to shadow registers
-        ;convert X-pos to 16-bit number in HL
+        ld      A, [HL]                 ; get X position from the mob layout
+        
+        ; put aside parameters and switch to shadow registers
+        exx
+        ; convert X-pos to 16-bit number in HL
         ld      L', A
         ld      H', $00
-        ;align the mob to whole pixels (not sub-pixels)
+        ; align the mob to whole pixels (not sub-pixels)
         ld      [IX+Mob.Xsubpixel], H'
 
-        ;multiply by 32: (expand Blocks to pixels)
-        add     HL',        HL'                         ;x2 ...
-        add     HL',        HL'                         ;x4 ...
-        add     HL',        HL'                         ;x8 ...
-        add     HL',        HL'                         ;x16 ...
-        add     HL',        HL'                         ;x32
+        ; multiply by 32: (expand Blocks to pixels)
+        add     HL',        HL'         ; x2 ...
+        add     HL',        HL'         ; x4 ...
+        add     HL',        HL'         ; x8 ...
+        add     HL',        HL'         ; x16 ...
+        add     HL',        HL'         ; x32
 
-        ;set the pixel X-position of the mob on the Floor
+        ; set the pixel X-position of the mob on the Floor
         ld      [IX+Mob.X+0],       L'
         ld      [IX+Mob.X+1],       H'
 
-        ;y position:
+        ; y position:
         ;-----------------------------------------------------------------------
-        exx                                                     ;return to original parameters
-        inc     HL                                    ;move over the X-position to the Y-position
-        ld      A, [HL]                          ;get the Y position from the mob layout
-        exx                                                     ;return to the shadow registers
-        ;convert X-pos to 16-bit number in HL
+        exx                             ; return to original parameters
+        inc     HL                      ; move over the X-pos to the Y-pos
+        ld      A, [HL]                 ; get Y position from the mob layout
+        exx                             ; return to the shadow registers
+        ; convert X-pos to 16-bit number in HL
         ld      L', A
         ld      H', $00
-        ;align the mob to whole pixels (not sub-pixels)
+        ; align the mob to whole pixels (not sub-pixels)
         ld      [IX+Mob.Ysubpixel], H'
 
-        ;multiply by 32: (expand Blocks to pixels)
-        add     HL',        HL'                         ;x2 ...
-        add     HL',        HL'                         ;x4 ...
-        add     HL',        HL'                         ;x8 ...
-        add     HL',        HL'                         ;x16 ...
-        add     HL',        HL'                         ;x32
+        ; multiply by 32: (expand Blocks to pixels)
+        add     HL',        HL'         ; x2 ...
+        add     HL',        HL'         ; x4 ...
+        add     HL',        HL'         ; x8 ...
+        add     HL',        HL'         ; x16 ...
+        add     HL',        HL'         ; x32
 
-        ;set the pixel Y-position of the mob on the Floor
+        ; set the pixel Y-position of the mob on the Floor
         ld      [IX+Mob.Y+0],       L'
         ld      [IX+Mob.Y+1],       H'
 
-        ;set the rest of the mob structure to 0:
+        ; set the rest of the mob structure to 0:
         ;-----------------------------------------------------------------------
-        ;TODO: sizes used here need to be calculated directly off of the `Mob` type
+        ; TODO: sizes used here need to be calculated
+        ;       directly off of the `Mob` type
 
-        ;transfer IX (mob address) to HL
+        ; transfer IX (mob address) to HL
         push    IX
         pop     HL'
 
-        ;skip to the 7th byte of the mob: `.xpseed`, skipping type/x/y-pos,
-        ;this assumes a contiguous order
-        ld      DE',        Mob.Xspeed                      ;=7
+        ; skip to the 7th byte of the mob: `.xpseed`, skipping type/x/y-pos,
+        ; this assumes a contiguous order
+        ld      DE',        Mob.Xspeed  ;=7
         add     HL',     DE'
 
-        ;erase the next 19 bytes (remainder of mob data structure)
+        ; erase the next 19 bytes (remainder of mob data structure)
         ld      B',        19
-        xor     A                                          ;set A to 0
+        xor     A                       ; set A to 0
 @loop:  ld      [HL'],  A
         inc     HL'
         djnz    @loop
 
-        ;return to the original parameters
+        ; return to the original parameters
         exx
-        inc     HL                                    ;move to the beginning of the next mob in the list
-        add     IX,     DE                      ;move to the next mob structure in memory
-                                                                ;TODO: this number can simply be hard-coded
+        ; move to the beginning of the next mob in the list
+        inc     HL
+        ; move to the next mob structure in memory
+        add     IX,     DE
+        ; TODO: this number can simply be hard-coded?
         ret
         ;
 
@@ -6784,7 +6826,7 @@ _239c:                                                                  ;$239C
         ld      HL,     _23f9
         add     HL,     DE
         ld      A,      [HL]
-        ;16-bit divide by 2
+        ; 16-bit divide by 2
         ld      L,      D
         srl     A
         rr      L
@@ -6865,14 +6907,14 @@ _2402:                                                                  ;$2402
 _2405:                                                                  ;$2405
 ;===============================================================================
 
-        .BYTE   $01 $00 $00                                             ;Special Stage 1?
-        .BYTE   $01 $00 $00                                             ;Special Stage 2?
-        .BYTE   $00 $45 $00                                             ;Special Stage 3?
-        .BYTE   $00 $50 $00                                             ;Special Stage 4?
-        .BYTE   $00 $45 $00                                             ;Special Stage 5?
-        .BYTE   $00 $50 $00                                             ;Special Stage 6?
-        .BYTE   $00 $50 $00                                             ;Special Stage 7?
-        .BYTE   $00 $30 $00                                             ;Special Stage 8?
+        .BYTE   $01 $00 $00             ; Special Stage 1?
+        .BYTE   $01 $00 $00             ; Special Stage 2?
+        .BYTE   $00 $45 $00             ; Special Stage 3?
+        .BYTE   $00 $50 $00             ; Special Stage 4?
+        .BYTE   $00 $45 $00             ; Special Stage 5?
+        .BYTE   $00 $50 $00             ; Special Stage 6?
+        .BYTE   $00 $50 $00             ; Special Stage 7?
+        .BYTE   $00 $30 $00             ; Special Stage 8?
         .BYTE   $01 $00 $00
         .BYTE   $01 $00 $01
         .BYTE   $02 $00 $01
@@ -6916,7 +6958,7 @@ _2405:                                                                  ;$2405
         .BYTE   $49 $00 $24 $3F $DC $3F
         ;
 
-;end sequence screens?
+; end sequence screens?
 
 _LABEL_258B_133:                                                        ;$258B
 ;===============================================================================
@@ -6929,7 +6971,7 @@ _LABEL_258B_133:                                                        ;$258B
         res     0,      [IY+Vars.flags0]
         call    waitForInterrupt
 
-        ;reset the screen scroll (for static screens)
+        ; reset the screen scroll (for static screens)
         xor     A
         ld      [RAM_VDPSCROLL_HORZ],   A
         ld      [RAM_VDPSCROLL_VERT],   A
@@ -6938,18 +6980,19 @@ _LABEL_258B_133:                                                        ;$258B
         ld      A,      %00000011
         call    loadPaletteOnInterrupt
 
-        ;load the map screen 1
+        ; load the map screen 1
         ld      HL,     $0000
         ld      DE,     $0000
-        ld      A,      $0C                                     ;bank 12 ($30000+)
+        ld      A,      $0C             ; bank 12 ($30000+)
         call    decompressArt
 
-        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ; load page 1 ($4000-$7FFF)
+        ; with bank 5 ($14000-$17FFF)
         ld      A, 5
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;map 3 screen (end of game)
+        ; map 3 screen (end of game)
         ld      HL,     $6830
         ld      BC,     $0179
         ld      DE,     SMS_VRAM_SCREEN
@@ -7058,7 +7101,7 @@ _LABEL_258B_133:                                                        ;$258B
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;UNKNOWN
+        ; UNKNOWN
         ld      HL,     $69A9
         ld      BC,     $0145
         ld      DE,     SMS_VRAM_SCREEN
@@ -7067,14 +7110,14 @@ _LABEL_258B_133:                                                        ;$258B
         call    decompressScreen
 
         ld      HL,     _2828
-        call    _aae                                      ;called only by this routine,
-                                                                ;appears to fade the screen out
+        call    _aae                    ; called only by this routine,
+                                        ; appears to fade the screen out
 
         ;-----------------------------------------------------------------------
 
 @_4:    ld      BC,     240
         call    waitFrames
-        call    _155e                                           ;Act Complete screen?
+        call    _155e                   ; Act Complete screen?
 
         ld      BC,     240
         call    waitFrames
@@ -7083,13 +7126,13 @@ _LABEL_258B_133:                                                        ;$258B
         ld      BC,     120
         call    waitFrames
 
-         ;map screen 2 / credits screen tile set
+        ; map screen 2 / credits screen tile set
         ld      HL,     $1801
         ld      DE,     $0000
         ld      A,      12
         call    decompressArt
 
-        ;title screen animated finger sprite set
+        ; title screen animated finger sprite set
         ld      HL,     $4B0A
         ld      DE,     $2000
         ld      A,      9
@@ -7099,7 +7142,7 @@ _LABEL_258B_133:                                                        ;$258B
         ld      [SMS_MAPPER_SLOT1],     A
         ld      [RAM_SLOT1],            A
 
-        ;credits screen
+        ; credits screen
         ld      HL,     $6C61
         ld      BC,     $0189
         ld      DE,     SMS_VRAM_SCREEN
@@ -7107,32 +7150,31 @@ _LABEL_258B_133:                                                        ;$258B
         ld      [RAM_TEMP1],    A
         call    decompressScreen
 
-        xor     A                                          ;set A to 0
-        ;NOTE: These are addresses! See `_275a`
+        xor     A                       ; set A to 0
         ld      HL,     RAM_D322
         ld      [HL],   <_2848
         inc     HL
         ld      [HL],   >_2848
         inc     HL
-        ld      [HL],   A                                  ;$2848 = 0
+        ld      [HL],   A               ; $2848 = 0
         inc     HL
         ld      [HL],   <_2857
         inc     HL
         ld      [HL],   >_2857
         inc     HL
-        ld      [HL],   A                                  ;$2857 = 0
+        ld      [HL],   A               ; $2857 = 0
         inc     HL
         ld      [HL],   <_2869
         inc     HL
         ld      [HL],   >_2869
         inc     HL
-        ld      [HL],   A                                  ;$2869 = 0
+        ld      [HL],   A               ; $2869 = 0
         inc     HL
         ld      [HL],   <_2872
         inc     HL
         ld      [HL],   >_2872
         inc     HL
-        ld      [HL],   A                                  ;$2872 = 0
+        ld      [HL],   A               ; $2872 = 0
 
         ld      BC,     1
         call    _2718
@@ -7146,13 +7188,13 @@ _LABEL_258B_133:                                                        ;$258B
                 rst     rst_playMusic
         .ENDIF
 
-        xor     A                                          ;(set A to 0)
+        xor     A                         ; set A to 0
         ld      [RAM_TEMP1],    A
         ld      HL,     creditsText
         call    _2795
 
 @infiniteLoop:
-        ;this could be the game-freeze after the final credits
+        ; this could be the game-freeze after the final credits
         jp      @infiniteLoop
         ;
 
@@ -7203,7 +7245,7 @@ waitFrames:                                                             ;$2745
 ;-------------------------------------------------------------------------------
         push    BC
 
-        ;refresh the screen
+        ; refresh the screen
         ld      A,      [IY+Vars.spriteUpdateCount]
 
         res     0,      [IY+Vars.flags0]
@@ -14284,40 +14326,42 @@ boss_endSign_process:                                                   ;$5F17
         ld      [IX+Mob.width],     24
         ld      [IX+Mob.height],    48
 
-        ;the end-sign has to load its own graphics and palette,
-        ;check if this has been done yet
+        ; the end-sign has to load its own graphics and palette,
+        ; check if this has been done yet
         bit     0,      [IX+Mob.unknown11]
-        ;TODO: if we have to do this check every frame, then it would be better to turn this around and
-        ;      fall through for the more common case, and jump for the one-time initialisation
+        ; TODO: if we have to do this check every frame, then it would be
+        ;       better to turn this around and fall through for the more
+        ;       common case, and jump for the one-time initialisation
         jr      nz,     @_1
 
         ;one time intialisation:
         ;-----------------------------------------------------------------------
-@init:  ;turn 'under-water' mode off -- disabling the 'water line' raster effect,
-        ;this is because the end-sign has no equivilent under-water palette
+@init:  ; turn under-water mode off, disabling the 'water line' raster effect,
+        ; this is because the end-sign has no equivalent under-water palette
         res     7,      [IY+Vars.flags6]
-        ;turn off auto-scroll to the right, if it was on
-        ;TODO: would also need to disable auto-scroll up, if it were in use
+        ; turn off auto-scroll to the right, if it was on
+        ; TODO: would also need to disable auto-scroll up, if it were in use
         res     3,      [IY+Vars.scrollRingFlags]
 
-        ;end-sign sprite set
+        ; end-sign sprite set
         ld      HL,     $4294
         ld      DE,     $2000
         ld      A,      9
         call    decompressArt
 
-        ;load the end-sign palette
+        ; load the end-sign palette
         ld      HL,     @S1_EndSign_Palette
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
 
-        ;initialisation complete, do not repeat this step
+        ; initialisation complete, do not repeat this step
         set     0,      [IX+Mob.unknown11]
 
         ;-----------------------------------------------------------------------
 
-        ;prevent the player leaving the screen by locking the left-hand side of the screen
-        ;(the edge of the level is effectively moved up to the current screen position)
+        ; prevent the player leaving the screen by locking the left-hand side
+        ; of the screen (the edge of the level is effectively moved up to the
+        ; current screen position)
 @_1:    ld      HL,     [RAM_CAMERA_X]
         ld      [RAM_LEVEL_LEFT],       HL
 
@@ -23266,8 +23310,8 @@ _ac96:                                                                  ;$AC96
         ld      C,      L
         ld      B,      H
         pop     IX
-        xor     A                                          ;set A to 0
-        ld      [IX+Mob.type],      $0D                     ;unknown mob
+        xor     A                       ;set A to 0
+        ld      [IX+Mob.type],      $0D ;unknown mob
         ld      [IX+Mob.Xsubpixel], A
         ld      [IX+Mob.X+0],       E
         ld      [IX+Mob.X+1],       D
@@ -23357,7 +23401,7 @@ trap_cannon_process:                                                    ;$AD6C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
 
@@ -23444,7 +23488,7 @@ trap_cannonball_process:                                                ;$AE35
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                      ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ;mob does not collide with the floor
         ld      [IX+Mob.width],     12
         ld      [IX+Mob.height],    12
         ld      HL,     [RAM_CAMERA_X]
@@ -23483,7 +23527,7 @@ badnick_unidos_process:                                                 ;$AE88
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        set     5,      [IX+Mob.flags]                              ;mob does not collide with the floor
+        set     5,      [IX+Mob.flags]  ;mob does not collide with the floor
         bit     0,      [IX+Mob.flags]
         jr      nz,     @_1
         ld      [IX+Mob.unknown11], $00
@@ -23616,7 +23660,7 @@ badnick_unidos_process:                                                 ;$AE88
         inc     [IX+Mob.unknown15]
         ret
 
-        ;===============================================================================================================
+        ;=======================================================================
 
 @_af98:                                                                 ;$AF98
         ld      A,      [IX+Mob.unknown15]
@@ -23663,7 +23707,7 @@ badnick_unidos_process:                                                 ;$AE88
 
         ret
 
-        ;===============================================================================================================
+        ;=======================================================================
 
 @_afdb:                                                                 ;$AFDB
         ld      [HL],   $FE

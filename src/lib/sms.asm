@@ -1,4 +1,5 @@
-.INCLUDE        "inc/sms.asm"           ; hardware definitions
+.INC    "inc/mem.asm"           ; memory layout
+.INC    "inc/sms.asm"           ; hardware definitions
 
 .RAMSECTION "SMS_Z80"   SLOT "Z80"
         ;===========================================================================
@@ -44,3 +45,67 @@
         SMS_VRAM_SPRITES_UNUSED DSB SMS_SPRITES                         ;$3F40
         SMS_VRAM_SPRITES_XPOS   INSTANCEOF SMSSpriteXI SMS_SPRITES      ;$3F80
 .ENDS
+
+; Z80 ports:
+;===============================================================================
+.DEF    SMS_PORTS_REGION                $3E                             EXPORT
+.DEF    SMS_PORTS_CONTROL               $3F                             EXPORT
+
+.DEF    SMS_PORTS_CONTROL_IO            %00000100                       EXPORT
+.DEF    SMS_PORTS_CONTROL_BIOS          %00001000                       EXPORT
+.DEF    SMS_PORTS_CONTROL_RAM           %00010000                       EXPORT
+.DEF    SMS_PORTS_CONTROL_CARD          %00100000                       EXPORT
+.DEF    SMS_PORTS_CONTROL_CART          %01000000                       EXPORT
+.DEF    SMS_PORTS_CONTROL_EXPANSION     %10000000                       EXPORT
+
+.DEF    SMS_PORTS_SCANLINE              $7E                             EXPORT
+.DEF    SMS_PORTS_PSG                   $7F                             EXPORT
+.DEF    SMS_PORTS_VDP_DATA              $BE                             EXPORT
+.DEF    SMS_PORTS_VDP_CONTROL           $BF                             EXPORT
+
+.DEF    SMS_VDP_REGISTER_WRITE          %10000000                       EXPORT
+.DEF    SMS_VDP_REGISTER_0              SMS_VDP_REGISTER_WRITE | 0      EXPORT
+.DEF    SMS_VDP_REGISTER_1              SMS_VDP_REGISTER_WRITE | 1      EXPORT
+.DEF    SMS_VDP_REGISTER_2              SMS_VDP_REGISTER_WRITE | 2      EXPORT
+.DEF    SMS_VDP_REGISTER_5              SMS_VDP_REGISTER_WRITE | 5      EXPORT
+.DEF    SMS_VDP_REGISTER_6              SMS_VDP_REGISTER_WRITE | 6      EXPORT
+.DEF    SMS_VDP_REGISTER_7              SMS_VDP_REGISTER_WRITE | 7      EXPORT
+.DEF    SMS_VDP_REGISTER_8              SMS_VDP_REGISTER_WRITE | 8      EXPORT
+.DEF    SMS_VDP_REGISTER_9              SMS_VDP_REGISTER_WRITE | 9      EXPORT
+.DEF    SMS_VDP_REGISTER_10             SMS_VDP_REGISTER_WRITE | 10     EXPORT
+
+.DEF    SMS_PORTS_JOYA                  $DC                             EXPORT
+
+.DEF    SMS_PORTS_JOYA_PAD1UP           %00000001                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD1DOWN         %00000010                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD1LEFT         %00000100                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD1RIGHT        %00001000                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD1BUTTON1      %00010000                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD1BUTTON2      %00100000                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD2UP           %01000000                       EXPORT
+.DEF    SMS_PORTS_JOYA_PAD2DOWN         %10000000                       EXPORT
+.DEF    SMS_PORTS_JOYB_PAD2LEFT         %00000001                       EXPORT
+
+.DEF    SMS_PORTS_JOYB                  $DD                             EXPORT
+
+.DEF    SMS_PORTS_JOYB_PAD2RIGHT        %00000010                       EXPORT
+.DEF    SMS_PORTS_JOYB_PAD2BUTTON1      %00000100                       EXPORT
+.DEF    SMS_PORTS_JOYB_PAD2BUTTON2      %00001000                       EXPORT
+.DEF    SMS_PORTS_JOYB_RESET            %00010000                       EXPORT
+.DEF    SMS_PORTS_JOYB_UNUSED           %00100000                       EXPORT
+.DEF    SMS_PORTS_JOYB_LIGHTGUN1        %01000000                       EXPORT
+.DEF    SMS_PORTS_JOYB_LIGHTGUN2        %10000000                       EXPORT
+
+.DEF    SMS_JOY_PAD1_UP                 SMS_PORTS_JOYA_PAD1UP           EXPORT
+.DEF    SMS_JOY_PAD1_DOWN               SMS_PORTS_JOYA_PAD1DOWN         EXPORT
+.DEF    SMS_JOY_PAD1_LEFT               SMS_PORTS_JOYA_PAD1LEFT         EXPORT
+.DEF    SMS_JOY_PAD1_RIGHT              SMS_PORTS_JOYA_PAD1RIGHT        EXPORT
+.DEF    SMS_JOY_PAD1_BUTTON1            SMS_PORTS_JOYA_PAD1BUTTON1      EXPORT
+.DEF    SMS_JOY_PAD1_BUTTON2            SMS_PORTS_JOYA_PAD1BUTTON2      EXPORT
+
+.DEF    SMS_JOY_PAD2_UP                 SMS_PORTS_JOYA_PAD2UP           EXPORT
+.DEF    SMS_JOY_PAD2_DOWN               SMS_PORTS_JOYA_PAD2DOWN         EXPORT
+.DEF    SMS_JOY_PAD2_LEFT               SMS_PORTS_JOYB_PAD2LEFT         EXPORT
+.DEF    SMS_JOY_PAD2_RIGHT              SMS_PORTS_JOYB_PAD2RIGHT        EXPORT
+.DEF    SMS_JOY_PAD2_BUTTON1            SMS_PORTS_JOYB_PAD2BUTTON1      EXPORT
+.DEF    SMS_JOY_PAD2_BUTTON2            SMS_PORTS_JOYB_PAD2BUTTON2      EXPORT

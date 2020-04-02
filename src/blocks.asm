@@ -1,3 +1,4 @@
+.INC    "inc\mem.asm"
 .INC    "inc\sms.asm"
 
 .BANK   4       SLOT    "SLOT1"

@@ -22,8 +22,7 @@
 ;       is for sound-effects. Since there are only four actual hardware
 ;       channels, the SFX track overrides the noise channel of the song
 ;
-;TODO: use the linker
-.INC    "inc/sms.asm"
+
 
 .STRUCT Track
 ;===============================================================================
@@ -79,9 +78,9 @@
         channelVolume                   DB                              ;+$2C
 .ENDST
 
-.RAMSECTION     "sound_RAM"     SLOT "RAM" ORGA $dc04 FORCE
+.RAMSECTION     "sound_RAM"
 ;===============================================================================
-; name                          ; size  ; note                          ; addr
+; name                          ; size  ; note                          ;addr
 ;-------------------------------------------------------------------------------
 ; define the sound-driver variables in RAM:
 ;
@@ -122,7 +121,6 @@ loopStack                       DW
 ; this style of implementation is unique to the sound driver -- perhaps it's
 ; reused in other Ancient games, or it could be a 3rd-party piece of code
 ;
-.BANK       3   SLOT   "SLOT1"
 .SECTION        "sound_driver"          NAMESPACE "sound"
 ;===============================================================================
 update:
