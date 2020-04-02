@@ -1,4 +1,5 @@
-.SECTION    "orig_copyright"                                            ;$003B
+
+.SECTION    "!orig_copyright"                                           ;$003B
 ;===============================================================================
 ; a short copyright message is wedged between the IRQ and NMI routines
 ; in the original ROM.

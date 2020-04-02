@@ -24,9 +24,7 @@
 .ENDSMS
    
 
-.BANK   0   SLOT "SLOT0"
-.ORG    $73
-.SECTION    "main"          FORCE
+.SECTION    "main"
 
 interruptHandler:                                                       ;$0073
 ;===============================================================================
