@@ -1,25 +1,25 @@
-; This sound driver was disassembled by Valley Bell, to whom I am eternally
-; grateful as I have no understanding of sound theory and could not have hoped
-; to make sense of this.
+; this sound driver was disassembled by Valley Bell, to whom I am eternally
+; grateful as I have no understanding of sound theory and could not have
+; hoped to make sense of this
 ;
-; Terminology:
+; terminology:
 ; 
 ; *     "PSG"
 ;
-;       Short for Programmable Sound Generator, it is the Yamaha SN76489
+;       short for Programmable Sound Generator, it is the Yamaha SN76489
 ;       sound processor used in the Master System
 ; 
 ; *     "Channel"
 ;
-;       The PSG has four channels of sound that the chip mixes into mono
+;       the PSG has four channels of sound that the chip mixes into mono
 ;       output. Three of the channels produce waves (musical notes) and
 ;       the fourth produces noise (for percussion or sound effects)
 ; 
 ; *     "Track"
 ;
-;       The sequence of notes played by a single channel. There are five
+;       the sequence of notes played by a single channel. there are five
 ;       tracks, 4 represent the current song being played and the fifth
-;       is for sound-effects. Since there are only four actual hardware
+;       is for sound-effects. since there are only four actual hardware
 ;       channels, the SFX track overrides the noise channel of the song
 ;
 
@@ -115,6 +115,38 @@ track3vars                      INSTANCEOF Track
 track4vars                      INSTANCEOF Track
 loopStack                       DW
 
+.ENDS
+
+; because the sound driver has to be banked in, there needs to be some stubs
+; in a fixed bank (typically BANK0,SLOT0) to page in the correct bank before
+; calling the sound driver
+
+.SECTION    "!rst_playMusic"                                            ;$0018
+;===============================================================================
+rst_playMusic:                                                          ;$0018
+;===============================================================================
+; in    A       music ID
+;-------------------------------------------------------------------------------
+        jp      call_playMusic
+        ;
+.ENDS
+
+.SECTION    "!rst_muteSound"                                            ;$0020
+;===============================================================================
+rst_muteSound:                                                          ;$0020
+;===============================================================================
+        jp      call_muteSound
+        ;
+.ENDS
+
+.SECTION    "!rst_playSFX"              PRIORITY 1000                   ;$0028
+;===============================================================================
+rst_playSFX:                                                            ;$0028
+;===============================================================================
+; in    A       sfx ID
+;-------------------------------------------------------------------------------
+        jp      call_playSFX
+        ;
 .ENDS
 
 ; This is the public interface that forwards to the internal implementation;

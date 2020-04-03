@@ -31,7 +31,7 @@ IF ERRORLEVEL 1 (
     GOTO:EOF
 )
 ECHO - link "sonic_the_hedgehog.sms"
-%WLALINK% -S "link_original.ini" "sonic_the_hedgehog.sms"
+%WLALINK% -S "link_original.ini" "build/sonic_the_hedgehog.sms"
 
 IF ERRORLEVEL 1 (
     ECHO ! Error
@@ -41,6 +41,6 @@ IF ERRORLEVEL 1 (
 
 IF %ERRORLEVEL% EQU 0 bin\VBinDiff\VBinDiff.exe ^
 	"Sonic the Hedgehog (1991)(Sega).bin" ^
-	"sonic_the_hedgehog.sms"
+	"build/sonic_the_hedgehog.sms"
 
 ECHO * OK.

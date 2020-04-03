@@ -22,435 +22,9 @@
         REGIONCODE      4               ; 3-7
         RESERVEDSPACE   $59, $59        ; 2 bytes
 .ENDSMS
-   
+
 
 .SECTION    "main"
-
-interruptHandler:                                                       ;$0073
-;===============================================================================
-; in    IY      address of the common variables (used throughout)
-;-------------------------------------------------------------------------------
-
-        di      ; disable interrupts during interrupt!
-
-        ; push everything we're going to use to the stack so that when we
-        ; return from the interrupt we don't find that our registers have
-        ; changed mid-instruction!
-
-        push    AF
-        push    HL
-        push    DE
-        push    BC
-
-        ; get the status of the VDP
-        ; (the Master System's GPU)
-        in      A,      [SMS_PORTS_VDP_CONTROL]
-
-        bit     7,      [IY+Vars.flags6]        ; check the underwater flag
-        jr      z,      @_1                     ; if off, skip ahead
-
-        ; the raster split is controlled across multiple interrupts, a counter
-        ; is used to remember at which step the procedure is at. a value of 0
-        ; means that it needs to be initialised, and then it counts down from 3
-
-        ; read current step value
-        ld      A,      [RAM_RASTERSPLIT_STEP]
-        and     A                       ; keep value, but update flags
-        jp      nz,     doRasterSplit   ; not 0?, deal with particulars
-
-        ; initialise raster split:
-        ;-----------------------------------------------------------------------
-        ; check the water line height:
-        ld      A,      [RAM_WATERLINE]
-        and     A
-        jr      z,      @_1             ; if it's zero (above the screen), skip
-
-        cp      $FF                     ; or 255 (below the screen),
-        jr      z,      @_1             ; skip
-
-        ; copy the water line position into the working space for the raster
-        ; split. this is to avoid the water line changing height between the
-        ; multiple interrupts needed to produce the split, I think
-        ld      [RAM_RASTERSPLIT_LINE], A
-
-        ; set the line interrupt to fire at line 10 (top of the screen).
-        ; we will then set another interrupt to fire where we want the
-        ; split to occur. first send the data ("10") to the VDP...
-        ld      A,                      10
-        out     [SMS_PORTS_VDP_CONTROL],A
-        ; and then the control command (VDP register 10)
-        ld      A,                      SMS_VDP_REGISTER_10
-        out     [SMS_PORTS_VDP_CONTROL],A
-
-        ; enable line interrupt IRQs (bit 5 of VDP register 0)
-        ld      A,                      [RAM_VDPREGISTER_0]
-        or      %00010000               ; set bit 5
-        out     [SMS_PORTS_VDP_CONTROL],A
-        ; write to VDP register 0
-        ld      A,                      SMS_VDP_REGISTER_0
-        out     [SMS_PORTS_VDP_CONTROL],A
-
-        ; initialise the step counter for the water line raster split
-        ld      A,                      3
-        ld      [RAM_RASTERSPLIT_STEP], A
-
-        ;-----------------------------------------------------------------------
-@_1:    push    IX
-        push    IY
-
-        ; remember the current page 1 & 2 banks
-        ld      HL,     [RAM_SLOT1]
-        push    HL
-
-        ; if the main thread is not held up at the `waitForInterrupt` routine
-        bit     0,      [IY+Vars.flags0]
-        call    nz,     _01A0   ; continue to maintain water-line raster split
-        ; and if it is...
-        bit     0,      [IY+Vars.flags0]
-        call    z,      @_00f7
-
-        ; interrupts are re-enabled before the interrupt handler is finished
-        ; so that should the remainder of this handler take too long, the
-        ; water-line raster split can still interrupt at the correct scan-line
-        ; -- with thanks to Valley Bell and Calindro for pointing this out
-        ei
-
-        ; we can compile with or without sound:
-        .IFDEF  OPTION_SOUND
-                ; switch in the music engine & data
-                ld      A,                      :sound.update
-                ld      [SMS_MAPPER_SLOT1],     A
-                ld      [RAM_SLOT1],            A
-                ; process the sound for this frame
-                call    sound.update
-        .ENDIF
-
-        call    readJoypad
-        bit     4,      [IY+Vars.joypad]        ; joypad button 1?
-        call    z,      @setJoypadButtonB       ; set joypad button 2 too
-
-        call    main_0625
-
-        ; check for the reset button:
-        ; read 2nd joypad port which has extra bits for lightgun / reset button
-        in      A,      [SMS_PORTS_JOYB]      
-        and     %00010000                       ; check bit 4
-        jp      z,      rst_reset               ; reset!
-
-        ;-----------------------------------------------------------------------
-
-        ; return pages 1 & 2 to the banks
-        ; before we started messing around here
-        pop     HL
-        ld      [SMS_MAPPER_SLOT1],     HL
-        ld      [RAM_SLOT1],            HL
-
-        ; pull everything off the stack so that the code that
-        ; was running before the interrupt doesn't explode
-        pop     IY
-        pop     IX
-        pop     BC
-        pop     DE
-        pop     HL
-        pop     AF
-
-        ret
-
-@setJoypadButtonB:                                                      ;$00F2
-        ;=======================================================================
-        res     5,      [IY+Vars.joypad]        ; set joypad button 2 as on
-        ret
-
-@_00f7:                                                                 ;$00F7
-        ;=======================================================================
-        ; blank the screen (remove bit 6 of VDP register 1)
-        ld      A,      [RAM_VDPREGISTER_1]     ; cache value from RAM
-        and     %10111111                       ; remove bit 6
-        out     [SMS_PORTS_VDP_CONTROL],A       ; write the value,
-        ld      A,      SMS_VDP_REGISTER_1
-        out     [SMS_PORTS_VDP_CONTROL],A       ; then register.no
-
-        ; horizontal scroll:
-        ld      A,      [RAM_VDPSCROLL_HORZ]
-        ; I don't understand the reason for this
-        neg
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,      SMS_VDP_REGISTER_8
-        out     [SMS_PORTS_VDP_CONTROL],        A
-
-        ; vertical scroll:
-        ld      A,      [RAM_VDPSCROLL_VERT]
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,              SMS_VDP_REGISTER_9
-        out     [SMS_PORTS_VDP_CONTROL],        A
-
-        bit     5,      [IY+Vars.flags0]
-        call    nz,     fillScrollTiles
-
-        bit     5,      [IY+Vars.flags0]
-        call    nz,     loadPaletteFromInterrupt
-
-        ; turn the screen back on
-        ; (or if it was already blank before this function, leave it blank)
-        ld      A,      [RAM_VDPREGISTER_1]
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,      SMS_VDP_REGISTER_1
-        out     [SMS_PORTS_VDP_CONTROL],        A
-
-        ; TODO: set these bank numbers according to the data location
-        ld      A,                      8       ; Sonic sprites?
-        ld      [SMS_MAPPER_SLOT1],     A
-        ld      [RAM_SLOT1],            A
-        ld      A,                      9
-        ld      [SMS_MAPPER_SLOT2],     A
-        ld      [RAM_SLOT2],            A
-
-        ; does the Sonic sprite need updating?
-        ; (the particular frame of animation is copied to the VRAM)
-        bit     7,      [IY+Vars.timeLightningFlags]
-        call    nz,     updateSonicSpriteFrame
-
-        ; TODO: set these bank numbers according to the data location
-        ld      A,                      1
-        ld      [SMS_MAPPER_SLOT1],     A
-        ld      [RAM_SLOT1],            A
-        ld      A,                      2
-        ld      [SMS_MAPPER_SLOT2],     A
-        ld      [RAM_SLOT2],            A
-
-        ; update sprite table?
-        bit     1,      [IY+Vars.flags0]
-        call    nz,     updateVDPSprites
-
-        bit     5,      [IY+Vars.flags0]
-        call    z,      loadPaletteFromInterrupt
-
-        ld      A,      [RAM_D2AB+1]
-        and     %10000000
-        call    z,      _38b0
-
-        ld      A,              $FF
-        ld      [RAM_D2AB+1],   A
-
-        set     0,      [IY+Vars.flags0]
-        ret
-
-loadPaletteFromInterrupt:                                               ;$0174
-;===============================================================================
-; loads a palette using the parameters set first by `loadPaletteOnInterrupt`:
-;
-; in    IY                      address of common variables (used throughout)
-;       LOADPALETTE_ADDRESS     address to the palette data
-;       LOADPALETTE_FLAGS       flags to load tile / sprite palettes or both
-;-------------------------------------------------------------------------------
-
-        ld      A,                      1
-        ld      [SMS_MAPPER_SLOT1],     A
-        ld      [RAM_SLOT1],            A
-        ld      A,                      2
-        ld      [SMS_MAPPER_SLOT2],     A
-        ld      [RAM_SLOT2],            A
-
-        ; if the level is underwater then skip loading the palette as the
-        ; palettes are handled by the code that does the raster split
-        bit     7,      [IY+Vars.flags6]        ; underwater flag
-        jr      nz,     @_1
-
-        ; get the palette loading parameters that were assigned
-        ; by the main thread (i.e. `loadPaletteOnInterrupt`)
-        ld      HL,     [RAM_LOADPALETTE_ADDRESS]
-        ld      A,      [RAM_LOADPALETTE_FLAGS]
-
-        ; check flag to specify loading palette
-        bit     3,      [IY+Vars.flags0]
-        ; load the palette if flag is set
-        call    nz,     loadPalette
-        ; unset flag so it doesn't happen again
-        res     3,      [IY+Vars.flags0]
-        ret
-
-        ; when the level is underwater, different logic controls loading
-        ; the palette as we have to deal with the water line
-@_1:    call    loadPaletteFromInterrupt_water
-        ret
-
-_01A0:                                                                  ;$01A0
-;===============================================================================
-; in    IY      address of the common variables (used throughout)
-;-------------------------------------------------------------------------------
-
-        bit     7,      [IY+Vars.flags6]        ; check the underwater flag
-        ret     z                               ; if off, leave now
-
-        ; switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
-        ; TODO: set these bank numbers according to the data location
-        ld      A,                      1
-        ld      [SMS_MAPPER_SLOT1],     A
-        ld      [RAM_SLOT1],            A
-        ld      A,                      2
-        ld      [SMS_MAPPER_SLOT2],     A
-        ld      [RAM_SLOT2],            A
-
-        ; this seems quite pointless but could do with
-        ; killing a specific amount of time
-        ld      B,      $00
-@nop:   nop
-        djnz    @nop
-
-        ; NOTE: fall through the procedure below...
-        ; TODO: fix this up
-
-loadPaletteFromInterrupt_water:                                         ;$01BA
-;===============================================================================
-; called only from `loadPaletteFromInterrupt`
-;
-; in    IY      address of the common variables (used throughout)
-;-------------------------------------------------------------------------------
-
-        ; get the position of the water line on screen
-        ld      A,      [RAM_WATERLINE]
-        and     A                       ; set the CPU flags based on its value
-        jr      z,      @_2             ; is it 0? (above the screen)
-        cp      $FF                     ; or $FF? (below the screen)
-        jr      nz,     @_2             ; ...skip ahead
-
-        ; below water:
-        ;-----------------------------------------------------------------------
-        ; below the water line a fixed palette is used without colour cycles
-
-        ; select the palette:
-        ; labyrinth Act 1 & 2 share an underwater palette and Labyrinth Act 3
-        ; uses a special palette to account for the boss / capsule, which
-        ; normally load their palettes on-demand
-        ld      HL,     underwaterPalette
-        ;underwater boss palette?
-        bit     4,      [IY+Vars.timeLightningFlags]
-        jr      z,      @_1
-        ld      HL,     underwaterPalette_Boss
-
-@_1:    ld      A,      %00000011       ; "load tile & sprite palettes"
-        call    loadPalette             ; load the relevant underwater palette
-        ret
-
-        ; above water:
-        ;-----------------------------------------------------------------------
-@_2:    ld      A,      [RAM_CYCLEPALETTE_INDEX]
-        add     A,      A               ; x2
-        add     A,      A               ; x4
-        add     A,      A               ; x8
-        add     A,      A               ; x16
-        ld      E,      A
-        ld      D,      $00
-        ld      HL,     [RAM_CYCLEPALETTE_POINTER]
-        add     HL,     DE
-        ld      A,      %00000001
-        call    loadPalette
-
-        ; load the sprite palette specifically for Labyrinth
-        ld      HL,     paletteData@labyrinth+16
-        ld      A,      %00000010
-        call    loadPalette
-
-        ret
-
-doRasterSplit:                                                          ;$01F2
-;===============================================================================
-; in    IY      address of the common variables (used throughout)
-;       A       the raster split step number (counts down from 3)
-;-------------------------------------------------------------------------------
-        ; step 1?
-        cp      1
-        jr      z,      @_2
-        ; step 2?
-        cp      2
-        jr      z,      @_1
-
-        ; step 3:
-        ;-----------------------------------------------------------------------
-        ; set counter at step 2
-        dec     A
-        ld      [RAM_RASTERSPLIT_STEP], A
-
-        in      A,      [SMS_PORTS_SCANLINE]
-        ld      C,      A
-        ld      A,      [RAM_RASTERSPLIT_LINE]
-        sub     C       ; work out the difference
-
-        ; set VDP register 10 with the scanline number to interrupt at next
-        ; (that is, set the next interrupt to occur at the water line)
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,      SMS_VDP_REGISTER_10
-        out     [SMS_PORTS_VDP_CONTROL],        A
-
-        jp      @_3
-
-        ; step 2:
-        ;-----------------------------------------------------------------------
-@_1:    ; we don't do anything on this step
-        dec     A
-        ld      [RAM_RASTERSPLIT_STEP], A
-        jp      @_3
-
-        ; step 1:
-        ;-----------------------------------------------------------------------
-@_2:    dec     A
-        ld      [RAM_RASTERSPLIT_STEP], A
-
-        ; set the VDP to point at the palette
-        ld      A,                              $00
-        out     [SMS_PORTS_VDP_CONTROL],        A
-        ld      A,                              %11000000
-        out     [SMS_PORTS_VDP_CONTROL],        A
-
-        ld      B,      16
-        ld      HL,     underwaterPalette
-
-        ; underwater boss palette?
-        ; the boss level of Labyrinth is hardwired to use a specific palette
-        ; as it is both underwater and contains the boss who would normally
-        ; auto-load their palette and this would conflict
-        bit     4,      [IY+Vars.timeLightningFlags]
-        jr      z,      @loop
-        ld      HL,     underwaterPalette_Boss
-
-        ; copy the palette into the VDP
-@loop:  ld      A,                      [HL]
-        out     [SMS_PORTS_VDP_DATA],   A
-        inc     HL
-
-        nop
-
-        ld      A,                      [HL]
-        out     [SMS_PORTS_VDP_DATA],   A
-        inc     HL
-        djnz    @loop
-
-        ld      A,      [RAM_VDPREGISTER_0]
-        and     %11101111               ; remove bit 4: disable line interrupts
-        out     [SMS_PORTS_VDP_CONTROL],A
-        ld      A,                      SMS_VDP_REGISTER_0
-        out     [SMS_PORTS_VDP_CONTROL],A
-
-@_3:    pop     BC
-        pop     DE
-        pop     HL
-        pop     AF
-        ei
-        ret
-
-underwaterPalette:                                                      ;$024B
-;===============================================================================
-        .TABLE  DSB 16
-@tile:  .ROW    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:.ROW    $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
-
-underwaterPalette_Boss:                                                 ;$026B
-;===============================================================================
-; TODO: this should be defined by the mob, not the interrupts
-; (i.e. it can be excluded if no underwater used)
-        .TABLE  DSB 16
-@tile:  .ROW    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
-@sprite:.ROW    $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
 
 init:                                                                   ;$028B
 ;===============================================================================
@@ -1508,7 +1082,7 @@ multiply:                                                               ;$05FC
         ret
         ;
 
-_LABEL_60F_111:                                                         ;$060F
+_060f:                                                                  ;$060F
 ;===============================================================================
 ; convert to decimal? (used by Map & Act Complete screens for the lives number)
 ;
@@ -3327,7 +2901,7 @@ _LABEL_E86_110:                                                         ;$0E86
         ld      L,      A
         ld      H,      $00
         ld      C,      $0A
-        call    _LABEL_60F_111
+        call    _060f
 
         ld      A,      L
         add     A,      A
@@ -5004,7 +4578,7 @@ _1aca:                                                                  ;$1ACA
         ld      L,      A
         ld      H,      $00
         ld      C,      $0A
-        call    _LABEL_60F_111
+        call    _060f
 
         ld      A,      L
         add     A,      A
@@ -7617,57 +7191,57 @@ mobPointers:                                                            ;$2AF6
 .ENUMID 0       EXPORT
 @sonic:                                 ; Sonic
         .ENUMID MOB_ID_SONIC                                            ;=$00
-        .ADDR   sonic_process
+        .ADDR   mob_sonic
 @powerUp_ring:                          ; 10 rings monitor
         .ENUMID MOB_ID_RINGS                                            ;=$01
-        .ADDR   powerups_ring_process   
+        .ADDR   mob_powerups_ring   
 @powerUp_speed:                         ; speed shoes monitor
         .ENUMID MOB_ID_SPEEDUP                                          ;=$02
-        .ADDR   powerups_speed_process  
+        .ADDR   mob_powerups_speed  
 @powerUp_life:                          ; extra life monitor
         .ENUMID MOB_ID_1UP                                              ;=$03
-        .ADDR   powerups_life_process   
+        .ADDR   mob_powerups_life
 @powerUp_shield:                        ; sheild monitor
         .ENUMID MOB_ID_SHIELD                                           ;=$04
-        .ADDR   powerups_shield_process 
+        .ADDR   mob_powerups_shield
 @powerUp_invincibility:                 ; invincibility monitor
         .ENUMID MOB_ID_INVINCIBILITY                                    ;=$05
-        .ADDR   powerups_invincibility_process
+        .ADDR   mob_powerups_invincibility
 @powerUp_emerald:                       ; chaos emerald
         .ENUMID MOB_ID_EMERALD                                          ;=$06
-        .ADDR   powerups_emerald_process
+        .ADDR   mob_powerups_emerald
 @boss_endSign:                          ; end sign
         .ENUMID MOB_ID_ENDSIGN                                          ;=$07
-        .ADDR   boss_endSign_process
+        .ADDR   mob_boss_endSign
 @badnick_crabMeat:                      ; badnick - crabmeat
         .ENUMID MOB_ID_CRABMEAT                                         ;=$08
-        .ADDR   badnick_crabmeat_process
+        .ADDR   mob_badnick_crabmeat
 @platform_swinging:                     ;#09: wooden platform - swinging (Green Hill)
-        .ADDR   platform_swinging_process
+        .ADDR   mob_platform_swinging
 @explosion:                             ;#0A: explosion
-        .ADDR   explosion_process
+        .ADDR   mob_explosion
 @platform:                              ;#0B: wooden platform (Green Hill)
-        .ADDR   platform_sinking_process
+        .ADDR   mob_platform_sinking
 @platform_falling:                      ;#0C: wooden platform - falling (Green Hill)
-        .ADDR   platform_falling_process
+        .ADDR   mob_platform_falling
 @_6ac1:                                 ;#0D: UNKNOWN
-        .ADDR   unknown_6ac1_process
+        .ADDR   mob_unknown_6ac1
 @badnick_buzzBomber:                    ;#0E: badnick - buzz bomber
-        .ADDR   badnick_buzzbomber_process
+        .ADDR   mob_badnick_buzzbomber
 @platform_leftRight:                    ;#0F: wooden platform - moving (Green Hill)
-        .ADDR   platform_moving_process
+        .ADDR   mob_platform_moving
 @badnick_motobug:                       ;#10: badnick - motobug
-        .ADDR   badnick_motobug_process
+        .ADDR   mob_badnick_motobug
 @badnick_newtron:                       ;#11: badnick - newtron
-        .ADDR   badnick_newtron_process
+        .ADDR   mob_badnick_newtron
 @boss_greenHill:                        ;#12: boss (Green Hill)
-        .ADDR   boss_greenHill_process
+        .ADDR   mob_boss_greenHill
 @_9b75:                                 ;#13: UNKNOWN - bullet?
-        .ADDR   unknown_9b75_process
+        .ADDR   mob_unknown_9b75
 @_9be8:                                 ;#14: UNKNOWN - fireball right?
-        .ADDR   unknown_9be8_process
+        .ADDR   mob_unknown_9be8
 @_9c70:                                 ;#15: UNKNOWN - fireball left?
-        .ADDR   mob_9c70
+        .ADDR   mob_unknown_9c70
 @trap_flameThrower:                     ;#16: flame thrower (Scrap Brain)
         .ADDR   mob_trap_flameThrower
 @door_left:                             ;#17: door - one way left (Scrap Brain)
@@ -7677,31 +7251,31 @@ mobPointers:                                                            ;$2AF6
 @door_door:                             ;#19: door (Scrap Brain)
         .ADDR   mob_door
 @trap_electric:                         ;#1A: electric sphere (Scrap Brain)
-        .ADDR   trap_electric_process
+        .ADDR   mob_trap_electric
 @badnick_ballHog:                       ;#1B: badnick - ball hog (Scrap Brain)
-        .ADDR   badnick_ballhog_process
+        .ADDR   mob_badnick_ballhog
 @_a33c:                                 ;#1C: UNKNOWN - ball from ball hog?
-        .ADDR   unknown_a33c_process
+        .ADDR   mob_unknown_a33c
 @switch:                                ;#1D: switch
-        .ADDR   door_switch_process
+        .ADDR   mob_door_switch
 @door_switchActivated:                  ;#1E: switch door
-        .ADDR   door_switching_process
+        .ADDR   mob_door_switching
 @badnick_caterkiller:                   ;#1F: badnick - caterkiller
-        .ADDR   badnick_caterkiller_process
+        .ADDR   mob_badnick_caterkiller
 @_96f8:                                 ;#20: UNKNOWN
-        .ADDR   unknown_96f8_process
+        .ADDR   mob_unknown_96f8
 @platform_bumper:                       ;#21: moving bumper (Special Stage)
-        .ADDR   platform_bumper_process
+        .ADDR   mob_platform_bumper
 @boss_scrapBrain:                       ;#22: boss (Scrap Brain)
-        .ADDR   boss_scrapBrain_process
+        .ADDR   mob_boss_scrapBrain
 @boss_freeRabbit:                       ;#23: free animal - rabbit
-        .ADDR   boss_freeRabbit_process
+        .ADDR   mob_boss_freeRabbit
 @boss_freeBird:                         ;#24: free animal - bird
-        .ADDR   boss_freeBird_process
+        .ADDR   mob_boss_freeBird
 @boss_capsule:                          ;#25: capsule
-        .ADDR   boss_capsule_process
+        .ADDR   mob_boss_capsule
 @badnick_chopper:                       ;#26: badnick - chopper
-        .ADDR   badnick_chopper_process
+        .ADDR   mob_badnick_chopper
 @platform_fallVert:                     ;#27: log - vertical (Jungle)
         .ADDR   mob_platform_fallVert
 @platform_fallHoriz:                    ;#28: log - horizontal (Jungle)
@@ -7709,93 +7283,93 @@ mobPointers:                                                            ;$2AF6
 @platform_roll:                         ;#29: log - floating (Jungle)
         .ADDR   mob_platform_roll
 @_96a8:                                 ;#2A: UNKNOWN
-        .ADDR   unknown_96a8_process
+        .ADDR   mob_unknown_96a8
 @_8218:                                 ;#2B: UNKNOWN
-        .ADDR   unknown_8218_process
+        .ADDR   mob_unknown_8218
 @boss_jungle:                           ;#2C: boss (Jungle)
-        .ADDR   boss_jungle_process
+        .ADDR   mob_boss_jungle
 @badnick_yadrin:                        ;#2D: badnick - yadrin (Bridge)
-        .ADDR   badnick_yadrin_process
+        .ADDR   mob_badnick_yadrin
 @platform_bridge:                       ;#2E: falling bridge (Bridge)
-        .ADDR   platform_bridge_process
+        .ADDR   mob_platform_bridge
 @_94a5:                                 ;#2F: UNKNOWN - wave moving projectile?
-        .ADDR   unknown_94a5_process
+        .ADDR   mob_unknown_94a5
 @meta_clouds:                           ;#30: meta - clouds (Sky Base)
-        .ADDR   meta_clouds_process
+        .ADDR   mob_meta_clouds
 @trap_propeller:                        ;#31: propeller (Sky Base)
-        .ADDR   trap_propeller_process
+        .ADDR   mob_trap_propeller
 @badnick_bomb:                          ;#32: badnick - bomb (Sky Base)
         .ADDR   mob_badnick_bomb
 @trap_cannon:                           ;#33: cannon (Sky Base)
-        .ADDR   trap_cannon_process
+        .ADDR   mob_trap_cannon
 @trap_cannonBall:                       ;#34: cannon ball (Sky Base)
-        .ADDR   trap_cannonball_process
+        .ADDR   mob_trap_cannonball
 @badnick_unidos:                        ;#35: badnick - unidos (Sky Base)
-        .ADDR   badnick_unidos_process
+        .ADDR   mob_badnick_unidos
 @_b0f4:                                 ;#36: UNKNOWN - stationary, lethal
-        .ADDR   unknown_b0f4_process
+        .ADDR   mob_unknown_b0f4
 @trap_turretRotating:                   ;#37: rotating turret (Sky Base)
-        .ADDR   trap_turretRotating_process
+        .ADDR   mob_trap_turretRotating
 @platform_flyingRight:                  ;#38: flying platform (Sky Base)
-        .ADDR   platform_flyingRight_process
+        .ADDR   mob_platform_flyingRight
 @_b398:                                 ;#39: moving spiked wall (Sky Base)
-        .ADDR   trap_spikewall_process
+        .ADDR   mob_trap_spikewall
 @trap_turretFixed:                      ;#3A: fixed turret (Sky Base)
-        .ADDR   trap_turretFixed_process
+        .ADDR   mob_trap_turretFixed
 @platform_flyingUpDown:                 ;#3B: flying platform - up/down (Sky Base)
-        .ADDR   platform_flyingUpDown_process
+        .ADDR   mob_platform_flyingUpDown
 @badnick_jaws:                          ;#3C: badnick - jaws (Labyrinth)
-        .ADDR   badnick_jaws_process
+        .ADDR   mob_badnick_jaws
 @trap_spikeBall:                        ;#3D: spike ball (Labyrinth)
-        .ADDR   trap_spikeBall_process
+        .ADDR   mob_trap_spikeBall
 @trap_spear:                            ;#3E: spear (Labyrinth)
-        .ADDR   trap_spear_process
+        .ADDR   mob_trap_spear
 @trap_fireball:                         ;#3F: fire ball head (Labyrinth)
-        .ADDR   trap_fireball_process
+        .ADDR   mob_trap_fireball
 @meta_water:                            ;#40: meta - water line position
-        .ADDR   meta_water_process
+        .ADDR   mob_meta_water
 @powerUp_bubbles:                       ;#41: bubbles (Labyrinth)
-        .ADDR   powerups_bubbles_process
+        .ADDR   mob_powerups_bubbles
 @_8eca:                                 ;#42: UNKNOWN
-        .ADDR   mob_8eca
+        .ADDR   mob_unknown_8eca
 @null:                                  ;#43: NO-CODE
-        .ADDR   null_process
+        .ADDR   mob_null
 @badnick_burrobot:                      ;#44: badnick - burrobot
-        .ADDR   badnick_burrobot_process
+        .ADDR   mob_badnick_burrobot
 @platform_float:                        ;#45: platform - float up (Labyrinth)
-        .ADDR   platform_float_process
+        .ADDR   mob_platform_float
 @boss_electricBeam:                     ;#46: boss - electric beam (Sky Base)
-        .ADDR   boss_electricBeam_process
+        .ADDR   mob_boss_electricBeam
 @_bcdf:                                 ;#47: UNKNOWN
-        .ADDR   unknown_bcdf_process
+        .ADDR   mob_unknown_bcdf
 @boss_bridge:                           ;#48: boss (Bridge)
         .ADDR   mob_boss_bridge
 @boss_labyrinth:                        ;#49: boss (Labyrinth)
         .ADDR   mob_boss_labyrinth
 @boss_skybase:                          ;#4A: boss (Sky Base)
-        .ADDR   boss_skyBase_process
+        .ADDR   mob_boss_skyBase
 @meta_trip:                             ;#4B: trip zone (Green Hill)
-        .ADDR   meta_trip_process
+        .ADDR   mob_meta_trip
 @platform_flipper:                      ;#4C: Flipper (Special Stage)
-        .ADDR   platform_flipper_process
+        .ADDR   mob_platform_flipper
 @_0000_1                                ;#4D: RESET!
         .ADDR   $0000
 @platform_balance:                      ;#4E: balance (Bridge)
-        .ADDR   platform_balance_process
+        .ADDR   mob_platform_balance
 @_0000_2                                ;#4F: RESET!
         .ADDR   $0000
 @flower:                                ;#50: flower (Green Hill)
-        .ADDR   flower_process
+        .ADDR   mob_flower
 @powerUp_checkpoint:                    ;#51: monitor - checkpoint
-        .ADDR   powerups_checkpoint_process
+        .ADDR   mob_powerups_checkpoint
 @powerUp_continue:                      ;#52: monitor - continue
-        .ADDR   powerups_continue_process
+        .ADDR   mob_powerups_continue
 @anim_final:                            ;#53: final animation
-        .ADDR   cutscene_final_process
+        .ADDR   mob_cutscene_final
 @anim_emeralds:                         ;#54: all emeralds animation
-        .ADDR   cutscene_emeralds_process
+        .ADDR   mob_cutscene_emeralds
 @_7b95:                                 ;#55: "make sonic blink"
-        .ADDR   meta_blink_process
+        .ADDR   mob_meta_blink
         ;
 
 mobBounds:                                                              ;$2BA2
@@ -10118,7 +9692,7 @@ animateFloorRing:                                                       ;$3879
         ret
         ;
 
-_38b0:                                                                  ;$38B0
+main_38b0:                                                              ;$38B0
 ;===============================================================================
         ld      HL,     [RAM_D2AB]
         ld      A,      L
@@ -10958,7 +10532,7 @@ Unknown:                                                                ;$4020
         .BYTE   $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
         ;
 
-sonic_process:                                                          ;$48C8
+mob_sonic:                                                              ;$48C8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;       IY      Address of the common variables (used throughout)
@@ -13646,7 +13220,7 @@ sonic_process:                                                          ;$48C8
         .BYTE   $00 $1B $FF $00
         ;
 
-powerups_ring_process:                                                  ;$5B09
+mob_powerups_ring:                                                      ;$5B09
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13748,7 +13322,7 @@ powerups_ring_process:                                                  ;$5B09
         .BYTE   $FF
         ;
 
-powerups_speed_process:                                                 ;$5BD9
+mob_powerups_speed:                                                     ;$5BD9
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13772,13 +13346,13 @@ powerups_speed_process:                                                 ;$5BD9
                 rst     rst_playSFX
         .ENDIF
 
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,     $5200
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
         ;
 
-powerups_life_process:                                                  ;$5C05
+mob_powerups_life:                                                      ;$5C05
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13795,7 +13369,7 @@ powerups_life_process:                                                  ;$5C05
         jr      z,      @_1                                     ;if not set, skip ahead
 
         ld      [IX+Mob.type],      $FF                     ;remove object?
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,             $0003
         ld      [RAM_TEMP6],    HL
@@ -13806,7 +13380,7 @@ powerups_life_process:                                                  ;$5C05
         jr      c,      @_2
 
         bit     2,      [IX+Mob.flags]
-        jp      nz,     powerups_ring_process@_5b24
+        jp      nz,     mob_powerups_ring@_5b24
 
         ld      HL,     RAM_LIVES
         inc     [HL]
@@ -13852,7 +13426,7 @@ powerups_life_process:                                                  ;$5C05
         jr      z,      @_8
 
 @_3:    ld      HL,     $5280
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
 
 @_4:    ld      C,      $00
         ld      DE,     $0040
@@ -13881,12 +13455,12 @@ powerups_life_process:                                                  ;$5C05
         ld      A,      [HL]
         ld      HL,     $5180
         and     C
-        jp      z,      powerups_ring_process@_5b34
+        jp      z,      mob_powerups_ring@_5b34
 
         res     2,      [IX+Mob.flags]
 
         ld      HL,     $5280
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
 
 @_7:    set     1,      [IX+Mob.flags]
 
@@ -13903,7 +13477,7 @@ powerups_life_process:                                                  ;$5C05
         jr      @_3
         ;
 
-powerups_shield_process:                                                ;$5CD7
+mob_powerups_shield:                                                    ;$5CD7
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13920,13 +13494,13 @@ powerups_shield_process:                                                ;$5CD7
         jr      c,      @_1
 
         set     5,      [IY+Vars.flags6]
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,     $5300
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
         ;
 
-powerups_invincibility_process:                                         ;$5CFF
+mob_powerups_invincibility:                                             ;$5CFF
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -13953,13 +13527,13 @@ powerups_invincibility_process:                                         ;$5CFF
                 rst     rst_playMusic
         .ENDIF
 
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,     $5380
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
         ;
 
-powerups_checkpoint_process:                                            ;$5D2F
+mob_powerups_checkpoint:                                                ;$5D2F
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14004,13 +13578,13 @@ powerups_checkpoint_process:                                            ;$5D2F
         ld      A,      H
         dec     A
         ld      [DE],   A
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,     $5480
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
         ;
 
-powerups_continue_process:                                              ;$5D80
+mob_powerups_continue:                                                  ;$5D80
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14027,10 +13601,10 @@ powerups_continue_process:                                              ;$5D80
         jr      c,      @_1
 
         set     3,      [IY+Vars.flags9]
-        jp      powerups_ring_process@_5b29
+        jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,     $5500
-        jp      powerups_ring_process@_5b34
+        jp      mob_powerups_ring@_5b34
         ;
 
 _5da8:                                                                  ;$5DA8
@@ -14173,7 +13747,7 @@ _5deb:                                                                  ;$5DEB
         ret
         ;
 
-powerups_emerald_process:                                               ;$5EA2
+mob_powerups_emerald:                                                   ;$5EA2
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14240,7 +13814,7 @@ powerups_emerald_process:                                               ;$5EA2
         .BYTE   $FF
         ;
 
-boss_endSign_process:                                                   ;$5F17
+mob_boss_endSign:                                                       ;$5F17
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -14844,7 +14418,7 @@ paletteData:                                                            ;$629E
 
         ;
 
-badnick_crabmeat_process:                                               ;$65EE
+mob_badnick_crabmeat:                                                   ;$65EE
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15020,7 +14594,7 @@ badnick_crabmeat_process:                                               ;$65EE
         .BYTE   $FF
         ;
 
-platform_swinging_process:                                              ;$673C
+mob_platform_swinging:                                                  ;$673C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15268,7 +14842,7 @@ spriteLayouts:                                                          ;$6911
         .BYTE   $FF $FF
         ;
 
-explosion_process:                                                      ;$693F
+mob_explosion:                                                          ;$693F
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15363,7 +14937,7 @@ explosion_process:                                                      ;$693F
         .BYTE   $FF
         ;
 
-platform_sinking_process:                                               ;$69E9
+mob_platform_sinking:                                                   ;$69E9
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15413,7 +14987,7 @@ platform_sinking_process:                                               ;$69E9
         ret
         ;
 
-platform_falling_process:                                               ;$6A47
+mob_platform_falling:                                                   ;$6A47
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15471,7 +15045,7 @@ platform_falling_process:                                               ;$6A47
         ret
         ;
 
-unknown_6ac1_process:                                                   ;$6AC1
+mob_unknown_6ac1:                                                       ;$6AC1
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15560,7 +15134,7 @@ unknown_6ac1_process:                                                   ;$6AC1
 @_6b72: .BYTE   $34 $36
         ;
 
-badnick_buzzbomber_process:                                             ;$6B74
+mob_badnick_buzzbomber:                                                 ;$6B74
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15775,7 +15349,7 @@ badnick_buzzbomber_process:                                             ;$6B74
         .BYTE   $30 $34 $FF $FF $FF $FF
         ;
 
-platform_moving_process:                                                ;$6D65
+mob_platform_moving:                                                    ;$6D65
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -15865,7 +15439,7 @@ platform_moving_process:                                                ;$6D65
         ret
         ;
 
-badnick_motobug_process:                                                ;$6E0C
+mob_badnick_motobug:                                                    ;$6E0C
 ;===============================================================================
 ; AI for the Motobug Badnick.
 ;
@@ -16015,11 +15589,11 @@ badnick_motobug_process:                                                ;$6E0C
 badnick_motobug_behaviour:                                              ;$6E96
 ;===============================================================================
 
-        .DSB    9, 1    ;=badnick_motobug_process@actions@moveLeft
-        .DSB    4, 3    ;=badnick_motobug_process@actions@idleLeft?
-        .DSB    9, 2    ;=badnick_motobug_process@actions@moveRight
-        .DSB    4, 4    ;=badnick_motobug_process@actions@apply
-        .DB        0    ;=badnick_motobug_process@actions@loop
+        .DSB    9, 1    ;=mob_badnick_motobug@actions@moveLeft
+        .DSB    4, 3    ;=mob_badnick_motobug@actions@idleLeft?
+        .DSB    9, 2    ;=mob_badnick_motobug@actions@moveRight
+        .DSB    4, 4    ;=mob_badnick_motobug@actions@apply
+        .DB        0    ;=mob_badnick_motobug@actions@loop
         ;
 
 badnick_motobobug_actions:                                              ;$6EB1
@@ -16095,7 +15669,7 @@ badnick_motobug_spriteLayout:                                           ;$6ECB
         .BYTE   $FF
         ;
 
-badnick_newtron_process:                                                ;$6F08
+mob_badnick_newtron:                                                    ;$6F08
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -16218,7 +15792,7 @@ badnick_newtron_process:                                                ;$6F08
         .BYTE   $62 $FF $FF $FF $FF $FF
         ;
 
-boss_greenHill_process:                                                 ;$700C
+mob_boss_greenHill:                                                     ;$700C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -16510,7 +16084,7 @@ bossPalette:                                                            ;$731C
         .ROW    $38 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
         ;
 
-boss_capsule_process:                                                   ;$732C
+mob_boss_capsule:                                                       ;$732C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -16774,7 +16348,7 @@ boss_capsule_process:                                                   ;$732C
         .BYTE   $00 $00 $00 $00 $4D $19 $4F $19
         ;
 
-boss_freeBird_process:                                                  ;$7594
+mob_boss_freeBird:                                                      ;$7594
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -16873,7 +16447,7 @@ boss_freeBird_process:                                                  ;$7594
         .BYTE   $FF
         ;
 
-boss_freeRabbit_process:                                                ;$7699
+mob_boss_freeRabbit:                                                    ;$7699
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -16962,7 +16536,7 @@ boss_freeRabbit_process:                                                ;$7699
         ld      [IX+Mob.Xspeed+1],  $FE
         ld      [IX+Mob.Xdirection],        $FF
         ld      [IX+Mob.unknown11], $00
-        jp      boss_freeBird_process@_7612
+        jp      mob_boss_freeBird@_7612
 
         ;sprite layout
 @_7752: .BYTE   $70 $72 $FF $FF $FF $FF
@@ -17333,7 +16907,7 @@ mobs_7a3a:                                                              ;$7A3A
         ret
         ;
 
-meta_trip_process:                                                      ;$7AA7
+mob_meta_trip:                                                          ;$7AA7
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -17373,7 +16947,7 @@ meta_trip_process:                                                      ;$7AA7
         ret
         ;
 
-flower_process:                                                         ;$7AED
+mob_flower:                                                             ;$7AED
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -17442,7 +17016,7 @@ flower_process:                                                         ;$7AED
 @_7b85: .BYTE   $00 $01 $08 $00 $02 $03 $78 $00 $01 $04 $08 $00 $02 $03 $78 $00
         ;
 
-meta_blink_process:                                                     ;$7B95
+mob_meta_blink:                                                         ;$7B95
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -17669,7 +17243,7 @@ mobs_7cc1:                                                              ;$7CC1
         ret
         ;
 
-badnick_chopper_process:                                                ;$7CF6
+mob_badnick_chopper:                                                    ;$7CF6
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -18052,7 +17626,7 @@ mob_platform_roll_continue:                                             ;$8003
         .BYTE   $FF
         ;
 
-boss_jungle_process:                                                    ;$8053
+mob_boss_jungle:                                                        ;$8053
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -18247,7 +17821,7 @@ boss_jungle_process:                                                    ;$8053
         .BYTE   $6A $5A $5C $5E $72 $FF
         ;
 
-unknown_8218_process:                                                   ;$8218
+mob_unknown_8218:                                                       ;$8218
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -18322,7 +17896,7 @@ unknown_8218_process:                                                   ;$8218
         ld      [IX+Mob.Xdirection],        A
 
         ld      BC,     @_82c6
-        ld      DE,     unknown_a33c_process@_a3bb
+        ld      DE,     mob_unknown_a33c@_a3bb
         call    animateMob
 
         ld      A,      [IX+Mob.unknown12]
@@ -18345,7 +17919,7 @@ unknown_8218_process:                                                   ;$8218
         .BYTE   $FF
         ;
 
-badnick_yadrin_process:                                                 ;$82E6
+mob_badnick_yadrin:                                                     ;$82E6
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -18425,7 +17999,7 @@ badnick_yadrin_process:                                                 ;$82E6
         .BYTE   $FF
         ;
 
-platform_bridge_process:                                                ;$83C1
+mob_platform_bridge:                                                    ;$83C1
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -18775,7 +18349,7 @@ _865a:                                                                  ;$865A
         .BYTE   $60 $62 $64 $66 $68 $FF
         ;
 
-platform_balance_process:                                               ;$866C
+mob_platform_balance:                                                   ;$866C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19004,7 +18578,7 @@ platform_balance_process:                                               ;$866C
 @_8834: .BYTE   $3C $3E $FF
         ;
 
-badnick_jaws_process:                                                   ;$8837
+mob_badnick_jaws:                                                       ;$8837
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19083,7 +18657,7 @@ badnick_jaws_process:                                                   ;$8837
         .BYTE   $FF
         ;
 
-trap_spikeBall_process:                                                 ;$88FB
+mob_trap_spikeBall:                                                     ;$88FB
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19341,7 +18915,7 @@ trap_spikeBall_process:                                                 ;$88FB
         .BYTE   $40     $FE
         ;
 
-trap_spear_process:                                                     ;$8AF6
+mob_trap_spear:                                                         ;$8AF6
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19464,7 +19038,7 @@ trap_spear_process:                                                     ;$8AF6
         .BYTE   $12 $20 $FF $00 $FF $00 $1E $30
         ;
 
-trap_fireball_process:                                                  ;$8C16
+mob_trap_fireball:                                                      ;$8C16
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19608,7 +19182,7 @@ trap_fireball_process:                                                  ;$8C16
         .BYTE   $FF
         ;
 
-meta_water_process:                                                     ;$8D48
+mob_meta_water:                                                         ;$8D48
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19730,7 +19304,7 @@ meta_water_process:                                                     ;$8D48
         .BYTE   $02 $04 $08 $10 $18 $28 $38 $38 $38 $38 $28 $18 $10 $08 $04 $02
         ;
 
-powerups_bubbles_process:                                               ;$8E56
+mob_powerups_bubbles:                                                   ;$8E56
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -19784,7 +19358,7 @@ powerups_bubbles_process:                                               ;$8E56
 @_8ec2: .BYTE   $01 $00 $01 $01 $00 $01 $00 $01
         ;
 
-mob_8eca:                                                               ;$8ECA
+mob_unknown_8eca:                                                       ;$8ECA
 ;===============================================================================
 ; unknown mob
 ;
@@ -19869,12 +19443,12 @@ mob_8eca:                                                               ;$8ECA
         ret
         ;
 
-null_process:                                                           ;$8F6C
+mob_null:                                                               ;$8F6C
 ;===============================================================================
         ret                             ; object nullified!
         ;
 
-badnick_burrobot_process:                                               ;$8F6D
+mob_badnick_burrobot:                                                   ;$8F6D
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20011,7 +19585,7 @@ badnick_burrobot_process:                                               ;$8F6D
         .BYTE   $FF
         ;
 
-platform_float_process:                                                 ;$90C0
+mob_platform_float:                                                     ;$90C0
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20492,7 +20066,7 @@ mob_boss_labyrinth:                                                     ;$9267
         .BYTE   $60 $62 $64 $66 $68 $FF
         ;
 
-unknown_94a5_process:                                                   ;$94A5
+mob_unknown_94a5:                                                       ;$94A5
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20743,7 +20317,7 @@ unknown_94a5_process:                                                   ;$94A5
         .BYTE   $FF $FF $FF $FF
         ;
 
-unknown_96a8_process:                                                   ;$96A8
+mob_unknown_96a8:                                                       ;$96A8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20784,7 +20358,7 @@ unknown_96a8_process:                                                   ;$96A8
 @_96f5: .BYTE   $1C $1E $5E
         ;
 
-unknown_96f8_process:                                                   ;$96F8
+mob_unknown_96f8:                                                       ;$96F8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -20969,7 +20543,7 @@ unknown_96f8_process:                                                   ;$96F8
         ret
         ;
 
-platform_flipper_process:                                               ;$9866
+mob_platform_flipper:                                                   ;$9866
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -21193,7 +20767,7 @@ platform_flipper_process:                                               ;$9866
         ret
         ;
 
-platform_bumper_process:                                                ;$9AFB
+mob_platform_bumper:                                                    ;$9AFB
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -21263,7 +20837,7 @@ platform_bumper_process:                                                ;$9AFB
         .BYTE   $FF
 ;
 
-unknown_9b75_process:                                                   ;$9B75
+mob_unknown_9b75:                                                       ;$9B75
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -21328,7 +20902,7 @@ unknown_9b75_process:                                                   ;$9B75
         .BYTE   $19 $14 $0F $1A
         ;
 
-unknown_9be8_process:                                                   ;$9BE8
+mob_unknown_9be8:                                                       ;$9BE8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -21402,7 +20976,7 @@ unknown_9be8_process:                                                   ;$9BE8
         .BYTE   $FF
         ;
 
-mob_9c70:                                                               ;$9C70
+mob_unknown_9c70:                                                       ;$9C70
 ;===============================================================================
 ; unknown mob
 ;
@@ -21413,7 +20987,7 @@ mob_9c70:                                                               ;$9C70
         ld      [IX+Mob.Xdirection],        $FF
         ld      [IX+Mob.spriteLayout+0],    <@_9c87
         ld      [IX+Mob.spriteLayout+1],    >@_9c87
-        jp      unknown_9be8_process@_9bfc
+        jp      mob_unknown_9be8@_9bfc
 
         ;sprite layout
 
@@ -21932,7 +21506,7 @@ mob_door:                                                               ;$A025
         .BYTE   $FF
         ;
 
-trap_electric_process:                                                  ;$A0E8
+mob_trap_electric:                                                      ;$A0E8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22015,7 +21589,7 @@ trap_electric_process:                                                  ;$A0E8
         .BYTE   $FF
         ;
 
-badnick_ballhog_process:                                                ;$A1AA
+mob_badnick_ballhog:                                                    ;$A1AA
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22173,7 +21747,7 @@ badnick_ballhog_process:                                                ;$A1AA
         .BYTE   $FF
         ;
 
-unknown_a33c_process:                                                   ;$A33C
+mob_unknown_a33c:                                                       ;$A33C
 ;===============================================================================
 ; mob: UNKNOWN (ball from Ball Hog?)
 ;
@@ -22255,7 +21829,7 @@ unknown_a33c_process:                                                   ;$A33C
         .BYTE   $FF
         ;
 
-door_switch_process:                                                    ;$A3F8
+mob_door_switch:                                                        ;$A3F8
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22350,7 +21924,7 @@ door_switch_process:                                                    ;$A3F8
         .BYTE   $FF $FF
         ;
 
-door_switching_process:                                                 ;$A4AB
+mob_door_switching:                                                     ;$A4AB
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22432,7 +22006,7 @@ door_switching_process:                                                 ;$A4AB
         .BYTE   $FF
         ;
 
-badnick_caterkiller_process:                                            ;$A551
+mob_badnick_caterkiller:                                                ;$A551
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22649,7 +22223,7 @@ badnick_caterkiller_process:                                            ;$A551
         .BYTE   $06 $06 $05 $05 $04 $03 $02 $00
         ;
 
-boss_scrapBrain_process:                                                ;$A7ED
+mob_boss_scrapBrain:                                                    ;$A7ED
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22882,7 +22456,7 @@ boss_scrapBrain_process:                                                ;$A7ED
         .BYTE   $FF
         ;
 
-meta_clouds_process:                                                    ;$A9C7
+mob_meta_clouds:                                                        ;$A9C7
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -22964,7 +22538,7 @@ meta_clouds_process:                                                    ;$A9C7
         .BYTE   $FF
         ;
 
-trap_propeller_process:                                                 ;$AA6A
+mob_trap_propeller:                                                     ;$AA6A
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23321,7 +22895,7 @@ _ad53:                                                                  ;$AD53
         .BYTE   $FF
         ;
 
-trap_cannon_process:                                                    ;$AD6C
+mob_trap_cannon:                                                        ;$AD6C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23408,7 +22982,7 @@ trap_cannon_process:                                                    ;$AD6C
         .BYTE   $FF
         ;
 
-trap_cannonball_process:                                                ;$AE35
+mob_trap_cannonball:                                                    ;$AE35
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23447,7 +23021,7 @@ trap_cannonball_process:                                                ;$AE35
         .BYTE   $FF
         ;
 
-badnick_unidos_process:                                                 ;$AE88
+mob_badnick_unidos:                                                     ;$AE88
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23698,7 +23272,7 @@ badnick_unidos_process:                                                 ;$AE88
         .BYTE   $FF
         ;
 
-unknown_b0f4_process:                                                   ;$B0F4
+mob_unknown_b0f4:                                                       ;$B0F4
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23759,7 +23333,7 @@ unknown_b0f4_process:                                                   ;$B0F4
         ret
         ;
 
-trap_turretRotating_process:                                            ;$B16C
+mob_trap_turretRotating:                                                ;$B16C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23879,7 +23453,7 @@ trap_turretRotating_process:                                            ;$B16C
         .BYTE   $00 $01 $F8 $18 $00 $FE $00 $00 $F2 $07 $00 $FF $00 $FF $F7 $F6
         ;
 
-platform_flyingRight_process:                                           ;$B297
+mob_platform_flyingRight:                                               ;$B297
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -23995,7 +23569,7 @@ platform_flyingRight_process:                                           ;$B297
         .BYTE   $08 $1C $18 $3C $08 $1E $18 $3E $08 $38 $18 $3A $0C $1A $00 $FF
         ;
 
-trap_spikewall_process:                                                 ;$B398
+mob_trap_spikewall:                                                     ;$B398
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -24086,7 +23660,7 @@ trap_spikewall_process:                                                 ;$B398
         .BYTE   $16 $18 $FF $FF $FF $FF
         ;
 
-trap_turretFixed_process:                                               ;$B46D
+mob_trap_turretFixed:                                                   ;$B46D
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -24173,12 +23747,13 @@ trap_turretFixed_process:                                               ;$B46D
         .BYTE   $80 $01 $18 $00 $10 $00 $00 $00
         ;
 
-platform_flyingUpDown_process:                                          ;$B50E
+mob_platform_flyingUpDown:                                              ;$B50E
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
         set     5,      [IX+Mob.flags]  ; mob does not collide with the floor
-        ld      HL,     platform_flyingRight_process@_b37b
+        
+        ld      HL,     mob_platform_flyingRight@_b37b
         ld      A,      [RAM_LEVEL_SOLIDITY]
         cp      $01
         jr      nz,     @_1
@@ -24332,7 +23907,7 @@ _b5c2:                                                                  ;$B5C2
         ret
         ;
 
-boss_skyBase_process:                                                   ;$B634
+mob_boss_skyBase:                                                       ;$B634
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -24887,7 +24462,7 @@ _bb77:                                                                  ;$BB77
         .BYTE   $FF
         ;
 
-boss_electricBeam_process:                                              ;$BB84
+mob_boss_electricBeam:                                                  ;$BB84
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -25084,7 +24659,7 @@ boss_electricBeam_process:                                              ;$BB84
 @_bcdd: .BYTE   $40 $42
         ;
 
-unknown_bcdf_process:                                                   ;$BCDF
+mob_unknown_bcdf:                                                       ;$BCDF
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -25216,7 +24791,7 @@ unknown_bcdf_process:                                                   ;$BCDF
         .BYTE   $FF
         ;
 
-cutscene_final_process:                                                 ;$BDF9
+mob_cutscene_final:                                                     ;$BDF9
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
@@ -25379,7 +24954,7 @@ cutscene_final_process:                                                 ;$BDF9
         .BYTE   $FF
         ;
 
-cutscene_emeralds_process:                                              ;$BF4C
+mob_cutscene_emeralds:                                                  ;$BF4C
 ;===============================================================================
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
