@@ -1318,11 +1318,16 @@ This is not a compulsory directive.
 ".SMSHEADER"
 ============
 
+All the fields in ".SMSHEADER" are optional and default to zero except
+ROMSIZE. If ROMSIZE is not specified it will be calculated
+automatically:
+
    .SMSHEADER
        PRODUCTCODE 26, 70, 2 ; 2.5 bytes
        VERSION 1             ; 0-15
        REGIONCODE 4          ; 3-7
        RESERVEDSPACE 0, 0    ; 2 bytes
+       ROMSIZE 0             ; 0-15
    .ENDSMS
 
 The "REGIONCODE" also defines the system:

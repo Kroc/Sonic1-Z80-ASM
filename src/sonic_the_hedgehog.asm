@@ -21,6 +21,7 @@
         VERSION         0               ; 0-15
         REGIONCODE      4               ; 3-7
         RESERVEDSPACE   $59, $59        ; 2 bytes
+        ROMSIZE         0               ; .5 bytes
 .ENDSMS
 
 
