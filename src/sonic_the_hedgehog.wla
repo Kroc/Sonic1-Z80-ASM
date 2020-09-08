@@ -34,7 +34,6 @@ init:                                                                   ;$028B
 ;
 ; in    IY      address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-
         ; tell the SMS the cartridge has no RAM and to use ROM banking
         ld      A,      %10000000       ; write-protect on/off??
         ld      [SMS_MAPPER_CONTROL],   A
@@ -85,9 +84,10 @@ init:                                                                   ;$028B
 
         ; if the sound module is being included,
         ; mute any current sound (e.g. after soft-reset)
-        .IFDEF  OPTION_SOUND
-                call    call_muteSound
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        call    call_muteSound
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ; IY is used as a shorthand to some common variables throughout,
         ; though this is in practice slower than just using an absolute address
@@ -1454,7 +1454,7 @@ fillOverscrollCache:                                                    ;$06BD
 @vert:  bit     1,      [IY+Vars.flags2]
         jp      z,      @exit
 
-        bit     7,      [IY+Vars.flags0]        ; camera moved up?
+        bit     7,      [IY+Vars.flags0]; camera moved up?
         jr      nz,     @_3
 
         ld      B,      $06
@@ -1855,6 +1855,7 @@ fillScreenWithFloorLayout:                                              ;$0966
 ; This routine is only called during level loading to populate the screen with
 ; the visible portion of the Floor Layout. Scrolling fills in only the new
 ; tiles, so a full refresh of the screen is not required.
+;
 ;-------------------------------------------------------------------------------
         ; interrupts are disabled during this routine
         ; due to it writing to the display
@@ -2148,7 +2149,7 @@ darkenPalette:                                                          ;$0A90
 ;       B       length of palette (16)
 ;-------------------------------------------------------------------------------
         ; NOTE: SMS colours are in the format: 00BBGGRR
-
+        ;
         ld      A,      [HL]            ; read the colour
         and     %00000011               ; does it have any red component?
         jr      z,      @_1             ; if not, skip ahead
@@ -2649,12 +2650,12 @@ _LABEL_C52_106:                                                         ;$0C52
         ld      HL,     map2Palette
         call    _b50
 
-        ;play the map screen music:
-        ; (we can compile with, or without, sound)
-@_3:    .IFDEF  OPTION_SOUND
-                ld      A,      7
-                rst     rst_playMusic
-        .ENDIF
+@_3:    ;play the map screen music:
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      7
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ;-----------------------------------------------------------------------
 
@@ -2951,18 +2952,18 @@ _0edd:                                                                  ;$0EDD
         push    HL
         push    DE
 
-        ;copy BC to HL
+        ; copy BC to HL
         ld      L,      C
         ld      H,      B
 
         ld      A,      [RAM_TEMP2]
-        add     A,      A                                       ;x2
-        add     A,      A                                       ;x4
+        add     A,      A               ; x2
+        add     A,      A               ; x4
         ld      E,      A
         ld      D,      $00
         add     HL,     DE
 
-        ;read the address of a sprite layout from the list
+        ; read the address of a sprite layout from the list
         ld      C,      [HL]
         inc     HL
         ld      B,      [HL]
@@ -2978,8 +2979,8 @@ _0edd:                                                                  ;$0EDD
         xor     A
         ld      [RAM_TEMP1],    A
 
-@_1:    pop     DE                                              ;Y-position
-        pop     HL                                              ;X-position
+@_1:    pop     DE                      ; Y-position
+        pop     HL                      ; X-position
         push    HL
         push    DE
         call    processSpriteLayout
@@ -3432,11 +3433,11 @@ titleScreen:                                                            ;$1287
         set     1,      [IY+Vars.flags0]
 
         ; play title screen music:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_TITLESCREEN
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_TITLESCREEN
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ; initialise the animation parameters?
         xor     A
@@ -3510,11 +3511,11 @@ titleScreen:                                                            ;$1287
         jp      nz,     @_1
 
         scf
-
-        ; (we can compile with, or without, sound)
-@_5:    .IFDEF  OPTION_SOUND
-                rst     rst_muteSound
-        .ENDIF
+@_5:
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        rst     rst_muteSound
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;-----------------------------------------------------------------------
@@ -3690,11 +3691,11 @@ _1401:                                                                  ;$1401
 
         djnz    @_5
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1A
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      HL,     RAM_D216
         ld      A,      [HL]
@@ -3932,11 +3933,11 @@ _155e:                                                                  ;$155E
         and     $03
         jr      nz,     @_13
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_13:   ld      HL,     [RAM_TEMP4]
         ld      DE,     [RAM_TEMP6]
@@ -4130,11 +4131,11 @@ _172f:                                                                  ;$172F
         ld      C,    $02
         call    increaseScore
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      @_7
 
@@ -4159,11 +4160,11 @@ _172f:                                                                  ;$172F
         ld      C,    $00
         call    increaseScore
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      @_9
 
@@ -4200,11 +4201,11 @@ _172f:                                                                  ;$172F
         ld      C,    $01
         call    increaseScore
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      @_11
 
@@ -4731,7 +4732,7 @@ _1c49:                                                                  ;$1C49
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
         ; set bit 0 of the parameter address (IY=$D200);
-        ;`waitForInterrupt` will pause until an interrupt
+        ; `waitForInterrupt` will pause until an interrupt
         ; event switches bit 0 of $D200 on
         set     0,      [IY+Vars.flags0]
         ei                              ; enable interrupts
@@ -4809,10 +4810,10 @@ _1c49:                                                                  ;$1C49
         call    waitForInterrupt
         djnz    @wait
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                rst     rst_muteSound
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        rst     rst_muteSound
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_3:    call    _LABEL_1CED_131
         and     A
@@ -5124,10 +5125,10 @@ _1e9e:                                                                  ;$1E9E
         bit     1,      [IY+Vars.scrollRingFlags]
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                rst     rst_muteSound
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        rst     rst_muteSound
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_1:    ld      A,      [IY+Vars.spriteUpdateCount]
 
@@ -5149,14 +5150,13 @@ _1e9e:                                                                  ;$1E9E
         bit     3,      [IY+Vars.timeLightningFlags]
         jr      nz,     @_1
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,                      :sound.unpause
-                ld      [SMS_MAPPER_SLOT1],     A
-                ld      [RAM_SLOT1],            A
-                call    sound.unpause
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,                      :sound.unpause
+        ld      [SMS_MAPPER_SLOT1],     A
+        ld      [RAM_SLOT1],            A
+        call    sound.unpause
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -5298,11 +5298,11 @@ _1f49:                                                                  ;$1F49
 
 @_2:    push    BC
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_13
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_13
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         pop     BC
 
@@ -5390,10 +5390,10 @@ _1fa9:                                                                  ;$1FA9
         bit     4,      [IY+Vars.flags6]
         jr      nz,     @_5
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                rst     rst_muteSound
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        rst     rst_muteSound
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         bit     7,      [IY+Vars.flags6]
         call    nz,     _20a4
@@ -5446,11 +5446,11 @@ _2023:                                                                  ;$2023
 
 _202d:                                                                  ;$202D
 ;===============================================================================
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_0E
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_0E
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -5460,11 +5460,11 @@ addExtraLife:                                                           ;$2031
         ld      HL,     RAM_LIVES
         inc     [HL]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_09       ; extra life sound?
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_09
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -5480,14 +5480,13 @@ _203f:                                                                  ;$203F
 ;===============================================================================
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_07
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_07
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     0,      [IY+Vars.timeLightningFlags]
-
         ret
         ;
 
@@ -5554,20 +5553,19 @@ _20a4:                                                                  ;$20A4
 
 _20b8:                                                                  ;$20B8
 ;===============================================================================
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,                      :sound.fadeOut
-                ld      [SMS_MAPPER_SLOT1],     A
-                ld      [RAM_SLOT1],            A
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,                      :sound.fadeOut
+        ld      [SMS_MAPPER_SLOT1],     A
+        ld      [RAM_SLOT1],            A
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      HL,     $0028
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                call    sound.fadeOut
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        call    sound.fadeOut
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         call    fadeOut
 
         xor     A
@@ -6135,14 +6133,13 @@ loadLevel:                                                              ;$20CB
         jp      m,      @_11                                    
 
         ; remember current level music to restore it after invincibility &c.
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      [RAM_LEVEL_MUSIC],      A
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      [RAM_LEVEL_MUSIC],      A
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ;-----------------------------------------------------------------------
-
         ; fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
 @_11:   ld      B,      32
         ld      HL,     RAM_ACTIVEMOBS
@@ -6524,11 +6521,11 @@ _LABEL_258B_133:                                                        ;$258B
         pop     BC
         djnz    @_1
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_ALLEMERALDS
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_ALLEMERALDS
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      HL,     $241D
         ld      B,      $3D
@@ -6676,11 +6673,11 @@ _LABEL_258B_133:                                                        ;$258B
         ld      HL,     creditsPalette
         call    _b50
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_ENDING
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_ENDING
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         xor     A                         ; set A to 0
         ld      [RAM_TEMP1],    A
@@ -9211,12 +9208,11 @@ hitPlayer:                                                              ;$35E5
         res     0,      [IY+Vars.unknown0]      ; the 0 byte from the level header
 
         ; play the death sound effect:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_DEATH
-                rst     rst_playMusic
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_DEATH
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -9282,12 +9278,11 @@ dropRings:                                                              ;$3644
         set     6,      [IY+Vars.flags6]
         ld      [IY+Vars.joypad],       $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_11
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_11
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -9327,11 +9322,11 @@ main_36be:                                                              ;$36BE
         ld      [IX+Mob.spriteLayout+1],A
 
         ; play the explosion sound:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ; give the player 100 points
         ld      DE,    $0100
@@ -9939,11 +9934,11 @@ increaseRings:                                                          ;$39AC
         ld      [RAM_LIVES],    A
 
         ; play the 1-up sound effect:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_09
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_09
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @pickupRing:
@@ -9951,11 +9946,11 @@ increaseRings:                                                          ;$39AC
         ; update the ring total
         ld      [RAM_RINGS],    A
         ; play the pickup-ring sound:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -10012,11 +10007,11 @@ increaseScore:                                                          ;$39D8
         inc     [HL]
 
         ; play extra life sound effect:
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_09
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_09
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -11625,12 +11620,11 @@ mob_sonic:                                                              ;$48C8
 
         res     0,      [IY+Vars.unknown0]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      [RAM_LEVEL_MUSIC]
-                rst     rst_playMusic
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      [RAM_LEVEL_MUSIC]
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @drownTimer:                                                            ;$5009
@@ -11670,11 +11664,11 @@ mob_sonic:                                                              ;$48C8
         ld      [RAM_D287],     A
 
         ;drowned!
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_DEATH
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_DEATH
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         call    mobs_91eb
         call    mobs_91eb
@@ -11696,11 +11690,11 @@ mob_sonic:                                                              ;$48C8
         and     [HL]
         jr      nz,     @_43
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1A
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_43:   ld      A,      [RAM_FRAMECOUNT]
         rrca
@@ -11736,11 +11730,11 @@ mob_sonic:                                                              ;$48C8
 @_509d: ld      A,      $10                                             ;$509D
         ld      [RAM_D28E],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_00
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_00
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;--- UNUSED! (8 bytes) -----------------------------------------------------------------------------------------
@@ -11782,11 +11776,11 @@ mob_sonic:                                                              ;$48C8
         or      H
         jr      z,      @_44
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_06
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_06
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_44:   set     2,      [IY+Vars.timeLightningFlags]
         ret
@@ -11975,11 +11969,11 @@ mob_sonic:                                                              ;$48C8
         bit     7,      [IX+Mob.flags]
         ret     z
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_03
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_03
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      A,      $3C
         ld      [RAM_SONIC.unknown16],  A
@@ -12081,11 +12075,11 @@ mob_sonic:                                                              ;$48C8
         ld      [RAM_D28B],     A
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      [RAM_LEVEL_MUSIC]
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      [RAM_LEVEL_MUSIC]
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      C,      [IY+Vars.spriteUpdateCount]
 
@@ -12455,12 +12449,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],  L
         ld      [IX+Mob.Ydirection],        H
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_05
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_05
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12478,12 +12471,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Xdirection],        $FF
         set     1,      [IX+Mob.flags]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12509,12 +12501,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],  $F4
         ld      [IX+Mob.Ydirection],        $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12532,12 +12523,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Xdirection],        $00
         res     1,      [IX+Mob.flags]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12577,11 +12567,11 @@ mob_sonic:                                                              ;$48C8
 @_55a8: bit     4,      [IX+Mob.flags]  ; mob underwater?               ;$55A8
         jr      nz,     @_74
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_12       ; splash?
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_12       ; splash?
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_74:   set     4,      [IX+Mob.flags]                      ;set mob underwater
         ret
@@ -12611,12 +12601,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],  $F4
         ld      [IX+Mob.Ydirection],        $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12625,12 +12614,11 @@ mob_sonic:                                                              ;$48C8
 @_55e2: bit     7,      [IX+Mob.Ydirection]                             ;$55E2
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_05
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_05
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12687,11 +12675,11 @@ mob_sonic:                                                              ;$48C8
         ld      A,              $50
         ld      [RAM_D28A],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_06
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_06
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @_76:   inc     HL
@@ -12721,11 +12709,11 @@ mob_sonic:                                                              ;$48C8
         bit     4,      [IX+Mob.flags]                     ;mob underwater?
         jr      nz,     @_77
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_12
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_12
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_77:   set     4,      [IX+Mob.flags]                     ;set mob underwater
         ret
@@ -12836,12 +12824,11 @@ mob_sonic:                                                              ;$48C8
         ld      A,      $10
         ld      [RAM_D2E1],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_07
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_07
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;-----------------------------------------------------------------------
@@ -12892,11 +12879,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],      $F6
         ld      [IX+Mob.Ydirection],    $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ret
 
@@ -12907,12 +12894,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],      $F4
         ld      [IX+Mob.Ydirection],    $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12922,12 +12908,11 @@ mob_sonic:                                                              ;$48C8
         ld      [IX+Mob.Yspeed+1],      $F2
         ld      [IX+Mob.Ydirection],    $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -12966,12 +12951,11 @@ mob_sonic:                                                              ;$48C8
         inc     HL
         ld      [HL],   $3F
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_07
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_07
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;=======================================================================
@@ -13342,11 +13326,11 @@ mob_powerups_speed:                                                     ;$5BD9
         ld      A,      $F0
         ld      [RAM_SONIC.unknown15],  A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_02
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_02
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      mob_powerups_ring@_5b29
 
@@ -13368,9 +13352,9 @@ mob_powerups_life:                                                      ;$5C05
 
         ld      A,      [HL]
         and     C
-        jr      z,      @_1                                     ;if not set, skip ahead
+        jr      z,      @_1             ;if not set, skip ahead
 
-        ld      [IX+Mob.type],      $FF                     ;remove object?
+        ld      [IX+Mob.type],      $FF ;remove object?
         jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,             $0003
@@ -13398,14 +13382,14 @@ mob_powerups_life:                                                      ;$5C05
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_09
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_09
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      A,      [RAM_CURRENT_LEVEL]
-        cp      28                                              ;special stage?
+        cp      28                      ;special stage?
         ret     nc
 
         ld      HL,     RAM_D280
@@ -13415,16 +13399,16 @@ mob_powerups_life:                                                      ;$5C05
         ;-----------------------------------------------------------------------
 
 @_2:    ld      A,       [RAM_CURRENT_LEVEL]
-        cp      4                                               ;level 4 (Bridge Act 2)?
+        cp      4                       ;level 4 (Bridge Act 2)?
         jr      z,      @_4
 
-        cp      $09                                             ;level 9 (Labyrinth Act 1)?
+        cp      $09                     ;level 9 (Labyrinth Act 1)?
         jr      z,      @_6
 
-        cp      $0C                                             ;level 12 (Scrap Brain Act 1)?
+        cp      $0C                     ;level 12 (Scrap Brain Act 1)?
         jr      z,      @_7
 
-        cp      $11                                             ;level 11 (Labyrinth Act 3)?
+        cp      $11                     ;level 11 (Labyrinth Act 3)?
         jr      z,      @_8
 
 @_3:    ld      HL,     $5280
@@ -13475,7 +13459,7 @@ mob_powerups_life:                                                      ;$5C05
         cp      $11
         jr      nc,     @_3
 
-        ld      [IX+Mob.type],      $FF                     ;remove object?
+        ld      [IX+Mob.type],      $FF ;remove object?
         jr      @_3
         ;
 
@@ -13523,11 +13507,11 @@ mob_powerups_invincibility:                                             ;$5CFF
         ld      A,              $F0
         ld      [RAM_D28D],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_INVINCIBILITY
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_INVINCIBILITY
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      mob_powerups_ring@_5b29
 
@@ -13563,7 +13547,7 @@ mob_powerups_checkpoint:                                                ;$5D2F
         ld      D,      $00
         ld      HL,     RAM_D32E
         add     HL,     DE
-        ex      DE,     HL                                      ;DE is D32E + level number * 2
+        ex      DE,     HL              ;DE is D32E + level number * 2
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     HL
@@ -13783,11 +13767,11 @@ mob_powerups_emerald:                                                   ;$5EA2
         ld      A,              $FE
         ld      [RAM_D28B],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_EMERALD
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_EMERALD
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_1:    ld      [IX+Mob.type],  $FF                     ;remove object?
         ret
@@ -13956,13 +13940,13 @@ mob_boss_endSign:                                                       ;$5F17
         bit     7,      [IX+Mob.flags]
         jr      z,      @_7
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_ACTCOMPLETE
-                rst     rst_playMusic
-                ld      A,      SFX_ID_0C
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_ACTCOMPLETE
+        rst     rst_playMusic
+        ld      A,      SFX_ID_0C
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         res     2,      [IX+Mob.unknown11]
         set     3,      [IX+Mob.unknown11]
@@ -14007,11 +13991,11 @@ mob_boss_endSign:                                                       ;$5F17
         set     1,      [IX+Mob.unknown11]
         res     3,      [IY+Vars.flags6]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_0B
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_0B
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_7:    ld      DE,     @_6157
         bit     1,      [IX+Mob.unknown11]
@@ -14507,12 +14491,11 @@ mob_badnick_crabmeat:                                                   ;$65EE
         ld      BC,     $0000
         call    mobs_ac96
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_0A
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_0A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         jp      @_7
 
         ;-----------------------------------------------------------------------
@@ -15272,11 +15255,11 @@ mob_badnick_buzzbomber:                                                 ;$6B74
         pop     IX
         pop     BC
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_0A
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_0A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      C,      $00
         ld      L,      C
@@ -15748,11 +15731,11 @@ mob_badnick_newtron:                                                    ;$6F08
         pop     IX
         pop     BC
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_0A
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_0A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_5:    ld      BC,     @_6fed
         cp      $78
@@ -15822,11 +15805,11 @@ mob_boss_greenHill:                                                     ;$700C
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS1
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS1
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         xor     A
         ld      [RAM_D2EC],             A
@@ -16262,11 +16245,11 @@ mob_boss_capsule:                                                       ;$732C
         ld      A,              $A0
         ld      [RAM_D289],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_ACTCOMPLETE
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_ACTCOMPLETE
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     1,      [IX+Mob.flags]
 @_11:   xor     A
@@ -16627,11 +16610,11 @@ mobs_77be:                                                              ;$77BE
         ld      A,              $3F
         ld      [RAM_D2B3],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ;TODO: Wouldn't just `LD HL, D2EC` & `INC [HL]` be quicker?
         ld      A,      [RAM_D2EC]
@@ -16709,11 +16692,11 @@ mobs_77be:                                                              ;$77BE
 @_8:    jr      nz,     @_9
         ld      [HL],   $5B
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      [RAM_LEVEL_MUSIC]
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      [RAM_LEVEL_MUSIC]
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      A,      [IY+Vars.spriteUpdateCount]
 
@@ -16900,12 +16883,11 @@ mobs_7a3a:                                                              ;$7A3A
 
         pop     IX
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -16941,11 +16923,11 @@ mob_meta_trip:                                                          ;$7AA7
         set     6,      [IY+Vars.flags6]
         ld      [IY+Vars.joypad],  $FF
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_11
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_11
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -17296,11 +17278,11 @@ mob_badnick_chopper:                                                    ;$7CF6
         ld      [IX+Mob.Ydirection],    $FF
         set     0,      [IX+Mob.flags]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_12
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_12
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      [IX+Mob.unknown11], $03
         jr      @_5
@@ -17658,11 +17640,11 @@ mob_boss_jungle:                                                        ;$8053
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS1
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS1
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         xor     A
         ld      [RAM_D2EC],     A
@@ -17886,11 +17868,11 @@ mob_unknown_8218:                                                       ;$8218
 
         ld      [IX+Mob.unknown16], $00
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_4:    xor     A
         ld      [IX+Mob.Xspeed+0],  A
@@ -18046,11 +18028,11 @@ mob_platform_bridge:                                                    ;$83C1
         ld      [RAM_D2AF],     HL
         set     0,      [IX+Mob.flags]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_20
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_20
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_2:    ld      [IX+Mob.spriteLayout+0],        <@_8481
         ld      [IX+Mob.spriteLayout+1],        >@_8481
@@ -18131,11 +18113,11 @@ mob_boss_bridge:                                                        ;$8496
         xor     A
         ld      [RAM_D2EC],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS1
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS1
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     0,      [IX+Mob.flags]
 @_1:    ld      A,       [IX+Mob.unknown11]
@@ -18248,11 +18230,11 @@ mob_boss_bridge:                                                        ;$8496
         pop     BC
         djnz    @loop
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jp      @_6
 
@@ -18433,11 +18415,11 @@ mob_platform_balance:                                                   ;$866C
 @_5:    bit     1,      [IX+Mob.flags]
         jr      z,      @_6
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_04
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_04
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_6:    xor     A
         ld      [IX+Mob.unknown11], A
@@ -19022,11 +19004,11 @@ mob_trap_spear:                                                         ;$8AF6
         cp      $80
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1D
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1D
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @_8bbc: .BYTE   $00 $01 $02 $03 $04 $05 $06 $07
@@ -19092,13 +19074,12 @@ mob_trap_fireball:                                                      ;$8C16
         ld      [IX+Mob.Xdirection],        A
         ret
 
-        ;-----------------------------------------------------------------------
-
-        ; (we can compile with, or without, sound)
-@_3:    .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_18
-                rst     rst_playSFX
-        .ENDIF
+@_3:     ;-----------------------------------------------------------------------
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_18
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_4:    xor     A
         bit     1,      [IX+Mob.flags]
@@ -19827,11 +19808,11 @@ mob_boss_labyrinth:                                                     ;$9267
         xor     A
         ld      [RAM_D2EC], A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS1
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS1
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     0,      [IX+Mob.flags]
 @_1:    ld      A,       [IX+Mob.unknown11]
@@ -20048,12 +20029,11 @@ mob_boss_labyrinth:                                                     ;$9267
         ld      C,      $04
         call    _85d1
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         jp      @_
 
         ;-----------------------------------------------------------------------
@@ -20471,11 +20451,11 @@ mob_unknown_96f8:                                                       ;$96F8
         ld      [RAM_D2FB], A
         ld      [IX+Mob.unknown12], $10
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_22
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_22
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_5:    ld      [IX+Mob.Yspeed+0],      $98
         ld      [IX+Mob.Yspeed+1],      $FF
@@ -20823,11 +20803,11 @@ mob_platform_bumper:                                                    ;$9AFB
         ld      [RAM_SONIC.Ydirection],     A
         ld      [IX+Mob.unknown11], $08
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_07
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_07
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @_3:    dec     [IX+Mob.unknown11]
@@ -20923,11 +20903,11 @@ mob_unknown_9be8:                                                       ;$9BE8
         ld      A,      [IX+Mob.X+1]
         ld      [IX+Mob.unknown12], A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_18
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_18
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     0,      [IX+Mob.flags]
 @_1:    ld      [IX+Mob.width],         $06
@@ -20957,11 +20937,11 @@ mob_unknown_9be8:                                                       ;$9BE8
         ld      A,      [IX+Mob.unknown12]
         ld      [IX+Mob.X+1],       A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_18
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_18
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
 @_3:    xor     A
@@ -21091,11 +21071,11 @@ mob_trap_flameThrower:                                                  ;$9C8E
         cp      $70
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_17
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_17
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -21233,11 +21213,11 @@ _9eb4:                                                                  ;$9EB4
         dec     A
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_19
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_19
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ret
         ;
@@ -21255,11 +21235,11 @@ _9ec4:                                                                  ;$9EC4
         cp      $2F
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_19
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_19
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -21536,11 +21516,11 @@ mob_trap_electric:                                                      ;$A0E8
         jr      c,      @_3
         jr      nz,     @_2
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_13
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_13
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_2:    ld      HL,     $0000
         ld      [RAM_TEMP6],        HL
@@ -21790,11 +21770,11 @@ mob_unknown_a33c:                                                       ;$A33C
 @_2:    jr      nz,     @_3
         ld      [IX+Mob.unknown16], $00
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_3:    ld      BC,     @_a3b4
         ld      DE,     @_a3bb
@@ -21882,11 +21862,11 @@ mob_door_switch:                                                        ;$A3F8
         xor     C
         ld      [HL],   A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1A
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1A
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jr      @_4
 
@@ -22258,11 +22238,11 @@ mob_boss_scrapBrain:                                                    ;$A7ED
         ld      A,      %00000010
         call    loadPaletteOnInterrupt
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS1
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS1
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     0,      [IX+Mob.flags]
 @_1:    bit     1,      [IX+Mob.flags]
@@ -22397,11 +22377,11 @@ mob_boss_scrapBrain:                                                    ;$A7ED
         ld      [RAM_SONIC.X],      HL
         set     4,      [IX+Mob.flags]                      ;set mob underwater
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_ACTCOMPLETE
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_ACTCOMPLETE
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      A,      $A0
         ld      [RAM_D289], A
@@ -22441,11 +22421,11 @@ mob_boss_scrapBrain:                                                    ;$A7ED
         cp      $0F
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_19
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_19
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ret
 
@@ -22730,11 +22710,11 @@ mob_badnick_bomb:                                                       ;$AB21
 
         ld      [IX+Mob.type],      $FF                     ;remove mob?
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1B
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1B
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         jr      @_8
 
@@ -22942,11 +22922,11 @@ mob_trap_cannon:                                                        ;$AD6C
         ld      [IX+Mob.Y+1],       H
         pop     IX
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_1C
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_1C
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      [IX+Mob.unknown12], $18
         ld      [IX+Mob.unknown16], $00
@@ -23901,11 +23881,11 @@ _b5c2:                                                                  ;$B5C2
         ld      [IX+Mob.Ydirection],    A
         pop     IX
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
         ;
 
@@ -23947,11 +23927,11 @@ mob_boss_skyBase:                                                       ;$B634
         xor     A
         ld      [RAM_D2EC],     A
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_BOSS3
-                rst     rst_playMusic
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_BOSS3
+        rst     rst_playMusic
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         set     4,      [IY+Vars.unknown0]
         set     0,      [IX+Mob.flags]
@@ -24099,13 +24079,13 @@ mob_boss_skyBase:                                                       ;$B634
         set     2,      [IX+Mob.flags]
         res     4,      [IY+Vars.unknown0]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      MUSIC_ID_SCRAPBRAIN
-                rst     rst_playMusic
-                ld      A,      SFX_ID_21
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      MUSIC_ID_SCRAPBRAIN
+        rst     rst_playMusic
+        ld      A,      SFX_ID_21
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;-----------------------------------------------------------------------
@@ -24139,11 +24119,11 @@ mob_boss_skyBase:                                                       ;$B634
         inc     HL
         ld      [HL],   $3F
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      HL,     RAM_D2EC
         inc     [HL]
@@ -24577,11 +24557,11 @@ mob_boss_electricBeam:                                                  ;$BB84
         and     $0F
         jr      nz,     @_4
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_13
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_13
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_4:    dec     [IX+Mob.unknown11]
         ret     nz
@@ -24624,12 +24604,11 @@ mob_boss_electricBeam:                                                  ;$BB84
         and     %00011111
         ret     nz
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_13
-                rst     rst_playSFX
-        .ENDIF
-
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_13
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
         ret
 
         ;-----------------------------------------------------------------------
@@ -24845,11 +24824,11 @@ mob_cutscene_final:                                                     ;$BDF9
         ld      [RAM_SONIC],    A
         set     6,      [IY+Vars.unknown0]
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_06
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_06
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_2:    ld      [IX+Mob.width],         32
         ld      [IX+Mob.height],        28
@@ -24902,11 +24881,11 @@ mob_cutscene_final:                                                     ;$BDF9
         set     0,      [IX+Mob.flags]
         ld      [IX+Mob.unknown11],     $01
 
-        ; (we can compile with, or without, sound)
-        .IFDEF  OPTION_SOUND
-                ld      A,      SFX_ID_01
-                rst     rst_playSFX
-        .ENDIF
+.IFDEF  OPTION_SOUND
+        ;///////////////////////////////////////////////////////////////////////
+        ld      A,      SFX_ID_01
+        rst     rst_playSFX
+.ENDIF  ;///////////////////////////////////////////////////////////////////////
 
 @_4:    call    mobs_79fa
         bit     0,      [IX+Mob.flags]
