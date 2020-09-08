@@ -1,7 +1,7 @@
-.INC    "inc/mem.asm"                   ; memory layout
-.INC    "inc/sms.asm"                   ; hardware definitions
-.INC    "inc/vars.asm"
-.INC    "inc/mob.asm"
+.INC    "inc/mem.wla"                   ; memory layout
+.INC    "inc/sms.wla"                   ; hardware definitions
+.INC    "inc/vars.wla"
+.INC    "inc/mob.wla"
 
 ; position on the screen of the player's lives display
 .DEFINE HUD_LIVES_X     16

@@ -1,5 +1,5 @@
-.INC    "inc/mem.asm"           ; memory layout
-.INC    "inc/sms.asm"           ; hardware definitions
+.INC    "inc/mem.wla"           ; memory layout
+.INC    "inc/sms.wla"           ; hardware definitions
 
 .RAMSECTION "SMS_Z80"   SLOT "Z80"
         ;===========================================================================

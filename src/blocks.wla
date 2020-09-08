@@ -1,5 +1,5 @@
-.INC    "inc\mem.asm"
-.INC    "inc\sms.asm"
+.INC    "inc\mem.wla"
+.INC    "inc\sms.wla"
 
 .BANK   4       SLOT    "SLOT1"
 .ORG    $0000
