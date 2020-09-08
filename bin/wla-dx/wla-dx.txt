@@ -1,4 +1,4 @@
-wla-dx v9.11a documentation
+wla-dx v9.12a documentation
 
 * 1. Introduction
 
@@ -177,121 +177,123 @@ wla-dx v9.11a documentation
 
   * 2.86. ".ADDR 16000, main, 255"
 
-  * 2.87. ".DL $102030, $405060"
+  * 2.87. ".DWM filtermacro 1, 2, 3"
 
-  * 2.88. ".LONG $102030, $405060"
+  * 2.88. ".DL $102030, $405060"
 
-  * 2.89. ".FARADDR main, irq_1"
+  * 2.89. ".LONG $102030, $405060"
 
-  * 2.90. ".DWM filtermacro 1, 2, 3"
+  * 2.90. ".FARADDR main, irq_1"
 
-  * 2.91. ".DEFINE IF $FF0F"
+  * 2.91. ".DLM filtermacro 1, 2, 3"
 
-  * 2.92. ".DEF IF $FF0F"
+  * 2.92. ".DEFINE IF $FF0F"
 
-  * 2.93. ".EQU IF $FF0F"
+  * 2.93. ".DEF IF $FF0F"
 
-  * 2.94. ".REDEFINE IF $0F"
+  * 2.94. ".EQU IF $FF0F"
 
-  * 2.95. ".REDEF IF $0F"
+  * 2.95. ".REDEFINE IF $0F"
 
-  * 2.96. ".IF DEBUG == 2"
+  * 2.96. ".REDEF IF $0F"
 
-  * 2.97. ".IFDEF IF"
+  * 2.97. ".IF DEBUG == 2"
 
-  * 2.98. ".IFEXISTS "main.s""
+  * 2.98. ".IFDEF IF"
 
-  * 2.99. ".UNDEFINE DEBUG"
+  * 2.99. ".IFEXISTS "main.s""
 
-  * 2.100. ".UNDEF DEBUG"
+  * 2.100. ".UNDEFINE DEBUG"
 
-  * 2.101. ".IFNDEF IF"
+  * 2.101. ".UNDEF DEBUG"
 
-  * 2.102. ".IFDEFM \2"
+  * 2.102. ".IFNDEF IF"
 
-  * 2.103. ".IFNDEFM \2"
+  * 2.103. ".IFDEFM \2"
 
-  * 2.104. ".IFEQ DEBUG 2"
+  * 2.104. ".IFNDEFM \2"
 
-  * 2.105. ".IFNEQ DEBUG 2"
+  * 2.105. ".IFEQ DEBUG 2"
 
-  * 2.106. ".IFLE DEBUG 2"
+  * 2.106. ".IFNEQ DEBUG 2"
 
-  * 2.107. ".IFLEEQ DEBUG 2"
+  * 2.107. ".IFLE DEBUG 2"
 
-  * 2.108. ".IFGR DEBUG 2"
+  * 2.108. ".IFLEEQ DEBUG 2"
 
-  * 2.109. ".IFGREQ DEBUG 2"
+  * 2.109. ".IFGR DEBUG 2"
 
-  * 2.110. ".ELSE"
+  * 2.110. ".IFGREQ DEBUG 2"
 
-  * 2.111. ".ENDIF"
+  * 2.111. ".ELSE"
 
-  * 2.112. ".REPEAT 6"
+  * 2.112. ".ENDIF"
 
-  * 2.113. ".REPT 6"
+  * 2.113. ".REPEAT 6"
 
-  * 2.114. ".ENDR"
+  * 2.114. ".REPT 6"
 
-  * 2.115. ".ENUM $C000"
+  * 2.115. ".ENDR"
 
-  * 2.116. ".ENDE"
+  * 2.116. ".ENUM $C000"
 
-  * 2.117. ".STRUCT enemy_object"
+  * 2.117. ".ENDE"
 
-  * 2.118. ".ENDST"
+  * 2.118. ".STRUCT enemy_object"
 
-  * 2.119. ".MEMORYMAP"
+  * 2.119. ".ENDST"
 
-  * 2.120. ".ENDME"
+  * 2.120. ".MEMORYMAP"
 
-  * 2.121. ".ROMBANKMAP"
+  * 2.121. ".ENDME"
 
-  * 2.122. ".ENDRO"
+  * 2.122. ".ROMBANKMAP"
 
-  * 2.123. ".SEED 123"
+  * 2.123. ".ENDRO"
 
-  * 2.124. ".SECTION "Init" FORCE"
+  * 2.124. ".SEED 123"
 
-  * 2.125. ".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 4"
+  * 2.125. ".SECTION "Init" FORCE"
 
-  * 2.126. ".ENDS"
+  * 2.126. ".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 256 OFFSET 32"
 
-  * 2.127. ".ROMGBC"
+  * 2.127. ".ENDS"
 
-  * 2.128. ".ROMGBCONLY"
+  * 2.128. ".ROMGBC"
 
-  * 2.129. ".ROMDMG"
+  * 2.129. ".ROMGBCONLY"
 
-  * 2.130. ".ROMSGB"
+  * 2.130. ".ROMDMG"
 
-  * 2.131. ".EXPORT work_x"
+  * 2.131. ".ROMSGB"
 
-  * 2.132. ".PRINT "Numbers 1 and 10: ", DEC 1, " $", HEX 10, "\n""
+  * 2.132. ".EXPORT work_x"
 
-  * 2.133. ".PRINTT "Here we are...\n""
+  * 2.133. ".PRINT "Numbers 1 and 10: ", DEC 1, " $", HEX 10, "\n""
 
-  * 2.134. ".PRINTV DEC DEBUG+1"
+  * 2.134. ".PRINTT "Here we are...\n""
 
-  * 2.135. ".OUTNAME "other.o""
+  * 2.135. ".PRINTV DEC DEBUG+1"
 
-  * 2.136. ".SNESHEADER"
+  * 2.136. ".OUTNAME "other.o""
 
-  * 2.137. ".ENDSNES"
+  * 2.137. ".SNESHEADER"
 
-  * 2.138. ".SNESNATIVEVECTOR"
+  * 2.138. ".ENDSNES"
 
-  * 2.139. ".ENDNATIVEVECTOR"
+  * 2.139. ".SNESNATIVEVECTOR"
 
-  * 2.140. ".SNESEMUVECTOR"
+  * 2.140. ".ENDNATIVEVECTOR"
 
-  * 2.141. ".ENDEMUVECTOR"
+  * 2.141. ".SNESEMUVECTOR"
 
-  * 2.142. ".UNION name"
+  * 2.142. ".ENDEMUVECTOR"
 
-  * 2.143. ".NEXTU name"
+  * 2.143. ".UNION name"
 
-  * 2.144. ".ENDU"
+  * 2.144. ".NEXTU name"
+
+  * 2.145. ".ENDU"
 
 * 3. Assembler Syntax
 
@@ -633,6 +635,8 @@ Group 3:
 +-----+------------------------------------------------------------------+
 | 658 | ".DL $102030, $405060"                                           |
 +-----+------------------------------------------------------------------+
+| 658 | ".DLM filtermacro 1, 2, 3"                                       |
++-----+------------------------------------------------------------------+
 | ALL | ".DS 256, $10"                                                   |
 +-----+------------------------------------------------------------------+
 | ALL | ".DSB 256, $10"                                                  |
@@ -751,7 +755,7 @@ Group 3:
 +-----+------------------------------------------------------------------+
 | ALL | ".PRINTV DEC DEBUG+1"                                            |
 +-----+------------------------------------------------------------------+
-| ALL | ".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 4"                       |
+| ALL | ".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 256 OFFSET 32"           |
 +-----+------------------------------------------------------------------+
 | ALL | ".REDEFINE IF $F"                                                |
 +-----+------------------------------------------------------------------+
@@ -1151,13 +1155,14 @@ The first argument is the starting angle. Angle value ranges from "0"
 to "359.999"…, but you can supply WLA with values that are out of the
 range - WLA fixes them ok. The value can be integer or float.
 
-The second one descibes the amount of additional angles. The example
-will define 11 angles.
+The second argument descibes the amount of additional angles. The
+example will define 11 angles.
 
-The third one is the adder value which is added to the angle value
-when next angle is calculated. The value can be integer or float.
+The third argument is the adder value which is added to the angle
+value when next angle is calculated. The value can be integer or
+float.
 
-The fourth and fifth ones can be seen from the pseudo code below,
+The fourth and fifth arguments can be seen from the pseudo code below,
 which also describes how ".DBCOS" works. The values can be integer or
 float.
 
@@ -1185,7 +1190,7 @@ This is not a compulsory directive.
 ".DWCOS 0.2, 10, 3.2, 1024, 1.3"
 ================================
 
-Analogous to ".DBCOS" (but defines words).
+Analogous to ".DBCOS" (but defines 16-bit words).
 
 This is not a compulsory directive.
 
@@ -1193,8 +1198,8 @@ This is not a compulsory directive.
 ".DWSIN 0.2, 10, 3.2, 1024, 1.3"
 ================================
 
-Analogous to ".DBCOS" (but defines words and does "sin()" instead of
-"cos()").
+Analogous to ".DBCOS" (but defines 16-bit words and does "sin()"
+instead of "cos()").
 
 This is not a compulsory directive.
 
@@ -1511,6 +1516,32 @@ working directory. If the "INCDIR" is specified in the command line,
 WLA will first try to find the file specified in that directory. Then
 proceed as mentioned before if it is not found.
 
+If you want to prefix all labels inside the included file with
+something, use
+
+   .INCLUDE "music_player.s" NAMESPACE "musicplayer"
+
+In the case of this example, all sections, macros, labels and
+references to those labels inside the included file are prefixed with
+“musicplayer.”, though there are a couple of exceptions. If a
+".SECTION" inside the included file has its own namespace, the
+".INCLUDE" ‘s namespace doesn’t affect it. If a ".SECTION" inside the
+included file uses "APPENDTO" with a section name that starts with
+""*:"", that "APPENDTO" is considered to belong to the global
+namespace and we won’t prefix it with the ".INCLUDE" ‘s namespace.
+
+Note that you can create the file name from pieces
+
+   .INCLUDE ROOTDIR, SUBDIR, "cthulhu.s" NAMESPACE "cthulhu"
+
+This might end up looking for a file “root/subdir/cthulhu.s”,
+depending on the definitions.
+
+If you are using the ".INCLUDE" inside a ".MACRO" and want to have the
+file included only once, use the keyword "ONCE"
+
+   .INCLUDE "include_one.s" NAMESPACE "once" ONCE
+
 This is not a compulsory directive.
 
 
@@ -1555,7 +1586,7 @@ this:
 
 The filter macro is executed for each byte of the included data, data
 byte being the first argument, and offset from the beginning being the
-second parameter, just like in the case of ".DBM" and ".DWM".
+second parameter, just like in the case of ".DBM", ".DWM" and ".DLM".
 
 And you can combine all these four commands:
 
@@ -2380,6 +2411,15 @@ This is not a compulsory directive.
 This is not a compulsory directive.
 
 
+".DWM filtermacro 1, 2, 3"
+==========================
+
+Defines 16-bit words using a filter macro. Works just like ".DBM" and
+".DLM".
+
+This is not a compulsory directive.
+
+
 ".DL $102030, $405060"
 ======================
 
@@ -2405,22 +2445,11 @@ This is not a compulsory directive.
 This is not a compulsory directive.
 
 
-".DWM filtermacro 1, 2, 3"
+".DLM filtermacro 1, 2, 3"
 ==========================
 
-Defines 16-bit words using a filter macro. All the data is passed to
-"filtermacro" in the first argument, one word at a time, and the word
-that actually gets defined is the value of definition "_OUT" ("_out"
-works as well). The second macro argument holds the offset from the
-beginning (the first word) in bytes (the series being "0", "2", "4",
-"6", …).
-
-Here’s an example of a filter macro that increments all the words by
-one:
-
-   .macro increment
-   .redefine _out \1+1
-   .endm
+Defines 24-bit words using a filter macro. Works just like ".DBM" and
+".DWM". Works only on wla-65816.
 
 This is not a compulsory directive.
 
@@ -3129,6 +3158,10 @@ It’s possible to force WLALINK to align the "FREE", "SEMIFREE" and
 
    .SECTION "Init" SIZE 100 ALIGN 4 FREE
 
+If you need an offset from the alignment, use OFFSET:
+
+   .SECTION "Init" SIZE 10 ALIGN 256 OFFSET 32 FREE
+
 And if you want that WLA returns the "ORG" to what it was before
 issuing the section, put "RETURNORG" at the end of the parameter list:
 
@@ -3148,7 +3181,10 @@ labels, references and calculations.
 If a section name begins with an exclamation mark ("!") it tells
 WLALINK to not to drop it, even if you use WLALINK’s ability to
 discard all unreferenced sections and there are no references to the
-section.
+section. You can achieve the same effect by adding "KEEP" to the end
+of the list:
+
+   .SECTION "Init" SIZE 100 ALIGN 4 FREE RETURNORG KEEP
 
 "FORCE" after the name of the section tells WLA that the section
 *must* be inserted so it starts at ".ORG". "FORCE" can be replaced
@@ -3247,8 +3283,8 @@ It is also possible to merge two or more sections using "APPENDTO":
 This is not a compulsory directive.
 
 
-".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 4"
-==========================================
+".RAMSECTION "Vars" BANK 0 SLOT 1 ALIGN 256 OFFSET 32"
+======================================================
 
 "RAMSECTION" s accept only variable labels and variable sizes, and the
 syntax to define these is identical to ".ENUM" (all the syntax rules
@@ -3314,6 +3350,10 @@ Anyway, here’s another example:
    moomin3_c    DB
    .ENDS
 
+   .RAMSECTION "vars 4" BANK 1 SLOT $A000
+   enemies      INSTANCEOF game_object 2 STARTFROM 0 ; If you leave away "STARTFROM 0" the indexing will start from 1
+   .ENDS
+
 If no other RAM sections are used, then this is what you will get:
 
    .DEFINE moomin1     $A000
@@ -3327,6 +3367,13 @@ If no other RAM sections are used, then this is what you will get:
    .DEFINE moomin3_a   $A002
    .DEFINE moomin3_b   $A003
    .DEFINE moomin3_c   $A004
+   .DEFINE enemies     $A005
+   .DEFINE enemies.0   $A005
+   .DEFINE enemies.0.x $A005
+   .DEFINE enemies.0.y $A006
+   .DEFINE enemies.1   $A007
+   .DEFINE enemies.1.x $A007
+   .DEFINE enemies.1.y $A008
 
 "BANK" in ".RAMSECTION" is optional so you can leave it away if you
 don’t switch RAM banks, or the target doesn’t have them (defaults to
@@ -3371,6 +3418,16 @@ address, do as follows:
    PlayerX         DB
    PlayerY         DB
    .ENDS
+
+Other types that are supported: "SEMIFREE" and "SEMISUBFREE".
+
+Here’s the order in which WLA writes the RAM sections:
+
+1. "FORCE"
+
+2. "SEMISUBFREE"
+
+3. "SEMIFREE" & "FREE"
 
 NOTE: You can use "ORGA" to specify the fixed address for a "FORCE"
 "RAMSECTION". "ORG" is also supported.
@@ -4250,6 +4307,9 @@ how you use it:
 Choose the option "-b [OUT]" for program file or "-r [OUT]" for ROM
 image linking. ROM image is all the data in the ROM banks. Program
 file is the data between the first used byte and the last used byte.
+You can also use "-bS [START ADDRESS]" and "-bE [END ADDRESS]" to
+specify the start and the end addresses of the program. Both are
+optional.
 
 Link file is a text file that contains information about the files you
 want to link together. Here’s the format:
@@ -4300,18 +4360,20 @@ want to link together. Here’s the format:
 
 5. If you have RAMSECTIONs inside the libraries, you must place the
    sections inside BANKs and SLOTs (ORG and ORGA are optional). Note
-   that you can also change the type and priority of the section:
+   that you can also change the type and priority of the section, and
+   can use appendto:
 
       [ramsections]
       bank 0 slot 3 org $0 "library 1 vars 1"
       bank 0 slot 3 orga $6100 priority 100 force "library 1 vars 2"
+      bank 0 slot 3 appendto "library 1 vars 2" "library 1 vars 3"
 
-6. If you want to relocate normal sections, do as follows (ORG and
-   ORGA are optional, but useful):
+6. If you want to relocate normal sections, do as follows (ORG, ORGA,
+   KEEP, PRIORITY and APPENDTO are optional, but useful):
 
       [sections]
-      bank 0 slot 1 org $100 "MusicPlayer"
-      bank 0 slot 1 orga $2200 semisubfree "EnemyAI"
+      bank 0 slot 1 org $100 appendto "MusicPlayers" "MusicPlayer1"
+      bank 0 slot 1 orga $2200 semisubfree priority 100 keep "EnemyAI"
 
 7. If you want to make value definitions, here’s your chance:
 
@@ -4323,6 +4385,9 @@ want to link together. Here’s the format:
 
 If flag "v" is used, WLALINK displays information about ROM file after
 a succesful linking.
+
+If flag "nS" is used, WLALINK doesn’t sort the sections at all, so
+they are placed in the output in their order of appearance.
 
 If flag "s" is used, WLALINK will produce a NO$GMB/NO$SNES symbol
 file. It’s useful when you work under MSDOS (NO$GMB is a very good

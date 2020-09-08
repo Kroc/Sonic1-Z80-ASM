@@ -17,10 +17,11 @@
 .UNBACKGROUND   $7ff0,  $7ffb
 
 .SMSHEADER
-        PRODUCTCODE     $76, $70, 0     ; 2.5 bytes
-        VERSION         0               ; 0-15
-        REGIONCODE      4               ; 3-7
+        ; "TMR SEGA"
         RESERVEDSPACE   $59, $59        ; 2 bytes
+        PRODUCTCODE     $76, $70, 0     ; 2.5 bytes
+        VERSION         0               ; 1 byte, value: 0-15
+        REGIONCODE      4               ; .5 bytes, value: 3-7
         ROMSIZE         0               ; .5 bytes
 .ENDSMS
 

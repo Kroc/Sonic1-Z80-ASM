@@ -1,3 +1,8 @@
+# ignore anything beginning with "__"
+# (used to hide stuff from the repository)
+__*
+**/__*
+
 # don't accidentally include any ROM files
 *.sms
 *.bin
