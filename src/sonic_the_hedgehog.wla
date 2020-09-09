@@ -125,8 +125,9 @@ call_playMusic:                                                         ;$02D7
 
 call_muteSound:                                                         ;$02ED
 ;===============================================================================
-; switch banks to the sound module and mute all sound. the previous bank is
-; restored afterwards. the `rst $20` instruction ends up here.
+; switch banks to the sound module and mute all sound. the previous bank
+; is restored afterwards. the `rst $20` instruction ends up here
+;
 ;-------------------------------------------------------------------------------
         di      ; disable interrupts
 
@@ -946,7 +947,6 @@ readJoypad:                                                             ;$05A7
 ; in    IY      Address of the common variables (used throughout)
 ; out   Vars.joypad
 ;-------------------------------------------------------------------------------
-
         in      A, [SMS_PORTS_JOYA]     ; read the joypad port
         or      %11000000               ; mask out bits 7 & 6 -
                                         ; these are joypad 2 down / up
@@ -1064,7 +1064,6 @@ multiply:                                                               ;$05FC
 ;       B       set to 0 due to countdown loop
 ;       C       the last bit of input C, 0 or 1
 ;-------------------------------------------------------------------------------
-
         xor     A                       ; set A to 0
         ld      B,      7               ; we will process all 8-bits of C
         ex      DE,     HL              ; transfer the HL parameter to DE
@@ -5164,6 +5163,7 @@ lockCameraHorizontal:                                                   ;$1ED8
 ;===============================================================================
 ; lock the screen -- prevents the screen scrolling left or right
 ; (i.e. during boss battles)
+;
 ;-------------------------------------------------------------------------------
         ld      HL,     [RAM_CAMERA_X]
         ld      [RAM_LEVEL_LEFT],       HL
@@ -5174,6 +5174,7 @@ lockCameraHorizontal:                                                   ;$1ED8
 autoscrollRight:                                                        ;$1EE2
 ;===============================================================================
 ; move the left-hand side of the level across -- i.e. Bridge Act 2
+;
 ;-------------------------------------------------------------------------------
         ld      A,      [RAM_FRAMECOUNT]
         rrca
@@ -5197,6 +5198,7 @@ autoscrollRight:                                                        ;$1EE2
 autoscrollUp:                                                           ;$1EF2
 ;===============================================================================
 ; auto-scroll upwards -- unused by the game, but working
+;
 ;-------------------------------------------------------------------------------
         ; ensure there's a pause before starting to scroll upwards,
         ; otherwise the player won't have time to react!
@@ -5215,6 +5217,7 @@ dontScrollDown:                                                         ;$1EFF
 ;===============================================================================
 ; Fixes the bottom of the level to the current screen position,
 ; i.e. Jungle Act 2
+;
 ;-------------------------------------------------------------------------------
         ld      HL,     [RAM_CAMERA_Y]
         ld      [RAM_LEVEL_BOTTOM],     HL
@@ -5594,7 +5597,7 @@ loadLevel:                                                              ;$20CB
         ld      BC,     40
         ldir
 
-        ;position HL at the start of the header
+        ; position HL at the start of the header
         ld      HL,     RAM_LEVEL_HEADER
         push    HL                      ; remember the start point
 
@@ -5703,16 +5706,16 @@ loadLevel:                                                              ;$20CB
         call    decompressArt
 
         ; begin reading the level header:
-        ;get back the level header address
+        ; get back the level header address
         pop     HL
         
-        ;SP: Solidity Pointer
+        ; SP: Solidity Pointer
         ;-----------------------------------------------------------------------
         ld      A,      [HL]
         ld      [RAM_LEVEL_SOLIDITY],   A
         inc     HL
 
-        ;FW: Floor Width
+        ; FW: Floor Width
         ;-----------------------------------------------------------------------
         ld      E,      [HL]
         inc     HL
@@ -5720,7 +5723,7 @@ loadLevel:                                                              ;$20CB
         inc     HL
         ld      [RAM_LEVEL_FLOORWIDTH], DE
 
-        ;FH: Floor Height
+        ; FH: Floor Height
         ;-----------------------------------------------------------------------
         ld      E,      [HL]
         inc     HL
@@ -5774,7 +5777,7 @@ loadLevel:                                                              ;$20CB
         ld      BC,     $0003
         ldir
 
-        ;get current level number
+        ; get current level number
         ld      A,      [RAM_CURRENT_LEVEL]
         add     A,      A               ; double it (i.e. for 16-bit tables)
         ld      E,      A               ; put it into DE
@@ -6126,7 +6129,7 @@ loadLevel:                                                              ;$20CB
         ; get the music number from the level header
         ld      A,      [HL]
         ; NOTE: this won't change the value of A, but it will
-        ;       ;update the flags, so that...
+        ;       ; update the flags, so that...
         and     A
         ; we can check if the sign is negative,
         ; that is, A>127
@@ -6761,26 +6764,26 @@ _275a:                                                                  ;$275A
 ;
 ; in    HL
 ;-------------------------------------------------------------------------------
-        ld      E,      [HL]                                    ;E = D322 ($48)
+        ld      E,      [HL]            ;E = D322 ($48)
         inc     HL
-        ld      D,      [HL]                                    ;D = D323 ($28)
+        ld      D,      [HL]            ;D = D323 ($28)
         inc     HL
-        inc     [HL]                                            ;D324
+        inc     [HL]                    ;D324
 
-        ld      A,      [DE]                                    ;[$2848]
+        ld      A,      [DE]            ;[$2848]
         cp      [HL]
         jr      nc,     @_1
 
-        ld      [HL],   $00                                     ;reset the counter
-        inc     DE                                              ;move to the next frame of animation
-        inc     DE                                              ;(three bytes each frame index)
+        ld      [HL],   $00             ; reset the counter
+        inc     DE                      ; move to the next frame of animation
+        inc     DE                      ; (three bytes each frame index)
         inc     DE
-        ;update the pointer in RAM to the new animation frame
+        ; update the pointer in RAM to the new animation frame
         dec     HL
         ld      [HL],   D
         dec     HL
         ld      [HL],   E
-        ;check for the end of the animation list ("$FF" wait time)
+        ; check for the end of the animation list ("$FF" wait time)
         inc     HL
         inc     HL
         ld      A,      [DE]
@@ -6927,12 +6930,13 @@ _2825:                                                                  ;$2825
         .BYTE   $5C $5E $FF
         ;
 
-;Used by "_275a"
+; used by "_275a"
 
 _2828:                                                                  ;$2828
 ;===============================================================================
-; Credits screen palette.
+; Credits screen palette
 ;
+;-------------------------------------------------------------------------------
         .TABLE  DSB 16
         .ROW    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
         .ROW    $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
@@ -6987,7 +6991,7 @@ _2872:                                                                  ;$2872
         .ROW    $FF     _2872
         ;
 
-;looks like the sprite layouts for the singing Sonic on the credits screen
+; looks like the sprite layouts for the singing Sonic on the credits screen
 
 _289F:                                                                  ;$289F
 ;===============================================================================
@@ -7057,7 +7061,7 @@ _28F3:                                                                  ;$28F3
 
 _28FB:                                                                  ;$28FB
 ;===============================================================================
-        ;unused?
+        ; unused?
         .BYTE   $32 $34 $FF $FF $FF $FF
         .BYTE   $FF
         ;
@@ -7379,7 +7383,8 @@ mobBounds:                                                              ;$2BA2
 ; 3.  the Y-distance the mob can be above the camera without despawning
 ; 4.  the Y-distance the mob can be below of the camera without despawning
 ;     NOTE: this has to include the screen height of $00C0 (192)
-
+;
+;-------------------------------------------------------------------------------
         .TABLE  WORD  WORD  WORD  WORD
         .ROW    $0100 $0200 $0100 $0200      ;#00: Sonic
         .ROW    $0020 $0120 $0020 $00E0      ;#01: monitor - ring
@@ -7490,23 +7495,24 @@ refresh:                                                                ;$2E5A
 ;
 ; in    IY      Address of the common variables (used throughout)
 ;-------------------------------------------------------------------------------
-        ;do not update the Sonic sprite frame (upon Interrupt)
+        ; do not update the Sonic sprite frame (upon Interrupt)
         res     7,      [IY+Vars.timeLightningFlags]
 
-        ;populate the buffer with the bytes in the layout
+        ; populate the buffer with the bytes in the layout
         ld      HL,     hudLivesLayout
         ld      DE,     RAM_LAYOUT_BUFFER
         ld      BC,     _sizeof_hudLivesLayout  ;=5
-        ldir                                                    ;TODO: unroll this for speed
+        ldir                            ; TODO: unroll this for speed
 
         ld      A,      [RAM_LIVES]
-        cp      9                                               ;9 lives?
-        jr      c,      @_1                                     ;if more than 9 lives,
-        ld      A,        9                               ;we will display as 9 lives
+        cp      9                       ; 9 lives?
+        jr      c,      @_1             ; if more than 9 lives,
+        ld      A,        9             ; we will display as 9 lives
 
-@_1:    add     A,      A                                 ;double for the 8x16 sprite lookup
-        add     A,        $80                             ;numeral sprites begin at index $80
-        ld      [RAM_LAYOUT_BUFFER+3],  A                 ;put number of lives into the buffer
+@_1:    add     A,      A               ; double for the 8x16 sprite lookup
+        add     A,        $80           ; numeral sprites begin at index $80
+        ;put number of lives into the buffer
+        ld      [RAM_LAYOUT_BUFFER+3],  A
 
         ld      C,      HUD_LIVES_X     ; x-position of lives display
         ld      B,      HUD_LIVES_Y     ; y-position of lives display
@@ -7520,25 +7526,26 @@ refresh:                                                                ;$2E5A
 
         ;-----------------------------------------------------------------------
 
-        ;show rings?
+        ; show rings?
         bit     2,      [IY+Vars.scrollRingFlags]
         call    nz,     displayRingCount
 
-        ;show time?
+        ; show time?
         bit     5,      [IY+Vars.timeLightningFlags]
         call    nz,     displayTime
 
         ;-----------------------------------------------------------------------
 
         ld      DE,     $0060
-        ld      HL,     RAM_SCROLLZONE_OVERRIDE_LEFT                ;gets set by moving platforms, e.g. $20
-        ld      A,      [HL]                                    ;[$D267]
-        inc     HL      ;$D268
-        or      [HL]                                            ;[$D268]
-        call    z,      updateCamera@_311a                      ;=0?
-       ;ld      [HL]                D                           ;[$D268] = $60  `write $6000?
-       ;dec     HL      ;$D267          `is this an address?
-       ;ld      [HL]    E                                       ;[$D267] = $00
+        ; gets set by moving platforms, e.g. $20
+        ld      HL,     RAM_SCROLLZONE_OVERRIDE_LEFT
+        ld      A,      [HL]            ;[$D267]
+        inc     HL                      ;$D268
+        or      [HL]                    ;[$D268]
+        call    z,      updateCamera@_311a      ;=0?
+       ;ld      [HL]    D               ; [$D268] = $60  `write $6000?
+       ;dec     HL      ;$D267          ; is this an address?
+       ;ld      [HL]    E               ; [$D267] = $00
        ;inc     HL      ;$D268
 
         inc     HL
@@ -7557,7 +7564,7 @@ refresh:                                                                ;$2E5A
 
         inc     HL
         ld      DE,     $0070
-        ;up-down wave scrolling?
+        ; up-down wave scrolling?
         bit     6,      [IY+Vars.scrollRingFlags]
         jr      z,      @_2
 
@@ -7567,9 +7574,9 @@ refresh:                                                                ;$2E5A
         or      [HL]
         call    z,      updateCamera@_311a
 
-        ;is Sonic alive?
+        ; is Sonic alive?
         bit     0,      [IY+Vars.scrollRingFlags]
-        call    z,      updateCamera                            ;handle camera movement
+        call    z,      updateCamera
 
         ld      HL,     $0000
         ld      [RAM_SCROLLZONE_OVERRIDE_LEFT],         HL
@@ -7577,9 +7584,11 @@ refresh:                                                                ;$2E5A
         ld      [RAM_SCROLLZONE_OVERRIDE_TOP],          HL
         ld      [RAM_SCROLLZONE_OVERRIDE_BOTTOM],       HL
 
-        ;check for mobs that have gone too far off-screen and should be despawned
+        ; check for mobs that have gone too far
+        ; off-screen and should be despawned
         call    checkMobsOutOfBounds
-        ;run the code for all the different mobs in the level (including the player)
+        ; run the code for all the different mobs in the level
+        ; (including the player)
         call    processMobs
 
         ret
@@ -7600,12 +7609,12 @@ displayRingCount:                                                       ;$2EE6
         rrca
         and     %00001111
         add     A,      A
-        add     A,      $80                                     ;TODO: numeral 0 tile index
+        add     A,      $80             ; TODO: numeral 0 tile index
         ld      [RAM_LAYOUT_BUFFER],    A
         ld      A,      C
         and     %00001111
         add     A,      A
-        add     A,      $80                                     ;TODO: numeral 0 tile index
+        add     A,      $80             ; TODO: numeral 0 tile index
         ld      [RAM_LAYOUT_BUFFER+1],  A
         ld      A,      $FF
         ld      [RAM_LAYOUT_BUFFER+2],  A
@@ -7638,15 +7647,16 @@ displayTime:                                                            ;$2F1F
         ld      A,      [RAM_TIME_MINUTES]
         and     %00001111
         add     A,      A
-        add     A,      $80                             ;TODO: numeral 0 tile index
+        add     A,      $80             ; TODO: numeral 0 tile index
 
         ld      [HL],   A
         inc     HL
-        ld      [HL],   $B0                             ;TODO: colon tile index
+        ld      [HL],   $B0             ; TODO: colon tile index
         inc     HL
 
-        ;TODO: a look-up table has to be faster than this...
-        ;      (could also lookup straight to the tile index, as calculated below)
+        ; TODO: a look-up table has to be faster than this...
+        ;       (could also lookup straight to the tile index,
+        ;        as calculated below)
         ld      A,      [RAM_TIME_SECONDS]
         ld      C,      A
         srl     A
@@ -7654,9 +7664,9 @@ displayTime:                                                            ;$2F1F
         srl     A
         srl     A
 
-        ;convert this to a sprite tile index --
-        add     A,      A                                       ;doubled because 8x16 sprites
-        add     A,      $80                                     ;TODO: base offset of the numeral tiles
+        ; convert this to a sprite tile index --
+        add     A,      A               ; doubled because 8x16 sprites
+        add     A,      $80             ; TODO: base offset of the numeral tiles
 
         ld      [HL],    A
         inc     HL
@@ -7664,21 +7674,21 @@ displayTime:                                                            ;$2F1F
         ld      A,      C
         and     %00001111
         add     A,      A
-        add     A,      $80                                     ;TODO: base offset of the numeral tiles
+        add     A,      $80             ; TODO: base offset of the numeral tiles
         ld      [HL],   A
         inc     HL
-        ld      [HL],    $FF                             ;terminate the buffer
+        ld      [HL],    $FF            ; terminate the buffer
 
         ld      C, 24
         ld      B, 16
 
-        ;are we on the special stage?
+        ; are we on the special stage?
         ld      A,      [RAM_CURRENT_LEVEL]
         cp      28
         jr      c,      @_1
 
-        ;position the time in the centre of the screen on special stages
-        ;TODO: this is inefficient changing the position twice
+        ; position the time in the centre of the screen on special stages
+        ; TODO: this is inefficient changing the position twice
         ld      C, 112
         ld      B, 56
 
@@ -7748,21 +7758,21 @@ updateCamera:                                                           ;$2F66
 
         ld      HL,     [RAM_SCROLLZONE_OVERRIDE_RIGHT]     ;=72
         ld      DE,     [RAM_SCROLLZONE_RIGHT]              ;=136
-        and     A                                    ;clear flags, particularly carry
+        and     A                       ; clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
         ld      [RAM_SCROLLZONE_RIGHT], DE
 
         ld      HL,     [RAM_SCROLLZONE_OVERRIDE_TOP]               ;=48
         ld      DE,     [RAM_SCROLLZONE_TOP]                        ;=96
-        and     A                                    ;clear flags, particularly carry
+        and     A                       ; clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
         ld      [RAM_SCROLLZONE_TOP],   DE
 
         ld      HL,     [RAM_SCROLLZONE_OVERRIDE_BOTTOM]    ;=48
         ld      DE,     [RAM_SCROLLZONE_BOTTOM]             ;=112
-        and     A                                    ;clear flags, particularly carry
+        and     A                       ; clear flags, particularly carry
         sbc     HL,     DE
         call    nz,     @_315e
         ld      [RAM_SCROLLZONE_BOTTOM],DE
@@ -7785,24 +7795,26 @@ updateCamera:                                                           ;$2F66
         ld      DE,     [RAM_SONIC.X]
         ld      HL,     [RAM_CAMERA_X]
         add     HL,     BC
-        and     A                                    ;clear flags, particularly carry
+        and     A                       ; clear flags, particularly carry
         sbc     HL,     DE
-        ;if the player is outside of the left-hand scroll zone, skip forward --
+        ; if the player is outside of the left-hand scroll zone, skip forward
         ; (we'll have to check the right-hand scroll zone next)
         jr      c,      @scrollZoneRight
 
-        ;limit the camera to a maximum of 8 pixels per frame: if it could go faster,
-        ;then more than one columm of scroll tiles would be required
+        ; limit the camera to a maximum of 8 pixels per frame:
+        ; if it could go faster, then more than one columm of scroll 
+        ; tiles would be required
 
-        ;HL > 255?
-        ;TODO: we could use `XOR A` instead of `AND A` above to reset A,
-        ;      allowing us to use just `AND H` below to do the zero-check quicker
+        ; HL > 255?
+        ; TODO: we could use `XOR A` instead of `AND A` above to reset A,
+        ;       allowing us to use just `AND H` below to do the zero-check
+        ;       quicker
         ld      A,      H
         and     A
         jr      nz,     @limitScrollLeft
 
         ld      A,      L
-        cp      9                                               ;TODO: shouldn't this be 8?
+        cp      9                       ; TODO: shouldn't this be 8?
         jr      c,      @_2
 
 @limitScrollLeft:
@@ -7914,7 +7926,7 @@ updateCamera:                                                           ;$2F66
         sbc     HL,     DE
         jr      nc,     @levelRightLimit
 
-        ;stop the camera at the level boundary
+        ; stop the camera at the level boundary
         ld      [RAM_CAMERA_X], DE
         jr      @cameraY
 
@@ -8027,7 +8039,8 @@ updateCamera:                                                           ;$2F66
         and     A
         jr      nz,     @_14
 
-        bit     6,      [IY+Vars.scrollRingFlags]          ;up-down wave scrolling?
+        ; up-down wave scrolling?
+        bit     6,      [IY+Vars.scrollRingFlags]
         call    nz,     @_311f
         ld      A,      L
         cp      C
@@ -8037,7 +8050,8 @@ updateCamera:                                                           ;$2F66
         ld      L,      C
         ld      H,      $00
 
-@_15:   bit     4,      [IY+Vars.scrollRingFlags]          ;auto scroll up?
+        ; auto scroll up?
+@_15:   bit     4,      [IY+Vars.scrollRingFlags]
         jr      nz,     @levelTopLimit
 
         ld      DE,     [RAM_CAMERA_Y]
@@ -8064,7 +8078,7 @@ updateCamera:                                                           ;$2F66
         ld      DE,     [RAM_LEVEL_BOTTOM]
         and     A
         sbc     HL,     DE
-        jr      c,      @ret                                    ;TODO: use `ret c`?
+        jr      c,      @ret            ; TODO: use `ret c`?
         ; stop the camera at the level boundary
         ld      [RAM_CAMERA_Y], DE
 
@@ -8112,10 +8126,10 @@ updateCamera:                                                           ;$2F66
         ;=======================================================================
         ; scroll horizontally towards the locked camera position
         ld      DE,     [RAM_LEVEL_LEFT]
-        and     A                                               ;reset carry so it doesn't affect `sbc`
+        and     A                       ; reset carry so it doesn't affect `sbc`
         sbc     HL,     DE
-        ret     z                                               ;if HL = DE then return -- no change
-        jr      c,      @_1a                                    ;is DE > HL?
+        ret     z                       ; if HL = DE then return -- no change
+        jr      c,      @_1a            ; is DE > HL?
 
         inc     DE
         ld      [RAM_LEVEL_LEFT],       DE
@@ -8158,8 +8172,8 @@ updateCamera:                                                           ;$2F66
 @_2c:   ld      [RAM_D29D],     HL
         ld      C,      L
         ld      B,      H
-        ld      HL,     [RAM_D25C]                                  ;between RAM_CAMERA_X & Y
-        ld      A,      [RAM_CAMERA_Y+1]                            ;high-byte of RAM_CAMERA_X
+        ld      HL,     [RAM_D25C]      ; between RAM_CAMERA_X & Y
+        ld      A,      [RAM_CAMERA_Y+1]; high-byte of RAM_CAMERA_X
         add     HL,     BC
         ld      E,      $00
         bit     7,      B
@@ -8334,7 +8348,7 @@ checkMobsOutOfBounds:                                                   ;$31E6
         sbc     HL',    DE'             ; has the mob gone too far right?
         jp      c,      @removeMobExx   ; if so, remove it
 
-        ;top & bottom bounds:
+        ; top & bottom bounds:
         ;-----------------------------------------------------------------------
 
         ; if the camera is near the top edge of the Floor Layout then the mob's
@@ -8515,7 +8529,7 @@ postProcessMob:                                                         ;$32E2
 ;
 ; in    IX      Address of the current mob being processed
 ;-------------------------------------------------------------------------------
-        ;move mob:
+        ; move mob:
 
         ; TODO: could have a mob flag to mark as stationary and skip this bit,
         ;       alternatively, the callback set up before processing the mob
@@ -9340,15 +9354,15 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
 ;===============================================================================
 ; TODO: This whole thing seems highly inefficient
 ;
-; Retrieves an address in the Floor Layout in RAM based on the given mob's
-; position. Note that each byte in the Floor Layout represents a 32x32 Block
-; (4x4 tiles).
+; retrieves an address in the Floor Layout in RAM based on the given mob's
+; position. note that each byte in the Floor Layout represents a 32x32 Block
+; (4x4 tiles)
 ;
-; in    IX      Address of the mob to process
-;       BC      Horizontal pixel offset to add to the mob's X position before locating tile
-;       DE      Vertical pixel offset to add to the mob's Y position before locating tile
+; in    IX      address of the mob to process
+;       BC      horizontal pixel offset to add to the mob's X position before locating tile
+;       DE      vertical pixel offset to add to the mob's Y position before locating tile
 ;
-; out   HL      An address within the Floor Layout in RAM
+; out   HL      an address within the Floor Layout in RAM
 ;-------------------------------------------------------------------------------
         ; how wide is the floor layout?
         ; TODO: we could do this check when loading
@@ -9496,7 +9510,7 @@ getFloorLayoutRAMAddressForMob:                                         ;$36F9
 
         ; 16-bit multiply by 8
         ld      A, L
-        rlca    ;x2 ...
+        rlca    ; x2 ...
         rl      H
         rlca    ; x4 ...
         rl      H
@@ -9645,7 +9659,8 @@ updateSonicSpriteFrame:                                                 ;$37E0
 
 animateFloorRing:                                                       ;$3879
 ;===============================================================================
-; Updates the rings in the Floor Layout with their next frame of animation.
+; updates the rings in the Floor Layout with their next frame of animation
+;
 ;-------------------------------------------------------------------------------
         ld      DE,     [RAM_RING_CURRENT_FRAME]
         ld      HL,     [RAM_RING_PREVIOUS_FRAME]
@@ -9811,7 +9826,7 @@ main_38b0:                                                              ;$38B0
 
 detectCollisionWithSonic:                                               ;$3956
 ;===============================================================================
-; Tests to see if the given mob has collided with Sonic.
+; tests to see if the given mob has collided with Sonic
 ;
 ; in    IX              Address of the current mob being processed
 ;       IY              Address of the common variables (used throughout)
@@ -10124,7 +10139,7 @@ solidityBlocks:                                                         ;$3A65
 ;===============================================================================
 ; solidity pointer table
 ;
-        ;TODO: this should be populated by the tilesets
+        ; TODO: this should be populated by the tilesets
         .ADDR   @greenHill     @bridge        @jungle
         .ADDR   @labyrinth     @scrapBrain    @skyBaseInterior
         .ADDR   @specialStage  @skyBaseExterior
@@ -10497,34 +10512,34 @@ Unknown:                                                                ;$4020
 @_47A8: .BYTE   $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B ;$47A8
         .BYTE   $0B $0B $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
 
-        ;unused?
+        ; unused?
 @_47C8: .BYTE   $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 ;$47C8
         .BYTE   $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
 
-        ;unused?
+        ; unused?
 @_47E8: .BYTE   $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 ;$47E8
         .BYTE   $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08
 
 @_4808: .BYTE   $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B ;$4808
         .BYTE   $0C $0C $0C $0C $0D $0D $0D $0D $0E $0E $0E $0E $0F $0F $0F $0F
 
-        ;unused?
+        ; unused?
 @_4828: .BYTE   $0F $0F $0F $0F $0E $0E $0E $0E $0D $0D $0D $0D $0C $0C $0C $0C ;$4828
         .BYTE   $0B $0B $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
 
-        ;unused?
+        ; unused?
 @_4848: .BYTE   $07 $07 $06 $06 $05 $05 $04 $04 $03 $03 $02 $02 $01 $01 $00 $00 ;$4848
         .BYTE   $00 $00 $01 $01 $02 $02 $03 $03 $04 $04 $05 $05 $06 $06 $07 $07
 
-        ;unused?
+        ; unused?
 @_4868: .BYTE   $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0C $0C ;$4868
         .BYTE   $0C $0C $0B $0B $0A $0A $0A $0A $09 $09 $09 $09 $08 $08 $08 $08
 
-        ;unused?
+        ; unused?
 @_4888: .BYTE   $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 ;$4888
         .BYTE   $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10
 
-        ;unused?
+        ; unused?
 @_48A8: .BYTE   $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 $10 ;$48A8
         .BYTE   $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80 $80
         ;
@@ -10952,10 +10967,10 @@ mob_sonic:                                                              ;$48C8
         jr      z,      @_13
         bit     3,      [IX+Mob.flags]
         jr      nz,     @_12
-        ;button 2 pressed?
+        ; button 2 pressed?
         bit     5,      [IY+Vars.joypad]
         jr      z,      @_13
-        ;button 2 not pressed?
+        ; button 2 not pressed?
 @_12:   bit     5,      [IY+Vars.joypad]
         jr      nz,     @_14
 @_4b7f:
@@ -11103,7 +11118,8 @@ mob_sonic:                                                              ;$48C8
         ;-----------------------------------------------------------------------
 
 @_23:   ld      D,      A
-        ;TODO: what on earth is this? (could be a data ref, and not a ref to this label)
+        ; TODO: what on earth is this?
+        ; (could be a data ref, and not a ref to this label)
         ld      BC,     sound.update
         bit     1,      [IX+Mob.flags]
         jr      z,      @_24
@@ -11190,7 +11206,7 @@ mob_sonic:                                                              ;$48C8
         and     A
         jp      p,      @_31
 
-        xor     A                                          ;(set A to zero)
+        xor     A                       ; (set A to zero)
         ld      [RAM_SONIC.Xspeed+0],   A
         ld      [RAM_SONIC.Xspeed+1],   A
         ld      [RAM_SONIC.Xdirection], A
@@ -11199,7 +11215,7 @@ mob_sonic:                                                              ;$48C8
         ;-----------------------------------------------------------------------
 
 @_30:   ld      HL,     [RAM_LEVEL_RIGHT]
-        ld      DE,     $00F8                                   ;248 -- screen width less 8?
+        ld      DE,     $00F8           ; 248 -- screen width less 8?
         add     HL,     DE
 
         ex      DE,     HL
@@ -11221,7 +11237,7 @@ mob_sonic:                                                              ;$48C8
         or      L
         jr      z,      @_31
 
-        xor     A                                          ;(set A to 0)
+        xor     A                       ; (set A to 0)
         ld      [RAM_SONIC.Xspeed+0],   A
         ld      [RAM_SONIC.Xspeed+1],   A
         ld      [RAM_SONIC.Xdirection], A
@@ -11423,8 +11439,8 @@ mob_sonic:                                                              ;$48C8
 
         ;-----------------------------------------------------------------------
 
-        ;is Sonic moving?
-@_4edd: ld      HL,     [RAM_SONIC.Xspeed]                                  ;$4EDD
+        ; is Sonic moving?
+@_4edd: ld      HL,     [RAM_SONIC.Xspeed]                              ;$4EDD
         ld      A,      H
         or      L
         ret     nz
@@ -11610,7 +11626,7 @@ mob_sonic:                                                              ;$48C8
 
         ;-----------------------------------------------------------------------
 
-@_4ff5: ld      A,      [RAM_FRAMECOUNT]                                    ;$4FF5
+@_4ff5: ld      A,      [RAM_FRAMECOUNT]                                ;$4FF5
         and     %00000011
         ret     nz
 
@@ -11629,18 +11645,19 @@ mob_sonic:                                                              ;$48C8
 
 @drownTimer:                                                            ;$5009
         ;-----------------------------------------------------------------------
-        ;check for specific solidity data for this level
+        ; check for specific solidity data for this level
         ld      A,      [RAM_LEVEL_SOLIDITY]
-        cp      $03                                             ;labyrinth?
+        cp      $03                     ; labyrinth?
         ret     nz
 
-        ;is this labyrinth act 3?
-        ;TODO: the no-drowning effect of Labyrinth Act 3 should be a level header flag, not hard-coded like this
+        ; is this labyrinth act 3?
+        ; TODO: the no-drowning effect of Labyrinth Act 3 should be
+        ;       a level header flag, not hard-coded like this
         ld      A,      [RAM_CURRENT_LEVEL]
         cp      $0B
-        ret     z                                               ;yes? not applicable
+        ret     z                       ; yes? not applicable
 
-        ;increase drown timer...
+        ; increase drown timer...
         ld      HL,     [RAM_D29B]
         inc     HL
         ld      [RAM_D29B],     HL
@@ -11650,20 +11667,20 @@ mob_sonic:                                                              ;$48C8
         sbc     HL,     DE
         ret     c
 
-        ;count down 1 every 256 frames
+        ; count down 1 every 256 frames
         ld      A,      $05
         sub     H
         jr      nc,     @_42
 
-        res     5,      [IY+Vars.flags6]                  ;remove shield
-        res     6,      [IY+Vars.flags6]                  ;clear damage state
+        res     5,      [IY+Vars.flags6]        ; remove shield
+        res     6,      [IY+Vars.flags6]        ; clear damage state
         res     0,      [IY+Vars.unknown0]
         set     3,      [IY+Vars.unknown0]
-        set     0,      [IY+Vars.scrollRingFlags]         ;mark player as dead
+        set     0,      [IY+Vars.scrollRingFlags]; mark player as dead
         ld      A,      $C0
         ld      [RAM_D287],     A
 
-        ;drowned!
+        ; drowned!
 .IFDEF  OPTION_SOUND
         ;///////////////////////////////////////////////////////////////////////
         ld      A,      MUSIC_ID_DEATH
@@ -11676,7 +11693,7 @@ mob_sonic:                                                              ;$48C8
         call    mobs_91eb
         xor     A
 
-        ;layout the oxygen countdown number
+        ; layout the oxygen countdown number
 @_42:   ld      E,      A
         add     A,      A
         add     A,      $80
@@ -11757,7 +11774,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;-----------------------------------------------------------------------
-        ;joypad up is pressed...
+        ; joypad up is pressed...
 
 @_50c1: bit     2,      [IX+Mob.flags]                                  ;$50C1
         ret     nz
@@ -11768,7 +11785,7 @@ mob_sonic:                                                              ;$48C8
         bit     7,      [IX+Mob.flags]
         ret     z
 
-        ;is Sonic moving?
+        ; is Sonic moving?
         set     0,      [IX+Mob.flags]
 
         ld      HL,     [RAM_SONIC.Xspeed]
@@ -11801,7 +11818,7 @@ mob_sonic:                                                              ;$48C8
         ld      HL,     $0000
         ld      [RAM_D29B],     HL
 
-        res     4,      [IX+Mob.flags]                     ;mob not underwater
+        res     4,      [IX+Mob.flags]  ; mob not underwater
         ret
 
         ;-----------------------------------------------------------------------
@@ -11905,11 +11922,11 @@ mob_sonic:                                                              ;$48C8
 
         ;-----------------------------------------------------------------------
 
-@_5193: xor     A       ;set A to 0                                     ;$5319
+@_5193: xor     A       ; set A to 0                                    ;$5319
         ld      L,      A
         ld      H,      A
         ld      [RAM_SONIC.Yspeed],     HL
-        ld      [RAM_SONIC.Ydirection], A                  ;set "not jumping"
+        ld      [RAM_SONIC.Ydirection], A       ; set "not jumping"
 
         ld      [IX+Mob.unknown14], $16
         ld      A,      [RAM_SONIC.unknown13]
@@ -11949,7 +11966,7 @@ mob_sonic:                                                              ;$48C8
 
         ;-----------------------------------------------------------------------
 
-@_51dd: ld      A,      [RAM_SONIC.flags]                                   ;$51DD
+@_51dd: ld      A,      [RAM_SONIC.flags]                               ;$51DD
         and     $FA
         ld      [RAM_SONIC.flags],      A
         ld      [IX+Mob.unknown14],     $14
@@ -11962,7 +11979,7 @@ mob_sonic:                                                              ;$48C8
 
         ;-----------------------------------------------------------------------
 
-@_51f3: ld      A,      [RAM_SONIC.unknown16]                              ;$51F3
+@_51f3: ld      A,      [RAM_SONIC.unknown16]                           ;$51F3
         and     A
         ret     nz
 
@@ -12017,7 +12034,7 @@ mob_sonic:                                                              ;$48C8
 
         ld      A,      [RAM_FRAMECOUNT]
         and     A
-        call    z,      mobs_91eb       ;do this every 256 frames...?
+        call    z,      mobs_91eb       ; do this every 256 frames...?
 
         ret
 
@@ -12032,12 +12049,13 @@ mob_sonic:                                                              ;$48C8
         ret     c
 
 @_51:   ld      A,      [IY+Vars.spriteUpdateCount]
-        ld      HL,     [RAM_SPRITETABLE_ADDR]                    ;get current sprite-table address
+        ; get current sprite-table address
+        ld      HL,     [RAM_SPRITETABLE_ADDR]
 
-        push    AF                                      ;remember no. of sprite updates pending
-        push    HL                                         ;remember current sprite-table address
+        push    AF                      ; remember no. of sprite updates pending
+        push    HL                      ; remember current sprite-table address
         ld      HL,     RAM_SPRITETABLE ; load the game's main sprite table
-        ld      [RAM_SPRITETABLE_ADDR], HL                 ;and set the pointer to that
+        ld      [RAM_SPRITETABLE_ADDR], HL      ; and set the pointer to that
 
         ld      DE,     [RAM_CAMERA_Y]
         ld      HL,     [RAM_D2E4]
@@ -12048,7 +12066,7 @@ mob_sonic:                                                              ;$48C8
         ld      HL,     [RAM_D2E2]
         and     A
         sbc     HL,     BC
-        ld      BC,     @_526e                                  ;address of sprite layout
+        ld      BC,     @_526e          ; address of sprite layout
         call    processSpriteLayout
 
         pop     HL
@@ -12121,8 +12139,8 @@ mob_sonic:                                                              ;$48C8
         push    IX
         push    HL
         pop     IX
-        xor     A                                          ;set A to 0
-        ld      [IX+Mob.type],      $54                     ;all emeralds animation
+        xor     A                       ; (set A to 0)
+        ld      [IX+Mob.type],      $54 ; all emeralds animation
         ld      [IX+Mob.unknown11], A
         ld      [IX+Mob.flags],     A
         ld      [IX+Mob.Xsubpixel], A
@@ -12310,7 +12328,7 @@ mob_sonic:                                                              ;$48C8
         jp      @_4bac
 
         ;-----------------------------------------------------------------------
-        ;Sonic is dead...
+        ; Sonic is dead...
 
 @_543c: set     5,      [IX+Mob.flags]  ; make Sonic pass over the floor;$543C
 
@@ -12318,9 +12336,9 @@ mob_sonic:                                                              ;$48C8
         cp      $60
         jr      z,      @_54aa
 
-        ;has Sonic finished falling off the screen?
+        ; has Sonic finished falling off the screen?
         ld      HL,     [RAM_CAMERA_Y]
-        ld      DE,     $00C0                                   ;height of screen?
+        ld      DE,     $00C0           ; height of screen?
         add     HL,     DE
         ld      DE,     [RAM_SONIC.Y]
         sbc     HL,     DE
@@ -12332,7 +12350,7 @@ mob_sonic:                                                              ;$48C8
         ld      A,      $01
         ld      [RAM_D283],     A
 
-        ;remove a life...
+        ; remove a life...
         ld      HL,     RAM_LIVES
         dec     [HL]
 
@@ -12392,10 +12410,10 @@ mob_sonic:                                                              ;$48C8
         ; air
 
 @_54bc: ; check if the player is underwater                             ;$54BC
-        bit     7,      [IY+Vars.flags6]                  ;underwater flag
-        ret     nz                                              ;this solidity is not valid underwater
+        bit     7,      [IY+Vars.flags6]; underwater flag
+        ret     nz                      ; this solidity is not valid underwater
 
-        res     4,      [IX+Mob.flags]                     ;turn off mob underwater flag
+        res     4,      [IX+Mob.flags]  ; turn off mob underwater flag
         ret
 
         ;=======================================================================
@@ -12457,8 +12475,8 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $03
-        ;horizontal spring? (facing left)
+        ; referenced by table at `_58e5` - index $03
+        ; horizontal spring? (facing left)
 
 @_550f: ld      A,      [IX+Mob.X+0]                                    ;$550F
         add     A,      $0C
@@ -12479,8 +12497,8 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $04
-        ;vertical spring?
+        ; referenced by table at `_58e5` - index $04
+        ; vertical spring?
 
 @_552d:
         ld      A,      [IX+Mob.X+0]                                    ;$552D
@@ -12509,7 +12527,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $05
+        ; referenced by table at `_58e5` - index $05
 
 @_5556: ld      A,       [IX+Mob.X+0]                                   ;$5556
         add     A,      $0C
@@ -12531,7 +12549,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $06
+        ; referenced by table at `_58e5` - index $06
 
 @_5578: bit     7,      [IX+Mob.flags]                                  ;$5578
         ret     z
@@ -12546,7 +12564,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $07
+        ; referenced by table at `_58e5` - index $07
 
 @_5590: bit     7,      [IX+Mob.flags]                                  ;$5590
         ret     z
@@ -12561,8 +12579,8 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $08
-        ;water? (non-raster)
+        ; referenced by table at `_58e5` - index $08
+        ; water? (non-raster)
 
 @_55a8: bit     4,      [IX+Mob.flags]  ; mob underwater?               ;$55A8
         jr      nz,     @_74
@@ -12573,12 +12591,12 @@ mob_sonic:                                                              ;$48C8
         rst     rst_playSFX
 .ENDIF  ;///////////////////////////////////////////////////////////////////////
 
-@_74:   set     4,      [IX+Mob.flags]                      ;set mob underwater
+@_74:   set     4,      [IX+Mob.flags]  ; set mob underwater
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $09
-        ;vertical spring? (up-centre)
+        ; referenced by table at `_58e5` - index $09
+        ; vertical spring? (up-centre)
 
 @_55b6: ld      A,      [IX+Mob.X+0]                                    ;$55B6
         add     A,      $0C
@@ -12609,7 +12627,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $0A
+        ; referenced by table at `_58e5` - index $0A
 
 @_55e2: bit     7,      [IX+Mob.Ydirection]                             ;$55E2
         ret     nz
@@ -12622,7 +12640,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $0B
+        ; referenced by table at `_58e5` - index $0B
 
 @_55eb: bit     4,      [IY+Vars.flags6]                                ;$55EB
         ret     nz
@@ -12696,7 +12714,7 @@ mob_sonic:                                                              ;$48C8
         .BYTE   $32 $00 $00 $17 $2F $0C $00 $00 $FF
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $0C
+        ; referenced by table at `_58e5` - index $0C
 
 @_565c: ld      HL,     [RAM_SONIC.Xspeed]                                  ;$565C
         ld      A,      [RAM_SONIC.Xdirection]
@@ -12706,7 +12724,7 @@ mob_sonic:                                                              ;$48C8
         ld      [RAM_SONIC.Xspeed],     HL
         ld      [RAM_SONIC.Xdirection], A
 
-        bit     4,      [IX+Mob.flags]                     ;mob underwater?
+        bit     4,      [IX+Mob.flags]  ; mob underwater?
         jr      nz,     @_77
 
 .IFDEF  OPTION_SOUND
@@ -12715,7 +12733,7 @@ mob_sonic:                                                              ;$48C8
         rst     rst_playSFX
 .ENDIF  ;///////////////////////////////////////////////////////////////////////
 
-@_77:   set     4,      [IX+Mob.flags]                     ;set mob underwater
+@_77:   set     4,      [IX+Mob.flags]  ; set mob underwater
         ret
 
         ;=======================================================================
@@ -12745,7 +12763,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $0E
+        ; referenced by table at `_58e5` - index $0E
 
 @_56a6: xor     A                                                       ;$56A6
         ld      HL,     $0006
@@ -12755,7 +12773,7 @@ mob_sonic:                                                              ;$48C8
         jr      @_568a
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $0F
+        ; referenced by table at `_58e5` - index $0F
 
 @_56b6: xor     A                                                       ;$56B6
         ld      HL,     $FFFB
@@ -12767,7 +12785,7 @@ mob_sonic:                                                              ;$48C8
         jr      @_568a
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $10
+        ; referenced by table at `_58e5` - index $10
 
 @_56c6: xor     A                                                       ;$56C6
         ld      HL,     $FFFA
@@ -12779,7 +12797,7 @@ mob_sonic:                                                              ;$48C8
         jr      @_568a
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $11
+        ; referenced by table at `_58e5` - index $11
 
 @_56d6: ld      A,      [RAM_D2E1]                                          ;$56D6
         cp      $08
@@ -12832,7 +12850,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;-----------------------------------------------------------------------
-        ;called by functions referenced by `_58e5`
+        ; called by functions referenced by `_58e5`
 
 @_5727: ld      HL,     [RAM_SONIC.Xspeed]                                 ;$5727
         ld      A,      [RAM_SONIC.Xdirection]
@@ -12873,7 +12891,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $12
+        ; referenced by table at `_58e5` - index $12
 
 @_5761: ld      [IX+Mob.Yspeed+0],      $00                             ;$5761
         ld      [IX+Mob.Yspeed+1],      $F6
@@ -12888,7 +12906,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $13
+        ; referenced by table at `_58e5` - index $13
 
 @_5771: ld      [IX+Mob.Yspeed+0],      $00                             ;$5771
         ld      [IX+Mob.Yspeed+1],      $F4
@@ -12902,7 +12920,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $14
+        ; referenced by table at `_58e5` - index $14
 
 @_5781: ld      [IX+Mob.Yspeed+0],      $00                             ;$5781
         ld      [IX+Mob.Yspeed+1],      $F2
@@ -12916,7 +12934,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $15
+        ; referenced by table at `_58e5` - index $15
 
 @_5791: ld      A,      [RAM_D2B1]                                      ;$5791
         and     A
@@ -12959,7 +12977,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $16
+        ; referenced by table at `_58e5` - index $16
 
 @_57cd: call    @_5727                                                  ;$57CD
         ld      DE,     $0001
@@ -12985,7 +13003,7 @@ mob_sonic:                                                              ;$48C8
         jp      @_57be
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $17
+        ; referenced by table at `_58e5` - index $17
 
 @_57f6: ld      HL,     [RAM_D2E9]                                      ;$57F6
         ld      DE,     $0082
@@ -12998,7 +13016,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $18
+        ; referenced by table at `_58e5` - index $18
 
 @_5808: ld      A,      [RAM_SONIC.flags]                               ;$5808
         rlca
@@ -13043,7 +13061,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $19
+        ; referenced by table at `_58e5` - index $19
 
 @_584b: ld      HL,     [RAM_SONIC.X]                                   ;$584B
         ld      BC,     $000c
@@ -13082,7 +13100,7 @@ mob_sonic:                                                              ;$48C8
         ret
 
         ;=======================================================================
-        ;referenced by table at `_58e5` - index $1A
+        ; referenced by table at `_58e5` - index $1A
 
 @_5883: ld      HL,     [RAM_SONIC.X]                                   ;$5883
         ld      BC,     $000c
@@ -13094,7 +13112,7 @@ mob_sonic:                                                              ;$48C8
         jp      @_581b
 
         ;-----------------------------------------------------------------------
-        ;called by functions referenced by `58e5`
+        ; called by functions referenced by `58e5`
 
 @_5893: push    BC                                                      ;$5893
         push    DE
@@ -13107,8 +13125,8 @@ mob_sonic:                                                              ;$48C8
         push    HL
         pop     IX
 
-        xor     A                                          ;set A to 0
-        ld      [IX+Mob.type],      $2E                 ;falling bridge piece
+        xor     A                       ; (set A to 0)
+        ld      [IX+Mob.type],      $2E ; falling bridge piece
         ld      [IX+Mob.Xsubpixel], A
         ld      [IX+Mob.X+0],       C
         ld      [IX+Mob.X+1],       B
@@ -13133,14 +13151,14 @@ mob_sonic:                                                              ;$48C8
 @_58d0: bit     7,      [IX+Mob.flags]                                  ;$58D0
         ret     z
 
-        ;is Sonic on the screen (vertically)
+        ; is Sonic on the screen (vertically)
         ld      HL,     [RAM_SONIC.Y]
         ld      DE,     [RAM_CAMERA_Y]
         and     A
         sbc     HL,      DE
         ret     nc
 
-        ;clear joypad input
+        ; clear joypad input
         ld      [IY+Vars.joypad],  $FF
         ret
 
@@ -13222,11 +13240,11 @@ mob_powerups_ring:                                                      ;$5B09
         call    _5deb
         jr      c,      @_1
 
-        ;Add 10 rings to the ring count
+        ; add 10 rings to the ring count
 @_5b24: ld      A,      $10
         call    increaseRings
 
-@_5b29: xor     A       ;set A to 0
+@_5b29: xor     A       ; set A to 0
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
         ret
@@ -13346,15 +13364,15 @@ mob_powerups_life:                                                      ;$5C05
         ld      [IX+Mob.height],    24
         call    _5da8
 
-        ;check if the level has its bit flag set at D305+
+        ; check if the level has its bit flag set at D305+
         ld      HL,     RAM_D305
         call    getLevelBitFlag
 
         ld      A,      [HL]
         and     C
-        jr      z,      @_1             ;if not set, skip ahead
+        jr      z,      @_1             ; if not set, skip ahead
 
-        ld      [IX+Mob.type],      $FF ;remove object?
+        ld      [IX+Mob.type],      $FF ; remove object?
         jp      mob_powerups_ring@_5b29
 
 @_1:    ld      HL,             $0003
@@ -13371,14 +13389,14 @@ mob_powerups_life:                                                      ;$5C05
         ld      HL,     RAM_LIVES
         inc     [HL]
 
-        ;set the level's bit flag at D305+
+        ; set the level's bit flag at D305+
         ld      HL,     RAM_D305
         call    getLevelBitFlag
         ld      A,      [HL]
         or      C
         ld      [HL],   A
 
-        xor     A                                          ;set A to 0
+        xor     A                       ; (set A to 0)
         ld      [IX+Mob.spriteLayout+0],    A
         ld      [IX+Mob.spriteLayout+1],    A
 
@@ -13389,7 +13407,7 @@ mob_powerups_life:                                                      ;$5C05
 .ENDIF  ;///////////////////////////////////////////////////////////////////////
 
         ld      A,      [RAM_CURRENT_LEVEL]
-        cp      28                      ;special stage?
+        cp      28                      ; special stage?
         ret     nc
 
         ld      HL,     RAM_D280
@@ -13399,16 +13417,16 @@ mob_powerups_life:                                                      ;$5C05
         ;-----------------------------------------------------------------------
 
 @_2:    ld      A,       [RAM_CURRENT_LEVEL]
-        cp      4                       ;level 4 (Bridge Act 2)?
+        cp      4                       ; level 4 (Bridge Act 2)?
         jr      z,      @_4
 
-        cp      $09                     ;level 9 (Labyrinth Act 1)?
+        cp      $09                     ; level 9 (Labyrinth Act 1)?
         jr      z,      @_6
 
-        cp      $0C                     ;level 12 (Scrap Brain Act 1)?
+        cp      $0C                     ; level 12 (Scrap Brain Act 1)?
         jr      z,      @_7
 
-        cp      $11                     ;level 11 (Labyrinth Act 3)?
+        cp      $11                     ; level 11 (Labyrinth Act 3)?
         jr      z,      @_8
 
 @_3:    ld      HL,     $5280
@@ -13459,7 +13477,7 @@ mob_powerups_life:                                                      ;$5C05
         cp      $11
         jr      nc,     @_3
 
-        ld      [IX+Mob.type],      $FF ;remove object?
+        ld      [IX+Mob.type],      $FF ; remove object?
         jr      @_3
         ;
 
@@ -13547,7 +13565,7 @@ mob_powerups_checkpoint:                                                ;$5D2F
         ld      D,      $00
         ld      HL,     RAM_D32E
         add     HL,     DE
-        ex      DE,     HL              ;DE is D32E + level number * 2
+        ex      DE,     HL              ; DE is D32E + level number * 2
         ld      L,      [IX+Mob.X+0]
         ld      H,      [IX+Mob.X+1]
         add     HL,     HL
@@ -13773,7 +13791,7 @@ mob_powerups_emerald:                                                   ;$5EA2
         rst     rst_playMusic
 .ENDIF  ;///////////////////////////////////////////////////////////////////////
 
-@_1:    ld      [IX+Mob.type],  $FF                     ;remove object?
+@_1:    ld      [IX+Mob.type],  $FF     ; remove object?
         ret
 
 @_2:    ld      A,      [RAM_FRAMECOUNT]
@@ -13791,7 +13809,7 @@ mob_powerups_emerald:                                                   ;$5EA2
         ld      [IX+Mob.Yspeed+0],  L
         ld      [IX+Mob.Yspeed+1],  H
         ld      [IX+Mob.Ydirection],        A
-        ld      HL,     $5400                                   ;$15400 - emerald in blinking items art
+        ld      HL,     $5400           ;$15400 - emerald in blinking items art
         call    loadPowerUpIcon
 
         ret
@@ -13815,7 +13833,7 @@ mob_boss_endSign:                                                       ;$5F17
         ;       common case, and jump for the one-time initialisation
         jr      nz,     @_1
 
-        ;one time intialisation:
+        ; one time intialisation:
         ;-----------------------------------------------------------------------
 @init:  ; turn under-water mode off, disabling the 'water line' raster effect,
         ; this is because the end-sign has no equivalent under-water palette
@@ -15578,7 +15596,7 @@ badnick_motobug_behaviour:                                              ;$6E96
         .DSB    4, 3    ;=mob_badnick_motobug@actions@idleLeft?
         .DSB    9, 2    ;=mob_badnick_motobug@actions@moveRight
         .DSB    4, 4    ;=mob_badnick_motobug@actions@apply
-        .DB        0    ;=mob_badnick_motobug@actions@loop
+        .BYTE      0    ;=mob_badnick_motobug@actions@loop
         ;
 
 badnick_motobobug_actions:                                              ;$6EB1

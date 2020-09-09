@@ -32,246 +32,246 @@ RAM_VARS                        INSTANCEOF Vars                         ;[$D200]
 
 ; these temporary variables are reused throughout, some times for passing extra
 ; parameters to functions and sometimes as extra working space within functions
-RAM_TEMP1                       DB                                      ;[$D20E]
-RAM_TEMP2                       DB                                      ;[$D20F]
-RAM_TEMP3                       DW                                      ;[$D210]
-RAM_TEMP4                       DB                                      ;[$D212]
-RAM_TEMP5                       DB                                      ;[$D213]
-RAM_TEMP6                       DB                                      ;[$D214]
-RAM_TEMP7                       DB                                      ;[$D215]
+RAM_TEMP1                       BYTE                                    ;[$D20E]
+RAM_TEMP2                       BYTE                                    ;[$D20F]
+RAM_TEMP3                       WORD                                    ;[$D210]
+RAM_TEMP4                       BYTE                                    ;[$D212]
+RAM_TEMP5                       BYTE                                    ;[$D213]
+RAM_TEMP6                       BYTE                                    ;[$D214]
+RAM_TEMP7                       BYTE                                    ;[$D215]
 
-RAM_D216                        DW      ; UNKNOWN                       ;[$D216]
+RAM_D216                        WORD    ; UNKNOWN                       ;[$D216]
 
-RAM_VDPREGISTER_0               DB      ; RAM cache of VDP register 0   ;[$D218]
-RAM_VDPREGISTER_1               DB      ; RAM cache of VDP register 1   ;[$D219]
+RAM_VDPREGISTER_0               BYTE    ; RAM cache of VDP register 0   ;[$D218]
+RAM_VDPREGISTER_1               BYTE    ; RAM cache of VDP register 1   ;[$D219]
 ; though the code copies the VDP registers here, these ones are not recalled
-RAM_VDPREGISTER_2               DB                                      ;[$D21A]
-RAM_VDPREGISTER_3               DB                                      ;[$D21B]
-RAM_VDPREGISTER_4               DB                                      ;[$D21C]
-RAM_VDPREGISTER_5               DB                                      ;[$D21D]
-RAM_VDPREGISTER_6               DB                                      ;[$D21E]
-RAM_VDPREGISTER_7               DB                                      ;[$D21F]
-RAM_VDPREGISTER_8               DB                                      ;[$D220]
-RAM_VDPREGISTER_9               DB                                      ;[$D221]
-RAM_VDPREGISTER_10              DB                                      ;[$D222]
+RAM_VDPREGISTER_2               BYTE                                    ;[$D21A]
+RAM_VDPREGISTER_3               BYTE                                    ;[$D21B]
+RAM_VDPREGISTER_4               BYTE                                    ;[$D21C]
+RAM_VDPREGISTER_5               BYTE                                    ;[$D21D]
+RAM_VDPREGISTER_6               BYTE                                    ;[$D21E]
+RAM_VDPREGISTER_7               BYTE                                    ;[$D21F]
+RAM_VDPREGISTER_8               BYTE                                    ;[$D220]
+RAM_VDPREGISTER_9               BYTE                                    ;[$D221]
+RAM_VDPREGISTER_10              BYTE                                    ;[$D222]
 
-RAM_FRAMECOUNT                  DW      ; 16-bit continual frame count  ;[$D223]
+RAM_FRAMECOUNT                  WORD    ; 16-bit continual frame count  ;[$D223]
 
 ; referenced only by unused function `unused_0323:`
-RAM_UNUSED_D225                 DW                                      ;[$D225]
-RAM_UNUSED_D227                 DW                                      ;[$D227]
-RAM_UNUSED_D229                 DW                                      ;[$D229]
+RAM_UNUSED_D225                 WORD                                    ;[$D225]
+RAM_UNUSED_D227                 WORD                                    ;[$D227]
+RAM_UNUSED_D229                 WORD                                    ;[$D229]
 
 ; `loadPaletteOnInterrupt:` and `loadPaletteFromInterrupt:`
 ; use these to pass parameters
-RAM_LOADPALETTE_ADDRESS         DW                                      ;[$D22B]
-RAM_D22D                        DW      ; UNUSED                        ;[$D22D]
-RAM_LOADPALETTE_FLAGS           DB                                      ;[$D22F]
+RAM_LOADPALETTE_ADDRESS         WORD                                    ;[$D22B]
+RAM_D22D                        WORD    ; UNUSED                        ;[$D22D]
+RAM_LOADPALETTE_FLAGS           BYTE                                    ;[$D22F]
 
 ; `loadPalette:` uses these to pass the addresses
 ; of the tile/sprite palettes to load
-RAM_LOADPALETTE_TILE            DW                                      ;[$D230]
-RAM_LOADPALETTE_SPRITE          DW                                      ;[$D232]
+RAM_LOADPALETTE_TILE            WORD                                    ;[$D230]
+RAM_LOADPALETTE_SPRITE          WORD                                    ;[$D232]
 
-RAM_D234                        DB      ; UNUSED                        ;[$D234]
+RAM_D234                        BYTE    ; UNUSED                        ;[$D234]
 
 ; these keep track of which bank is in which slot
 ; -- slot 0 is always bank 0
-RAM_SLOT1                       DB                                      ;[$D235]
-RAM_SLOT2                       DB                                      ;[$D236]
+RAM_SLOT1                       BYTE                                    ;[$D235]
+RAM_SLOT2                       BYTE                                    ;[$D236]
 
-RAM_D237                        DB      ; UNUSED                        ;[$D237]
+RAM_D237                        BYTE    ; UNUSED                        ;[$D237]
 
-RAM_LEVEL_FLOORWIDTH            DW      ; floor-layout width in blocks  ;[$D238]
-RAM_LEVEL_FLOORHEIGHT           DW      ; floor-layout height in blocks ;[$D23A]
+RAM_LEVEL_FLOORWIDTH            WORD    ; floor-layout width in blocks  ;[$D238]
+RAM_LEVEL_FLOORHEIGHT           WORD    ; floor-layout height in blocks ;[$D23A]
 
-RAM_SPRITETABLE_ADDR            DW      ; pointer to sprite table       ;[$D23C]
+RAM_SPRITETABLE_ADDR            WORD    ; pointer to sprite table       ;[$D23C]
 
-RAM_CURRENT_LEVEL               DB                                      ;[$D23E]
+RAM_CURRENT_LEVEL               BYTE                                    ;[$D23E]
 
-RAM_D23F                        DB      ; UNKNOWN                       ;[$D23F]
-RAM_D240                        DW      ; UNKNOWN                       ;[$D240]
-RAM_D242                        DW      ; UNKNOWN                       ;[$D242]
-RAM_D244                        DW      ; UNKNOWN                       ;[$D244]
+RAM_D23F                        BYTE    ; UNKNOWN                       ;[$D23F]
+RAM_D240                        WORD    ; UNKNOWN                       ;[$D240]
+RAM_D242                        WORD    ; UNKNOWN                       ;[$D242]
+RAM_D244                        WORD    ; UNKNOWN                       ;[$D244]
 
-RAM_LIVES                       DB      ; player's lives count          ;[$D246]
+RAM_LIVES                       BYTE    ; player's lives count          ;[$D246]
 
-RAM_RASTERSPLIT_STEP            DB                                      ;[$D247]
-RAM_RASTERSPLIT_LINE            DB                                      ;[$D248]
+RAM_RASTERSPLIT_STEP            BYTE                                    ;[$D247]
+RAM_RASTERSPLIT_LINE            BYTE                                    ;[$D248]
 
 RAM_D249                        DSB 6   ; UNUSED                        ;[$D249]
 
 ; absolute address of the block mappings when in page 1 (i.e. $4000)
-RAM_BLOCKMAPPINGS               DW                                      ;[$D24F]
+RAM_BLOCKMAPPINGS               WORD                                    ;[$D24F]
 
-RAM_VDPSCROLL_HORZ              DB                                      ;[$D251]
-RAM_VDPSCROLL_VERT              DB                                      ;[$D252]
+RAM_VDPSCROLL_HORZ              BYTE                                    ;[$D251]
+RAM_VDPSCROLL_VERT              BYTE                                    ;[$D252]
 
 RAM_D253                        DSB 4   ; UNUSED                        ;[$D253]
 
-RAM_BLOCK_X                     DB      ; X-pos of camera in blocks     ;[$D257]
-RAM_BLOCK_Y                     DB      ; Y-pos of camera in blocks     ;[$D258]
+RAM_BLOCK_X                     BYTE    ; X-pos of camera in blocks     ;[$D257]
+RAM_BLOCK_Y                     BYTE    ; Y-pos of camera in blocks     ;[$D258]
 
-RAM_D259                        DB      ; UNUSED                        ;[$D259]
+RAM_D259                        BYTE    ; UNUSED                        ;[$D259]
 
-RAM_CAMERA_X                    DW                                      ;[$D25A]
-RAM_D25C                        DB      ; UNKNOWN?? (read as $D25C/D)   ;[$D25C]
-RAM_CAMERA_Y                    DW                                      ;[$D25D]
+RAM_CAMERA_X                    WORD                                    ;[$D25A]
+RAM_D25C                        BYTE    ; UNKNOWN?? (read as $D25C/D)   ;[$D25C]
+RAM_CAMERA_Y                    WORD                                    ;[$D25D]
 
 ; the scroll zones define how close the player can get to the edges of the
 ; screen before it scrolls. note that these are offsets from the top-left
 ; screen corner, so the right and bottom zones are determined by how far
 ; left/down they begin, not their widths
-RAM_SCROLLZONE_LEFT             DW                                      ;[$D25F]
-RAM_SCROLLZONE_RIGHT            DW                                      ;[$D261]
-RAM_SCROLLZONE_TOP              DW                                      ;[$D263]
-RAM_SCROLLZONE_BOTTOM           DW                                      ;[$D265]
+RAM_SCROLLZONE_LEFT             WORD                                    ;[$D25F]
+RAM_SCROLLZONE_RIGHT            WORD                                    ;[$D261]
+RAM_SCROLLZONE_TOP              WORD                                    ;[$D263]
+RAM_SCROLLZONE_BOTTOM           WORD                                    ;[$D265]
 
 ; to avoid 'leaps of faith', some mobs (typically moving platforms) override
 ; the scroll zones to allow more of the platform to be visible on screen
-RAM_SCROLLZONE_OVERRIDE_LEFT    DW                                      ;[$D267]
-RAM_SCROLLZONE_OVERRIDE_RIGHT   DW                                      ;[$D269]
-RAM_SCROLLZONE_OVERRIDE_TOP     DW                                      ;[$D26B]
-RAM_SCROLLZONE_OVERRIDE_BOTTOM  DW                                      ;[$D26D]
+RAM_SCROLLZONE_OVERRIDE_LEFT    WORD                                    ;[$D267]
+RAM_SCROLLZONE_OVERRIDE_RIGHT   WORD                                    ;[$D269]
+RAM_SCROLLZONE_OVERRIDE_TOP     WORD                                    ;[$D26B]
+RAM_SCROLLZONE_OVERRIDE_BOTTOM  WORD                                    ;[$D26D]
         
-RAM_CAMERA_X_PREV               DW      ; used to check if              ;[$D26F]
-RAM_CAMERA_Y_PREV               DW      ; the camera has moved          ;[$D271]
+RAM_CAMERA_X_PREV               WORD    ; used to check if              ;[$D26F]
+RAM_CAMERA_Y_PREV               WORD    ; the camera has moved          ;[$D271]
 
-RAM_LEVEL_LEFT                  DW                                      ;[$D273]
+RAM_LEVEL_LEFT                  WORD                                    ;[$D273]
 ; prevents the level scrolling past this left-most point (i.e. sets an
 ; effective right-hand limit to the level -- this + width of the screen)
-RAM_LEVEL_RIGHT                 DW                                      ;[$D275]
-RAM_LEVEL_TOP                   DW                                      ;[$D277]
-RAM_LEVEL_BOTTOM                DW                                      ;[$D279]
+RAM_LEVEL_RIGHT                 WORD                                    ;[$D275]
+RAM_LEVEL_TOP                   WORD                                    ;[$D277]
+RAM_LEVEL_BOTTOM                WORD                                    ;[$D279]
 
 ; a point to move the camera to
-RAM_CAMERA_X_GOTO               DW                                      ;[$D27B]
-RAM_CAMERA_Y_GOTO               DW                                      ;[$D27D]
+RAM_CAMERA_X_GOTO               WORD                                    ;[$D27B]
+RAM_CAMERA_Y_GOTO               WORD                                    ;[$D27D]
 
-RAM_D27F                        DB      ; UNKNOWN ($D27F/80)            ;[$D27F]
-RAM_D280                        DB      ; UNKNOWN ($D280/1)             ;[$D280]
-RAM_D281                        DB      ; UNKNOWN ($D281/2)             ;[$D281]
-RAM_D282                        DB      ; UNKNOWN ($D282/3)             ;[$D282]
-RAM_D283                        DB      ; UNKNOWN                       ;[$D283]
-RAM_D284                        DB      ; UNKNOWN ($D284/5)             ;[$D284]
-RAM_D285                        DB      ; UNKNOWN ($D285/6)             ;[$D285]
-RAM_D286                        DB      ; UNKNOWN                       ;[$D286]
-RAM_D287                        DB      ; UNKNOWN ($D287/8)             ;[$D287]
-RAM_D288                        DB      ; UNKNOWN                       ;[$D288]
-RAM_D289                        DB      ; UNKNOWN - looks like flags    ;[$D289]
-RAM_D28A                        DB      ; UNKNOWN                       ;[$D28A]
-RAM_D28B                        DB      ; UNKNOWN                       ;[$D28B]
-RAM_D28C                        DB      ; UNKNOWN                       ;[$D28C]
-RAM_D28D                        DB      ; UNKNOWN ($D28D/E)             ;[$D28D]
-RAM_D28E                        DB      ; UNKNOWN                       ;[$D28E]
+RAM_D27F                        BYTE    ; UNKNOWN ($D27F/80)            ;[$D27F]
+RAM_D280                        BYTE    ; UNKNOWN ($D280/1)             ;[$D280]
+RAM_D281                        BYTE    ; UNKNOWN ($D281/2)             ;[$D281]
+RAM_D282                        BYTE    ; UNKNOWN ($D282/3)             ;[$D282]
+RAM_D283                        BYTE    ; UNKNOWN                       ;[$D283]
+RAM_D284                        BYTE    ; UNKNOWN ($D284/5)             ;[$D284]
+RAM_D285                        BYTE    ; UNKNOWN ($D285/6)             ;[$D285]
+RAM_D286                        BYTE    ; UNKNOWN                       ;[$D286]
+RAM_D287                        BYTE    ; UNKNOWN ($D287/8)             ;[$D287]
+RAM_D288                        BYTE    ; UNKNOWN                       ;[$D288]
+RAM_D289                        BYTE    ; UNKNOWN - looks like flags    ;[$D289]
+RAM_D28A                        BYTE    ; UNKNOWN                       ;[$D28A]
+RAM_D28B                        BYTE    ; UNKNOWN                       ;[$D28B]
+RAM_D28C                        BYTE    ; UNKNOWN                       ;[$D28C]
+RAM_D28D                        BYTE    ; UNKNOWN ($D28D/E)             ;[$D28D]
+RAM_D28E                        BYTE    ; UNKNOWN                       ;[$D28E]
 
-RAM_SONIC_CURRENT_FRAME         DW                                      ;[$D28F]
-RAM_SONIC_PREVIOUS_FRAME        DW                                      ;[$D291]
+RAM_SONIC_CURRENT_FRAME         WORD                                    ;[$D28F]
+RAM_SONIC_PREVIOUS_FRAME        WORD                                    ;[$D291]
 
-RAM_RING_CURRENT_FRAME          DW                                      ;[$D293]
-RAM_RING_PREVIOUS_FRAME         DW                                      ;[$D295]
+RAM_RING_CURRENT_FRAME          WORD                                    ;[$D293]
+RAM_RING_PREVIOUS_FRAME         WORD                                    ;[$D295]
 
-RAM_D297                        DB      ; UNKNOWN                       ;[$D297]
-RAM_D298                        DB      ; UNKNOWN ($D298/9)             ;[$D298]
-RAM_IDLE_TIMER                  DW      ; UNKNOWN                       ;[$D299]
-RAM_D29B                        DW      ; UNKNOWN                       ;[$D29B]
-RAM_D29D                        DW      ; UNKNOWN                       ;[$D29D]
+RAM_D297                        BYTE    ; UNKNOWN                       ;[$D297]
+RAM_D298                        BYTE    ; UNKNOWN ($D298/9)             ;[$D298]
+RAM_IDLE_TIMER                  WORD    ; UNKNOWN                       ;[$D299]
+RAM_D29B                        WORD    ; UNKNOWN                       ;[$D29B]
+RAM_D29D                        WORD    ; UNKNOWN                       ;[$D29D]
 
-RAM_TIME                        DW      ; the level's time              ;[$D29F]
+RAM_TIME                        WORD    ; the level's time              ;[$D29F]
 
-RAM_D2A1                        DB      ; UNKNOWN ($D2A1/2)             ;[$D2A1]
-RAM_D2A2                        DB      ; UNKNOWN ($D2A2/3)             ;[$D2A2]
-RAM_D2A3                        DB      ; UNKNOWN                       ;[$D2A3]
+RAM_D2A1                        BYTE    ; UNKNOWN ($D2A1/2)             ;[$D2A1]
+RAM_D2A2                        BYTE    ; UNKNOWN ($D2A2/3)             ;[$D2A2]
+RAM_D2A3                        BYTE    ; UNKNOWN                       ;[$D2A3]
 
-RAM_CYCLEPALETTE_COUNTER        DB      ; counter for applying below    ;[$D2A4]
-RAM_CYCLEPALETTE_SPEED          DB      ; no.frames between palettes    ;[$D2A5]
+RAM_CYCLEPALETTE_COUNTER        BYTE    ; counter for applying below    ;[$D2A4]
+RAM_CYCLEPALETTE_SPEED          BYTE    ; no.frames between palettes    ;[$D2A5]
 
-RAM_CYCLEPALETTE_INDEX          DW      ; current palette within cycle  ;[$D2A6]
-RAM_CYCLEPALETTE_POINTER        DW      ; addr. of current palette      ;[$D2A8]
+RAM_CYCLEPALETTE_INDEX          WORD    ; current palette within cycle  ;[$D2A6]
+RAM_CYCLEPALETTE_POINTER        WORD    ; addr. of current palette      ;[$D2A8]
 
-RAM_RINGS                       DB      ; player's ring count           ;[$D2AA]
+RAM_RINGS                       BYTE    ; player's ring count           ;[$D2AA]
 
-RAM_D2AB                        DW      ; UNKNOWN                       ;[$D2AB]
-RAM_D2AD                        DW      ; UNKNOWN                       ;[$D2AD]
-RAM_D2AF                        DW      ; UNKNOWN                       ;[$D2AF]
-RAM_D2B1                        DW      ; UNKNOWN                       ;[$D2B1]
-RAM_D2B3                        DB      ; UNKNOWN                       ;[$D2B3]
+RAM_D2AB                        WORD    ; UNKNOWN                       ;[$D2AB]
+RAM_D2AD                        WORD    ; UNKNOWN                       ;[$D2AD]
+RAM_D2AF                        WORD    ; UNKNOWN                       ;[$D2AF]
+RAM_D2B1                        WORD    ; UNKNOWN                       ;[$D2B1]
+RAM_D2B3                        BYTE    ; UNKNOWN                       ;[$D2B3]
 
-RAM_ACTIVESPRITECOUNT           DB      ; no.hardware sprites "in use"  ;[$D2B4]
+RAM_ACTIVESPRITECOUNT           BYTE    ; no.hardware sprites "in use"  ;[$D2B4]
 
-RAM_D2B5                        DW      ; UNKNOWN                       ;[$D2B5]
-RAM_D2B7                        DW      ; UNKNOWN                       ;[$D2B7]
-RAM_D2B9                        DB      ; UNKNOWN                       ;[$D2B9]
+RAM_D2B5                        WORD    ; UNKNOWN                       ;[$D2B5]
+RAM_D2B7                        WORD    ; UNKNOWN                       ;[$D2B7]
+RAM_D2B9                        BYTE    ; UNKNOWN                       ;[$D2B9]
 
-RAM_SCORE_MILLIONS              DB                                      ;[$D2BA]
-RAM_SCORE_THOUSANDS             DB                                      ;[$D2BB]
-RAM_SCORE_HUNDREDS              DB                                      ;[$D2BC]
-RAM_SCORE_TENS                  DB                                      ;[$D2BD]
+RAM_SCORE_MILLIONS              BYTE                                    ;[$D2BA]
+RAM_SCORE_THOUSANDS             BYTE                                    ;[$D2BB]
+RAM_SCORE_HUNDREDS              BYTE                                    ;[$D2BC]
+RAM_SCORE_TENS                  BYTE                                    ;[$D2BD]
 
 RAM_LAYOUT_BUFFER               DSB 5                                   ;[$D2BE]
 
 RAM_D2C3                        DSB 11  ; UNKNOWN - text in RAM?        ;[$D2C3]
 
-RAM_TIME_MINUTES                DB      ; level timer - minutes         ;[$D2CE]
-RAM_TIME_SECONDS                DB      ; level timer - seconds         ;[$D2CF]
-RAM_TIME_FRAMES                 DB      ; level timer - frames          ;[$D2D0]
+RAM_TIME_MINUTES                BYTE    ; level timer - minutes         ;[$D2CE]
+RAM_TIME_SECONDS                BYTE    ; level timer - seconds         ;[$D2CF]
+RAM_TIME_FRAMES                 BYTE    ; level timer - frames          ;[$D2D0]
 
-RAM_D2D1                        DB      ; UNUSED                        ;[$D2D1]
+RAM_D2D1                        BYTE    ; UNUSED                        ;[$D2D1]
 
 ; the previous song played is checked during level load to avoid starting
 ; the same song again (for example, when teleporting in Scrap Brain)
-RAM_PREVIOUS_MUSIC              DB                                      ;[$D2D2]
+RAM_PREVIOUS_MUSIC              BYTE                                    ;[$D2D2]
 
-RAM_D2D3                        DB      ; UNKNOWN                       ;[$D2D3]
+RAM_D2D3                        BYTE    ; UNKNOWN                       ;[$D2D3]
 
-RAM_LEVEL_SOLIDITY              DB                                      ;[$D2D4]
+RAM_LEVEL_SOLIDITY              BYTE                                    ;[$D2D4]
 
-RAM_D2D5                        DW      ; UNKNOWN                       ;[$D2D5]
-RAM_D2D7                        DW      ; UNKNOWN                       ;[$D2D7]
-RAM_D2D9                        DW      ; UNKNOWN                       ;[$D2D9]
+RAM_D2D5                        WORD    ; UNKNOWN                       ;[$D2D5]
+RAM_D2D7                        WORD    ; UNKNOWN                       ;[$D2D7]
+RAM_D2D9                        WORD    ; UNKNOWN                       ;[$D2D9]
 
-RAM_WATERLINE                   DB                                      ;[$D2DB]
+RAM_WATERLINE                   BYTE                                    ;[$D2DB]
 
-RAM_D2DC                        DW      ; UNKNOWN                       ;[$D2DC]
-RAM_D2DE                        DB      ; UNKNOWN                       ;[$D2DE]
-RAM_D2DF                        DB      ; UNKNOWN                       ;[$D2DF]
-RAM_D2E0                        DB      ; UNKNOWN                       ;[$D2E0]
-RAM_D2E1                        DB      ; UNKNOWN                       ;[$D2E1]
-RAM_D2E2                        DW      ; UNKNOWN                       ;[$D2E2]
-RAM_D2E4                        DW      ; UNKNOWN                       ;[$D2E4]
-RAM_D2E6                        DW      ; UNKNOWN                       ;[$D2E6]
-RAM_D2E8                        DB      ; UNKNOWN                       ;[$D2E8]
-RAM_D2E9                        DW      ; UNKNOWN                       ;[$D2E9]
+RAM_D2DC                        WORD    ; UNKNOWN                       ;[$D2DC]
+RAM_D2DE                        BYTE    ; UNKNOWN                       ;[$D2DE]
+RAM_D2DF                        BYTE    ; UNKNOWN                       ;[$D2DF]
+RAM_D2E0                        BYTE    ; UNKNOWN                       ;[$D2E0]
+RAM_D2E1                        BYTE    ; UNKNOWN                       ;[$D2E1]
+RAM_D2E2                        WORD    ; UNKNOWN                       ;[$D2E2]
+RAM_D2E4                        WORD    ; UNKNOWN                       ;[$D2E4]
+RAM_D2E6                        WORD    ; UNKNOWN                       ;[$D2E6]
+RAM_D2E8                        BYTE    ; UNKNOWN                       ;[$D2E8]
+RAM_D2E9                        WORD    ; UNKNOWN                       ;[$D2E9]
 
-RAM_D2EB                        DB      ; UNUSED                        ;[$D2EB]
+RAM_D2EB                        BYTE    ; UNUSED                        ;[$D2EB]
 
-RAM_D2EC                        DB      ; used by boss objects          ;[$D2EC]
-RAM_D2ED                        DW      ; UNKNOWN                       ;[$D2ED]
+RAM_D2EC                        BYTE    ; used by boss objects          ;[$D2EC]
+RAM_D2ED                        WORD    ; UNKNOWN                       ;[$D2ED]
 
 RAM_D2EF                        DSB 3   ; UNUSED                        ;[$D2EF]
 
-RAM_D2F2                        DB      ; used in `loadMobList:`        ;[$D2F2]
-RAM_D2F3                        DB      ; used by Sonic                 ;[$D2F3]
+RAM_D2F2                        BYTE    ; used in `loadMobList:`        ;[$D2F2]
+RAM_D2F3                        BYTE    ; used by Sonic                 ;[$D2F3]
 
 RAM_D2F4                        DSB 3                                   ;[$D2F4]
 
-RAM_D2F7                        DB      ; used by Sonic                 ;[$D2F7]
+RAM_D2F7                        BYTE    ; used by Sonic                 ;[$D2F7]
 
 RAM_D2F8                        DSB 3   ; UNUSED                        ;[$F2F8]
 
-RAM_D2FB                        DB                                      ;[$D2FB]
+RAM_D2FB                        BYTE                                    ;[$D2FB]
 
 ; a copy of the level music index is kept so that the music can be started
 ; again (?) after other sound events like invincibility
-RAM_LEVEL_MUSIC                 DB                                      ;[$D2FC]
+RAM_LEVEL_MUSIC                 BYTE                                    ;[$D2FC]
 
-RAM_SCORE_1UP                   DB      ; points (x1000) for exta life  ;[$D2FD]
-RAM_D2FE                        DB                                      ;[$D2FE]
-RAM_D2FF                        DB                                      ;[$D2FF]
+RAM_SCORE_1UP                   BYTE    ; points (x1000) for exta life  ;[$D2FD]
+RAM_D2FE                        BYTE                                    ;[$D2FE]
+RAM_D2FF                        BYTE                                    ;[$D2FF]
 
 RAM_D300                        DSB 2   ; UNUSED
 
-RAM_D302                        DB                                      ;[$D302]
+RAM_D302                        BYTE                                    ;[$D302]
 RAM_D303                        DSB 2                                   ;[$D303]
 
 ; these are a series of bit flags,
@@ -281,11 +281,11 @@ RAM_D30B                        DSB 6   ; set by emerald                ;[$D30B]
 RAM_D311                        DSB 6   ; set by continue monitor       ;[$D311]
 RAM_D317                        DSB 6   ; set by switch                 ;[$D317]
 
-RAM_D31D                        DW                                      ;[$D31D]
-RAM_D31F                        DW      ; used by Sonic                 ;[$D31F]
-RAM_D321                        DB      ; used by Sonic                 ;[$D321]
+RAM_D31D                        WORD                                    ;[$D31D]
+RAM_D31F                        WORD    ; used by Sonic                 ;[$D31F]
+RAM_D321                        BYTE    ; used by Sonic                 ;[$D321]
 
-RAM_D322                        DB      ; used in credits screen?       ;[$D322]
+RAM_D322                        BYTE    ; used in credits screen?       ;[$D322]
 
 ; note: 11 bytes is typical of text storage
 RAM_D323                        DSB 11  ; UNUSED                        ;[$D323]

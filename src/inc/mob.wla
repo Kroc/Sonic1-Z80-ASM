@@ -2,28 +2,29 @@
 .STRUCT Mob
 ;===============================================================================
 ; The data-structure for a mob (Movable Object Block);
-; the game's interactive objects and enemies.
-;     
-        type                    DB      ; object type index number      ;IX+$00
-        Xsubpixel               DB      ; sub-pixel X position          ;IX+$01
-        X                       DW      ; X position (px)               ;IX+$02
-        Ysubpixel               DB      ; sub-pixel Y position          ;IX+$04
-        Y                       DW      ; Y position (px)               'IX+$05
-        Xspeed                  DW      ; - in px, signed               ;IX+$07
-        Xdirection              DB      ; $FF for left, else $00        ;IX+$09
-        Yspeed                  DW      ; - in px, signed               ;IX+$0A
-        Ydirection              DB      ; $FF for up, else $00          ;IX+$0C
-        width                   DB      ; - in px                       ;IX+$0D
-        height                  DB      ; - in px                       ;IX+$0E
-        spriteLayout            DW      ; address of sprite layout      ;IX+$0F
-        unknown11               DB    
-        unknown12               DB    
-        unknown13               DB    
-        unknown14               DB    
-        unknown15               DB    
-        unknown16               DB    
-        unknown17               DB    
-        flags                   DB      ; various mob flags
+; the game's interactive objects and enemies
+;
+;-------------------------------------------------------------------------------
+        type                    BYTE    ; object type index number      ;IX+$00
+        Xsubpixel               BYTE    ; sub-pixel X position          ;IX+$01
+        X                       WORD    ; X position (px)               ;IX+$02
+        Ysubpixel               BYTE    ; sub-pixel Y position          ;IX+$04
+        Y                       WORD    ; Y position (px)               'IX+$05
+        Xspeed                  WORD    ; - in px, signed               ;IX+$07
+        Xdirection              BYTE    ; $FF for left, else $00        ;IX+$09
+        Yspeed                  WORD    ; - in px, signed               ;IX+$0A
+        Ydirection              BYTE    ; $FF for up, else $00          ;IX+$0C
+        width                   BYTE    ; - in px                       ;IX+$0D
+        height                  BYTE    ; - in px                       ;IX+$0E
+        spriteLayout            WORD    ; address of sprite layout      ;IX+$0F
+        unknown11               BYTE  
+        unknown12               BYTE  
+        unknown13               BYTE  
+        unknown14               BYTE  
+        unknown15               BYTE  
+        unknown16               BYTE  
+        unknown17               BYTE  
+        flags                   BYTE    ; various mob flags
         ;-----------------------------------------------------------------------
         ;unknown0               
         ;unknown1               
@@ -34,5 +35,5 @@
         ;unknown6               
         ;unknown7               
         ;
-        unknown19               DB      ;unused?
+        unknown19               BYTE    ;unused?
 .ENDST

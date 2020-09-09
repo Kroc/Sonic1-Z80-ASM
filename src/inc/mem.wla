@@ -18,10 +18,8 @@
 
 ; define the ROM (cartridge) size
 .ROMBANKMAP
+        ;=======================================================================
         BANKSTOTAL      16              ; use 16 banks,
-        
-        ;;BANKSIZE        $C000
-        ;;BANKS           1
         BANKSIZE        $4000           ; each 16 KB in size
         BANKS           16              ; (that's 256 KB)
 .ENDRO

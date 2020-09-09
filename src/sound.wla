@@ -34,7 +34,7 @@
         ; port with bit 7 set and bits 6 & 5 forming the sound channel number
         ; 0-3. this variable holds the bit mask for the track's particular
         ; channel to set the frequency (see `PSGchannelBits` for particulars)
-        channelFrequencyPSG             DB                              ;+$00
+        channelFrequencyPSG             BYTE                            ;+$00
 
         ; to set the volume of a channel, a data byte is written to the sound
         ; port with bits 7 & 4 set and bits 6 & 5 forming the sound channel
@@ -42,40 +42,40 @@
         ; and `%0000` is maximum. this variable holds the bit mask for the
         ; track's particular channel to set the volume
         ; (see `initPSGValues` for examples)
-        channelVolumePSG                DB                              ;+$01
+        channelVolumePSG                BYTE                            ;+$01
 
-        tickStep                        DW                              ;+$02
-        fadeTicks                       DW                              ;+$04
+        tickStep                        WORD                            ;+$02
+        fadeTicks                       WORD                            ;+$04
         noteFrequencey                  DW ; no direct reference?       ;+$06
-        detune                          DW                              ;+$08
-        modulationFreq                  DW                              ;+$0A
-        envelopeLevel                   DB                              ;+$0C
-        ADSRstate                       DB                              ;+$0D
-        attackRate                      DB                              ;+$0E
-        decay1Rate                      DB                              ;+$0F
-        decay1Level                     DB                              ;+$10
-        decay2Rate                      DB                              ;+$11
-        decay2Level                     DB                              ;+$12
-        sustainRate                     DB                              ;+$13
-        initModulationDelay             DB                              ;+$14
-        initModulationStepDelay         DB                              ;+$15
-        initModulationStepCount         DB                              ;+$16
-        initModulationFreqDelta         DW                              ;+$17
-        modulationDelay                 DB                              ;+$19
-        modulationStepDelay             DB                              ;+$1A
-        modulationStepCount             DB                              ;+$1B
-        modulationFreqDelta             DW                              ;+$1C
-        effectiveVolume                 DB                              ;+$1E
-        octave                          DB                              ;+$1F
-        loopAddress                     DW                              ;+$20
-        masterLoopAddress               DW                              ;+$22
-        defaultNoteLength               DB                              ;+$24
-        noiseMode                       DB                              ;+$25
-        tempoDivider                    DW                              ;+$26
-        flags                           DB                              ;+$28
-        baseAddress                     DW                              ;+$29
-        id                              DB                              ;+$2B
-        channelVolume                   DB                              ;+$2C
+        detune                          WORD                            ;+$08
+        modulationFreq                  WORD                            ;+$0A
+        envelopeLevel                   BYTE                            ;+$0C
+        ADSRstate                       BYTE                            ;+$0D
+        attackRate                      BYTE                            ;+$0E
+        decay1Rate                      BYTE                            ;+$0F
+        decay1Level                     BYTE                            ;+$10
+        decay2Rate                      BYTE                            ;+$11
+        decay2Level                     BYTE                            ;+$12
+        sustainRate                     BYTE                            ;+$13
+        initModulationDelay             BYTE                            ;+$14
+        initModulationStepDelay         BYTE                            ;+$15
+        initModulationStepCount         BYTE                            ;+$16
+        initModulationFreqDelta         WORD                            ;+$17
+        modulationDelay                 BYTE                            ;+$19
+        modulationStepDelay             BYTE                            ;+$1A
+        modulationStepCount             BYTE                            ;+$1B
+        modulationFreqDelta             WORD                            ;+$1C
+        effectiveVolume                 BYTE                            ;+$1E
+        octave                          BYTE                            ;+$1F
+        loopAddress                     WORD                            ;+$20
+        masterLoopAddress               WORD                            ;+$22
+        defaultNoteLength               BYTE                            ;+$24
+        noiseMode                       BYTE                            ;+$25
+        tempoDivider                    WORD                            ;+$26
+        flags                           BYTE                            ;+$28
+        baseAddress                     WORD                            ;+$29
+        id                              BYTE                            ;+$2B
+        channelVolume                   BYTE                            ;+$2C
 .ENDST
 
 .RAMSECTION     "sound_RAM"
@@ -87,25 +87,25 @@
 ; (NB: in the original ROM, $DC00-$DC03 go unused)
 ; TODO: Set this to $DC04
 ;
-playbackMode                    DB      ; bit 4 dis/enables fading out  ;[$DC04]
-overriddenTrack                 DB      ; music track SFX overrides     ;[$DC05]
-SFXpriority                     DB      ; current SFX priority level    ;[$DC06]
-noiseMode                       DB      ; hi/med/lo noise & freq mode   ;[$DC07]
-tickMultiplier                  DW                                      ;[$DC08]
-tickDivider1                    DW                                      ;[$DC0A]
-tickDivider2                    DW                                      ;[$DC0C]
-tickDividerSFX                  DW                                      ;[$DC0E]
-fadeTicks                       DW                                      ;[$DC10]
-fadeTicksDecrement              DW                                      ;[$DC12]
-channel0trackPointer            DW                                      ;[$DC14]
-channel1trackPointer            DW                                      ;[$DC16]
-channel2trackPointer            DW                                      ;[$DC18]
-channel3trackPointer            DW                                      ;[$DC1A]
-track0dataPointer               DW                                      ;[$DC1C]
-track1dataPointer               DW                                      ;[$DC1E]
-track2dataPointer               DW                                      ;[$DC20]
-track3dataPointer               DW                                      ;[$DC22]
-track4dataPointer               DW                                      ;[$DC10]
+playbackMode                    BYTE    ; bit 4 dis/enables fading out  ;[$DC04]
+overriddenTrack                 BYTE    ; music track SFX overrides     ;[$DC05]
+SFXpriority                     BYTE    ; current SFX priority level    ;[$DC06]
+noiseMode                       BYTE    ; hi/med/lo noise & freq mode   ;[$DC07]
+tickMultiplier                  WORD                                    ;[$DC08]
+tickDivider1                    WORD                                    ;[$DC0A]
+tickDivider2                    WORD                                    ;[$DC0C]
+tickDividerSFX                  WORD                                    ;[$DC0E]
+fadeTicks                       WORD                                    ;[$DC10]
+fadeTicksDecrement              WORD                                    ;[$DC12]
+channel0trackPointer            WORD                                    ;[$DC14]
+channel1trackPointer            WORD                                    ;[$DC16]
+channel2trackPointer            WORD                                    ;[$DC18]
+channel3trackPointer            WORD                                    ;[$DC1A]
+track0dataPointer               WORD                                    ;[$DC1C]
+track1dataPointer               WORD                                    ;[$DC1E]
+track2dataPointer               WORD                                    ;[$DC20]
+track3dataPointer               WORD                                    ;[$DC22]
+track4dataPointer               WORD                                    ;[$DC10]
 ; the `_loadMusic` routine assumes that the track RAM follows the data pointers
 ; above, so just take note in case of rearranging the RAM here
 track0vars                      INSTANCEOF Track
